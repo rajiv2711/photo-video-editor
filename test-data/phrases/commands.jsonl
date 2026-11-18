@@ -1,0 +1,134 @@
+{"group":"exact","text":"contrast more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"exact","text":"exposure more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"exact","text":"saturation less","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"exact","text":"contrast less","expect":[{"op":"nudge","control":"contrast","steps":-1}]}
+{"group":"exact","text":"exposure up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"exact","text":"saturation down","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"exact","text":"contrast increase","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"exact","text":"exposure decrease","expect":[{"op":"nudge","control":"exposure","steps":-1}]}
+{"group":"exact","text":"saturation higher","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"exact","text":"contrast lower","expect":[{"op":"nudge","control":"contrast","steps":-1}]}
+{"group":"exact","text":"exposure raise","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"exact","text":"saturation reduce","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"exact","text":"contrast boost","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"exact","text":"exposure drop","expect":[{"op":"nudge","control":"exposure","steps":-1}]}
+{"group":"exact","text":"Contrast","expect":[{"op":"select","control":"contrast"}]}
+{"group":"repeats","text":"contrast more more more","expect":[{"op":"nudge","control":"contrast","steps":3}]}
+{"group":"repeats","text":"contrast more, more, more","expect":[{"op":"nudge","control":"contrast","steps":3}]}
+{"group":"repeats","text":"Contrast. More. More. More.","expect":[{"op":"nudge","control":"contrast","steps":3}]}
+{"group":"repeats","text":"exposure up up","expect":[{"op":"nudge","control":"exposure","steps":2}]}
+{"group":"repeats","text":"saturation less less less less","expect":[{"op":"nudge","control":"saturation","steps":-4}]}
+{"group":"repeats","text":"contrast more more less","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"repeats","text":"more","focus":"contrast","expect":[{"op":"nudge","steps":1}]}
+{"group":"repeats","text":"more more","focus":"contrast","expect":[{"op":"nudge","steps":2}]}
+{"group":"repeats","text":"less","focus":"saturation","expect":[{"op":"nudge","steps":-1}]}
+{"group":"repeats","text":"less less less","focus":"saturation","expect":[{"op":"nudge","steps":-3}]}
+{"group":"repeats","text":"up","focus":"exposure","expect":[{"op":"nudge","steps":1}]}
+{"group":"repeats","text":"down down","focus":"exposure","expect":[{"op":"nudge","steps":-2}]}
+{"group":"numbers","text":"contrast 20","expect":[{"op":"set","control":"contrast","value":20}]}
+{"group":"numbers","text":"contrast -20","expect":[{"op":"set","control":"contrast","value":-20}]}
+{"group":"numbers","text":"contrast minus 20","expect":[{"op":"set","control":"contrast","value":-20}]}
+{"group":"numbers","text":"exposure 0.5","expect":[{"op":"set","control":"exposure","value":0.5}]}
+{"group":"numbers","text":"exposure -1.5","expect":[{"op":"set","control":"exposure","value":-1.5}]}
+{"group":"numbers","text":"saturation 0","expect":[{"op":"set","control":"saturation","value":0}]}
+{"group":"numbers","text":"saturation zero","expect":[{"op":"set","control":"saturation","value":0}]}
+{"group":"numbers","text":"contrast 100","expect":[{"op":"set","control":"contrast","value":100}]}
+{"group":"numbers","text":"set contrast to 30","expect":[{"op":"set","control":"contrast","value":30}]}
+{"group":"numbers","text":"contrast to 45","expect":[{"op":"set","control":"contrast","value":45}]}
+{"group":"numbers","text":"exposure 1","expect":[{"op":"set","control":"exposure","value":1}]}
+{"group":"numbers","text":"saturation 50%","expect":[{"op":"set","control":"saturation","value":50}]}
+{"group":"numbers","text":"contrast max","expect":[{"op":"max","control":"contrast"}]}
+{"group":"numbers","text":"saturation min","expect":[{"op":"min","control":"saturation"}]}
+{"group":"numbers","text":"exposure maximum","expect":[{"op":"max","control":"exposure"}]}
+{"group":"numbers","text":"contrast twenty","expect":[{"op":"set","control":"contrast","value":20}]}
+{"group":"numbers","text":"exposure one","expect":[{"op":"set","control":"exposure","value":1}]}
+{"group":"numbers","text":"saturation minus ten","expect":[{"op":"set","control":"saturation","value":-10}]}
+{"group":"relative","text":"contrast up by 20","expect":[{"op":"add","control":"contrast","value":20}]}
+{"group":"relative","text":"contrast down by 10","expect":[{"op":"add","control":"contrast","value":-10}]}
+{"group":"relative","text":"exposure up 0.5","expect":[{"op":"add","control":"exposure","value":0.5}]}
+{"group":"relative","text":"saturation more by 15","expect":[{"op":"add","control":"saturation","value":15}]}
+{"group":"relative","text":"contrast less 5","expect":[{"op":"add","control":"contrast","value":-5}]}
+{"group":"relative","text":"exposure plus 1","expect":[{"op":"add","control":"exposure","value":1}]}
+{"group":"relative","text":"saturation increase by 25","expect":[{"op":"add","control":"saturation","value":25}]}
+{"group":"relative","text":"contrast decrease 30","expect":[{"op":"add","control":"contrast","value":-30}]}
+{"group":"relative","text":"up by 10","focus":"contrast","expect":[{"op":"add","value":10}]}
+{"group":"relative","text":"down 5","focus":"contrast","expect":[{"op":"add","value":-5}]}
+{"group":"multi","text":"saturation less exposure more","expect":[{"op":"nudge","control":"saturation","steps":-1},{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"multi","text":"contrast 20 saturation 30","expect":[{"op":"set","control":"contrast","value":20},{"op":"set","control":"saturation","value":30}]}
+{"group":"multi","text":"exposure up contrast down","expect":[{"op":"nudge","control":"exposure","steps":1},{"op":"nudge","control":"contrast","steps":-1}]}
+{"group":"multi","text":"contrast more more saturation less","expect":[{"op":"nudge","control":"contrast","steps":2},{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"multi","text":"exposure 0.5 contrast 10 saturation -20","expect":[{"op":"set","control":"exposure","value":0.5},{"op":"set","control":"contrast","value":10},{"op":"set","control":"saturation","value":-20}]}
+{"group":"multi","text":"contrast more and saturation more","expect":[{"op":"nudge","control":"contrast","steps":1},{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"multi","text":"exposure more then contrast less","expect":[{"op":"nudge","control":"exposure","steps":1},{"op":"nudge","control":"contrast","steps":-1}]}
+{"group":"multi","text":"contrast reset saturation 40","expect":[{"op":"reset","control":"contrast"},{"op":"set","control":"saturation","value":40}]}
+{"group":"multi","text":"saturation max contrast min","expect":[{"op":"max","control":"saturation"},{"op":"min","control":"contrast"}]}
+{"group":"multi","text":"exposure up by 1 contrast up by 10","expect":[{"op":"add","control":"exposure","value":1},{"op":"add","control":"contrast","value":10}]}
+{"group":"verb-first","text":"more contrast","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"verb-first","text":"less saturation","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"verb-first","text":"increase exposure","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"verb-first","text":"reduce contrast","expect":[{"op":"nudge","control":"contrast","steps":-1}]}
+{"group":"verb-first","text":"reset contrast","expect":[{"op":"reset","control":"contrast"}]}
+{"group":"verb-first","text":"boost saturation","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"verb-first","text":"max contrast","expect":[{"op":"max","control":"contrast"}]}
+{"group":"verb-first","text":"raise exposure by 0.5","expect":[{"op":"add","control":"exposure","value":0.5}]}
+{"group":"reset","text":"contrast reset","expect":[{"op":"reset","control":"contrast"}]}
+{"group":"reset","text":"exposure default","expect":[{"op":"reset","control":"exposure"}]}
+{"group":"reset","text":"saturation reset","expect":[{"op":"reset","control":"saturation"}]}
+{"group":"reset","text":"reset all","expect":[{"op":"reset_all"}]}
+{"group":"reset","text":"reset everything","expect":[{"op":"reset_all"}]}
+{"group":"reset","text":"reset all please","expect":[{"op":"reset_all"}]}
+{"group":"reset","text":"reset","focus":"contrast","expect":[{"op":"reset"}]}
+{"group":"reset","text":"contrast to default","expect":[{"op":"reset","control":"contrast"}]}
+{"group":"synonyms","text":"brightness more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"synonyms","text":"bright up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"synonyms","text":"light up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"synonyms","text":"colour less","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"synonyms","text":"color more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"synonyms","text":"colours up","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"synonyms","text":"colors more more","expect":[{"op":"nudge","control":"saturation","steps":2}]}
+{"group":"synonyms","text":"vividness down","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"synonyms","text":"punch more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"synonyms","text":"brightness 0.5","expect":[{"op":"set","control":"exposure","value":0.5}]}
+{"group":"typos","text":"contrst more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"typos","text":"contast up","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"typos","text":"conrtast less","expect":[{"op":"nudge","control":"contrast","steps":-1}]}
+{"group":"typos","text":"kontrast more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"typos","text":"contr more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"typos","text":"saturaton less","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"typos","text":"satur up","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"typos","text":"saturatin 20","expect":[{"op":"set","control":"saturation","value":20}]}
+{"group":"typos","text":"saturashun more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"typos","text":"exposur more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"typos","text":"expsure down","expect":[{"op":"nudge","control":"exposure","steps":-1}]}
+{"group":"typos","text":"exposre 0.3","expect":[{"op":"set","control":"exposure","value":0.3}]}
+{"group":"mishears","text":"contest more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"mishears","text":"contracts more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"mishears","text":"con trust more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"mishears","text":"contrast moore","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"mishears","text":"contrast mower","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"mishears","text":"contrast more more mor","expect":[{"op":"nudge","control":"contrast","steps":3}]}
+{"group":"mishears","text":"saturday less","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"mishears","text":"saturation lass","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"mishears","text":"Saturation, Les.","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"mishears","text":"saturate more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"mishears","text":"exposer up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"mishears","text":"expo sure more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"near-names","text":"contrasts more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"near-names","text":"vibrance more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"near-names","text":"colorfulness up","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"near-names","text":"saturated more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"near-names","text":"lightness up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"near-names","text":"exposition more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"near-names","text":"punchiness more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"out-of-scope","text":"make it warmer","expect":[{"op":"unknown","word":"warmer"}]}
+{"group":"out-of-scope","text":"sharpen","expect":[{"op":"unknown","word":"sharpen"}]}
+{"group":"out-of-scope","text":"add a vignette","expect":[{"op":"unknown","word":"vignette"}]}
+{"group":"out-of-scope","text":"rotate left","expect":[{"op":"unknown","word":"rotate"},{"op":"unknown","word":"left"}]}
+{"group":"out-of-scope","text":"undo","expect":[{"op":"unknown","word":"undo"}]}
+{"group":"out-of-scope","text":"hello","expect":[{"op":"unknown","word":"hello"}]}
+{"group":"out-of-scope","text":"shadows more","expect":[{"op":"unknown","word":"shadows"}]}
+{"group":"out-of-scope","text":"highlights up","expect":[{"op":"unknown","word":"highlights"}]}
+{"group":"out-of-scope","text":"blur more","expect":[{"op":"unknown","word":"blur"}]}
+{"group":"out-of-scope","text":"temperature more","expect":[{"op":"unknown","word":"temperature"}]}
+{"group":"out-of-scope","text":"clarity up","expect":[{"op":"unknown","word":"clarity"}]}
+{"group":"out-of-scope","text":"noise reduction more","expect":[{"op":"unknown","word":"noise"},{"op":"unknown","word":"reduction"}]}

@@ -1,5 +1,5 @@
 import XCTest
-@testable import EditorCore
+@testable import CommandEngine
 
 final class CommandInterpreterTests: XCTestCase {
     private var registry: ControlRegistry!

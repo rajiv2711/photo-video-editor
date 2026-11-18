@@ -11,12 +11,12 @@ concurrency:
 
 jobs:
   core-tests:
-    name: EditorCore tests (Linux)
+    name: Command engine tests (Linux)
     runs-on: ubuntu-latest
     container: swift:6.2
     steps:
       - uses: actions/checkout@v4
-      - run: swift test --package-path EditorCore
+      - run: swift test --package-path command-engine
 
   ipa:
     name: Unsigned iPad app (.ipa)
@@ -25,12 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Generate Xcode project
-        run: brew install xcodegen && xcodegen generate
+        run: brew install xcodegen && xcodegen generate --spec ipad-app/project.yml
       - name: Build for iPad (unsigned)
         run: |
           command -v xcbeautify >/dev/null || brew install xcbeautify
           set -o pipefail
-          xcodebuild -project PhotoVideoEditor.xcodeproj -scheme PhotoVideoEditor \
+          xcodebuild -project ipad-app/PhotoVideoEditor.xcodeproj -scheme PhotoVideoEditor \
             -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
@@ -53,12 +53,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Generate Xcode project
-        run: brew install xcodegen && xcodegen generate
+        run: brew install xcodegen && xcodegen generate --spec ipad-app/project.yml
       - name: Build for iPad simulator
         run: |
           command -v xcbeautify >/dev/null || brew install xcbeautify
           set -o pipefail
-          xcodebuild -project PhotoVideoEditor.xcodeproj -scheme PhotoVideoEditor \
+          xcodebuild -project ipad-app/PhotoVideoEditor.xcodeproj -scheme PhotoVideoEditor \
             -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
             build | xcbeautify --renderer github-actions

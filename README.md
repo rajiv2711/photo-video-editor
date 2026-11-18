@@ -1,19 +1,39 @@
 # photo-video-editor
 
-A free iPad photo and video editor you can drive by name: type (and soon say)
-"contrast more, more, more", and the Contrast slider moves. Sliders stay for fine-tuning.
+A free iPad photo and video editor you can drive by name: type or say
+"contrast more, more, more" and the Contrast slider moves. Sliders stay for fine-tuning.
 
 Decisions: [DECISIONS.md](DECISIONS.md) · License: [MIT](LICENSE)
 
-## Layout
-- `EditorCore/`: Swift package with the control list (`controls.json`), command interpreter and name matcher. Builds and tests on Linux.
-- `App/`: the SwiftUI iPad app (Core Image sliders + command bar).
-- `project.yml`: XcodeGen spec; the cloud build generates the Xcode project from it.
-- `.github/workflows/build.yml`: Linux core tests → unsigned `.ipa` + iPad simulator screenshots.
+## What is where
 
-## Test the core on Linux
+| Folder | What it does |
+|---|---|
+| [`ipad-app/`](ipad-app) | The iPad app (SwiftUI): photo canvas, sliders, command bar. `project.yml` is the recipe the cloud build turns into an Xcode project. |
+| [`command-engine/`](command-engine) | Turns words into slider changes: the control list (`controls.json`), parser, name matcher. Used by the app; also builds and tests on Linux. |
+| [`command-engine/Sources/command-scorer/`](command-engine/Sources/command-scorer) | Scores the parser against the test phrases. |
+| [`test-data/photos/`](test-data/photos) | The test photo, used by the app as its default image and by the reports. |
+| [`test-data/phrases/`](test-data/phrases) | Test phrases with the commands each should produce (`commands.jsonl`). |
+| [`dev-tools/`](dev-tools) | Laptop scripts, e.g. `make_report.py` builds the HTML report. |
+| [`.github/workflows/`](.github/workflows) | Cloud build: Linux tests → unsigned `.ipa` + iPad simulator screenshots. |
+| `reports/`, `research_notes/` | Local only, git-ignored. |
+
+## How a command flows
+```
+"contrast more more more"
+   → parser (command-engine)  → {"op":"nudge","control":"contrast","steps":3}
+   → applier (command-engine) → Contrast 0 → 15
+   → PhotoRenderer (ipad-app) → Core Image redraws the photo
+```
+
+## Test on the laptop
 ```sh
-docker run --rm -v "$PWD":/src -w /src swift:6.2 swift test --package-path EditorCore
+# unit tests + parser score (Swift in Docker)
+docker run --rm -v "$PWD":/src -w /src swift:6.2 bash -c \
+  "swift test --package-path command-engine && \
+   swift run --package-path command-engine command-scorer test-data/phrases/commands.jsonl --out reports/parser/results.json"
+# HTML report with before/after photos
+python3 dev-tools/make_report.py reports/parser/results.json
 ```
 
 ## Install on the iPad (free Apple ID, no App Store)

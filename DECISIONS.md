@@ -17,7 +17,7 @@ Locked 2026-11-18.
 - Video: AVFoundation + VideoToolbox.
 - Pencil: PencilKit + Apple's touch APIs.
 - Voice: Apple on-device speech recognition → name matcher → `controls.json`; later a tiny model trained in Python.
-- Logic core (matcher, slider steps): plain Swift package `EditorCore`, built and tested on Linux.
+- Logic core (matcher, slider steps): Swift package `CommandEngine` in `command-engine/`, built and tested on Linux.
 - Python: prototyping and model training only.
 - FilmCraft / PhotoCraft (storytold): design references, not code dependencies.
 

@@ -1,19 +1,23 @@
-# XcodeGen spec. The cloud build turns this into PhotoVideoEditor.xcodeproj (not committed).
+# XcodeGen recipe for the iPad app. The cloud build runs `xcodegen generate --spec ipad-app/project.yml`,
+# which writes ipad-app/PhotoVideoEditor.xcodeproj (generated, not committed). Paths are relative to this folder.
 name: PhotoVideoEditor
 options:
   bundleIdPrefix: io.github.rajiv2711
   deploymentTarget:
     iOS: "17.0"
 packages:
-  EditorCore:
-    path: EditorCore
+  CommandEngine:
+    path: ../command-engine
 targets:
   PhotoVideoEditor:
     type: application
     platform: iOS
-    sources: [App]
+    sources:
+      - Sources
+      - path: ../test-data/photos/test.jpg
+        buildPhase: resources
     dependencies:
-      - package: EditorCore
+      - package: CommandEngine
     scheme: {}
     settings:
       base:

@@ -1,5 +1,5 @@
 import CoreImage
-import EditorCore
+import CommandEngine
 import SwiftUI
 import UIKit
 
@@ -28,9 +28,16 @@ final class EditorModel: ObservableObject {
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
         self.registry = registry
         self.interpreter = CommandInterpreter(registry: registry)
-        let sample = PhotoRenderer.sample()
-        self.original = sample
-        self.previewSource = PhotoRenderer.downscaled(sample, maxSide: 2048)
+        // Default picture: the committed test photo, or a generated gradient if it's missing.
+        let start: CIImage
+        if let url = Bundle.main.url(forResource: "test", withExtension: "jpg"),
+           let photo = CIImage(contentsOf: url, options: [.applyOrientationProperty: true]) {
+            start = photo
+        } else {
+            start = PhotoRenderer.sample()
+        }
+        self.original = start
+        self.previewSource = PhotoRenderer.downscaled(start, maxSide: 2048)
         render()
 
         // Launch argument used by the cloud build to screenshot a command's effect.
