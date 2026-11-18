@@ -1,0 +1,31 @@
+{
+  "controls": [
+    {
+      "id": "exposure",
+      "label": "Exposure",
+      "synonyms": ["brightness", "bright", "light", "exposer"],
+      "min": -3,
+      "max": 3,
+      "default": 0,
+      "step": 0.1
+    },
+    {
+      "id": "contrast",
+      "label": "Contrast",
+      "synonyms": ["punch", "contrasty"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
+      "id": "saturation",
+      "label": "Saturation",
+      "synonyms": ["color", "colour", "colors", "colours", "vividness"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    }
+  ]
+}

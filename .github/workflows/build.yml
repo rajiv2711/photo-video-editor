@@ -1,0 +1,88 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-tests:
+    name: EditorCore tests (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.2
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test --package-path EditorCore
+
+  ipa:
+    name: Unsigned iPad app (.ipa)
+    needs: core-tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode project
+        run: brew install xcodegen && xcodegen generate
+      - name: Build for iPad (unsigned)
+        run: |
+          command -v xcbeautify >/dev/null || brew install xcbeautify
+          set -o pipefail
+          xcodebuild -project PhotoVideoEditor.xcodeproj -scheme PhotoVideoEditor \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | xcbeautify --renderer github-actions
+      - name: Package .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/PhotoVideoEditor.app Payload/
+          zip -qry PhotoVideoEditor.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhotoVideoEditor-ipa
+          path: PhotoVideoEditor.ipa
+          retention-days: 30
+
+  screenshots:
+    name: iPad simulator screenshots
+    needs: core-tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode project
+        run: brew install xcodegen && xcodegen generate
+      - name: Build for iPad simulator
+        run: |
+          command -v xcbeautify >/dev/null || brew install xcbeautify
+          set -o pipefail
+          xcodebuild -project PhotoVideoEditor.xcodeproj -scheme PhotoVideoEditor \
+            -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
+            build | xcbeautify --renderer github-actions
+      - name: Launch on an iPad simulator and screenshot
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          print(next(d["udid"] for runtime, ds in devices.items() if "iOS" in runtime for d in ds if "iPad" in d["name"]))')
+          echo "Simulator: $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/PhotoVideoEditor.app
+          APP=io.github.rajiv2711.photovideoeditor
+          mkdir -p screenshots
+          xcrun simctl launch "$UDID" "$APP"
+          sleep 10
+          xcrun simctl io "$UDID" screenshot screenshots/1-start.png
+          xcrun simctl terminate "$UDID" "$APP"
+          xcrun simctl launch "$UDID" "$APP" -demoCommand "contrast max saturation 60 exposure 0.5"
+          sleep 10
+          xcrun simctl io "$UDID" screenshot screenshots/2-after-command.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipad-screenshots
+          path: screenshots
+          retention-days: 30
