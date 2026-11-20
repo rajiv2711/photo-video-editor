@@ -44,7 +44,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 29. **Toning** — sepia, duotone, tritone
 - [x] 30. **Channel mixer** — rebuild each RGB channel from the others
 - [x] 31. **Selective color** — CMYK shifts inside one colour family
-- [ ] 32. **Photo filter** — warming or cooling coloured filter
+- [x] 32. **Photo filter** — warming or cooling coloured filter
 - [ ] 33. **Gradient map** — map dark→light tones onto a colour gradient
 - [ ] 34. **Match color** — copy the colour mood of another photo
 - [ ] 35. **LUT** — apply .cube / .3dl colour lookup tables

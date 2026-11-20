@@ -405,4 +405,22 @@ final class ColorTests: XCTestCase {
         let lighter = ColorLook.transform(RGB(0.1, 0.1, 0.1), look(["selectiveBlacksBlack": -100]))
         XCTAssertGreaterThan(lighter.r, 0.1)
     }
+
+    // MARK: - Photo filter
+
+    func testPhotoFilterOptionsMatchControlsJSON() {
+        XCTAssertEqual(options("photoFilter"), ColorLook.photoFilterOptions)
+        XCTAssertEqual(parse("photo filter cooling"), [.set("photoFilter", 2)])
+        XCTAssertEqual(parse("density 50"), [.set("photoFilterDensity", 50)])
+    }
+
+    func testWarmingFilterWarmsAndKeepsBrightness() {
+        let grey = RGB(0.5, 0.5, 0.5)
+        let warm = ColorLook.transform(grey, look(["photoFilter": 1]))
+        XCTAssertGreaterThan(warm.r, warm.b)
+        assertClose(warm.luma, 0.5, 1e-9)
+        let stronger = ColorLook.transform(grey, look(["photoFilter": 1, "photoFilterDensity": 100]))
+        XCTAssertGreaterThan(stronger.r - stronger.b, warm.r - warm.b)
+        XCTAssertTrue(ColorLook.isIdentity { $0 == "photoFilterDensity" ? 80 : nil })
+    }
 }

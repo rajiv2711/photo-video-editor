@@ -447,3 +447,10 @@
 {"group":"color","text":"reset blacks yellow","expect":[{"op":"reset","control":"selectiveBlacksYellow"}]}
 {"group":"color","text":"blacks black -15","expect":[{"op":"set","control":"selectiveBlacksBlack","value":-15}]}
 {"group":"color","text":"selective blacks black down","expect":[{"op":"nudge","control":"selectiveBlacksBlack","steps":-1}]}
+{"group":"color","text":"photo filter warming","expect":[{"op":"set","control":"photoFilter","value":1}]}
+{"group":"color","text":"photo filter cool","expect":[{"op":"set","control":"photoFilter","value":2}]}
+{"group":"color","text":"lens filter underwater","expect":[{"op":"set","control":"photoFilter","value":12}]}
+{"group":"color","text":"photo filter off","expect":[{"op":"set","control":"photoFilter","value":0}]}
+{"group":"color","text":"filter density 60","expect":[{"op":"set","control":"photoFilterDensity","value":60}]}
+{"group":"color","text":"density up","expect":[{"op":"nudge","control":"photoFilterDensity","steps":1}]}
+{"group":"color","text":"photo filter sepia density 40","expect":[{"op":"set","control":"photoFilter","value":11},{"op":"set","control":"photoFilterDensity","value":40}]}

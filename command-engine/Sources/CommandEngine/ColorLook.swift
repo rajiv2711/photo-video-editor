@@ -57,12 +57,13 @@ public enum ColorLook {
     /// Control ids that feed the cube, in the order the steps run.
     public static let controlIDs: [String] = [
         calibrationIDs, mixerIDs, pointIDs, bwIDs, gradingIDs, selectiveIDs, channelIDs, ["toning", "toningAmount"],
+        ["photoFilter", "photoFilterDensity"],
     ].flatMap { $0 }
 
     /// Controls that only say how another control acts (which hue, how wide): on their own they
     /// change nothing, so they don't count when deciding whether the cube is needed.
     static let modifierIDs: Set<String> = Set([
-        ["pointHue", "pointRange", "gradingBlending", "gradingBalance", "toningAmount"],
+        ["pointHue", "pointRange", "gradingBlending", "gradingBalance", "toningAmount", "photoFilterDensity"],
         gradingZones.map { "grading" + $0 + "Hue" },
         Array(bwIDs.dropFirst()),
     ].flatMap { $0 })
@@ -71,6 +72,7 @@ public enum ColorLook {
     public static func neutral(_ id: String) -> Double {
         switch id {
         case "pointRange", "gradingBlending": return 50
+        case "photoFilterDensity": return 25
         case "toningAmount", "channelRedFromRed", "channelGreenFromGreen", "channelBlueFromBlue": return 100
         default: return 0
         }
@@ -149,6 +151,7 @@ public enum ColorLook {
         c = selectiveColor(c, v)
         c = channelMixer(c, v)
         c = toning(c, v)
+        c = photoFilter(c, v)
         return c
     }
 
@@ -416,6 +419,33 @@ public enum ColorLook {
             return c0.mixed(with: c1, (t - p0) / (p1 - p0))
         }
         return last.1
+    }
+
+    // MARK: - Photo filter
+
+    /// Option ids of the Photo Filter choice (controls.json order) and their colours (Photoshop's).
+    public static let photoFilterOptions = ["none", "warming", "cooling", "red", "orange", "yellow", "green", "cyan",
+                                            "blue", "violet", "magenta", "sepia", "underwater"]
+    static let photoFilterColors: [String: RGB] = [
+        "warming": hex(0xEC8A00), "cooling": hex(0x006DFF), "red": hex(0xEA1A1A), "orange": hex(0xF38417),
+        "yellow": hex(0xF9E31C), "green": hex(0x19C919), "cyan": hex(0x1DCBEA), "blue": hex(0x1D35EA),
+        "violet": hex(0x9B1DEA), "magenta": hex(0xE318E3), "sepia": hex(0xAC7A33), "underwater": hex(0x00C1B1),
+    ]
+
+    /// A coloured filter in front of the lens: the photo multiplied by the filter colour, mixed in by
+    /// Density (0…100 %), with the brightness kept as it was.
+    static func photoFilter(_ color: RGB, _ v: Values) -> RGB {
+        let index = Int(v["photoFilter"])
+        guard photoFilterOptions.indices.contains(index), let filter = photoFilterColors[photoFilterOptions[index]] else {
+            return color
+        }
+        let filtered = color.mixed(with: color * filter, v["photoFilterDensity"] / 100)
+        let luma = filtered.luma
+        return luma > 1e-6 ? filtered * (color.luma / luma) : filtered
+    }
+
+    static func hex(_ value: Int) -> RGB {
+        RGB(Double((value >> 16) & 0xFF) / 255, Double((value >> 8) & 0xFF) / 255, Double(value & 0xFF) / 255)
     }
 
     // MARK: - Colour helpers

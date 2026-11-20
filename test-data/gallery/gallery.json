@@ -165,6 +165,9 @@
     {"id": "selective-blacks-magenta", "command": "blacks magenta -100", "source": "chart", "control": "selectiveBlacksMagenta", "expect": [{"metric": "mean_g", "dir": "up", "vs": "chart"}]},
     {"id": "selective-blacks-yellow", "command": "blacks yellow -100", "source": "chart", "control": "selectiveBlacksYellow", "expect": [{"metric": "mean_b", "dir": "up", "vs": "chart"}]},
     {"id": "selective-blacks-black", "command": "blacks black -100", "source": "chart", "control": "selectiveBlacksBlack", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "chart"}]},
+    {"id": "photo-filter-warming", "command": "photo filter warming", "control": "photoFilter", "expect": [{"metric": "mean_b", "dir": "down"}, {"metric": "mean_r", "dir": "up"}]},
+    {"id": "photo-filter-cooling", "command": "photo filter cooling", "control": "photoFilter", "expect": [{"metric": "mean_b", "dir": "up"}, {"metric": "mean_r", "dir": "down"}]},
+    {"id": "photo-filter-density", "command": "photo filter warming filter density 100", "control": "photoFilterDensity", "expect": [{"metric": "mean_b", "dir": "down", "vs": "photo-filter-warming"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]
