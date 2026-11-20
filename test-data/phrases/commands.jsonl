@@ -314,3 +314,18 @@
 {"group":"color","text":"shadows 20 shadows hue 220","expect":[{"op":"set","control":"shadows","value":20},{"op":"set","control":"gradingShadowsHue","value":220}]}
 {"group":"color","text":"highlights down highlights saturation 30","expect":[{"op":"nudge","control":"highlights","steps":-1},{"op":"set","control":"gradingHighlightsSaturation","value":30}]}
 {"group":"color","text":"shadow sat 40","expect":[{"op":"set","control":"gradingShadowsSaturation","value":40}]}
+{"group":"color","text":"shadows tint 20","expect":[{"op":"set","control":"calibrationShadowsTint","value":20}]}
+{"group":"color","text":"calibration shadows down","expect":[{"op":"nudge","control":"calibrationShadowsTint","steps":-1}]}
+{"group":"color","text":"tint 10 shadows tint -10","expect":[{"op":"set","control":"tint","value":10},{"op":"set","control":"calibrationShadowsTint","value":-10}]}
+{"group":"color","text":"red primary hue 30","expect":[{"op":"set","control":"calibrationRedHue","value":30}]}
+{"group":"color","text":"reset red primary hue","expect":[{"op":"reset","control":"calibrationRedHue"}]}
+{"group":"color","text":"red primary saturation 40","expect":[{"op":"set","control":"calibrationRedSaturation","value":40}]}
+{"group":"color","text":"calibration red saturation up","expect":[{"op":"nudge","control":"calibrationRedSaturation","steps":1}]}
+{"group":"color","text":"green primary hue -20","expect":[{"op":"set","control":"calibrationGreenHue","value":-20}]}
+{"group":"color","text":"more green primary hue","expect":[{"op":"nudge","control":"calibrationGreenHue","steps":1}]}
+{"group":"color","text":"green primary saturation 15","expect":[{"op":"set","control":"calibrationGreenSaturation","value":15}]}
+{"group":"color","text":"green primary sat down","expect":[{"op":"nudge","control":"calibrationGreenSaturation","steps":-1}]}
+{"group":"color","text":"blue primary hue 25","expect":[{"op":"set","control":"calibrationBlueHue","value":25}]}
+{"group":"color","text":"calibration blue hue less","expect":[{"op":"nudge","control":"calibrationBlueHue","steps":-1}]}
+{"group":"color","text":"blue primary saturation 50","expect":[{"op":"set","control":"calibrationBlueSaturation","value":50}]}
+{"group":"color","text":"reset blue primary saturation","expect":[{"op":"reset","control":"calibrationBlueSaturation"}]}

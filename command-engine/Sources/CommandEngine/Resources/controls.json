@@ -438,6 +438,20 @@
     {"id": "gradingBlending", "label": "Blending", "group": "color", "section": "Color grading", "kind": "slider",
       "synonyms": ["grading blending", "blend"], "min": 0, "max": 100, "default": 50, "step": 5},
     {"id": "gradingBalance", "label": "Balance", "group": "color", "section": "Color grading", "kind": "slider",
-      "synonyms": ["grading balance"], "min": -100, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["grading balance"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "calibrationShadowsTint", "label": "Shadows Tint", "group": "color", "section": "Calibration", "kind": "slider",
+      "synonyms": ["shadow tint", "calibration shadows", "calibration tint", "calibration shadows tint"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "calibrationRedHue", "label": "Red Primary Hue", "group": "color", "section": "Calibration", "kind": "slider",
+      "synonyms": ["calibration red hue", "red primary"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "calibrationRedSaturation", "label": "Red Primary Saturation", "group": "color", "section": "Calibration", "kind": "slider",
+      "synonyms": ["calibration red saturation", "red primary sat"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "calibrationGreenHue", "label": "Green Primary Hue", "group": "color", "section": "Calibration", "kind": "slider",
+      "synonyms": ["calibration green hue", "green primary"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "calibrationGreenSaturation", "label": "Green Primary Saturation", "group": "color", "section": "Calibration", "kind": "slider",
+      "synonyms": ["calibration green saturation", "green primary sat"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "calibrationBlueHue", "label": "Blue Primary Hue", "group": "color", "section": "Calibration", "kind": "slider",
+      "synonyms": ["calibration blue hue", "blue primary"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "calibrationBlueSaturation", "label": "Blue Primary Saturation", "group": "color", "section": "Calibration", "kind": "slider",
+      "synonyms": ["calibration blue saturation", "blue primary sat"], "min": -100, "max": 100, "default": 0, "step": 5}
   ]
 }

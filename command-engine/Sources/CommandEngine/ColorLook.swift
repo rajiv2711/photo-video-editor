@@ -32,8 +32,13 @@ public enum ColorLook {
     public static let gradingIDs = gradingZones.flatMap { zone in mixerProperties.map { "grading" + zone + $0 } }
         + ["gradingBlending", "gradingBalance"]
 
+    /// Calibration: hue and saturation of the red, green and blue primaries, and a shadow tint.
+    public static let calibrationIDs = ["calibrationShadowsTint"]
+        + ["Red", "Green", "Blue"].flatMap { ["calibration" + $0 + "Hue", "calibration" + $0 + "Saturation"] }
+
     /// Control ids that feed the cube.
-    public static let controlIDs: [String] = mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
+    public static let controlIDs: [String] = calibrationIDs
+        + mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
         + pointIDs + gradingIDs
 
     /// Controls that only say how another control acts (which hue, how wide): on their own they
@@ -57,11 +62,14 @@ public enum ColorLook {
     /// The current values of the cube's controls.
     public struct Values {
         let values: [String: Double]
+        /// Worked out once per cube, not per colour.
+        var calibration = ColorLook.identity3
 
         public init(_ value: (String) -> Double?) {
             var snapshot: [String: Double] = [:]
             for id in ColorLook.controlIDs { snapshot[id] = value(id) ?? ColorLook.neutral(id) }
             values = snapshot
+            calibration = ColorLook.calibrationMatrix(self)
         }
 
         subscript(_ id: String) -> Double { values[id] ?? ColorLook.neutral(id) }
@@ -89,10 +97,69 @@ public enum ColorLook {
 
     /// Every cube step, in order, for one colour (sRGB levels).
     public static func transform(_ color: RGB, _ v: Values) -> RGB {
-        var c = mixer(color, v)
+        var c = calibration(color, v)
+        c = mixer(c, v)
         c = pointColor(c, v)
         c = grading(c, v)
         return c
+    }
+
+    // MARK: - Calibration
+
+    /// Moves the red, green and blue primaries (Lightroom's Calibration), in linear light: Hue ±100
+    /// turns a primary by up to 30° (red towards yellow or magenta, green towards aqua or yellow,
+    /// blue towards purple or aqua); Saturation −100…100 takes its colour out or doubles it.
+    /// White stays white. Shadows Tint adds magenta (+) or green (−) to the dark tones.
+    static func calibration(_ color: RGB, _ v: Values) -> RGB {
+        var out = color
+        let m = v.calibration
+        if m != identity3 {
+            let lin = out.linear
+            out = RGB(m[0][0] * lin.r + m[0][1] * lin.g + m[0][2] * lin.b,
+                      m[1][0] * lin.r + m[1][1] * lin.g + m[1][2] * lin.b,
+                      m[2][0] * lin.r + m[2][1] * lin.g + m[2][2] * lin.b).encoded
+        }
+        let tint = v["calibrationShadowsTint"] / 100
+        if tint != 0 {
+            let w = (1 - smoothstep(0, 0.5, out.luma)) * 0.08 * tint
+            out = out + RGB(0.5 * w, -w, 0.5 * w)
+        }
+        return out
+    }
+
+    static let identity3: [[Double]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+
+    /// The 3 × 3 matrix whose columns are the moved primaries; each row adds up to 1 (white stays).
+    public static func calibrationMatrix(_ v: Values) -> [[Double]] {
+        let names = ["Red", "Green", "Blue"]
+        guard names.contains(where: { v["calibration" + $0 + "Hue"] != 0 || v["calibration" + $0 + "Saturation"] != 0 }) else {
+            return identity3
+        }
+        var m = identity3
+        for (j, name) in names.enumerated() {
+            let angle = v["calibration" + name + "Hue"] / 100 * 30 * .pi / 180
+            let scale = 1 + v["calibration" + name + "Saturation"] / 100
+            // The primary = a grey part (1/3 each) + a colour part; turn the colour part about the grey axis.
+            var q = [-1.0 / 3, -1.0 / 3, -1.0 / 3]
+            q[j] += 1
+            let rotated = rotateAboutGrey(q, angle)
+            for i in 0..<3 { m[i][j] = 1.0 / 3 + scale * rotated[i] }
+        }
+        for i in 0..<3 {
+            let excess = (m[i][0] + m[i][1] + m[i][2] - 1) / 3
+            for j in 0..<3 { m[i][j] -= excess }
+        }
+        return m
+    }
+
+    /// Rotates a vector about the grey axis (1, 1, 1) by an angle (radians); positive turns red towards green.
+    static func rotateAboutGrey(_ v: [Double], _ angle: Double) -> [Double] {
+        let k = 1 / 3.0.squareRoot()
+        let n = [k, k, k]
+        let c = cos(angle), s = sin(angle)
+        let dot = n[0] * v[0] + n[1] * v[1] + n[2] * v[2]
+        let cross = [n[1] * v[2] - n[2] * v[1], n[2] * v[0] - n[0] * v[2], n[0] * v[1] - n[1] * v[0]]
+        return (0..<3).map { v[$0] * c + cross[$0] * s + n[$0] * dot * (1 - c) }
     }
 
     // MARK: - Color mixer

@@ -266,4 +266,34 @@ final class ColorTests: XCTestCase {
         XCTAssertGreaterThan(blended, plain)
         XCTAssertTrue(ColorLook.isIdentity { $0 == "gradingShadowsHue" ? 200 : $0 == "gradingBlending" ? 80 : nil })
     }
+
+    // MARK: - Calibration
+
+    func testCalibrationKeepsWhiteAndGrey() {
+        let v = look(["calibrationRedHue": 100, "calibrationGreenSaturation": -60, "calibrationBlueHue": -40])
+        let m = ColorLook.calibrationMatrix(v)
+        for row in m { assertClose(row.reduce(0, +), 1, 1e-9) }
+        let white = ColorLook.transform(RGB(1, 1, 1), v)
+        assertClose(white.r, 1, 1e-6)
+        assertClose(white.b, 1, 1e-6)
+        let grey = ColorLook.transform(RGB(0.5, 0.5, 0.5), v)
+        assertClose(grey.g, 0.5, 1e-6)
+    }
+
+    func testRedPrimaryHueTurnsRedTowardsYellow() {
+        let red = RGB(0.8, 0.1, 0.1)
+        let turned = ColorLook.transform(red, look(["calibrationRedHue": 100]))
+        XCTAssertGreaterThan(ColorLook.hsl(turned).h, 5)
+        XCTAssertLessThan(ColorLook.hsl(turned).h, 60)
+        let desaturated = ColorLook.transform(red, look(["calibrationRedSaturation": -100]))
+        XCTAssertLessThan(desaturated.max - desaturated.min, red.max - red.min)
+    }
+
+    func testShadowsTintIsMagentaInTheDarks() {
+        let dark = ColorLook.transform(RGB(0.1, 0.1, 0.1), look(["calibrationShadowsTint": 100]))
+        XCTAssertLessThan(dark.g, dark.r)
+        XCTAssertEqual(ColorLook.transform(RGB(0.9, 0.9, 0.9), look(["calibrationShadowsTint": 100])), RGB(0.9, 0.9, 0.9))
+        XCTAssertEqual(parse("shadows tint 30"), [.set("calibrationShadowsTint", 30)])
+        XCTAssertEqual(parse("tint 30"), [.set("tint", 30)])
+    }
 }

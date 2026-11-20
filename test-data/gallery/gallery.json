@@ -99,6 +99,13 @@
     {"id": "grading-global-lum", "command": "global luminance 100", "control": "gradingGlobalLuminance", "expect": [{"metric": "mean_luma", "dir": "up"}]},
     {"id": "grading-blending", "command": "shadows saturation 80 blending 100", "control": "gradingBlending", "expect": [{"metric": "mean_r", "dir": "up", "vs": "grading-shadows-sat", "min": 0.5}]},
     {"id": "grading-balance", "command": "shadows saturation 80 balance -100", "control": "gradingBalance", "expect": [{"metric": "mean_r", "dir": "up", "vs": "grading-shadows-sat", "min": 0.5}]},
+    {"id": "calibration-shadows-tint", "command": "shadows tint 100", "control": "calibrationShadowsTint", "expect": [{"metric": "mean_g", "dir": "down"}]},
+    {"id": "calibration-red-hue", "command": "red primary hue 100", "source": "chart", "control": "calibrationRedHue", "expect": [{"metric": "diff", "dir": "changed", "vs": "chart"}]},
+    {"id": "calibration-red-sat", "command": "red primary saturation -100", "source": "chart", "control": "calibrationRedSaturation", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "calibration-green-hue", "command": "green primary hue 100", "source": "chart", "control": "calibrationGreenHue", "expect": [{"metric": "diff", "dir": "changed", "vs": "chart"}]},
+    {"id": "calibration-green-sat", "command": "green primary saturation -100", "source": "chart", "control": "calibrationGreenSaturation", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "calibration-blue-hue", "command": "blue primary hue 100", "source": "chart", "control": "calibrationBlueHue", "expect": [{"metric": "diff", "dir": "changed", "vs": "chart"}]},
+    {"id": "calibration-blue-sat", "command": "blue primary saturation -100", "source": "chart", "control": "calibrationBlueSaturation", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

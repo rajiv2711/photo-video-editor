@@ -39,7 +39,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 24. **Point color** — pick one exact colour and shift it, with a range
 - [x] 25. **Variance** — even out uneven shades of one colour (e.g. skin)
 - [x] 26. **Color grading** — tint shadows, midtones, highlights; blending and balance
-- [ ] 27. **Calibration** — shift the red/green/blue primaries and shadow tint
+- [x] 27. **Calibration** — shift the red/green/blue primaries and shadow tint
 - [ ] 28. **Black & white** — monochrome with a per-colour brightness mix
 - [ ] 29. **Toning** — sepia, duotone, tritone
 - [ ] 30. **Channel mixer** — rebuild each RGB channel from the others
