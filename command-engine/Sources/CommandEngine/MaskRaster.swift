@@ -67,10 +67,14 @@ public enum MaskRaster {
         }
     }
 
-    /// The whole mask: its parts joined in order, then refined.
+    /// The whole mask: its parts joined in order, then refined, then inverted if Invert Mask is on.
     public static func render(_ mask: Mask, width: Int, height: Int, pixels: PixelGrid?) -> [Float] {
         let parts = mask.components.map { (part($0, width: width, height: height, pixels: pixels), $0.mode) }
-        return combine(parts, count: width * height)
+        var out = combine(parts, count: width * height)
+        if (mask.settings["maskInvert"] ?? 0) != 0 {
+            for i in out.indices { out[i] = 1 - out[i] }
+        }
+        return out
     }
 
     /// Joins parts in order: add keeps the larger value, subtract takes the part away

@@ -834,6 +834,23 @@
     {"id": "luminanceRangeSmooth", "label": "Luminance Range Smoothness", "group": "masks", "section": "Luminance range", "kind": "slider",
       "scope": "component", "component": "luminanceRange",
       "synonyms": ["luminance range smooth", "range smoothness", "luminance smoothness", "brightness range smoothness"],
-      "min": 0, "max": 100, "default": 50, "step": 5}
+      "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "duplicateMask", "label": "Duplicate Mask", "group": "masks", "kind": "action",
+      "synonyms": ["copy mask", "mask duplicate", "clone mask", "mask copy"]},
+    {"id": "maskInvert", "label": "Invert Mask", "group": "masks", "section": "Mask", "kind": "toggle", "scope": "mask",
+      "synonyms": ["mask invert", "inverse mask", "invert selection", "inverse selection", "inverted mask"]},
+    {"id": "maskComponent", "label": "Component", "group": "masks", "kind": "slider", "scope": "mask",
+      "synonyms": ["mask component", "components", "part", "mask part", "component number"], "min": 1, "max": 20, "default": 1, "step": 1},
+    {"id": "componentMode", "label": "Component Mode", "group": "masks", "section": "Component", "kind": "choice", "scope": "component",
+      "synonyms": ["part mode", "component join", "mask mode"],
+      "options": [
+        {"id": "add", "label": "Add", "synonyms": ["plus", "union"]},
+        {"id": "subtract", "label": "Subtract", "synonyms": ["minus", "remove"]},
+        {"id": "intersect", "label": "Intersect", "synonyms": ["intersection", "overlap"]}
+      ]},
+    {"id": "invertComponent", "label": "Invert Component", "group": "masks", "section": "Component", "kind": "toggle", "scope": "component",
+      "synonyms": ["component invert", "invert part", "outside", "invert gradient", "inverted component"]},
+    {"id": "deleteComponent", "label": "Delete Component", "group": "masks", "kind": "action",
+      "synonyms": ["remove component", "delete part", "remove part", "component delete"]}
   ]
 }

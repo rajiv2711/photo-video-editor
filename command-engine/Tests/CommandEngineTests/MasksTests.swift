@@ -506,3 +506,81 @@ final class LuminanceRangeTests: XCTestCase {
         XCTAssertTrue(MaskPresets.luminanceRange(around: 5) == (0, 20))
     }
 }
+
+/// Mask math: parts joined by add, subtract, intersect; inverting; duplicating; parts selected and deleted.
+final class MaskMathTests: XCTestCase {
+    private var registry: ControlRegistry!
+    private var interpreter: CommandInterpreter!
+    private var state = EditState()
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+        interpreter = CommandInterpreter(registry: registry)
+    }
+
+    private func parse(_ text: String) -> [Command] {
+        CommandParser(registry: registry).parse(text)
+    }
+
+    @discardableResult
+    private func run(_ text: String) -> [CommandOutcome] {
+        interpreter.interpret(text, state: &state)
+    }
+
+    func testModeWordsBeforeAPart() {
+        XCTAssertEqual(parse("add radial gradient"), [.run("radialGradient", value: nil, mode: "add")])
+        XCTAssertEqual(parse("intersect linear gradient from left"), [.run("linearGradient", value: 2, mode: "intersect")])
+        XCTAssertEqual(parse("subtract a brush"), [.run("brushMask", value: nil, mode: "subtract")])
+        XCTAssertEqual(parse("invert mask"), [.set("maskInvert", 1)])
+        XCTAssertEqual(parse("invert"), [.set("invert", 1)], "invert alone is still the photo negative")
+        XCTAssertEqual(parse("component 2"), [.set("maskComponent", 2)])
+        XCTAssertEqual(parse("component mode subtract"), [.set("componentMode", 1)])
+        XCTAssertEqual(parse("outside"), [.set("invertComponent", 1)])
+        XCTAssertEqual(parse("duplicate mask"), [.run("duplicateMask")])
+        XCTAssertEqual(parse("delete component"), [.run("deleteComponent")])
+    }
+
+    func testPartsJoinTheSelectedMask() {
+        run("linear gradient from top")
+        XCTAssertEqual(run("subtract radial gradient center"),
+                       [.ran(controlID: "radialGradient"), .masked(mask: 1, event: .added("radial", .subtract))])
+        XCTAssertEqual(state.masks.count, 1)
+        XCTAssertEqual(state.masks[0].components.map(\.kind), ["linear", "radial"])
+        XCTAssertEqual(state.masks[0].components[1].mode, .subtract)
+        XCTAssertEqual(state.masks[0].selectedComponent, 1)
+        run("done")
+        XCTAssertEqual(run("intersect brush"), [.needsMask(controlID: "brushMask")], "nothing to intersect with")
+        XCTAssertEqual(run("add brush"), [.ran(controlID: "brushMask"), .masked(mask: 2, event: .created("brush"))],
+                       "add with no mask selected makes one")
+    }
+
+    func testSelectingAndDeletingParts() {
+        run("linear gradient from top add radial gradient center")
+        XCTAssertEqual(run("component 1"), [.changedInMask(mask: 1, controlID: "maskComponent", from: 2, to: 1)])
+        XCTAssertEqual(run("component mode intersect"), [.changedInMask(mask: 1, controlID: "componentMode", from: 0, to: 2)])
+        XCTAssertEqual(state.masks[0].components[0].mode, .intersect)
+        XCTAssertEqual(run("component 9"), [.changedInMask(mask: 1, controlID: "maskComponent", from: 1, to: 2)], "only parts that exist")
+        XCTAssertEqual(run("delete component"), [.ran(controlID: "deleteComponent"), .masked(mask: 1, event: .partDeleted)])
+        XCTAssertEqual(state.masks[0].components.map(\.kind), ["linear"])
+        XCTAssertEqual(run("delete component"), [.ran(controlID: "deleteComponent"), .masked(mask: 1, event: .deleted)],
+                       "the last part takes its mask with it")
+        XCTAssertTrue(state.masks.isEmpty)
+    }
+
+    func testInvertAndDuplicate() {
+        run("radial gradient center exposure 1 invert mask")
+        XCTAssertEqual(state.masks[0].settings["maskInvert"], 1)
+        XCTAssertEqual(run("duplicate mask"), [.ran(controlID: "duplicateMask"), .masked(mask: 2, event: .duplicated(from: 1))])
+        XCTAssertEqual(state.masks[1], state.masks[0])
+        XCTAssertEqual(state.selectedMask, 1)
+
+        let w = 40, h = 40
+        let full = MaskRaster.render(state.masks[0], width: w, height: h, pixels: nil)
+        XCTAssertEqual(full[20 * w + 20], 0, accuracy: 1e-6, "inverted: nothing in the middle")
+        XCTAssertEqual(full[0], 1, accuracy: 1e-6, "everything outside")
+        var part = state.masks[0]
+        part.settings["maskInvert"] = 0
+        part.components[0].values["invertComponent"] = 1
+        XCTAssertEqual(MaskRaster.render(part, width: w, height: h, pixels: nil), full, "a part's invert gives the same here")
+    }
+}

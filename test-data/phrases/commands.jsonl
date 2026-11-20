@@ -641,3 +641,18 @@
 {"group":"masks","text":"range high down","expect":[{"op":"nudge","control":"luminanceRangeHigh","steps":-1}]}
 {"group":"masks","text":"luminance range smoothness 70","expect":[{"op":"set","control":"luminanceRangeSmooth","value":70}]}
 {"group":"masks","text":"range smoothness less","expect":[{"op":"nudge","control":"luminanceRangeSmooth","steps":-1}]}
+{"group":"masks","text":"add radial gradient","expect":[{"op":"run","control":"radialGradient","mode":"add"}]}
+{"group":"masks","text":"intersect linear gradient from left","expect":[{"op":"run","control":"linearGradient","value":2,"mode":"intersect"}]}
+{"group":"masks","text":"subtract a brush","expect":[{"op":"run","control":"brushMask","mode":"subtract"}]}
+{"group":"masks","text":"duplicate mask","expect":[{"op":"run","control":"duplicateMask"}]}
+{"group":"masks","text":"copy mask","expect":[{"op":"run","control":"duplicateMask"}]}
+{"group":"masks","text":"invert mask","expect":[{"op":"set","control":"maskInvert","value":1}]}
+{"group":"masks","text":"mask invert off","expect":[{"op":"set","control":"maskInvert","value":0}]}
+{"group":"masks","text":"invert component","expect":[{"op":"set","control":"invertComponent","value":1}]}
+{"group":"masks","text":"outside","expect":[{"op":"set","control":"invertComponent","value":1}]}
+{"group":"masks","text":"component 2","expect":[{"op":"set","control":"maskComponent","value":2}]}
+{"group":"masks","text":"component more","expect":[{"op":"nudge","control":"maskComponent","steps":1}]}
+{"group":"masks","text":"component mode subtract","expect":[{"op":"set","control":"componentMode","value":1}]}
+{"group":"masks","text":"part mode intersect","expect":[{"op":"set","control":"componentMode","value":2}]}
+{"group":"masks","text":"delete component","expect":[{"op":"run","control":"deleteComponent"}]}
+{"group":"masks","text":"remove part","expect":[{"op":"run","control":"deleteComponent"}]}

@@ -102,7 +102,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 73. **Color range mask** — select by sampled colour
 - [x] 74. **Luminance range mask** — select by brightness range
 - [ ] 75. **Depth range mask** — select by distance (depth map) **AI · later**
-- [ ] 76. **Mask math** — add, subtract, intersect, invert, duplicate masks
+- [x] 76. **Mask math** — add, subtract, intersect, invert, duplicate masks
 - [ ] 77. **Mask refine** — feather, edge, smooth, expand/contract; hair-fine edges
 - [ ] 78. **Mask overlay** — show the mask as a coloured overlay
 - [ ] 79. **Local adjustments** — any slider (incl. colour grading) inside a mask

@@ -66,9 +66,46 @@ struct MasksPanel: View {
         .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 10))
     }
 
-    /// The selected mask: its part's settings, the brush, the mask's settings and the local sliders.
+    /// The selected mask: its parts (tap one to edit it), menus to add, subtract or intersect a
+    /// part, the selected part's settings, the brush, the mask's settings and the local sliders.
     @ViewBuilder
     private func selected(_ mask: Mask) -> some View {
+        Text("Components").font(.subheadline.weight(.semibold))
+        ForEach(Array(mask.components.enumerated()), id: \.offset) { item in
+            let isSelected = item.offset == mask.selectedComponent
+            Button {
+                model.apply([.set(EditState.componentSelectorID, Double(item.offset + 1))])
+            } label: {
+                HStack {
+                    Text("\(item.offset + 1). \(model.label(ofPart: item.element.kind))")
+                    Spacer()
+                    Text(item.element.mode.rawValue + (item.element.inverted ? ", inverted" : ""))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .fontWeight(isSelected ? .semibold : .regular)
+            }
+            .buttonStyle(.plain)
+            .padding(8)
+            .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        }
+        HStack {
+            ForEach(MaskComponent.Mode.allCases, id: \.self) { mode in
+                Menu(mode.rawValue.capitalized) {
+                    ForEach(makers) { maker in
+                        Button(maker.label) { model.apply([.run(maker.id, value: nil, mode: mode.rawValue)]) }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+        HStack {
+            Button("Duplicate mask") { model.apply([.run("duplicateMask")]) }
+            Button("Delete component", role: .destructive) { model.apply([.run("deleteComponent")]) }
+        }
+        .buttonStyle(.bordered)
+        .font(.footnote)
+        .padding(.horizontal, 10)
         if let part = mask.component {
             if let hint = EditorModel.hints[part.kind] {
                 Text(hint.prefix(1).uppercased() + hint.dropFirst() + ".")
@@ -82,7 +119,7 @@ struct MasksPanel: View {
                 section("Brush", rows: controls.filter { $0.section == "Brush" })
             }
         }
-        let maskRows = controls.filter { $0.scope == "mask" && $0.kind != .action }
+        let maskRows = controls.filter { $0.scope == "mask" && $0.kind != .action && $0.id != EditState.componentSelectorID }
         if !maskRows.isEmpty {
             section("Mask", rows: maskRows)
         }
