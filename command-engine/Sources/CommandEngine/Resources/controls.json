@@ -909,7 +909,8 @@
         {"id": "petEye", "label": "Pet Eye", "synonyms": ["pet-eye"]},
         {"id": "liquify", "label": "Liquify", "synonyms": ["liquefy"]},
         {"id": "dodge", "label": "Dodge"},
-        {"id": "burn", "label": "Burn"}
+        {"id": "burn", "label": "Burn"},
+        {"id": "sponge", "label": "Sponge"}
       ]},
     {"id": "removeBrush", "label": "Remove Brush", "group": "retouch", "kind": "action", "tool": "remove",
       "synonyms": ["remove tool", "content aware remove", "content-aware remove", "content aware fill", "content-aware fill",
@@ -968,7 +969,7 @@
       ]},
     {"id": "toolStrength", "label": "Tool Strength", "group": "retouch", "section": "Brush tools", "kind": "slider",
       "synonyms": ["strength", "liquify pressure", "liquify strength", "brush pressure", "pressure", "brush tool strength",
-                   "dodge exposure", "burn exposure", "dodge strength", "burn strength"],
+                   "dodge exposure", "burn exposure", "dodge strength", "burn strength", "sponge flow", "sponge strength"],
       "min": 1, "max": 100, "default": 50, "step": 5},
     {"id": "dodge", "label": "Dodge", "group": "retouch", "kind": "action", "tool": "dodge",
       "synonyms": ["dodge tool", "dodge brush", "lighten brush"],
@@ -990,6 +991,18 @@
         {"id": "shadows", "label": "Shadows", "synonyms": ["shadow", "darks"]},
         {"id": "midtones", "label": "Midtones", "synonyms": ["midtone", "mids", "mid tones"]},
         {"id": "highlights", "label": "Highlights", "synonyms": ["highlight", "lights", "brights"]}
+      ]},
+    {"id": "sponge", "label": "Sponge", "group": "retouch", "kind": "action", "tool": "sponge",
+      "synonyms": ["sponge tool", "sponge brush"],
+      "options": [
+        {"id": "saturate", "label": "Saturate", "synonyms": ["saturation", "more colour", "more color"]},
+        {"id": "desaturate", "label": "Desaturate", "synonyms": ["desat", "less colour", "less color", "grey", "gray"]}
+      ]},
+    {"id": "spongeMode", "label": "Sponge Mode", "group": "retouch", "section": "Sponge", "kind": "choice", "default": 1,
+      "synonyms": ["sponge setting"],
+      "options": [
+        {"id": "saturate", "label": "Saturate", "synonyms": ["saturation", "more colour", "more color"]},
+        {"id": "desaturate", "label": "Desaturate", "synonyms": ["desat", "less colour", "less color", "grey", "gray"]}
       ]}
   ]
 }

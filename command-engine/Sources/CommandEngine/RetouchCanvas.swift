@@ -263,7 +263,7 @@ public final class RetouchCanvas {
             let box = write.expanded(by: 2, width: width, height: height)
             guard let o = pixels(step.offset) else { return nil }
             return Plan(read: union(box, shifted(box, o, width: width, height: height)), write: box)
-        case "redEye", "petEye", "dodge", "burn":
+        case "redEye", "petEye", "dodge", "burn", "sponge":
             return Plan(read: write, write: write)
         case "move":
             // The area is filled from around it (as the Remove brush) and put down `offset` away.
@@ -319,6 +319,11 @@ public final class RetouchCanvas {
             var box = image.crop(plan.write)
             ToneBrushes.dodgeBurn(&box, cover: footprint(step, in: plan.write, pressured: true), strength: strength(step),
                                   range: Int(step.values["toneRange"] ?? 1), lighter: step.tool == "dodge")
+            return box.pixels
+        case "sponge":
+            var box = image.crop(plan.write)
+            ToneBrushes.sponge(&box, cover: footprint(step, in: plan.write, pressured: true), strength: strength(step),
+                               saturate: (step.values["spongeMode"] ?? 1) == 0)
             return box.pixels
         case "redEye", "petEye":
             var eye = image.crop(plan.write)

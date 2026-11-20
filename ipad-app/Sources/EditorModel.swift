@@ -619,6 +619,7 @@ final class EditorModel: ObservableObject {
         "liquify": "drag to push, or hold still (tap) to twirl, pucker, bloat or reconstruct; Liquify Mode and Tool Strength set how",
         "dodge": "paint to lighten (up to a stop at full Tool Strength), mostly in the Tone Range; press harder with the Pencil for more",
         "burn": "paint to darken (up to a stop at full Tool Strength), mostly in the Tone Range; press harder with the Pencil for more",
+        "sponge": "paint to add colour or take it away (Sponge Mode), as much as Tool Strength and the Pencil's pressure say",
     ]
 
     /// What to do on the photo after making a mask part.

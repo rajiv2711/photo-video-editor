@@ -365,6 +365,9 @@
 
     {"id": "dodge", "command": "dodge shadows brush size 15 tool strength 100", "control": "dodge", "strokes": [[[0.3, 0.6], [0.6, 0.6]]], "expect": [{"metric": "mean_luma", "dir": "up", "region": [0.35, 0.58, 0.55, 0.62]}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.2, 0.2]}]},
     {"id": "burn", "command": "burn highlights brush size 10 tool strength 100", "control": "burn", "strokes": [[[0.08, 0.3], [0.08, 0.5]]], "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.05, 0.32, 0.11, 0.48], "min": 15}, {"metric": "diff", "dir": "same", "region": [0.8, 0.3, 1, 0.5]}]},
-    {"id": "tone-range", "command": "burn brush size 10 tool strength 100 tone range shadows", "control": "toneRange", "strokes": [[[0.08, 0.3], [0.08, 0.5]]], "expect": [{"metric": "mean_luma", "dir": "same", "region": [0.05, 0.32, 0.11, 0.48]}, {"metric": "mean_luma", "dir": "up", "region": [0.05, 0.32, 0.11, 0.48], "vs": "burn", "min": 10}]}
+    {"id": "tone-range", "command": "burn brush size 10 tool strength 100 tone range shadows", "control": "toneRange", "strokes": [[[0.08, 0.3], [0.08, 0.5]]], "expect": [{"metric": "mean_luma", "dir": "same", "region": [0.05, 0.32, 0.11, 0.48]}, {"metric": "mean_luma", "dir": "up", "region": [0.05, 0.32, 0.11, 0.48], "vs": "burn", "min": 10}]},
+
+    {"id": "sponge", "command": "sponge desaturate brush size 8 tool strength 100", "source": "chart", "control": "sponge", "strokes": [[[0.055, 0.05], [0.055, 0.7]]], "expect": [{"metric": "mean_sat", "dir": "down", "region": [0.02, 0.05, 0.09, 0.7], "vs": "chart", "min": 20}, {"metric": "diff", "dir": "same", "region": [0.3, 0.05, 0.5, 0.7], "vs": "chart"}]},
+    {"id": "sponge-mode", "command": "sponge brush size 8 tool strength 100 sponge mode saturate", "source": "chart", "control": "spongeMode", "strokes": [[[0.61, 0.3], [0.61, 0.45]]], "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.58, 0.3, 0.64, 0.45], "vs": "chart", "min": 5}]}
   ]
 }

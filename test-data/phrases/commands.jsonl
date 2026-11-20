@@ -743,3 +743,9 @@
 {"group":"retouch","text":"tone range shadows","expect":[{"op":"set","control":"toneRange","value":0}]}
 {"group":"retouch","text":"dodge range highlights","expect":[{"op":"set","control":"toneRange","value":2}]}
 {"group":"retouch","text":"dodge exposure 30","expect":[{"op":"set","control":"toolStrength","value":30}]}
+{"group":"retouch","text":"sponge","expect":[{"op":"run","control":"sponge"}]}
+{"group":"retouch","text":"sponge desaturate","expect":[{"op":"run","control":"sponge","value":1}]}
+{"group":"retouch","text":"sponge tool saturate","expect":[{"op":"run","control":"sponge","value":0}]}
+{"group":"retouch","text":"sponge mode saturate","expect":[{"op":"set","control":"spongeMode","value":0}]}
+{"group":"retouch","text":"sponge mode desaturate","expect":[{"op":"set","control":"spongeMode","value":1}]}
+{"group":"retouch","text":"sponge flow 60","expect":[{"op":"set","control":"toolStrength","value":60}]}

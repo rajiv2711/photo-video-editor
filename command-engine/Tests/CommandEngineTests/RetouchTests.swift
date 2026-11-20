@@ -605,4 +605,31 @@ final class RetouchTests: XCTestCase {
         light.pressure = []
         XCTAssertEqual(RetouchCanvas(base: ramp).render([light]).image, dodged)
     }
+
+    // MARK: - Sponge
+
+    func testSpongeNames() {
+        XCTAssertEqual(parse("sponge"), [.run("sponge")])
+        XCTAssertEqual(parse("sponge desaturate"), [.run("sponge", value: 1)])
+        XCTAssertEqual(parse("sponge saturate"), [.run("sponge", value: 0)])
+        XCTAssertEqual(parse("sponge mode saturate"), [.set("spongeMode", 0)])
+        XCTAssertEqual(parse("sponge flow 60"), [.set("toolStrength", 60)])
+        XCTAssertEqual(parse("saturation 20"), [.set("saturation", 20)], "the Color slider keeps its name")
+        XCTAssertEqual(control("sponge").options.map(\.id), control("spongeMode").options.map(\.id))
+    }
+
+    func testSpongeTakesColourAwayOrAddsIt() {
+        let size = (60, 60)
+        let red = Self.picture(size.0, size.1) { _, _ in (0.7, 0.3, 0.3) }
+        func sponged(_ mode: Double, strength: Double) -> RGBBuffer {
+            RetouchCanvas(base: red).render([Self.tap("sponge", 30, 30, of: size, brush: 60,
+                                                      values: ["spongeMode": mode, "toolStrength": strength, "spotOpacity": 100])]).image
+        }
+        func chroma(_ image: RGBBuffer) -> Float { let c = image.color(30, 30); return c.0 - c.1 }
+        XCTAssertLessThan(chroma(sponged(1, strength: 100)), 0.01, "fully grey at full strength")
+        XCTAssertEqual(chroma(sponged(1, strength: 50)), 0.2, accuracy: 0.01, "half the colour at half strength")
+        XCTAssertEqual(chroma(sponged(0, strength: 50)), 0.6, accuracy: 0.01)
+        let c = sponged(1, strength: 100).color(30, 30)
+        XCTAssertEqual(c.0, 0.2126 * 0.7 + 0.7152 * 0.3 + 0.0722 * 0.3, accuracy: 0.001, "its own brightness kept")
+    }
 }
