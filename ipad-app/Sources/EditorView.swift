@@ -255,6 +255,13 @@ private struct CurveEditor: View {
             .font(.footnote)
         }
         .padding(.horizontal, 10)
+        .onAppear { showFocusedChannel(model.focusedControlID) }
+        .onChange(of: model.focusedControlID) { _, id in showFocusedChannel(id) }
+    }
+
+    /// "red curve 75 up" switches the editor to the Red channel.
+    private func showFocusedChannel(_ id: String?) {
+        if let c = controls.first(where: { $0.id == id })?.channel { channel = c }
     }
 
     private func canvas(size: CGSize) -> some View {
