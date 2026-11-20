@@ -556,3 +556,8 @@
 {"group":"optics","text":"red cyan fringe 40","expect":[{"op":"set","control":"caRedCyan","value":40}]}
 {"group":"optics","text":"blue fringe down","expect":[{"op":"nudge","control":"caBlueYellow","steps":-1}]}
 {"group":"optics","text":"blue yellow fringe -30","expect":[{"op":"set","control":"caBlueYellow","value":-30}]}
+{"group":"optics","text":"defringe 60","expect":[{"op":"set","control":"defringePurple","value":60}]}
+{"group":"optics","text":"purple fringe more","expect":[{"op":"nudge","control":"defringePurple","steps":1}]}
+{"group":"optics","text":"purple fringe hue 30","expect":[{"op":"set","control":"defringePurpleHue","value":30}]}
+{"group":"optics","text":"green fringe 40","expect":[{"op":"set","control":"defringeGreen","value":40}]}
+{"group":"optics","text":"green fringe hue up","expect":[{"op":"nudge","control":"defringeGreenHue","steps":1}]}

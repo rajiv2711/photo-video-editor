@@ -704,6 +704,15 @@
     {"id": "caRedCyan", "label": "Red/Cyan Fringe", "group": "optics", "section": "Chromatic aberration", "kind": "slider",
       "synonyms": ["red cyan fringe", "red fringe", "red cyan aberration"], "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "caBlueYellow", "label": "Blue/Yellow Fringe", "group": "optics", "section": "Chromatic aberration", "kind": "slider",
-      "synonyms": ["blue yellow fringe", "blue fringe", "blue yellow aberration"], "min": -100, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["blue yellow fringe", "blue fringe", "blue yellow aberration"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "defringePurple", "label": "Purple Fringe", "group": "optics", "section": "Defringe", "kind": "slider",
+      "synonyms": ["defringe", "defringe purple", "purple defringe", "purple amount", "purple fringing"],
+      "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "defringePurpleHue", "label": "Purple Fringe Hue", "group": "optics", "section": "Defringe", "kind": "slider",
+      "synonyms": ["defringe purple hue", "purple fringe color", "purple fringe colour"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "defringeGreen", "label": "Green Fringe", "group": "optics", "section": "Defringe", "kind": "slider",
+      "synonyms": ["defringe green", "green defringe", "green amount", "green fringing"], "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "defringeGreenHue", "label": "Green Fringe Hue", "group": "optics", "section": "Defringe", "kind": "slider",
+      "synonyms": ["defringe green hue", "green fringe color", "green fringe colour"], "min": 0, "max": 100, "default": 50, "step": 5}
   ]
 }

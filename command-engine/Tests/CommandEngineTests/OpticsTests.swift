@@ -16,7 +16,8 @@ final class OpticsTests: XCTestCase {
     }
 
     func testOpticsControlsAreInTheOpticsPanel() {
-        for id in ["lensProfile", "removeCA", "caRedCyan", "caBlueYellow"] {
+        for id in ["lensProfile", "removeCA", "caRedCyan", "caBlueYellow", "defringePurple", "defringePurpleHue",
+                   "defringeGreen", "defringeGreenHue"] {
             XCTAssertEqual(registry.control(id: id)?.group, "optics", id)
         }
     }
@@ -166,5 +167,29 @@ final class OpticsTests: XCTestCase {
         XCTAssertLessThan(fringe(fixed), fringe(pixels) / 3)
         XCTAssertEqual(ChromaticAberration.scale(slider: 80), 1.004, accuracy: 1e-12)
         XCTAssertEqual(ChromaticAberration.scale(slider: 0), 1)
+    }
+
+    // MARK: - Defringe
+
+    func testDefringeNames() {
+        XCTAssertEqual(parse("defringe 60"), [.set("defringePurple", 60)])
+        XCTAssertEqual(parse("purple fringe hue 30"), [.set("defringePurpleHue", 30)])
+        XCTAssertEqual(parse("green fringe 40"), [.set("defringeGreen", 40)])
+        XCTAssertEqual(parse("purple hue 30"), [.set("mixerPurpleHue", 30)], "the Color mixer keeps its name")
+    }
+
+    func testDefringeGreysOutOnlyItsBand() {
+        let magenta = RGB(0.6, 0.2, 0.6), green = RGB(0.2, 0.6, 0.25), orange = RGB(0.8, 0.5, 0.2)
+        let p = Defringe.purpleHue(50), g = Defringe.greenHue(50)
+        let fixed = Defringe.apply(magenta, purple: 1, purpleHue: p, green: 0, greenHue: g)
+        XCTAssertEqual(fixed.max - fixed.min, 0, accuracy: 1e-9, "purple fringe turns grey")
+        XCTAssertEqual(fixed.luma, magenta.luma, accuracy: 1e-9, "same brightness")
+        XCTAssertEqual(Defringe.apply(green, purple: 1, purpleHue: p, green: 0, greenHue: g), green, "green stays without Green")
+        XCTAssertLessThan(Defringe.apply(green, purple: 0, purpleHue: p, green: 1, greenHue: g).max - 0.25, 0.3)
+        XCTAssertEqual(Defringe.apply(orange, purple: 1, purpleHue: p, green: 1, greenHue: g), orange, "other colours stay")
+        XCTAssertEqual(Defringe.apply(magenta, purple: 1, purpleHue: Defringe.purpleHue(100), green: 0, greenHue: g), fixed,
+                       "320° still reaches 300°")
+        XCTAssertNotEqual(Defringe.apply(magenta, purple: 1, purpleHue: Defringe.purpleHue(0), green: 0, greenHue: g), fixed)
+        XCTAssertEqual(Defringe.cube(purple: 1, purpleHue: p, green: 1, greenHue: g, size: 5).count, 5 * 5 * 5 * 4)
     }
 }

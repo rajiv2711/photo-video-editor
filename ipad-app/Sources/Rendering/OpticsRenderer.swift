@@ -2,7 +2,7 @@ import CommandEngine
 import CoreImage
 
 /// The Optics panel. It runs first, on the photo as shot (as in Lightroom, lens fixes come before any
-/// tone or colour work): lens profile correction, chromatic aberration. The geometry is LensWarp in
+/// tone or colour work): lens profile correction, chromatic aberration, defringe. The geometry is LensWarp in
 /// CommandEngine, a CPU pass on a float copy of the picture; its result is kept until the picture or
 /// the optics settings change, so the other sliders stay fast.
 final class OpticsRenderer {
@@ -20,6 +20,8 @@ final class OpticsRenderer {
     private var cache: (source: CIImage, warp: LensWarp, output: CIImage)?
     /// Remove Chromatic Aberration: the red and blue scales measured on the last picture.
     private var measuredCA: (source: CIImage, red: Double, blue: Double)?
+    /// The last defringe colour cube and the settings it was made for.
+    private var cachedDefringe: (key: [Double], data: Data)?
 
     init(context: CIContext) {
         self.context = context
@@ -39,7 +41,38 @@ final class OpticsRenderer {
         }
         warp.redScale *= ChromaticAberration.scale(slider: v("caRedCyan"))
         warp.blueScale *= ChromaticAberration.scale(slider: v("caBlueYellow"))
-        return warp.isIdentity ? image : warped(image, warp)
+        var output = warp.isIdentity ? image : warped(image, warp)
+
+        // Defringe: purple and green fringes along strong edges lose their colour.
+        let purple = v("defringePurple") / 100, green = v("defringeGreen") / 100
+        if purple > 0 || green > 0 {
+            let key = [purple, value("defringePurpleHue") ?? 50, green, value("defringeGreenHue") ?? 50]
+            output = defringe(output, key: key)
+        }
+        return output
+    }
+
+    /// The defringe colour cube (Defringe in CommandEngine) on sRGB levels, used near strong edges only.
+    private func defringe(_ image: CIImage, key: [Double]) -> CIImage {
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB) else { return image }
+        let data: Data
+        if let cachedDefringe, cachedDefringe.key == key {
+            data = cachedDefringe.data
+        } else {
+            let cube = Defringe.cube(purple: key[0], purpleHue: Defringe.purpleHue(key[1]),
+                                     green: key[2], greenHue: Defringe.greenHue(key[3]), size: ColorRenderer.cubeSize)
+            data = cube.withUnsafeBufferPointer { Data(buffer: $0) }
+            cachedDefringe = (key, data)
+        }
+        let extent = image.extent
+        let defringed = image.applyingFilter("CIColorCubeWithColorSpace", parameters: [
+            "inputCubeDimension": ColorRenderer.cubeSize,
+            "inputCubeData": data,
+            "inputColorSpace": space,
+        ])
+        let side = Double(max(extent.width, extent.height))
+        let range = Filters.localRange(Filters.encoded(image), extent: extent, radius: Detail.pixels(3, longSide: side))
+        return Filters.blend(defringed, over: image, mask: Filters.lookup(range, table: Defringe.edgeMask()))
     }
 
     /// Red and blue scales that line their edges up with green's, measured on a small copy.
