@@ -3,7 +3,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 
 /// The Color panel, in Lightroom's order. `input` runs before the Light panel (white balance);
-/// `apply` runs after it (vibrance, saturation, hue, then the colour cube: color mixer, …).
+/// `apply` runs after it (vibrance, saturation, hue, the colour cube, match color, LUT).
 /// The colour math lives in CommandEngine (WhiteBalance, ColorLook) so it is tested on Linux.
 final class ColorRenderer {
     let context: CIContext
@@ -11,6 +11,9 @@ final class ColorRenderer {
     private var cachedCube: (key: [Double], data: Data)?
     /// Match color: statistics of each reference picture, worked out once.
     private var referenceStats: [String: MatchColor.Stats] = [:]
+    /// LUT files read so far, and the last cube data made from one (LUT id and amount).
+    private var luts: [String: CubeLUT] = [:]
+    private var cachedLUT: (key: String, data: Data)?
 
     init(context: CIContext) {
         self.context = context
@@ -56,6 +59,7 @@ final class ColorRenderer {
 
         output = colorCube(output, value: value)
         output = matchColor(output, extent: extent, value: value)
+        output = lut(output, value: value)
 
         return output
     }
@@ -97,6 +101,31 @@ final class ColorRenderer {
             "inputBiasVector": CIVector(x: CGFloat(t.bias.r), y: CGFloat(t.bias.g), z: CGFloat(t.bias.b), w: 0),
         ])
         return matched.applyingFilter("CISRGBToneCurveToLinear")
+    }
+
+    /// LUT: one of the bundled .cube looks (CubeLUT in CommandEngine) on sRGB levels, mixed in by LUT Amount.
+    private func lut(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+        let index = Int(value("lut") ?? 0)
+        guard index > 0, CubeLUT.options.indices.contains(index), let space = CGColorSpace(name: CGColorSpace.sRGB) else {
+            return image
+        }
+        let id = CubeLUT.options[index]
+        if luts[id] == nil { luts[id] = try? CubeLUT.bundled(id) }
+        guard let table = luts[id] else { return image }
+        let amount = (value("lutAmount") ?? 100) / 100
+        let key = "\(id) \(amount)"
+        let data: Data
+        if let cached = cachedLUT, cached.key == key {
+            data = cached.data
+        } else {
+            data = table.cubeData(amount: amount).withUnsafeBufferPointer { Data(buffer: $0) }
+            cachedLUT = (key, data)
+        }
+        return image.applyingFilter("CIColorCubeWithColorSpace", parameters: [
+            "inputCubeDimension": table.size,
+            "inputCubeData": data,
+            "inputColorSpace": space,
+        ])
     }
 
     /// The reference pictures: the bundled test photo, and a generated sunset (PhotoRenderer.sample).

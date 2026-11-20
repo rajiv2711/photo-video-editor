@@ -465,3 +465,9 @@
 {"group":"color","text":"match color off","expect":[{"op":"set","control":"matchColor","value":0}]}
 {"group":"color","text":"match amount 50","expect":[{"op":"set","control":"matchAmount","value":50}]}
 {"group":"color","text":"match strength less","expect":[{"op":"nudge","control":"matchAmount","steps":-1}]}
+{"group":"color","text":"lut teal and orange","expect":[{"op":"set","control":"lut","value":1}]}
+{"group":"color","text":"lut warm film","expect":[{"op":"set","control":"lut","value":2}]}
+{"group":"color","text":"lookup table bleach bypass","expect":[{"op":"set","control":"lut","value":3}]}
+{"group":"color","text":"lut off","expect":[{"op":"set","control":"lut","value":0}]}
+{"group":"color","text":"lut amount 70","expect":[{"op":"set","control":"lutAmount","value":70}]}
+{"group":"color","text":"lut strength down","expect":[{"op":"nudge","control":"lutAmount","steps":-1}]}

@@ -175,6 +175,10 @@
     {"id": "match-sunset", "command": "match color sunset", "control": "matchColor", "expect": [{"metric": "mean_g", "dir": "down"}, {"metric": "mean_sat", "dir": "up"}]},
     {"id": "match-test-photo", "command": "match color test photo", "source": "warm", "control": "matchColor", "expect": [{"metric": "mean_b", "dir": "up", "vs": "warm-cast"}, {"metric": "mean_sat", "dir": "down", "vs": "warm-cast"}]},
     {"id": "match-amount", "command": "match color sunset match amount 40", "control": "matchAmount", "expect": [{"metric": "mean_g", "dir": "up", "vs": "match-sunset"}]},
+    {"id": "lut-teal-orange", "command": "lut teal orange", "control": "lut", "expect": [{"metric": "diff", "dir": "changed"}, {"metric": "mean_b", "dir": "down"}]},
+    {"id": "lut-warm-film", "command": "lut warm film", "control": "lut", "expect": [{"metric": "mean_b", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]},
+    {"id": "lut-bleach-bypass", "command": "lut bleach bypass", "source": "chart", "control": "lut", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "lut-amount", "command": "lut warm film lut amount 30", "control": "lutAmount", "expect": [{"metric": "mean_b", "dir": "up", "vs": "lut-warm-film"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

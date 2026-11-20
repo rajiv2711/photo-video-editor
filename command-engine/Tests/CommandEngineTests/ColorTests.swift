@@ -465,4 +465,43 @@ final class ColorTests: XCTestCase {
         assertClose(stats.deviation.r, 0.2, 1e-9)
         assertClose(stats.deviation.g, 0, 1e-9)
     }
+
+    // MARK: - LUT
+
+    func testLUTOptionsMatchControlsJSONAndFilesLoad() throws {
+        XCTAssertEqual(options("lut"), CubeLUT.options)
+        for id in CubeLUT.options.dropFirst() {
+            let lut = try CubeLUT.bundled(id)
+            XCTAssertEqual(lut.size, 17, id)
+            XCTAssertEqual(lut.entries.count, 17 * 17 * 17, id)
+        }
+        XCTAssertEqual(try CubeLUT.bundled("warmFilm").title, "Warm Film")
+        XCTAssertEqual(parse("lut bleach bypass"), [.set("lut", 3)])
+    }
+
+    func testCubeParsingAndLookup() throws {
+        // A 2³ LUT that swaps red and blue, with comments and a domain.
+        var text = "# test\nTITLE \"Swap\"\nLUT_3D_SIZE 2\nDOMAIN_MIN 0 0 0\nDOMAIN_MAX 1 1 1\n"
+        for b in 0...1 { for g in 0...1 { for r in 0...1 { text += "\(b) \(g) \(r)\n" } } }
+        let lut = try CubeLUT.parse(text)
+        XCTAssertEqual(lut.title, "Swap")
+        let out = lut.lookup(RGB(0.8, 0.3, 0.1))
+        assertClose(out.r, 0.1, 1e-9)
+        assertClose(out.g, 0.3, 1e-9)
+        assertClose(out.b, 0.8, 1e-9)
+        let none = lut.cubeData(amount: 0)
+        XCTAssertEqual(Array(none[4..<8]), [1, 0, 0, 1], "amount 0 is the identity (entry r=1, g=0, b=0)")
+        let full = lut.cubeData(amount: 1)
+        XCTAssertEqual(Array(full[4..<8]), [0, 0, 1, 1])
+        XCTAssertThrowsError(try CubeLUT.parse("LUT_3D_SIZE 2\n0 0 0\n"))
+        XCTAssertThrowsError(try CubeLUT.parse("0 0 0\n"))
+    }
+
+    func testSampleLUTsLookRight() throws {
+        let warm = try CubeLUT.bundled("warmFilm").lookup(RGB(0.5, 0.5, 0.5))
+        XCTAssertGreaterThan(warm.r, warm.b)
+        XCTAssertGreaterThan(try CubeLUT.bundled("warmFilm").lookup(RGB(0, 0, 0)).r, 0.03, "lifted blacks")
+        let bleach = try CubeLUT.bundled("bleachBypass").lookup(RGB(0.8, 0.2, 0.2))
+        XCTAssertLessThan(bleach.max - bleach.min, 0.6 * 0.6)
+    }
 }

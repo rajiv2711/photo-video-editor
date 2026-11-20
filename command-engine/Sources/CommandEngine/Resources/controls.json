@@ -489,6 +489,16 @@
       ]},
     {"id": "matchAmount", "label": "Match Amount", "group": "color", "section": "Match color", "kind": "slider",
       "synonyms": ["match color amount", "match colour amount", "match strength"], "min": 0, "max": 100, "default": 100, "step": 5},
+    {"id": "lut", "label": "LUT", "group": "color", "section": "LUT", "kind": "choice",
+      "synonyms": ["look up table", "lookup table", "luts", "cube"],
+      "options": [
+        {"id": "none", "label": "None", "synonyms": ["off", "no lut"]},
+        {"id": "tealOrange", "label": "Teal & Orange", "synonyms": ["teal orange", "teal and orange", "teal"]},
+        {"id": "warmFilm", "label": "Warm Film", "synonyms": ["film", "warm"]},
+        {"id": "bleachBypass", "label": "Bleach Bypass", "synonyms": ["bleach", "bypass"]}
+      ]},
+    {"id": "lutAmount", "label": "LUT Amount", "group": "color", "section": "LUT", "kind": "slider",
+      "synonyms": ["lut strength", "lookup table amount"], "min": 0, "max": 100, "default": 100, "step": 5},
     {"id": "channelRedFromRed", "label": "Red from Red", "group": "color", "section": "Channel mixer", "kind": "slider",
       "synonyms": ["red channel red", "channel mixer red red"], "min": -200, "max": 200, "default": 100, "step": 5},
     {"id": "channelRedFromGreen", "label": "Red from Green", "group": "color", "section": "Channel mixer", "kind": "slider",
