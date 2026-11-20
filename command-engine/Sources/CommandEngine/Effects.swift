@@ -108,4 +108,15 @@ public enum Effects {
 
     /// Halation's colour per unit of halo: film's red-orange.
     public static let halationTint = RGB(0.8, 0.28, 0.1)
+
+    // MARK: - Posterize, threshold, solarize (tables on sRGB levels)
+
+    /// Table size for the stepped tone tables, fine enough that the steps stay sharp.
+    public static let stepTableSize = 1024
+
+    /// Posterize: `levels` (2…) evenly spaced output levels, the input split into as many equal bands.
+    public static func posterize(levels: Int) -> [Double] {
+        let n = Double(Swift.max(2, levels))
+        return table(count: stepTableSize) { x in Swift.min((x * n).rounded(.down), n - 1) / (n - 1) }
+    }
 }

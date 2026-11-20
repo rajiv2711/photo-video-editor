@@ -78,6 +78,12 @@ final class EffectsRenderer {
             output = Filters.linear(halo.applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: encoded]))
         }
 
+        // Posterize: a few evenly spaced levels per channel, on sRGB levels.
+        if v("posterize") != 0 {
+            let levels = Int(value("posterizeLevels") ?? 4)
+            output = Filters.linear(Filters.lookup(Filters.encoded(output), table: Effects.posterize(levels: levels)))
+        }
+
         return output
     }
 

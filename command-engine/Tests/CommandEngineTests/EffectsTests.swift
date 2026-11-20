@@ -17,7 +17,8 @@ final class EffectsTests: XCTestCase {
 
     func testEffectsControlsAreInTheEffectsPanel() {
         for id in ["texture", "clarity", "dehaze", "vignette", "vignetteMidpoint", "vignetteRoundness", "vignetteFeather", "vignetteHighlights",
-                   "grain", "grainSize", "grainRoughness", "glow", "halation"] {
+                   "grain", "grainSize", "grainRoughness", "glow", "halation",
+                   "posterize", "posterizeLevels"] {
             XCTAssertEqual(registry.control(id: id)?.group, "effects", id)
         }
     }
@@ -198,5 +199,24 @@ final class EffectsTests: XCTestCase {
         XCTAssertEqual(table.last, 1)
         XCTAssertGreaterThan(Effects.halationTint.r, 2 * Effects.halationTint.g)
         XCTAssertGreaterThan(Effects.halationTint.g, Effects.halationTint.b)
+    }
+
+    // MARK: - Posterize, threshold, solarize
+
+    func testPosterizeNames() {
+        XCTAssertEqual(parse("posterize"), [.set("posterize", 1)])
+        XCTAssertEqual(parse("posterise off"), [.set("posterize", 0)])
+        XCTAssertEqual(parse("posterize levels 6"), [.set("posterizeLevels", 6)])
+    }
+
+    func testPosterizeHasThatManyLevels() {
+        for levels in [2, 4, 7] {
+            let table = Effects.posterize(levels: levels)
+            XCTAssertEqual(Set(table).count, levels, "\(levels)")
+            XCTAssertEqual(table.first, 0)
+            XCTAssertEqual(table.last, 1)
+        }
+        XCTAssertEqual(Effects.posterize(levels: 2)[400], 0)
+        XCTAssertEqual(Effects.posterize(levels: 2)[600], 1)
     }
 }

@@ -62,7 +62,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 44. **Grain** — film grain: amount, size, roughness
 - [x] 45. **Glow / halation** — soft bloom and film halation around bright areas
 - [ ] 46. **Lens blur** — AI depth-based background blur, bokeh shapes, focus point **AI · later**
-- [ ] 47. **Posterize** — reduce to a few tone levels
+- [x] 47. **Posterize** — reduce to a few tone levels
 - [ ] 48. **Threshold** — pure black & white at a cut-off
 - [ ] 49. **Solarize** — partial tone inversion
 

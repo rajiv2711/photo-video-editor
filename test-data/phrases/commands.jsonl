@@ -517,3 +517,7 @@
 {"group":"effects","text":"bloom more","expect":[{"op":"nudge","control":"glow","steps":1}]}
 {"group":"effects","text":"halation 60","expect":[{"op":"set","control":"halation","value":60}]}
 {"group":"effects","text":"film halation up","expect":[{"op":"nudge","control":"halation","steps":1}]}
+{"group":"effects","text":"posterize","expect":[{"op":"set","control":"posterize","value":1}]}
+{"group":"effects","text":"posterise off","expect":[{"op":"set","control":"posterize","value":0}]}
+{"group":"effects","text":"posterize levels 6","expect":[{"op":"set","control":"posterizeLevels","value":6}]}
+{"group":"effects","text":"poster levels more","expect":[{"op":"nudge","control":"posterizeLevels","steps":1}]}

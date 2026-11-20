@@ -664,6 +664,10 @@
     {"id": "glow", "label": "Glow", "group": "effects", "section": "Glow", "kind": "slider",
       "synonyms": ["bloom", "soft glow", "glow amount"], "min": 0, "max": 100, "default": 0, "step": 5},
     {"id": "halation", "label": "Halation", "group": "effects", "section": "Glow", "kind": "slider",
-      "synonyms": ["film halation", "halation amount", "red glow"], "min": 0, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["film halation", "halation amount", "red glow"], "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "posterize", "label": "Posterize", "group": "effects", "section": "Posterize", "kind": "toggle",
+      "synonyms": ["posterise", "posterization", "posterisation", "poster effect"]},
+    {"id": "posterizeLevels", "label": "Posterize Levels", "group": "effects", "section": "Posterize", "kind": "slider",
+      "synonyms": ["posterise levels", "poster levels", "posterize steps"], "min": 2, "max": 32, "default": 4, "step": 1}
   ]
 }
