@@ -85,3 +85,7 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `white balance picker` · `point color picker` | Arms a picker: tap the photo (a neutral spot, or the colour to change) |
 | `red saturation -40` · `shadows hue 220` · `reds cyan 20` · `red from green 30` | Color mixer, Color grading, Selective color, Channel mixer |
 | `black and white` · `toning sepia` · `lut warm film` · `profile vivid` · `match color sunset` | Switches and choices of the Color panel |
+| `texture 40` · `clarity up` · `dehaze 50` · `glow 30` · `solarize 50` | Effects sliders |
+| `vignette -60` · `vignette midpoint 30` · `grain 30` · `grain size 60` · `posterize` · `threshold level 90` | Effects sections and switches |
+| `sharpening 60` · `sharpening masking 70` · `noise reduction 40` · `chroma noise 50` · `moire 60` · `high pass 50` | Detail panel (`noise` alone asks which) |
+| `lens profile correction on` · `remove chromatic aberration` · `defringe 60` · `distortion 30` · `vignetting up` · `fisheye correction 50` | Optics panel (`vignette` is the Effects one, `vignetting` the lens one) |
