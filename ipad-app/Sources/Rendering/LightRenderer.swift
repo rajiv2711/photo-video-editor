@@ -47,14 +47,17 @@ struct LightRenderer {
             ])
         }
 
-        // Brilliance's local contrast: a gentle, wide unsharp mask. (Its intensity can't go below 0,
-        // and stronger settings crush dark detail next to bright areas.)
+        // Brilliance's local contrast: a gentle, wide unsharp mask (its intensity can't go below 0).
+        // It runs on sRGB-encoded levels: in Core Image's linear light a bright background would
+        // swamp the neighbouring darks and leave black halos.
         if brilliance > 0 {
             let filter = CIFilter.unsharpMask()
-            filter.inputImage = output
+            filter.inputImage = output.applyingFilter("CILinearToSRGBToneCurve")
             filter.radius = Float(0.02 * max(image.extent.width, image.extent.height))
             filter.intensity = Float(0.2 * brilliance)
-            output = filter.outputImage ?? output
+            if let sharpened = filter.outputImage {
+                output = sharpened.applyingFilter("CISRGBToneCurveToLinear")
+            }
         }
 
         output = toneCurve(output, value: value, maxInput: hdr ? 4 : 1)
