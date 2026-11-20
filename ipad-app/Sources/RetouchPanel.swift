@@ -154,7 +154,7 @@ struct RetouchCanvasView: View {
                 let selected = model.state.selectedRetouch == item.offset
                 let closed = RetouchTools.outlined.contains(item.element.tool)
                 outline(item.element.points, width: brushWidth(item.element.size, size), size: size, selected: selected, dashed: false,
-                        closed: closed)
+                        closed: closed, eye: RetouchTools.eyes.contains(item.element.tool))
                 if selected, let offset = item.element.offset {
                     let moved = item.element.points.map { MaskPoint($0.x + offset.x, $0.y + offset.y) }
                     outline(moved, width: brushWidth(item.element.size, size), size: size, selected: true, dashed: true, closed: closed)
@@ -172,9 +172,18 @@ struct RetouchCanvasView: View {
 
     /// One spot's outline: a ring for a tap, a band for a stroke, the line around a Patch or Move area.
     @ViewBuilder
-    private func outline(_ points: [MaskPoint], width: CGFloat, size: CGSize, selected: Bool, dashed: Bool, closed: Bool) -> some View {
+    private func outline(_ points: [MaskPoint], width: CGFloat, size: CGSize, selected: Bool, dashed: Bool, closed: Bool,
+                         eye: Bool = false) -> some View {
         let line = points.map { CGPoint(x: CGFloat($0.x) * size.width, y: CGFloat($0.y) * size.height) }
-        if closed {
+        if eye, line.count > 1 {
+            // An eye drawn around: the circle around the line.
+            let xs = line.map(\.x), ys = line.map(\.y)
+            let side = max(xs.max()! - xs.min()!, ys.max()! - ys.min()!)
+            Circle()
+                .stroke(Color.white.opacity(selected ? 0.95 : 0.5), lineWidth: selected ? 2 : 1)
+                .frame(width: side, height: side)
+                .position(x: (xs.max()! + xs.min()!) / 2, y: (ys.max()! + ys.min()!) / 2)
+        } else if closed {
             Path { path in
                 path.addLines(line)
                 path.closeSubpath()
@@ -193,9 +202,9 @@ struct RetouchCanvasView: View {
         }
     }
 
-    /// The stroke being drawn: as wide as the brush, or a thin line for an outline.
+    /// The stroke being drawn: as wide as the brush, or a thin line for an outline (or around an eye).
     private func liveWidth(_ size: CGSize) -> CGFloat {
-        if RetouchTools.outlined.contains(tool) { return 2 }
+        if RetouchTools.outlined.contains(tool) || RetouchTools.eyes.contains(tool) { return 2 }
         return brushWidth(model.registry.control(id: "brushSize").map { model.value(of: $0) } ?? 10, size)
     }
 

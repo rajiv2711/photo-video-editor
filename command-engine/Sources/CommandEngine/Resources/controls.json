@@ -904,7 +904,9 @@
         {"id": "heal", "label": "Heal", "synonyms": ["healing"]},
         {"id": "clone", "label": "Clone", "synonyms": ["clone stamp"]},
         {"id": "patch", "label": "Patch"},
-        {"id": "move", "label": "Content Aware Move", "synonyms": ["content-aware move", "move"]}
+        {"id": "move", "label": "Content Aware Move", "synonyms": ["content-aware move", "move"]},
+        {"id": "redEye", "label": "Red Eye", "synonyms": ["red-eye"]},
+        {"id": "petEye", "label": "Pet Eye", "synonyms": ["pet-eye"]}
       ]},
     {"id": "removeBrush", "label": "Remove Brush", "group": "retouch", "kind": "action", "tool": "remove",
       "synonyms": ["remove tool", "content aware remove", "content-aware remove", "content aware fill", "content-aware fill",
@@ -932,6 +934,16 @@
       "synonyms": ["visualise spots", "spots", "spot view", "dust view", "visualize dust", "visualise dust", "find dust", "visualize", "visualise"]},
     {"id": "visualizeThreshold", "label": "Visualize Threshold", "group": "retouch", "kind": "slider",
       "synonyms": ["visualise threshold", "spot threshold", "dust threshold", "visualize spots threshold"],
-      "min": 1, "max": 100, "default": 50, "step": 5}
+      "min": 1, "max": 100, "default": 50, "step": 5},
+    {"id": "redEye", "label": "Red Eye", "group": "retouch", "kind": "action", "tool": "redEye",
+      "synonyms": ["red eye removal", "red eye correction", "red-eye", "redeye", "fix red eye", "red eye tool", "red eyes"]},
+    {"id": "petEye", "label": "Pet Eye", "group": "retouch", "kind": "action", "tool": "petEye",
+      "synonyms": ["pet eye removal", "pet-eye", "pet eyes", "animal eye", "animal eyes", "pet eye correction", "fix pet eye"]},
+    {"id": "pupilSize", "label": "Pupil Size", "group": "retouch", "section": "Eye", "kind": "slider", "scope": "retouch",
+      "synonyms": ["pupil", "pupil radius", "eye pupil size"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "pupilDarken", "label": "Pupil Darken", "group": "retouch", "section": "Eye", "kind": "slider", "scope": "retouch",
+      "synonyms": ["darken pupil", "darken", "pupil darkness", "darken eyes"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "catchlight", "label": "Catchlight", "group": "retouch", "section": "Eye", "kind": "toggle", "scope": "retouch",
+      "synonyms": ["catch light", "eye highlight", "eye sparkle"], "default": 1}
   ]
 }

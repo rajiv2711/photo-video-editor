@@ -413,4 +413,70 @@ final class RetouchTests: XCTestCase {
         XCTAssertGreaterThan(at(VisualizeSpots.table(threshold: 90), 0.03), at(middle, 0.03), "a higher threshold shows more")
         XCTAssertEqual(VisualizeSpots.table(threshold: 100).max(), 1)
     }
+
+    // MARK: - Red eye and pet eye
+
+    func testEyeNames() {
+        XCTAssertEqual(parse("red eye"), [.run("redEye")])
+        XCTAssertEqual(parse("red-eye"), [.run("redEye")])
+        XCTAssertEqual(parse("pet eye"), [.run("petEye")])
+        XCTAssertEqual(parse("pupil size 70"), [.set("pupilSize", 70)])
+        XCTAssertEqual(parse("darken more"), [.nudge("pupilDarken", 1)])
+        XCTAssertEqual(parse("catchlight off"), [.set("catchlight", 0)])
+        XCTAssertEqual(parse("red saturation -40"), [.set("mixerRedSaturation", -40)], "other “red” names keep their meaning")
+    }
+
+    /// Skin with an eye at (40, 30): a brown iris of radius 10 and a pupil of radius 6 in `pupil`'s colour.
+    static func eye(pupil: (Float, Float, Float)) -> RGBBuffer {
+        picture(80, 60) { x, y in
+            let d = (Double((x - 40) * (x - 40) + (y - 30) * (y - 30))).squareRoot()
+            return d < 6 ? pupil : d < 10 ? (0.45, 0.3, 0.2) : (0.87, 0.68, 0.58)
+        }
+    }
+
+    func testRedEyeTakesTheRedOutOfThePupilOnly() {
+        let size = (80, 60)
+        let picture = Self.eye(pupil: (0.85, 0.12, 0.1))
+        let pupil = PixelBox(x0: 37, y0: 27, x1: 43, y1: 33), skin = PixelBox(x0: 0, y0: 0, x1: 20, y1: 20)
+        let values: [String: Double] = ["spotOpacity": 100, "pupilSize": 50, "pupilDarken": 50]
+        let fixed = RetouchCanvas(base: picture).render([Self.tap("redEye", 40, 30, of: size, brush: 25, values: values)]).image
+        XCTAssertLessThan(Self.mean(fixed, pupil, channel: 0), 0.15, "no more red")
+        XCTAssertEqual(Self.mean(fixed, PixelBox(x0: 37, y0: 22, x1: 43, y1: 23)), Self.mean(picture, PixelBox(x0: 37, y0: 22, x1: 43, y1: 23)),
+                       accuracy: 0.01, "the brown iris keeps its colour")
+        XCTAssertEqual(Self.difference(fixed, picture, in: skin), 0)
+        // A brush wider than the iris: the brown iris and the skin still keep their colour.
+        let wide = RetouchCanvas(base: picture).render([Self.tap("redEye", 40, 30, of: size, brush: 50, values: values)]).image
+        XCTAssertEqual(Self.difference(wide, picture, in: PixelBox(x0: 30, y0: 28, x1: 33, y1: 32)), 0, accuracy: 0.001)
+        XCTAssertLessThan(Self.mean(wide, pupil, channel: 0), 0.15)
+        // Darker with more Pupil Darken; drawn around the eye works like a tap.
+        var darker = values
+        darker["pupilDarken"] = 100
+        let around = Retouch(tool: "redEye", points: [MaskPoint(30.0 / 80, 30.0 / 60), MaskPoint(40.0 / 80, 20.0 / 60),
+                                                       MaskPoint(50.0 / 80, 30.0 / 60), MaskPoint(40.0 / 80, 40.0 / 60)], values: darker)
+        let dark = RetouchCanvas(base: picture).render([around]).image
+        XCTAssertLessThan(Self.mean(dark, pupil), Self.mean(fixed, pupil))
+        XCTAssertLessThan(Self.mean(dark, pupil, channel: 0), 0.15)
+    }
+
+    func testPetEyeDarkensTheGlowAndAddsACatchlight() {
+        let size = (80, 60)
+        let picture = Self.eye(pupil: (0.75, 1, 0.7))
+        let pupil = PixelBox(x0: 38, y0: 30, x1: 44, y1: 34)
+        var values: [String: Double] = ["spotOpacity": 100, "pupilSize": 50, "pupilDarken": 50, "catchlight": 0]
+        let plain = RetouchCanvas(base: picture).render([Self.tap("petEye", 40, 30, of: size, brush: 25, values: values)]).image
+        XCTAssertLessThan(Self.mean(plain, pupil), 0.2, "the glow is gone")
+        values["catchlight"] = 1
+        let lit = RetouchCanvas(base: picture).render([Self.tap("petEye", 40, 30, of: size, brush: 25, values: values)]).image
+        let dot = PixelBox(x0: 37, y0: 27, x1: 39, y1: 29)
+        XCTAssertGreaterThan(Self.mean(lit, dot), Self.mean(plain, dot) + 0.4,
+                             "a highlight up and to the left of the middle")
+    }
+
+    func testEyeSettingsBelongToTheSelectedEye() {
+        state.addRetouch(Retouch(tool: "redEye", points: [MaskPoint(0.5, 0.5)], values: ["spotOpacity": 100, "pupilSize": 50, "pupilDarken": 50]))
+        XCTAssertEqual(run("pupil size 80"), [.changedInSpot(spot: 1, controlID: "pupilSize", from: 50, to: 80)])
+        XCTAssertEqual(state.value(of: control("pupilSize")), 50, "new eyes still get 50")
+        XCTAssertEqual(run("catchlight off"), [.changed(controlID: "catchlight", from: 1, to: 0)], "a red eye has no catchlight: for new eyes")
+        XCTAssertEqual(RetouchTools.settings(for: "petEye"), ["spotOpacity", "pupilSize", "pupilDarken", "catchlight"])
+    }
 }

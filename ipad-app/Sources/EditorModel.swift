@@ -609,6 +609,8 @@ final class EditorModel: ObservableObject {
         "clone": "tap or paint; it copies pixels exactly from nearby (“clone source”, then tap, to choose where from)",
         "patch": "draw around the flaw, then drag from inside it to a clean area (without a drag it takes texture from nearby)",
         "move": "draw around the object, then drag from inside it to where it should go; its old place is filled in",
+        "redEye": "tap the middle of a red eye with a brush about the eye's size, or draw around the eye",
+        "petEye": "tap a glowing pet eye with a brush about the eye's size, or draw around the eye",
     ]
 
     /// What to do on the photo after making a mask part.

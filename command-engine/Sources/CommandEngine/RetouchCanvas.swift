@@ -226,6 +226,8 @@ public final class RetouchCanvas {
             let box = write.expanded(by: 2, width: width, height: height)
             guard let o = pixels(step.offset) else { return nil }
             return Plan(read: union(box, shifted(box, o, width: width, height: height)), write: box)
+        case "redEye", "petEye":
+            return Plan(read: write, write: write)
         case "move":
             // The area is filled from around it (as the Remove brush) and put down `offset` away.
             guard let o = pixels(step.offset), o.dx != 0 || o.dy != 0 else { return nil }
@@ -276,6 +278,13 @@ public final class RetouchCanvas {
             return heal(step, plan: plan, image: image)
         case "move":
             return move(step, plan: plan, image: image)
+        case "redEye", "petEye":
+            var eye = image.crop(plan.write)
+            let circle = eyeCircle(step)
+            RedEye.fix(&eye, box: plan.write, centre: (circle.x, circle.y), radius: circle.r, pet: step.tool == "petEye",
+                       pupilSize: step.values["pupilSize"] ?? 50, darken: step.values["pupilDarken"] ?? 50,
+                       catchlight: (step.values["catchlight"] ?? 1) != 0)
+            return eye.pixels
         case "clone":
             // The source's pixels as they are, blended in by the brush's soft edge.
             guard let o = pixels(step.offset) else { return image.crop(plan.write).pixels }
@@ -299,8 +308,23 @@ public final class RetouchCanvas {
         return MaskRaster.resample(points, spacing: Swift.max(0.5, radius(step) / 4))
     }
 
-    /// The pixels the brush (or the outline, with its soft edge) touches.
+    /// An eye tool's circle in pixels: a tap's is the brush, a line's is the circle around it.
+    func eyeCircle(_ step: Retouch) -> (x: Double, y: Double, r: Double) {
+        let xs = step.points.map { $0.x * Double(base.width) }, ys = step.points.map { $0.y * Double(base.height) }
+        guard let x0 = xs.min(), let x1 = xs.max(), let y0 = ys.min(), let y1 = ys.max() else { return (0, 0, 0) }
+        if step.points.count == 1 { return (x0, y0, radius(step)) }
+        return ((x0 + x1) / 2, (y0 + y1) / 2, Swift.max(2, Swift.max(x1 - x0, y1 - y0) / 2))
+    }
+
+    /// The pixels the brush (or the outline, with its soft edge; or the eye circle) touches.
     func footprintBox(_ step: Retouch, width: Int, height: Int) -> PixelBox {
+        if RetouchTools.eyes.contains(step.tool) {
+            let c = eyeCircle(step)
+            guard c.r > 0 else { return PixelBox(x0: 0, y0: 0, x1: 0, y1: 0) }
+            return PixelBox(x0: Int((c.x - c.r).rounded(.down)) - 1, y0: Int((c.y - c.r).rounded(.down)) - 1,
+                            x1: Int((c.x + c.r).rounded(.up)) + 1, y1: Int((c.y + c.r).rounded(.up)) + 1)
+                .expanded(by: 0, width: width, height: height)
+        }
         if RetouchTools.outlined.contains(step.tool) {
             guard step.points.count >= 3 else { return PixelBox(x0: 0, y0: 0, x1: 0, y1: 0) }
             let xs = step.points.map { $0.x * Double(base.width) }, ys = step.points.map { $0.y * Double(base.height) }

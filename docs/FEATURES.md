@@ -119,7 +119,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [ ] 87. **Remove reflections** — clear reflections from glass **AI · later**
 - [ ] 88. **Dust removal** — auto-detect and remove sensor dust **AI · later**
 - [x] 89. **Visualize spots** — high-contrast view to find dust
-- [ ] 90. **Red eye / pet eye** — fix flash eyes
+- [x] 90. **Red eye / pet eye** — fix flash eyes
 - [ ] 91. **Blemish removal** — AI auto-detects and removes acne and spots **AI · later**
 - [ ] 92. **Skin smoothing** — soften skin, keep pores and freckles **AI · later**
 - [ ] 93. **Teeth whitening / eye brightening** — quick portrait fixes **AI · later**

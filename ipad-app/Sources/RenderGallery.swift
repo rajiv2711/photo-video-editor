@@ -172,10 +172,14 @@ enum RenderGallery {
     /// - "fisheye": the grid as a 120° fisheye lens would show it (fisheye correction).
     /// - "dust": the test photo with five dark dust spots on the background (radius 7 px, at
     ///   `dustSpots`) and a thin dark wire across the top (retouching).
+    /// - "red-eye": two eyes on skin, their pupils flash-red (red eye).
+    /// - "pet-eye": two animal eyes on dark fur, their pupils glowing pale green (pet eye).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
         case "dust":
             return dusty(photo)
+        case "red-eye", "pet-eye":
+            return eyes(size: photo.extent.integral.size, pet: source == "pet-eye")
         case "fringe":
             // High contrast, as where real fringes show: the sharp grid inverted (bright lines on dark).
             guard let grid = gridPicture(size: photo.extent.integral.size) else { return photo }
@@ -277,6 +281,38 @@ enum RenderGallery {
 
     /// For making the generated pictures.
     private static let context = CIContext()
+
+    /// Eyes at (0.35, 0.42) and (0.65, 0.42): red-eye pupils (radius 2.5 % of the width) in brown
+    /// irises on skin, or glowing pupils (3.5 %) in yellow-green irises on dark fur.
+    static func eyes(size: CGSize, pet: Bool) -> CIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.preferredRange = .standard
+        let picture = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            (pet ? UIColor(red: 0.3, green: 0.25, blue: 0.2, alpha: 1) : UIColor(red: 0.87, green: 0.68, blue: 0.58, alpha: 1)).setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            let w = size.width
+            for x in [0.35, 0.65] as [CGFloat] {
+                let centre = CGPoint(x: x * w, y: 0.42 * size.height)
+                func disc(_ radius: CGFloat, _ color: UIColor) {
+                    color.setFill()
+                    ctx.cgContext.fillEllipse(in: CGRect(x: centre.x - radius, y: centre.y - radius, width: 2 * radius, height: 2 * radius))
+                }
+                if pet {
+                    disc(0.06 * w, UIColor(red: 0.6, green: 0.65, blue: 0.2, alpha: 1))
+                    disc(0.035 * w, UIColor(red: 0.75, green: 1, blue: 0.7, alpha: 1))
+                } else {
+                    UIColor(white: 0.95, alpha: 1).setFill()
+                    ctx.cgContext.fillEllipse(in: CGRect(x: centre.x - 0.09 * w, y: centre.y - 0.035 * size.height,
+                                                         width: 0.18 * w, height: 0.07 * size.height))
+                    disc(0.045 * w, UIColor(red: 0.45, green: 0.3, blue: 0.2, alpha: 1))
+                    disc(0.025 * w, UIColor(red: 0.85, green: 0.12, blue: 0.1, alpha: 1))
+                }
+            }
+        }
+        guard let cg = picture.cgImage else { return CIImage(color: .gray).cropped(to: CGRect(origin: .zero, size: size)) }
+        return CIImage(cgImage: cg)
+    }
 
     /// Where the "dust" picture's spots are (x, y from the top-left, 0…1).
     static let dustSpots: [(x: CGFloat, y: CGFloat)] = [(0.12, 0.10), (0.85, 0.12), (0.88, 0.55), (0.10, 0.70), (0.75, 0.90)]

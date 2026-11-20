@@ -717,3 +717,13 @@
 {"group":"retouch","text":"visualize spots","expect":[{"op":"set","control":"visualizeSpots","value":1}]}
 {"group":"retouch","text":"visualize threshold 70","expect":[{"op":"set","control":"visualizeThreshold","value":70}]}
 {"group":"retouch","text":"spot threshold up","expect":[{"op":"nudge","control":"visualizeThreshold","steps":1}]}
+{"group":"retouch","text":"red eye","expect":[{"op":"run","control":"redEye"}]}
+{"group":"retouch","text":"red eye removal","expect":[{"op":"run","control":"redEye"}]}
+{"group":"retouch","text":"pet eye","expect":[{"op":"run","control":"petEye"}]}
+{"group":"retouch","text":"animal eyes","expect":[{"op":"run","control":"petEye"}]}
+{"group":"retouch","text":"pupil size 70","expect":[{"op":"set","control":"pupilSize","value":70}]}
+{"group":"retouch","text":"pupil size up","expect":[{"op":"nudge","control":"pupilSize","steps":1}]}
+{"group":"retouch","text":"pupil darken 80","expect":[{"op":"set","control":"pupilDarken","value":80}]}
+{"group":"retouch","text":"darken more","expect":[{"op":"nudge","control":"pupilDarken","steps":1}]}
+{"group":"retouch","text":"catchlight off","expect":[{"op":"set","control":"catchlight","value":0}]}
+{"group":"retouch","text":"add catchlight","expect":[{"op":"nudge","control":"catchlight","steps":1}]}
