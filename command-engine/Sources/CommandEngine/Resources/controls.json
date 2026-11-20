@@ -901,7 +901,8 @@
       "options": [
         {"id": "none", "label": "None", "synonyms": ["off", "no tool"]},
         {"id": "remove", "label": "Remove Brush", "synonyms": ["remove"]},
-        {"id": "heal", "label": "Heal", "synonyms": ["healing"]}
+        {"id": "heal", "label": "Heal", "synonyms": ["healing"]},
+        {"id": "clone", "label": "Clone", "synonyms": ["clone stamp"]}
       ]},
     {"id": "removeBrush", "label": "Remove Brush", "group": "retouch", "kind": "action", "tool": "remove",
       "synonyms": ["remove tool", "content aware remove", "content-aware remove", "content aware fill", "content-aware fill",
@@ -918,6 +919,8 @@
       "synonyms": ["heal brush", "healing brush", "healing", "heal tool", "spot healing", "spot heal", "spot healing brush",
                    "spot removal", "heal spot"]},
     {"id": "spotSource", "label": "Spot Source", "group": "retouch", "kind": "action",
-      "synonyms": ["clone source", "heal source", "source", "pick source", "set source", "choose source", "source point"]}
+      "synonyms": ["clone source", "heal source", "source", "pick source", "set source", "choose source", "source point"]},
+    {"id": "cloneTool", "label": "Clone", "group": "retouch", "kind": "action", "tool": "clone",
+      "synonyms": ["clone stamp", "clone tool", "clone brush", "stamp tool", "clone stamp tool", "stamp"]}
   ]
 }

@@ -218,6 +218,9 @@ public final class RetouchCanvas {
             let box = write.expanded(by: 2, width: width, height: height)
             guard let o = pixels(step.offset) else { return nil }
             return Plan(read: union(box, shifted(box, o, width: width, height: height)), write: box)
+        case "clone":
+            guard let o = pixels(step.offset) else { return nil }
+            return Plan(read: union(write, shifted(write, o, width: width, height: height)), write: write)
         default:
             return nil
         }
@@ -259,6 +262,11 @@ public final class RetouchCanvas {
             return remove(step, plan: plan, image: image)
         case "heal":
             return heal(step, plan: plan, image: image)
+        case "clone":
+            // The source's pixels as they are, blended in by the brush's soft edge.
+            guard let o = pixels(step.offset) else { return image.crop(plan.write).pixels }
+            let box = plan.write
+            return blend(copied(image, box: box, offset: o), over: image.crop(box), cover: footprint(step, in: box), from: box, to: box)
         default:
             return image.crop(plan.write).pixels
         }

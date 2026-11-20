@@ -583,6 +583,7 @@ final class EditorModel: ObservableObject {
     static let toolHints: [String: String] = [
         "remove": "paint over what to remove",
         "heal": "tap or paint over a spot; it takes texture from nearby, matched to the colours around it (“clone source”, then tap, to choose where from)",
+        "clone": "tap or paint; it copies pixels exactly from nearby (“clone source”, then tap, to choose where from)",
     ]
 
     /// What to do on the photo after making a mask part.

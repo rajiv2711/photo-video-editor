@@ -705,3 +705,6 @@
 {"group":"retouch","text":"heal brush size 3","expect":[{"op":"run","control":"healTool"},{"op":"set","control":"brushSize","value":3}]}
 {"group":"retouch","text":"clone source","expect":[{"op":"run","control":"spotSource"}]}
 {"group":"retouch","text":"pick source","expect":[{"op":"run","control":"spotSource"}]}
+{"group":"retouch","text":"clone","expect":[{"op":"run","control":"cloneTool"}]}
+{"group":"retouch","text":"clone stamp","expect":[{"op":"run","control":"cloneTool"}]}
+{"group":"retouch","text":"clone brush size 4","expect":[{"op":"run","control":"cloneTool"},{"op":"set","control":"brushSize","value":4}]}

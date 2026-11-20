@@ -112,7 +112,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 - [x] 81. **Remove brush** — paint over a distraction; content-aware fill
 - [x] 82. **Heal** — fix a spot by blending texture from nearby
-- [ ] 83. **Clone** — copy pixels exactly from a source spot
+- [x] 83. **Clone** — copy pixels exactly from a source spot
 - [ ] 84. **Patch / content-aware move** — move an object and fill the hole
 - [ ] 85. **Remove people** — auto-detect and remove background people **AI · later**
 - [ ] 86. **Remove wires & cables** — auto-detect and remove power lines **AI · later**

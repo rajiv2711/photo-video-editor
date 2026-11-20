@@ -57,10 +57,10 @@ public struct Retouch: Hashable, Codable {
 /// which per-step settings each keeps.
 public enum RetouchTools {
     /// Option ids of the "retouchTool" choice; must match controls.json (unit-tested).
-    public static let ids = ["none", "remove", "heal"]
+    public static let ids = ["none", "remove", "heal", "clone"]
 
     /// Tools that copy from a source spot (its `offset`; "clone source" picks it by a tap).
-    public static let copying: Set<String> = ["heal"]
+    public static let copying: Set<String> = ["heal", "clone"]
 
     /// The controls a new step of `tool` copies from the panel (and keeps as its own settings).
     public static func settings(for tool: String) -> [String] {

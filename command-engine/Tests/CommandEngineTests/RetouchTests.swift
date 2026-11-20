@@ -293,4 +293,39 @@ final class RetouchTests: XCTestCase {
         let healed = canvas.render([light]).image
         XCTAssertEqual(Self.mean(healed, spot), Self.mean(truth, spot), accuracy: 0.04)
     }
+
+    // MARK: - Clone
+
+    func testCloneNames() {
+        XCTAssertEqual(parse("clone"), [.run("cloneTool")])
+        XCTAssertEqual(parse("clone stamp"), [.run("cloneTool")])
+        XCTAssertEqual(parse("clone brush size 4"), [.run("cloneTool"), .set("brushSize", 4)])
+        XCTAssertEqual(parse("clone source"), [.run("spotSource")])
+    }
+
+    func testCloneCopiesPixelsExactly() {
+        // A checkerboard on the left, flat grey on the right; clone the checkerboard onto the grey.
+        let size = (100, 50)
+        let picture = Self.picture(size.0, size.1) { x, y in
+            x < 50 ? (((x / 3 + y / 3) % 2 == 0) ? (0.9, 0.2, 0.2) : (0.1, 0.1, 0.6)) : (0.5, 0.5, 0.5)
+        }
+        var step = Self.tap("clone", 75, 25, of: size, brush: 20, values: ["spotOpacity": 100])
+        step.offset = MaskPoint(-50.0 / 100, 0)
+        let out = RetouchCanvas(base: picture).render([step]).image
+        // In the brush's hard core every pixel is the one 50 px to the left.
+        for y in 22..<28 {
+            for x in 72..<78 {
+                let a = out.color(x, y), b = picture.color(x - 50, y)
+                XCTAssertEqual(a.0, b.0, accuracy: 1e-5)
+                XCTAssertEqual(a.2, b.2, accuracy: 1e-5)
+            }
+        }
+        XCTAssertEqual(out.color(95, 5).0, 0.5, "outside the brush nothing changes")
+
+        // No source chosen: one is picked where the surroundings match, so cloning on grey copies grey.
+        let auto = Self.tap("clone", 75, 25, of: size, brush: 20)
+        let result = RetouchCanvas(base: picture).render([auto])
+        XCTAssertEqual(Self.mean(result.image, PixelBox(x0: 70, y0: 20, x1: 80, y1: 30)), 0.5, accuracy: 0.01)
+        XCTAssertNotNil(result.sources[0])
+    }
 }
