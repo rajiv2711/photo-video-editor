@@ -161,9 +161,9 @@ final class EditorModel: ObservableObject {
             focusedControlID = interpreter.lastControlID
             feedback = describe(outcomes)
         case "pointColorPicker":
-            // The hue of the unedited photo there becomes Point color's target.
-            let color = ImageStats.averageColor(of: previewSource, in: Self.spot(x, y, in: previewSource.extent),
-                                                context: renderer.context)
+            // The hue of the photo there (before other edits) becomes Point color's target.
+            let image = renderer.whiteBalanceInput(previewSource, value: currentValue)
+            let color = ImageStats.averageColor(of: image, in: Self.spot(x, y, in: image.extent), context: renderer.context)
             if let hue = ColorLook.pickedHue(linear: color) {
                 let outcomes = interpreter.apply([.set("pointHue", hue.rounded())], state: &state)
                 focusedControlID = interpreter.lastControlID

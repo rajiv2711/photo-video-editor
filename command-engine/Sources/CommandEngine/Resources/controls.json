@@ -514,6 +514,8 @@
       "synonyms": ["profile strength", "look amount"], "min": 0, "max": 200, "default": 100, "step": 5},
     {"id": "invert", "label": "Invert", "group": "color", "kind": "toggle",
       "synonyms": ["inverse", "inverted", "invert colors", "invert colours", "negative", "photo negative"]},
+    {"id": "filmNegative", "label": "Film Negative", "group": "color", "kind": "toggle",
+      "synonyms": ["film negative conversion", "negative conversion", "convert negative", "film scan", "scanned negative"]},
     {"id": "channelRedFromRed", "label": "Red from Red", "group": "color", "section": "Channel mixer", "kind": "slider",
       "synonyms": ["red channel red", "channel mixer red red"], "min": -200, "max": 200, "default": 100, "step": 5},
     {"id": "channelRedFromGreen", "label": "Red from Green", "group": "color", "section": "Channel mixer", "kind": "slider",

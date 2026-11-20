@@ -33,6 +33,21 @@ enum ImageStats {
         return averageColor(of: chroma, in: image.extent, context: context).r
     }
 
+    /// Share of pixels per level bin for each channel (sRGB levels), darkest first.
+    static func channelHistograms(of image: CIImage, extent: CGRect, context: CIContext, bins: Int = 256)
+        -> (red: [Double], green: [Double], blue: [Double]) {
+        let histogram = image.applyingFilter("CILinearToSRGBToneCurve").applyingFilter("CIAreaHistogram", parameters: [
+            "inputExtent": CIVector(cgRect: extent),
+            "inputCount": bins,
+            "inputScale": 1.0,
+        ])
+        var pixels = [Float](repeating: 0, count: bins * 4)
+        context.render(histogram, toBitmap: &pixels, rowBytes: bins * 16,
+                       bounds: CGRect(x: 0, y: 0, width: bins, height: 1), format: .RGBAf, colorSpace: nil)
+        func channel(_ k: Int) -> [Double] { stride(from: k, to: pixels.count, by: 4).map { Double(pixels[$0]) } }
+        return (channel(0), channel(1), channel(2))
+    }
+
     /// Share of pixels per brightness bin (Rec. 709 luma of sRGB-encoded levels), darkest first.
     static func lumaHistogram(of image: CIImage, extent: CGRect, context: CIContext, bins: Int = 256) -> [Double] {
         let encoded = image.applyingFilter("CILinearToSRGBToneCurve")

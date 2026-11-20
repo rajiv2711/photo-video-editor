@@ -481,3 +481,7 @@
 {"group":"color","text":"invert off","expect":[{"op":"set","control":"invert","value":0}]}
 {"group":"color","text":"turn on negative","expect":[{"op":"set","control":"invert","value":1}]}
 {"group":"color","text":"reset invert","expect":[{"op":"reset","control":"invert"}]}
+{"group":"color","text":"film negative","expect":[{"op":"set","control":"filmNegative","value":1}]}
+{"group":"color","text":"film negative off","expect":[{"op":"set","control":"filmNegative","value":0}]}
+{"group":"color","text":"turn on negative conversion","expect":[{"op":"set","control":"filmNegative","value":1}]}
+{"group":"color","text":"convert negative","expect":[{"op":"set","control":"filmNegative","value":1}]}

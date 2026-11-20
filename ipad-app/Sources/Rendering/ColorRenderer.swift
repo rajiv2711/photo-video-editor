@@ -2,7 +2,7 @@ import CommandEngine
 import CoreImage
 import CoreImage.CIFilterBuiltins
 
-/// The Color panel, in Lightroom's order. `input` runs before the Light panel (white balance);
+/// The Color panel, in Lightroom's order. `input` runs before the Light panel (film negative, white balance);
 /// `apply` runs after it (vibrance, saturation, hue, the colour cube, match color, LUT, invert).
 /// The colour math lives in CommandEngine (WhiteBalance, ColorLook) so it is tested on Linux.
 final class ColorRenderer {
@@ -19,9 +19,23 @@ final class ColorRenderer {
         self.context = context
     }
 
-    /// Steps that come before the Light panel: white balance.
+    /// Steps that come before the Light panel: film negative conversion, white balance.
     func input(_ image: CIImage, value: (String) -> Double?) -> CIImage {
-        whiteBalance(image, value: value)
+        whiteBalance(filmNegative(image, value: value), value: value)
+    }
+
+    /// Film negative conversion: each channel inverted and stretched between its own darkest and
+    /// brightest levels (FilmNegative in CommandEngine), which also removes the orange film mask.
+    func filmNegative(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+        guard (value("filmNegative") ?? 0) != 0 else { return image }
+        let h = ImageStats.channelHistograms(of: image, extent: image.extent, context: context)
+        let t = FilmNegative.transfer(red: h.red, green: h.green, blue: h.blue)
+        return image.applyingFilter("CILinearToSRGBToneCurve").applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: CGFloat(t.scale.r), y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: CGFloat(t.scale.g), z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: CGFloat(t.scale.b), w: 0),
+            "inputBiasVector": CIVector(x: CGFloat(t.bias.r), y: CGFloat(t.bias.g), z: CGFloat(t.bias.b), w: 0),
+        ]).applyingFilter("CISRGBToneCurveToLinear")
     }
 
     /// Steps that come after the Light panel. `extent` is the photo's own frame (filters before

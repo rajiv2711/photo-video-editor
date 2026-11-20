@@ -22,7 +22,7 @@ final class PhotoRenderer {
     func apply(to image: CIImage, value: (String) -> Double?) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         var output = image
-        output = color.input(output, value: value)  // white balance
+        output = color.input(output, value: value)  // film negative, white balance
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: image.extent, value: value)
         // (Effects, detail and optics follow here.)
@@ -32,9 +32,10 @@ final class PhotoRenderer {
         return output.cropped(to: image.extent)
     }
 
-    /// The picture the white balance step works on (what the white balance picker samples).
+    /// The picture the white balance step works on (after film negative conversion): what the
+    /// picker tools sample.
     func whiteBalanceInput(_ image: CIImage, value: (String) -> Double?) -> CIImage {
-        image
+        color.filmNegative(image, value: value)
     }
 
     /// Pixels for the screen. `hdr` keeps levels above white (half floats, extended Display P3),

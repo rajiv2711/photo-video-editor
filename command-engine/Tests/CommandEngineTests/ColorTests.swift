@@ -528,4 +528,32 @@ final class ColorTests: XCTestCase {
         let double = ColorLook.transform(red, look(["profile": 1, "profileAmount": 200]))
         XCTAssertGreaterThan(double.max - double.min, vivid.max - vivid.min)
     }
+
+    // MARK: - Invert and film negative
+
+    func testInvertAndFilmNegativeNames() {
+        XCTAssertEqual(parse("invert"), [.set("invert", 1)])
+        XCTAssertEqual(parse("negative off"), [.set("invert", 0)])
+        XCTAssertEqual(parse("film negative on"), [.set("filmNegative", 1)])
+        XCTAssertEqual(parse("convert negative"), [.set("filmNegative", 1)])
+    }
+
+    func testFilmNegativeUndoesAnOrangeMaskedNegative() {
+        // A positive spread evenly over 0.1…0.9 per channel, photographed as a negative through an
+        // orange base (red 0.95, green 0.6, blue 0.35): negative = base × (1 − positive).
+        func histogram(_ base: Double) -> [Double] {
+            (0..<256).map { i in
+                let level = (Double(i) + 0.5) / 256
+                let lo = base * 0.1, hi = base * 0.9
+                return level >= lo && level <= hi ? 1 : 0
+            }
+        }
+        let t = FilmNegative.transfer(red: histogram(0.95), green: histogram(0.6), blue: histogram(0.35))
+        // A mid-grey of the scene (0.5) is base × 0.5 on the negative; it must come back grey.
+        let back = RGB(0.95 * 0.5 * t.scale.r + t.bias.r, 0.6 * 0.5 * t.scale.g + t.bias.g, 0.35 * 0.5 * t.scale.b + t.bias.b)
+        assertClose(back.r, back.g, 0.02)
+        assertClose(back.g, back.b, 0.02)
+        assertClose(back.g, 0.5, 0.02)
+        XCTAssertLessThan(t.scale.r, 0, "inverted")
+    }
 }
