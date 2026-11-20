@@ -561,3 +561,6 @@
 {"group":"optics","text":"purple fringe hue 30","expect":[{"op":"set","control":"defringePurpleHue","value":30}]}
 {"group":"optics","text":"green fringe 40","expect":[{"op":"set","control":"defringeGreen","value":40}]}
 {"group":"optics","text":"green fringe hue up","expect":[{"op":"nudge","control":"defringeGreenHue","steps":1}]}
+{"group":"optics","text":"distortion 30","expect":[{"op":"set","control":"distortion","value":30}]}
+{"group":"optics","text":"lens distortion less","expect":[{"op":"nudge","control":"distortion","steps":-1}]}
+{"group":"optics","text":"reset distortion","expect":[{"op":"reset","control":"distortion"}]}

@@ -17,7 +17,7 @@ final class OpticsTests: XCTestCase {
 
     func testOpticsControlsAreInTheOpticsPanel() {
         for id in ["lensProfile", "removeCA", "caRedCyan", "caBlueYellow", "defringePurple", "defringePurpleHue",
-                   "defringeGreen", "defringeGreenHue"] {
+                   "defringeGreen", "defringeGreenHue", "distortion"] {
             XCTAssertEqual(registry.control(id: id)?.group, "optics", id)
         }
     }
@@ -191,5 +191,49 @@ final class OpticsTests: XCTestCase {
                        "320° still reaches 300°")
         XCTAssertNotEqual(Defringe.apply(magenta, purple: 1, purpleHue: Defringe.purpleHue(0), green: 0, greenHue: g), fixed)
         XCTAssertEqual(Defringe.cube(purple: 1, purpleHue: p, green: 1, greenHue: g, size: 5).count, 5 * 5 * 5 * 4)
+    }
+
+    // MARK: - Manual distortion
+
+    func testDistortionNames() {
+        XCTAssertEqual(parse("distortion 30"), [.set("distortion", 30)])
+        XCTAssertEqual(parse("lens distortion less"), [.nudge("distortion", -1)])
+    }
+
+    /// Points along a straight vertical line, bowed outwards like barrel distortion (r·(1 − 0.06 r²)).
+    func testPositiveDistortionStraightensBarrel() {
+        let w = 300.0, h = 200.0, corner = (w * w + h * h).squareRoot() / 2
+        func barrel(_ p: LensWarp.Point) -> LensWarp.Point {
+            let r = p.length / corner
+            return p.scaled(1 - 0.06 * r * r)
+        }
+        // Where the straight line x = 120 ends up in the photo as shot.
+        let shot = stride(from: -100.0, through: 100.0, by: 25).map { barrel(LensWarp.Point(x: 120, y: $0)) }
+        func bow(_ warp: LensWarp) -> Double {
+            // Corrected positions: search each shot point's place in the corrected picture along its ray.
+            let xs = shot.map { target -> Double in
+                var lo = 0.0, hi = 2.0
+                for _ in 0..<60 {
+                    let mid = (lo + hi) / 2
+                    if warp.source(of: target.scaled(mid), width: w, height: h).green.length < target.length { lo = mid } else { hi = mid }
+                }
+                return target.scaled(lo).x
+            }
+            return (xs.max() ?? 0) - (xs.min() ?? 0)
+        }
+        let none = bow(LensWarp(distortion: 0)), fixed = bow(LensWarp(distortion: 0.24))
+        XCTAssertGreaterThan(none, 1.5, "the shot line is bowed")
+        XCTAssertLessThan(fixed, none / 5, "positive distortion straightens it")
+        XCTAssertGreaterThan(bow(LensWarp(distortion: -0.24)), none, "negative bows it more")
+    }
+
+    func testDistortionKeepsTheFrameFilled() {
+        for amount in [-1.0, 1.0] {
+            let warp = LensWarp(distortion: amount)
+            let s = warp.fillScale(width: 300, height: 200)
+            let corner = warp.source(of: LensWarp.Point(x: 150 * s, y: 100 * s), width: 300, height: 200).green
+            XCTAssertLessThanOrEqual(abs(corner.x), 150 + 1e-6)
+            XCTAssertLessThanOrEqual(abs(corner.y), 100 + 1e-6)
+        }
     }
 }

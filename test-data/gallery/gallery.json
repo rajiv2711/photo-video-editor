@@ -241,6 +241,8 @@
     {"id": "defringe-purple", "command": "purple fringe 100", "source": "fringe", "control": "defringePurple", "expect": [{"metric": "fringe", "dir": "down", "vs": "fringe-cast"}]},
     {"id": "defringe-purple-hue", "command": "purple fringe 100 purple fringe hue 0", "source": "fringe", "control": "defringePurpleHue", "expect": [{"metric": "diff", "dir": "changed", "vs": "defringe-purple", "min": 0.3}]},
     {"id": "defringe-green", "command": "green fringe 100", "source": "fringe", "control": "defringeGreen", "expect": [{"metric": "fringe", "dir": "down", "vs": "fringe-cast"}]},
-    {"id": "defringe-green-hue", "command": "green fringe 100 green fringe hue 100", "source": "fringe", "control": "defringeGreenHue", "expect": [{"metric": "diff", "dir": "changed", "vs": "defringe-green", "min": 0.3}]}
+    {"id": "defringe-green-hue", "command": "green fringe 100 green fringe hue 100", "source": "fringe", "control": "defringeGreenHue", "expect": [{"metric": "diff", "dir": "changed", "vs": "defringe-green", "min": 0.3}]},
+    {"id": "distortion-plus", "command": "distortion 100", "source": "grid", "control": "distortion", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid"}, {"metric": "mean_luma", "dir": "same", "vs": "grid", "min": 3}]},
+    {"id": "distortion-minus", "command": "distortion -100", "source": "grid", "control": "distortion", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid"}, {"metric": "diff", "dir": "changed", "vs": "distortion-plus"}]}
   ]
 }

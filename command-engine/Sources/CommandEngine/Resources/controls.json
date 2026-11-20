@@ -713,6 +713,9 @@
     {"id": "defringeGreen", "label": "Green Fringe", "group": "optics", "section": "Defringe", "kind": "slider",
       "synonyms": ["defringe green", "green defringe", "green amount", "green fringing"], "min": 0, "max": 100, "default": 0, "step": 5},
     {"id": "defringeGreenHue", "label": "Green Fringe Hue", "group": "optics", "section": "Defringe", "kind": "slider",
-      "synonyms": ["defringe green hue", "green fringe color", "green fringe colour"], "min": 0, "max": 100, "default": 50, "step": 5}
+      "synonyms": ["defringe green hue", "green fringe color", "green fringe colour"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "distortion", "label": "Distortion", "group": "optics", "kind": "slider",
+      "synonyms": ["lens distortion", "manual distortion", "distortion correction", "barrel distortion", "pincushion distortion"],
+      "min": -100, "max": 100, "default": 0, "step": 5}
   ]
 }

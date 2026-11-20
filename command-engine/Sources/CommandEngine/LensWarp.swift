@@ -13,16 +13,20 @@ public struct LensWarp: Equatable {
     /// Chromatic aberration: red and blue are read this many times further out than green (1 = as shot).
     public var redScale: Double
     public var blueScale: Double
+    /// Manual distortion, −1…1: positive straightens barrel distortion (lines bowing out), negative
+    /// straightens pincushion distortion (lines bowing in).
+    public var distortion: Double
 
-    public init(profile: LensCorrection? = nil, redScale: Double = 1, blueScale: Double = 1) {
+    public init(profile: LensCorrection? = nil, redScale: Double = 1, blueScale: Double = 1, distortion: Double = 0) {
         self.profile = profile
         self.redScale = redScale
         self.blueScale = blueScale
+        self.distortion = distortion
     }
 
     /// Nothing to do.
     public var isIdentity: Bool {
-        profile == nil && redScale == 1 && blueScale == 1
+        profile == nil && redScale == 1 && blueScale == 1 && distortion == 0
     }
 
     /// A position in pixels from the photo's centre.
@@ -43,6 +47,13 @@ public struct LensWarp: Equatable {
     /// the photo as shot, for red, green and blue. `width`, `height`: the photo's size in pixels.
     public func source(of p: Point, width: Double, height: Double) -> (red: Point, green: Point, blue: Point) {
         var q = p
+        let corner = (width * width + height * height).squareRoot() / 2
+        // Manual distortion: read from r·(1 + k r²), r = 1 at the corner. k < 0 pulls the corners in
+        // (a pincushion warp, which straightens barrel distortion).
+        if distortion != 0 {
+            let r = q.length / corner
+            q = q.scaled(1 - 0.25 * distortion * r * r)
+        }
         var red = 1.0, blue = 1.0
         if let lens = profile {
             let short = Swift.min(width, height) / 2
