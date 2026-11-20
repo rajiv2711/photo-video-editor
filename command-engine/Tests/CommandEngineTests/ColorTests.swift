@@ -441,4 +441,28 @@ final class ColorTests: XCTestCase {
         let half = ColorLook.transform(RGB(0.8, 0.2, 0.1), look(["gradientMap": 1, "gradientMapAmount": 50]))
         assertClose(half.r, (0.8 + noir.r) / 2, 1e-9)
     }
+
+    // MARK: - Match color
+
+    func testMatchColorReferencesMatchControlsJSON() {
+        XCTAssertEqual(options("matchColor"), MatchColor.referenceIDs)
+        XCTAssertEqual(parse("match color sunset"), [.set("matchColor", 2)])
+        XCTAssertEqual(parse("match colour test photo"), [.set("matchColor", 1)])
+    }
+
+    func testMatchColorMovesAverageAndSpread() {
+        let photo = MatchColor.Stats(mean: RGB(0.6, 0.5, 0.4), deviation: RGB(0.2, 0.2, 0.2))
+        let reference = MatchColor.Stats(mean: RGB(0.4, 0.5, 0.6), deviation: RGB(0.1, 0.2, 0.3))
+        let t = MatchColor.transfer(from: photo, to: reference, amount: 1)
+        assertClose(0.6 * t.scale.r + t.bias.r, 0.4, 1e-9)
+        assertClose(0.4 * t.scale.b + t.bias.b, 0.6, 1e-9)
+        assertClose(t.scale.r, 0.5, 1e-9)
+        assertClose(t.scale.b, 1.5, 1e-9)
+        let none = MatchColor.transfer(from: photo, to: reference, amount: 0)
+        XCTAssertEqual(none.scale, RGB(1, 1, 1))
+        XCTAssertEqual(none.bias, RGB(0, 0, 0))
+        let stats = MatchColor.Stats(mean: RGB(0.5, 0.5, 0.5), meanOfSquares: RGB(0.29, 0.25, 0.25))
+        assertClose(stats.deviation.r, 0.2, 1e-9)
+        assertClose(stats.deviation.g, 0, 1e-9)
+    }
 }

@@ -46,7 +46,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 31. **Selective color** — CMYK shifts inside one colour family
 - [x] 32. **Photo filter** — warming or cooling coloured filter
 - [x] 33. **Gradient map** — map dark→light tones onto a colour gradient
-- [ ] 34. **Match color** — copy the colour mood of another photo
+- [x] 34. **Match color** — copy the colour mood of another photo
 - [ ] 35. **LUT** — apply .cube / .3dl colour lookup tables
 - [ ] 36. **Profiles** — base look (Standard, Vivid, Portrait, Landscape, Mono…) with Amount
 - [ ] 37. **Adaptive profile** — AI picks a base look for this scene **AI · later**

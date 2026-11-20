@@ -9,6 +9,8 @@ final class ColorRenderer {
     let context: CIContext
     /// The last colour cube and the control values it was made for (sliders move one at a time).
     private var cachedCube: (key: [Double], data: Data)?
+    /// Match color: statistics of each reference picture, worked out once.
+    private var referenceStats: [String: MatchColor.Stats] = [:]
 
     init(context: CIContext) {
         self.context = context
@@ -19,8 +21,9 @@ final class ColorRenderer {
         whiteBalance(image, value: value)
     }
 
-    /// Steps that come after the Light panel.
-    func apply(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+    /// Steps that come after the Light panel. `extent` is the photo's own frame (filters before
+    /// may have grown the image's).
+    func apply(_ image: CIImage, extent: CGRect, value: (String) -> Double?) -> CIImage {
         var output = image
 
         // Vibrance: boosts muted colours more than strong ones, and spares skin tones.
@@ -52,6 +55,7 @@ final class ColorRenderer {
         }
 
         output = colorCube(output, value: value)
+        output = matchColor(output, extent: extent, value: value)
 
         return output
     }
@@ -76,6 +80,39 @@ final class ColorRenderer {
             "inputCubeData": data,
             "inputColorSpace": space,
         ])
+    }
+
+    /// Match color: moves each channel's average and spread onto the reference picture's
+    /// (MatchColor in CommandEngine), on sRGB levels, mixed in by Match Amount.
+    private func matchColor(_ image: CIImage, extent: CGRect, value: (String) -> Double?) -> CIImage {
+        let index = Int(value("matchColor") ?? 0)
+        guard index > 0, MatchColor.referenceIDs.indices.contains(index),
+              let reference = stats(ofReference: MatchColor.referenceIDs[index]) else { return image }
+        let source = ImageStats.levelStats(of: image, extent: extent, context: context)
+        let t = MatchColor.transfer(from: source, to: reference, amount: (value("matchAmount") ?? 100) / 100)
+        let matched = image.applyingFilter("CILinearToSRGBToneCurve").applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: CGFloat(t.scale.r), y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: CGFloat(t.scale.g), z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: CGFloat(t.scale.b), w: 0),
+            "inputBiasVector": CIVector(x: CGFloat(t.bias.r), y: CGFloat(t.bias.g), z: CGFloat(t.bias.b), w: 0),
+        ])
+        return matched.applyingFilter("CISRGBToneCurveToLinear")
+    }
+
+    /// The reference pictures: the bundled test photo, and a generated sunset (PhotoRenderer.sample).
+    private func stats(ofReference id: String) -> MatchColor.Stats? {
+        if let known = referenceStats[id] { return known }
+        let picture: CIImage?
+        switch id {
+        case "testPhoto": picture = Bundle.main.url(forResource: "test", withExtension: "jpg").flatMap { CIImage(contentsOf: $0) }
+        case "sunset": picture = PhotoRenderer.sample()
+        default: picture = nil
+        }
+        guard let picture else { return nil }
+        let small = PhotoRenderer.downscaled(picture, maxSide: 512)
+        let stats = ImageStats.levelStats(of: small, extent: small.extent, context: context)
+        referenceStats[id] = stats
+        return stats
     }
 
     /// White balance: the preset's light plus the Temperature and Tint sliders, as one multiplier

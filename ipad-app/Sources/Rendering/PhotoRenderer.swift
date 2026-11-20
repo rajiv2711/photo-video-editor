@@ -24,7 +24,7 @@ final class PhotoRenderer {
         var output = image
         output = color.input(output, value: value)  // white balance
         output = light.apply(output, value: value, hdr: hdr)
-        output = color.apply(output, value: value)
+        output = color.apply(output, extent: image.extent, value: value)
         // (Effects, detail and optics follow here.)
         if !hdr {
             output = output.applyingFilter("CIColorClamp")

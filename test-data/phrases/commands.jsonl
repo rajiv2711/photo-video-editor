@@ -460,3 +460,8 @@
 {"group":"color","text":"gradient map off","expect":[{"op":"set","control":"gradientMap","value":0}]}
 {"group":"color","text":"gradient map amount 50","expect":[{"op":"set","control":"gradientMapAmount","value":50}]}
 {"group":"color","text":"gradient amount down","expect":[{"op":"nudge","control":"gradientMapAmount","steps":-1}]}
+{"group":"color","text":"match color sunset","expect":[{"op":"set","control":"matchColor","value":2}]}
+{"group":"color","text":"match colour test photo","expect":[{"op":"set","control":"matchColor","value":1}]}
+{"group":"color","text":"match color off","expect":[{"op":"set","control":"matchColor","value":0}]}
+{"group":"color","text":"match amount 50","expect":[{"op":"set","control":"matchAmount","value":50}]}
+{"group":"color","text":"match strength less","expect":[{"op":"nudge","control":"matchAmount","steps":-1}]}

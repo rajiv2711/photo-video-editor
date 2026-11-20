@@ -16,6 +16,14 @@ enum ImageStats {
         return RGB(Double(pixel[0]), Double(pixel[1]), Double(pixel[2]))
     }
 
+    /// Average and spread of each channel on sRGB levels (Match color).
+    static func levelStats(of image: CIImage, extent: CGRect, context: CIContext) -> MatchColor.Stats {
+        let encoded = image.applyingFilter("CILinearToSRGBToneCurve")
+        let squared = encoded.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: encoded])
+        return MatchColor.Stats(mean: averageColor(of: encoded, in: extent, context: context),
+                                meanOfSquares: averageColor(of: squared, in: extent, context: context))
+    }
+
     /// Average of (brightest − darkest channel) per pixel on sRGB levels: 0 for a grey picture.
     static func meanChroma(of image: CIImage, context: CIContext) -> Double {
         let encoded = image.applyingFilter("CILinearToSRGBToneCurve")
