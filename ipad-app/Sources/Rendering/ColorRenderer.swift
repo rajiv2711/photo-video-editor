@@ -7,8 +7,9 @@ import CoreImage.CIFilterBuiltins
 /// The colour math lives in CommandEngine (WhiteBalance, ColorLook) so it is tested on Linux.
 final class ColorRenderer {
     let context: CIContext
-    /// The last colour cube and the control values it was made for (sliders move one at a time).
-    private var cachedCube: (key: [Double], data: Data)?
+    /// Colour cubes made lately, by the control values they were made for (the photo's own and each
+    /// mask's local one are used in turn on every render).
+    private var cachedCubes: [[Double]: Data] = [:]
     /// Match color: statistics of each reference picture, worked out once.
     private var referenceStats: [String: MatchColor.Stats] = [:]
     /// LUT files read so far, and the last cube data made from one (LUT id and amount).
@@ -93,12 +94,13 @@ final class ColorRenderer {
         guard !ColorLook.isIdentity(value), let space = CGColorSpace(name: CGColorSpace.sRGB) else { return image }
         let key = ColorLook.controlIDs.map { value($0) ?? ColorLook.neutral($0) }
         let data: Data
-        if let cached = cachedCube, cached.key == key {
-            data = cached.data
+        if let cached = cachedCubes[key] {
+            data = cached
         } else {
             let floats = ColorLook.cube(value, size: Self.cubeSize)
             data = floats.withUnsafeBufferPointer { Data(buffer: $0) }
-            cachedCube = (key, data)
+            if cachedCubes.count >= 6 { cachedCubes = [:] }
+            cachedCubes[key] = data
         }
         return image.applyingFilter("CIColorCubeWithColorSpace", parameters: [
             "inputCubeDimension": Self.cubeSize,

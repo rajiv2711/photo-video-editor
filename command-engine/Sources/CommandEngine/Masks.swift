@@ -116,6 +116,16 @@ public struct Mask: Hashable, Codable {
         components.indices.contains(selectedComponent) ? components[selectedComponent] : nil
     }
 
+    /// The value the mask's local pass uses for a control: its own, scaled by Mask Amount (0…200 %,
+    /// as Lightroom's Amount scales every local slider; colour grading's hue angles are directions
+    /// and stay as they are) and kept in the slider's range. Nil when the mask doesn't change it.
+    public func localValue(_ control: Control) -> Double? {
+        guard let value = adjustments[control.id] else { return nil }
+        if control.id.hasPrefix("grading") && control.id.hasSuffix("Hue") { return value }
+        let amount = (settings["maskAmount"] ?? 100) / 100
+        return control.clamp(control.defaultValue + (value - control.defaultValue) * amount)
+    }
+
     /// Everything that decides the mask's picture (parts and settings, not the local sliders), for caching.
     public var shape: MaskShape {
         MaskShape(components: components, settings: settings)

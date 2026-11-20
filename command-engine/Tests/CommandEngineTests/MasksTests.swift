@@ -676,3 +676,53 @@ final class MaskOverlayTests: XCTestCase {
         XCTAssertNil(registry.control(id: "maskOverlay")?.scope, "one switch for every mask")
     }
 }
+
+/// Local adjustments: which sliders a mask holds, by name, and Mask Amount.
+final class LocalAdjustmentsTests: XCTestCase {
+    private var registry: ControlRegistry!
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+    }
+
+    func testLightroomsLocalSliders() {
+        let local = Set(registry.controls.filter(\.local).map(\.id))
+        for id in ["exposure", "contrast", "highlights", "shadows", "whites", "blacks", "temperature", "tint", "hue", "saturation",
+                   "texture", "clarity", "dehaze", "sharpening", "noiseReduction", "moire", "gradingShadowsHue", "gradingGlobalSaturation",
+                   "gradingBlending", "gradingBalance"] {
+            XCTAssertTrue(local.contains(id), id)
+        }
+        for id in ["vignette", "grain", "lut", "whiteBalance", "distortion", "hdr"] {
+            XCTAssertFalse(local.contains(id), "\(id) stays photo-wide")
+        }
+    }
+
+    func testAnyLocalSliderByName() {
+        var state = EditState()
+        var interpreter = CommandInterpreter(registry: registry)
+        _ = interpreter.interpret("linear gradient from top", state: &state)
+        XCTAssertEqual(interpreter.interpret("saturation -50 clarity 30 global hue 240 global saturation 60", state: &state), [
+            .changedInMask(mask: 1, controlID: "saturation", from: 0, to: -50),
+            .changedInMask(mask: 1, controlID: "clarity", from: 0, to: 30),
+            .changedInMask(mask: 1, controlID: "gradingGlobalHue", from: 0, to: 240),
+            .changedInMask(mask: 1, controlID: "gradingGlobalSaturation", from: 0, to: 60),
+        ])
+        XCTAssertEqual(state.value(of: registry.control(id: "saturation")!), 0, "the global slider is untouched")
+        XCTAssertEqual(interpreter.interpret("mask amount 50", state: &state),
+                       [.changedInMask(mask: 1, controlID: "maskAmount", from: 100, to: 50)])
+    }
+
+    func testMaskAmountScalesTheLocalSliders() {
+        let mask = Mask(components: [MaskComponent(kind: "linear")], settings: ["maskAmount": 50],
+                        adjustments: ["exposure": -1, "gradingGlobalHue": 240, "gradingBlending": 80])
+        func local(_ id: String) -> Double? { mask.localValue(registry.control(id: id)!) }
+        XCTAssertEqual(local("exposure"), -0.5)
+        XCTAssertEqual(local("gradingGlobalHue"), 240, "a hue is a direction, not an amount")
+        XCTAssertEqual(local("gradingBlending"), 65, "scaled from its default (50)")
+        XCTAssertNil(local("contrast"))
+        var strong = mask
+        strong.settings["maskAmount"] = 200
+        strong.adjustments["exposure"] = 2
+        XCTAssertEqual(strong.localValue(registry.control(id: "exposure")!), 3, "kept in the slider's range")
+    }
+}

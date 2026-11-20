@@ -15,8 +15,8 @@ final class PhotoRenderer {
     private let detail: DetailRenderer
     private let optics: OpticsRenderer
     private let masks: MaskRenderer
-    /// Every control's default (a mask's local pass leaves all but its own sliders there).
-    private let defaults: [String: Double]
+    /// Every control by id (a mask's local pass leaves all but its own sliders at their defaults).
+    private let controls: [String: Control]
 
     init() {
         let context = CIContext()
@@ -28,7 +28,7 @@ final class PhotoRenderer {
         self.optics = OpticsRenderer(context: context)
         self.masks = MaskRenderer(context: context)
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
-        self.defaults = Dictionary(registry.controls.map { ($0.id, $0.defaultValue) }, uniquingKeysWith: { a, _ in a })
+        self.controls = Dictionary(registry.controls.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     }
 
     /// The photo's lens (EXIF), for Lens Profile Correction.
@@ -57,7 +57,8 @@ final class PhotoRenderer {
         output = color.apply(output, extent: extent, value: value)
         output = effects.apply(output, extent: extent, value: value)
         output = detail.apply(output, extent: extent, value: value)
-        for mask in masks where !mask.components.isEmpty && mask.adjustments.contains(where: { defaults[$0.key] != $0.value }) {
+        for mask in masks where !mask.components.isEmpty && (mask.settings["maskAmount"] ?? 100) > 0
+            && mask.adjustments.contains(where: { controls[$0.key]?.defaultValue != $0.value }) {
             let shape = self.masks.image(of: mask, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
             output = Filters.blend(local(output, mask: mask, extent: extent, hdr: hdr), over: output, mask: shape)
         }
@@ -73,11 +74,14 @@ final class PhotoRenderer {
     }
 
     /// A mask's local adjustments on the globally edited picture: the same panels in the same order,
-    /// with every slider at its default except the mask's own (exposure −1 inside the mask is one
-    /// stop darker than the global result there).
+    /// with every slider at its default except the mask's own, scaled by its Amount (exposure −1
+    /// inside the mask is one stop darker than the global result there).
     private func local(_ image: CIImage, mask: Mask, extent: CGRect, hdr: Bool) -> CIImage {
-        let defaults = self.defaults
-        let value: (String) -> Double? = { id in mask.adjustments[id] ?? defaults[id] }
+        let controls = self.controls
+        let value: (String) -> Double? = { id in
+            guard let control = controls[id] else { return nil }
+            return mask.localValue(control) ?? control.defaultValue
+        }
         var output = color.input(image, value: value)  // temperature, tint
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: extent, value: value)

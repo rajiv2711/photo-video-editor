@@ -128,8 +128,11 @@ struct MasksPanel: View {
         if !maskRows.isEmpty {
             section("Mask", rows: maskRows)
         }
+        // The mask's own sliders (Mask Amount scales them all); colour grading folded away.
+        let local = model.registry.controls.filter(\.local)
         Text("Local adjustments").font(.subheadline.weight(.semibold))
-        ForEach(model.registry.controls.filter(\.local)) { ControlRow(model: model, control: $0) }
+        ForEach(local.filter { $0.section != "Color grading" }) { ControlRow(model: model, control: $0) }
+        section("Color grading", rows: local.filter { $0.section == "Color grading" })
         Button("Done") { model.apply([.run("maskDone")]) }
             .buttonStyle(.borderedProminent)
             .padding(.horizontal, 10)

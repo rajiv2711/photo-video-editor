@@ -668,3 +668,8 @@
 {"group":"masks","text":"hide mask overlay","expect":[{"op":"set","control":"maskOverlay","value":0}]}
 {"group":"masks","text":"overlay on","expect":[{"op":"set","control":"maskOverlay","value":1}]}
 {"group":"masks","text":"mask overlay","expect":[{"op":"set","control":"maskOverlay","value":1}]}
+{"group":"masks","text":"mask 1 saturation -50","expect":[{"op":"set","control":"mask","value":1},{"op":"set","control":"saturation","value":-50}]}
+{"group":"masks","text":"mask clarity 30","expect":[{"op":"select","control":"mask"},{"op":"set","control":"clarity","value":30}]}
+{"group":"masks","text":"mask temperature more","expect":[{"op":"select","control":"mask"},{"op":"nudge","control":"temperature","steps":1}]}
+{"group":"masks","text":"mask amount 150","expect":[{"op":"set","control":"maskAmount","value":150}]}
+{"group":"masks","text":"mask strength down","expect":[{"op":"nudge","control":"maskAmount","steps":-1}]}
