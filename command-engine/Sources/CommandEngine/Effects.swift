@@ -119,4 +119,9 @@ public enum Effects {
         let n = Double(Swift.max(2, levels))
         return table(count: stepTableSize) { x in Swift.min((x * n).rounded(.down), n - 1) / (n - 1) }
     }
+
+    /// Threshold: black below the cut-off level (0…255, as in Photoshop), white from it up.
+    public static func threshold(level: Double) -> [Double] {
+        table(count: stepTableSize) { x in x * 255 < level ? 0 : 1 }
+    }
 }

@@ -84,6 +84,12 @@ final class EffectsRenderer {
             output = Filters.linear(Filters.lookup(Filters.encoded(output), table: Effects.posterize(levels: levels)))
         }
 
+        // Threshold: pure black and white, cut at a brightness level (sRGB luma, 0…255).
+        if v("threshold") != 0 {
+            let level = value("thresholdLevel") ?? 128
+            output = Filters.linear(Filters.lookup(Filters.luma(Filters.encoded(output)), table: Effects.threshold(level: level)))
+        }
+
         return output
     }
 

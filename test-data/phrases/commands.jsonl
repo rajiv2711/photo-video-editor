@@ -521,3 +521,7 @@
 {"group":"effects","text":"posterise off","expect":[{"op":"set","control":"posterize","value":0}]}
 {"group":"effects","text":"posterize levels 6","expect":[{"op":"set","control":"posterizeLevels","value":6}]}
 {"group":"effects","text":"poster levels more","expect":[{"op":"nudge","control":"posterizeLevels","steps":1}]}
+{"group":"effects","text":"threshold on","expect":[{"op":"set","control":"threshold","value":1}]}
+{"group":"effects","text":"turn off threshold","expect":[{"op":"set","control":"threshold","value":0}]}
+{"group":"effects","text":"threshold level 90","expect":[{"op":"set","control":"thresholdLevel","value":90}]}
+{"group":"effects","text":"threshold cutoff up","expect":[{"op":"nudge","control":"thresholdLevel","steps":1}]}

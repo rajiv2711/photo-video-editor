@@ -18,7 +18,7 @@ final class EffectsTests: XCTestCase {
     func testEffectsControlsAreInTheEffectsPanel() {
         for id in ["texture", "clarity", "dehaze", "vignette", "vignetteMidpoint", "vignetteRoundness", "vignetteFeather", "vignetteHighlights",
                    "grain", "grainSize", "grainRoughness", "glow", "halation",
-                   "posterize", "posterizeLevels"] {
+                   "posterize", "posterizeLevels", "threshold", "thresholdLevel"] {
             XCTAssertEqual(registry.control(id: id)?.group, "effects", id)
         }
     }
@@ -218,5 +218,18 @@ final class EffectsTests: XCTestCase {
         }
         XCTAssertEqual(Effects.posterize(levels: 2)[400], 0)
         XCTAssertEqual(Effects.posterize(levels: 2)[600], 1)
+    }
+
+    func testThresholdNames() {
+        XCTAssertEqual(parse("threshold on"), [.set("threshold", 1)])
+        XCTAssertEqual(parse("threshold level 90"), [.set("thresholdLevel", 90)])
+        XCTAssertEqual(parse("threshold cutoff up"), [.nudge("thresholdLevel", 1)])
+    }
+
+    func testThresholdCutsAtItsLevel() {
+        let table = Effects.threshold(level: 128)
+        XCTAssertEqual(Set(table), [0, 1])
+        XCTAssertEqual(table[Int(127.0 / 255 * 1023)], 0)
+        XCTAssertEqual(table[Int(129.0 / 255 * 1023)], 1)
     }
 }
