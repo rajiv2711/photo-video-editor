@@ -191,6 +191,8 @@
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]},
 
     {"id": "texture-plus", "command": "texture 100", "control": "texture", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_luma", "dir": "same"}]},
-    {"id": "texture-minus", "command": "texture -100", "control": "texture", "expect": [{"metric": "edge", "dir": "down"}, {"metric": "mean_luma", "dir": "same"}]}
+    {"id": "texture-minus", "command": "texture -100", "control": "texture", "expect": [{"metric": "edge", "dir": "down"}, {"metric": "mean_luma", "dir": "same"}]},
+    {"id": "clarity-plus", "command": "clarity 100", "control": "clarity", "expect": [{"metric": "local_contrast", "dir": "up"}]},
+    {"id": "clarity-minus", "command": "clarity -100", "control": "clarity", "expect": [{"metric": "local_contrast", "dir": "down"}]}
   ]
 }

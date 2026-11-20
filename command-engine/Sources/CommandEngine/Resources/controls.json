@@ -639,6 +639,8 @@
     {"id": "bwMagenta", "label": "B&W Magenta", "group": "color", "section": "Black & white", "kind": "slider",
       "synonyms": ["black and white magenta", "bw magenta", "mono magenta", "gray magenta", "grey magenta"], "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "texture", "label": "Texture", "group": "effects", "kind": "slider",
-      "synonyms": ["texture amount", "medium detail"], "min": -100, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["texture amount", "medium detail"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "clarity", "label": "Clarity", "group": "effects", "kind": "slider",
+      "synonyms": ["clarity amount", "midtone contrast", "local contrast"], "min": -100, "max": 100, "default": 0, "step": 5}
   ]
 }

@@ -25,4 +25,10 @@ public enum Effects {
     public static func textureSmoothing(amount: Double) -> [Double] {
         table(count: 64) { range in amount * 0.85 * (1 - smoothstep(0.12, 0.3, range)) }
     }
+
+    /// Clarity: how much of the change to keep at each brightness (sRGB luma): all of it in the
+    /// midtones (0.35…0.65), fading out towards black and white so those don't clip.
+    public static func midtones() -> [Double] {
+        table(count: 64) { l in smoothstep(0.02, 0.35, l) * (1 - smoothstep(0.65, 0.98, l)) }
+    }
 }

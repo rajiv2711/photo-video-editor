@@ -16,7 +16,7 @@ final class EffectsTests: XCTestCase {
     }
 
     func testEffectsControlsAreInTheEffectsPanel() {
-        for id in ["texture"] {
+        for id in ["texture", "clarity"] {
             XCTAssertEqual(registry.control(id: id)?.group, "effects", id)
         }
     }
@@ -44,5 +44,23 @@ final class EffectsTests: XCTestCase {
         XCTAssertEqual(table[63], 0, "strong edges: untouched")
         XCTAssertEqual(Effects.textureSmoothing(amount: 0).max(), 0)
         for i in 1..<table.count { XCTAssertLessThanOrEqual(table[i], table[i - 1]) }
+    }
+
+    // MARK: - Clarity
+
+    func testClarityNames() {
+        XCTAssertEqual(parse("clarity up"), [.nudge("clarity", 1)])
+        XCTAssertEqual(parse("clarity -30"), [.set("clarity", -30)])
+        XCTAssertEqual(parse("local contrast more"), [.nudge("clarity", 1)])
+        XCTAssertEqual(parse("contrast more"), [.nudge("contrast", 1)], "plain contrast stays the Light slider")
+    }
+
+    func testClarityWorksOnMidtonesOnly() {
+        let table = Effects.midtones()
+        XCTAssertEqual(table.first, 0)
+        XCTAssertEqual(table.last, 0)
+        XCTAssertEqual(table[32], 1, accuracy: 1e-12)
+        XCTAssertLessThan(table[3], 0.2)
+        XCTAssertLessThan(table[61], 0.2)
     }
 }

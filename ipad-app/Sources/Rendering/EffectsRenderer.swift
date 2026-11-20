@@ -34,6 +34,21 @@ final class EffectsRenderer {
             output = Filters.linear(changed)
         }
 
+        // Clarity: midtone local contrast. A wide unsharp mask (2 % of the long side) or, negative,
+        // a mix towards a blurred copy; kept in the midtones only, so blacks and whites don't clip.
+        let clarity = v("clarity") / 100
+        if clarity != 0 {
+            let encoded = Filters.encoded(output)
+            let changed: CIImage
+            if clarity > 0 {
+                changed = Filters.unsharp(encoded, radius: 0.02 * side, intensity: 0.8 * clarity, extent: extent)
+            } else {
+                changed = Filters.mix(encoded, Filters.blurred(encoded, radius: 0.01 * side, extent: extent), -0.6 * clarity)
+            }
+            let midtones = Filters.lookup(Filters.luma(encoded), table: Effects.midtones())
+            output = Filters.linear(Filters.blend(changed, over: encoded, mask: midtones))
+        }
+
         return output
     }
 }
