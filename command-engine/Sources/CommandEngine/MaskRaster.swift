@@ -1,8 +1,8 @@
 import Foundation
 
 /// The photo as the mask maths see it: sRGB levels (0…1), 3 numbers per cell, row by row from the
-/// top. The iPad reads it once per photo (after the lens corrections, before other edits), at the
-/// mask grid's size.
+/// top. The iPad reads it once per photo (after lens corrections and film negative conversion,
+/// before other edits, as the pickers see it), at the mask grid's size.
 public final class PixelGrid {
     public let width: Int
     public let height: Int

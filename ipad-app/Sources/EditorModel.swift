@@ -90,6 +90,7 @@ final class EditorModel: ObservableObject {
         focusedControlID = nil
         feedback = nil
         armedPicker = nil
+        dragBase = nil
         render()
     }
 

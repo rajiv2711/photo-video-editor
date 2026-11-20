@@ -128,7 +128,7 @@ public struct Mask: Hashable, Codable {
 
     /// Everything that decides the mask's picture (parts and settings, not the local sliders), for caching.
     public var shape: MaskShape {
-        MaskShape(components: components, settings: settings)
+        MaskShape(components: components, settings: settings.filter { $0.key != "maskAmount" })
     }
 }
 
