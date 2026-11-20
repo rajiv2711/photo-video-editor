@@ -145,3 +145,7 @@
 {"group":"light","text":"whites 30","expect":[{"op":"set","control":"whites","value":30}]}
 {"group":"light","text":"reset whites","expect":[{"op":"reset","control":"whites"}]}
 {"group":"light","text":"white down","expect":[{"op":"nudge","control":"whites","steps":-1}]}
+{"group":"light","text":"blacks less","expect":[{"op":"nudge","control":"blacks","steps":-1}]}
+{"group":"light","text":"blacks -50","expect":[{"op":"set","control":"blacks","value":-50}]}
+{"group":"light","text":"reset blacks","expect":[{"op":"reset","control":"blacks"}]}
+{"group":"light","text":"black down whites up","expect":[{"op":"nudge","control":"blacks","steps":-1},{"op":"nudge","control":"whites","steps":1}]}

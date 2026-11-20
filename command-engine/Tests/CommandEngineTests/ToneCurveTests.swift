@@ -49,6 +49,15 @@ final class ToneCurveTests: XCTestCase {
         assertMonotone(["whites": 100])
     }
 
+    func testBlacksMoveTheBottomEnd() {
+        XCTAssertEqual(out(["blacks": -100], 0.1), 0, accuracy: 1e-6, "darkest tones crush to black")
+        XCTAssertEqual(out(["blacks": 100], 0), 0.25, accuracy: 0.005)
+        XCTAssertEqual(out(["blacks": 100], 1), 1, accuracy: 1e-6)
+        XCTAssertEqual(out(["blacks": -100], 0.5), 0.47, accuracy: 0.01)
+        assertMonotone(["blacks": -100])
+        assertMonotone(["blacks": 100, "whites": -100])
+    }
+
     func testHDRRangeContinuesAboveWhite() {
         XCTAssertEqual(out(["whites": 100], 1, maxInput: 4), 1.25, accuracy: 0.01, "HDR keeps whites above 1")
         XCTAssertEqual(out([:], 2.5, maxInput: 4), 2.5, accuracy: 0.01)

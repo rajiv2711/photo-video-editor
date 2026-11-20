@@ -56,6 +56,17 @@
       "step": 5
     },
     {
+      "id": "blacks",
+      "label": "Blacks",
+      "group": "light",
+      "kind": "slider",
+      "synonyms": ["black"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

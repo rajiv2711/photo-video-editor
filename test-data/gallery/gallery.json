@@ -13,6 +13,8 @@
     {"id": "shadows-minus", "command": "shadows -100", "control": "shadows", "expect": [{"metric": "mean_luma", "dir": "down"}]},
     {"id": "whites-plus", "command": "whites 100", "control": "whites", "expect": [{"metric": "p95_luma", "dir": "up"}]},
     {"id": "whites-minus", "command": "whites -100", "control": "whites", "expect": [{"metric": "p95_luma", "dir": "down"}]},
+    {"id": "blacks-minus", "command": "blacks -100", "control": "blacks", "expect": [{"metric": "p5_luma", "dir": "down"}]},
+    {"id": "blacks-plus", "command": "blacks 100", "control": "blacks", "expect": [{"metric": "p5_luma", "dir": "up"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]
