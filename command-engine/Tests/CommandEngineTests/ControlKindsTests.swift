@@ -41,6 +41,8 @@ final class ControlKindsTests: XCTestCase {
         XCTAssertEqual(parse("hdr on"), [.set("hdr", 1)])
         XCTAssertEqual(parse("hdr off"), [.set("hdr", 0)])
         XCTAssertEqual(parse("turn hdr off"), [.set("hdr", 0)])
+        XCTAssertEqual(parse("turn off hdr"), [.set("hdr", 0)])
+        XCTAssertEqual(parse("switch on hdr"), [.set("hdr", 1)])
         XCTAssertEqual(parse("HDR"), [.set("hdr", 1)])
         XCTAssertEqual(parse("highlights on"), [.select("highlights")], "on/off mean nothing to a slider")
     }

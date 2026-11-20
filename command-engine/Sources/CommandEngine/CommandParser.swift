@@ -4,7 +4,8 @@ import Foundation
 /// so it can be scored on its own and swapped for a model-based parser later.
 ///
 /// Name-first grammar: a control name opens a clause; the words after it act on that control.
-/// Actions said before any name act on the focused control (`control: nil`).
+/// Verb-first works at the start ("reset highlights", "more contrast"): words said before the
+/// first name belong to it. With no name at all they act on the focused control (`control: nil`).
 /// Names may be several words ("tone curve highlights", "red curve 50"); the longest one wins.
 /// Toggles take "on"/"off", choices take an option name, actions run when named.
 public struct CommandParser {
@@ -22,6 +23,8 @@ public struct CommandParser {
         // After an unrecognised name, ignore actions until a real control is named,
         // so they never land on the wrong slider.
         var blocked = false
+        // "turn off hdr": an on/off said before the toggle's name.
+        var pendingSwitch: Bool?
         var tokens = Self.tokenize(text)[...]
 
         func finish() {
@@ -30,8 +33,16 @@ public struct CommandParser {
         }
 
         func begin(_ control: Control) {
+            // Verb first: actions said before the very first name belong to it.
+            var carried: [Clause.Action] = []
+            if let c = clause, !c.named, commands.isEmpty {
+                carried = c.actions
+                clause = nil
+            }
+            if control.kind == .toggle, let on = pendingSwitch { carried.append(.set(on ? 1 : 0)) }
+            pendingSwitch = nil
             finish()
-            clause = Clause(control: control.id, kind: control.kind, named: true)
+            clause = Clause(control: control.id, kind: control.kind, named: true, actions: carried)
             blocked = false
         }
 
@@ -49,6 +60,8 @@ public struct CommandParser {
         func reject(_ command: Command) {
             // A stray word right after a name ("contrast a tad more") is just filler.
             if let c = clause, c.named, c.actions.isEmpty { return }
+            // "add a vignette": the leading verb was meant for the unknown name, not the focused control.
+            if let c = clause, !c.named, commands.isEmpty { clause = nil }
             finish()
             commands.append(command)
             blocked = true
@@ -67,7 +80,7 @@ public struct CommandParser {
 
             // "on"/"off" switch a toggle ("hdr on"); anywhere else they are filler.
             if let on = Self.switchWord(token) {
-                if named()?.kind == .toggle { act(.set(on ? 1 : 0)) }
+                if named()?.kind == .toggle { act(.set(on ? 1 : 0)) } else { pendingSwitch = on }
                 continue
             }
 

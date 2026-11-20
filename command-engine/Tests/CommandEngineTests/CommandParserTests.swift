@@ -27,6 +27,14 @@ final class CommandParserTests: XCTestCase {
         XCTAssertEqual(parser.parse("contrast 20 more"), [.set("contrast", 20), .nudge("contrast", 1)])
     }
 
+    func testVerbFirstActsOnTheFirstName() {
+        XCTAssertEqual(parser.parse("reset contrast"), [.reset("contrast")])
+        XCTAssertEqual(parser.parse("more contrast"), [.nudge("contrast", 1)])
+        XCTAssertEqual(parser.parse("raise exposure by 0.5"), [.add("exposure", 0.5)])
+        XCTAssertEqual(parser.parse("more contrast saturation less"), [.nudge("contrast", 1), .nudge("saturation", -1)])
+        XCTAssertEqual(parser.parse("add a vignette"), [.unknown("vignette")])
+    }
+
     func testUnknownWordStopsLaterActions() {
         XCTAssertEqual(parser.parse("shadows more"), [.unknown("shadows")])
     }
