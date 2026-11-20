@@ -3,7 +3,8 @@ import XCTest
 
 /// Checks test-data/gallery/gallery.json, the render cases the cloud build draws on the iPad
 /// simulator: every command must reach real controls (no unknown or ambiguous words), and every
-/// control in controls.json needs at least one case, so each new operation gets a picture test.
+/// control in controls.json needs at least one case (curve points: one per section), so each new
+/// operation gets a picture test.
 final class GalleryCasesTests: XCTestCase {
     struct Expectation: Decodable {
         let metric: String
@@ -79,8 +80,14 @@ final class GalleryCasesTests: XCTestCase {
 
     func testEveryControlHasACase() {
         let covered = Set(cases.compactMap(\.control))
-        for control in registry.controls {
+        for control in registry.controls where control.kind != .curvePoint {
             XCTAssertTrue(covered.contains(control.id), "no gallery case for \(control.id)")
+        }
+        // Curve points share one render step: one case per curve section is enough.
+        let curveSections = Set(registry.controls.filter { $0.kind == .curvePoint }.compactMap(\.section))
+        for section in curveSections {
+            XCTAssertTrue(registry.controls.contains { $0.section == section && covered.contains($0.id) },
+                          "no gallery case for \(section)")
         }
     }
 }

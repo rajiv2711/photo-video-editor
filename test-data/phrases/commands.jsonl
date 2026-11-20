@@ -166,3 +166,8 @@
 {"group":"light","text":"tone curve shadows 20","expect":[{"op":"set","control":"curveShadows","value":20}]}
 {"group":"light","text":"reset curve shadows","expect":[{"op":"reset","control":"curveShadows"}]}
 {"group":"light","text":"highlights down curve highlights up","expect":[{"op":"nudge","control":"highlights","steps":-1},{"op":"nudge","control":"curveHighlights","steps":1}]}
+{"group":"light","text":"curve 50 60","expect":[{"op":"set","control":"curveRgb50","value":60}]}
+{"group":"light","text":"red curve 75 up","expect":[{"op":"nudge","control":"curveRed75","steps":1}]}
+{"group":"light","text":"point curve 25 down","expect":[{"op":"nudge","control":"curveRgb25","steps":-1}]}
+{"group":"light","text":"reset curve 50","expect":[{"op":"reset","control":"curveRgb50"}]}
+{"group":"light","text":"blue curve 0 to 10","expect":[{"op":"set","control":"curveBlue0","value":10}]}

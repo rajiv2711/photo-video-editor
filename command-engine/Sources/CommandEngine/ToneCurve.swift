@@ -2,7 +2,7 @@ import Foundation
 
 /// Tone math for the Light panel, shared by the iPad renderer and the Linux tests.
 ///
-/// The global tone controls (Highlights brightening, Whites, Blacks, Brightness, tone curve, Fade) become one
+/// The global tone controls (Highlights brightening, Whites, Blacks, Brightness, tone curves, Fade) become one
 /// lookup table per colour channel, applied in a single Core Image pass (CIColorCurves). Inputs and
 /// outputs are sRGB-encoded levels (0 = black, 1 = SDR white), i.e. what the eye sees.
 ///
@@ -40,12 +40,29 @@ public enum ToneCurve {
     public static let controlIDs: [String] = [
         "highlights", "whites", "blacks", "brightness", "fade",
         "curveHighlights", "curveLights", "curveDarks", "curveShadows",
-    ]
+    ] + curveChannels.flatMap { channel in curvePointXs.map { curvePointID(channel: channel, x: $0) } }
 
-    /// The value of each tone control that leaves the picture untouched.
-    public static func neutral(_ id: String) -> Double {
-        0
+    /// Point curve: one curve per channel (rgb first, then red, green, blue), five points at fixed inputs.
+    public static let curveChannels = ["rgb", "red", "green", "blue"]
+    public static let curvePointXs = [0, 25, 50, 75, 100]
+
+    /// "curveRgb50", "curveRed0", … (see controls.json).
+    public static func curvePointID(channel: String, x: Int) -> String {
+        "curve" + channel.prefix(1).uppercased() + channel.dropFirst() + String(x)
     }
+
+    /// The value of each tone control that leaves the picture untouched (a curve point sits on the diagonal).
+    public static func neutral(_ id: String) -> Double {
+        neutralPoints[id] ?? 0
+    }
+
+    private static let neutralPoints: [String: Double] = {
+        var out: [String: Double] = [:]
+        for channel in curveChannels {
+            for x in curvePointXs { out[curvePointID(channel: channel, x: x)] = Double(x) }
+        }
+        return out
+    }()
 
     /// Whether every tone control is at its neutral value, so the table can be skipped.
     public static func isIdentity(_ value: (String) -> Double?) -> Bool {
@@ -123,8 +140,8 @@ public enum ToneCurve {
 
         /// Output (red, green, blue) for one input level 0…1.
         func channels(_ x: Double) -> (Double, Double, Double) {
-            let y = fade(parametric(basic(x)))
-            return (y, y, y)
+            let y = point("rgb", parametric(basic(x)))
+            return (fade(point("red", y)), fade(point("green", y)), fade(point("blue", y)))
         }
 
         /// Whites, Blacks, Highlights (brightening only; darkening is CIHighlightShadowAdjust in the
@@ -155,6 +172,14 @@ public enum ToneCurve {
             guard amounts.contains(where: { $0 != 0 }) else { return x }
             let xs = [0, 0.125, 0.375, 0.625, 0.875, 1]
             let ys = [0] + zip(xs[1...4], amounts).map { $0 + 0.12 * $1 } + [1]
+            return ToneCurve.spline(xs: xs, ys: ys, at: x)
+        }
+
+        /// Point curve for one channel: output levels 0…100 at inputs 0, 25, 50, 75, 100.
+        func point(_ channel: String, _ x: Double) -> Double {
+            let xs = ToneCurve.curvePointXs.map { Double($0) / 100 }
+            let ys = ToneCurve.curvePointXs.map { value(ToneCurve.curvePointID(channel: channel, x: $0)) / 100 }
+            if xs == ys { return x }
             return ToneCurve.spline(xs: xs, ys: ys, at: x)
         }
 

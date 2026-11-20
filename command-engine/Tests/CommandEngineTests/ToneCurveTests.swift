@@ -98,6 +98,25 @@ final class ToneCurveTests: XCTestCase {
         }
     }
 
+    func testPointCurvePerChannel() {
+        XCTAssertTrue(ToneCurve.isIdentity(values(["curveRgb50": 50, "curveRed0": 0])), "points on the diagonal")
+        XCTAssertEqual(out(["curveRgb50": 70], 0.5), 0.7, accuracy: 0.002)
+        XCTAssertEqual(out(["curveRgb0": 20], 0), 0.2, accuracy: 0.002)
+        let table = ToneCurve.table(values(["curveRed50": 80]))
+        XCTAssertEqual(table.lookup(0.5, channel: table.red), 0.8, accuracy: 0.002)
+        XCTAssertEqual(table.lookup(0.5, channel: table.green), 0.5, accuracy: 0.002)
+        XCTAssertEqual(ToneCurve.curvePointID(channel: "rgb", x: 25), "curveRgb25")
+        assertMonotone(["curveRgb25": 60, "curveRgb75": 40])
+    }
+
+    func testEveryToneControlExistsInControlsJSON() throws {
+        let registry = try ControlRegistry.bundled()
+        for id in ToneCurve.controlIDs {
+            XCTAssertNotNil(registry.control(id: id), "\(id) is not in controls.json")
+            XCTAssertEqual(registry.control(id: id)?.defaultValue, ToneCurve.neutral(id), id)
+        }
+    }
+
     func testHDRRangeContinuesAboveWhite() {
         XCTAssertEqual(out(["whites": 100], 1, maxInput: 4), 1.25, accuracy: 0.01, "HDR keeps whites above 1")
         XCTAssertEqual(out([:], 2.5, maxInput: 4), 2.5, accuracy: 0.01)

@@ -183,17 +183,123 @@ private struct GroupPanel: View {
     }
 }
 
-/// The controls of one section, e.g. "Levels".
+/// The controls of one section, e.g. "Levels"; curve points get the curve editor.
 private struct SectionBody: View {
     @ObservedObject var model: EditorModel
     let controls: [Control]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(controls) { control in
-                ControlRow(model: model, control: control)
+        if controls.allSatisfy({ $0.kind == .curvePoint }) {
+            CurveEditor(model: model, controls: controls)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(controls) { control in
+                    ControlRow(model: model, control: control)
+                }
             }
         }
+    }
+}
+
+/// Point curve editor: one curve per channel through five points at fixed inputs (0, 25, 50, 75,
+/// 100 %). Drag up or down anywhere above a point to move it. The curve is drawn with the same
+/// spline the renderer uses (ToneCurve.spline).
+private struct CurveEditor: View {
+    @ObservedObject var model: EditorModel
+    let controls: [Control]
+    @State private var channel = "rgb"
+
+    private var channels: [String] {
+        var out: [String] = []
+        for control in controls {
+            if let c = control.channel, !out.contains(c) { out.append(c) }
+        }
+        return out
+    }
+
+    /// The current channel's points, left to right.
+    private var points: [Control] {
+        controls.filter { $0.channel == channel }.sorted { ($0.x ?? 0) < ($1.x ?? 0) }
+    }
+
+    private var color: Color {
+        switch channel {
+        case "red": return .red
+        case "green": return .green
+        case "blue": return .blue
+        default: return .white
+        }
+    }
+
+    private static func title(_ channel: String) -> String {
+        channel == "rgb" ? "RGB" : channel.capitalized
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Channel", selection: $channel) {
+                ForEach(channels, id: \.self) { c in
+                    Text(Self.title(c)).tag(c)
+                }
+            }
+            .pickerStyle(.segmented)
+            GeometryReader { geo in
+                canvas(size: geo.size)
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .background(Color.black.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
+            Button("Reset \(Self.title(channel)) curve") {
+                for point in points { model.reset(point) }
+            }
+            .font(.footnote)
+        }
+        .padding(.horizontal, 10)
+    }
+
+    private func canvas(size: CGSize) -> some View {
+        let pts = points
+        let xs = pts.map { ($0.x ?? 0) / 100 }
+        let ys = pts.map { model.value(of: $0) / 100 }
+        func spot(_ x: Double, _ y: Double) -> CGPoint {
+            CGPoint(x: CGFloat(x) * size.width, y: CGFloat(1 - y) * size.height)
+        }
+        return ZStack {
+            Path { path in
+                for i in 1...3 {
+                    let f = Double(i) / 4
+                    path.move(to: spot(f, 0))
+                    path.addLine(to: spot(f, 1))
+                    path.move(to: spot(0, f))
+                    path.addLine(to: spot(1, f))
+                }
+            }
+            .stroke(Color.secondary.opacity(0.4), lineWidth: 1)
+            Path { path in
+                for i in 0...64 {
+                    let x = Double(i) / 64
+                    let y = xs.count > 1 ? ToneCurve.spline(xs: xs, ys: ys, at: x) : x
+                    if i == 0 { path.move(to: spot(x, y)) } else { path.addLine(to: spot(x, y)) }
+                }
+            }
+            .stroke(color, lineWidth: 2)
+            ForEach(pts) { point in
+                Circle()
+                    .fill(model.focusedControlID == point.id ? Color.accentColor : color)
+                    .frame(width: 14, height: 14)
+                    .position(spot((point.x ?? 0) / 100, model.value(of: point) / 100))
+            }
+        }
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0).onChanged { drag in
+                guard !pts.isEmpty, size.width > 0, size.height > 0 else { return }
+                // The point nearest to where the finger went down follows its height.
+                let start = Double(drag.startLocation.x / size.width) * 100
+                guard let nearest = pts.min(by: { abs(($0.x ?? 0) - start) < abs(($1.x ?? 0) - start) }) else { return }
+                let level = Double(1 - drag.location.y / size.height) * 100
+                model.setFromSlider(nearest, to: min(100, max(0, level)))
+            }
+        )
     }
 }
 
