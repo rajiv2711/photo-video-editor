@@ -207,6 +207,8 @@
     {"id": "grain", "command": "grain 100", "control": "grain", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_luma", "dir": "same"}]},
     {"id": "grain-repeat", "command": "grain 100", "control": "grain", "expect": [{"metric": "diff", "dir": "same", "vs": "grain", "min": 0.2}]},
     {"id": "grain-size", "command": "grain 100 grain size 100", "control": "grainSize", "expect": [{"metric": "edge", "dir": "down", "vs": "grain"}]},
-    {"id": "grain-roughness", "command": "grain 100 grain roughness 100", "control": "grainRoughness", "expect": [{"metric": "diff", "dir": "changed", "vs": "grain"}]}
+    {"id": "grain-roughness", "command": "grain 100 grain roughness 100", "control": "grainRoughness", "expect": [{"metric": "diff", "dir": "changed", "vs": "grain"}]},
+    {"id": "glow", "command": "glow 100", "control": "glow", "expect": [{"metric": "mean_luma", "dir": "up"}, {"metric": "local_contrast", "dir": "down"}]},
+    {"id": "halation", "command": "halation 100", "control": "halation", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_sat", "dir": "up"}]}
   ]
 }

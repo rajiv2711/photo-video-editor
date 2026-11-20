@@ -17,7 +17,7 @@ final class EffectsTests: XCTestCase {
 
     func testEffectsControlsAreInTheEffectsPanel() {
         for id in ["texture", "clarity", "dehaze", "vignette", "vignetteMidpoint", "vignetteRoundness", "vignetteFeather", "vignetteHighlights",
-                   "grain", "grainSize", "grainRoughness"] {
+                   "grain", "grainSize", "grainRoughness", "glow", "halation"] {
             XCTAssertEqual(registry.control(id: id)?.group, "effects", id)
         }
     }
@@ -182,5 +182,21 @@ final class EffectsTests: XCTestCase {
         XCTAssertEqual(Effects.grainCell(size: 0, longSide: 800), 1, "never under a pixel")
         XCTAssertEqual(Effects.grainContrast(amount: 0), 0)
         XCTAssertEqual(Effects.grainContrast(amount: 2), Effects.grainContrast(amount: 1))
+    }
+
+    // MARK: - Glow
+
+    func testGlowNames() {
+        XCTAssertEqual(parse("glow 40"), [.set("glow", 40)])
+        XCTAssertEqual(parse("bloom more"), [.nudge("glow", 1)])
+        XCTAssertEqual(parse("halation 60"), [.set("halation", 60)])
+    }
+
+    func testHalationComesFromTheBrightEndAndIsRed() {
+        let table = Effects.halationSource()
+        XCTAssertEqual(table[32], 0, "midtones send no light")
+        XCTAssertEqual(table.last, 1)
+        XCTAssertGreaterThan(Effects.halationTint.r, 2 * Effects.halationTint.g)
+        XCTAssertGreaterThan(Effects.halationTint.g, Effects.halationTint.b)
     }
 }

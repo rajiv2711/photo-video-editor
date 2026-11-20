@@ -58,6 +58,26 @@ final class EffectsRenderer {
             output = dehaze(output, extent: extent, strength: haze)
         }
 
+        // Glow: Core Image's soft bloom (2 % of the long side), in linear light like real light.
+        let glow = v("glow") / 100
+        if glow > 0 {
+            output = output.cropped(to: extent).clampedToExtent().applyingFilter("CIBloom", parameters: [
+                kCIInputRadiusKey: 0.02 * side,
+                kCIInputIntensityKey: glow,
+            ]).cropped(to: extent)
+        }
+
+        // Halation: film's red-orange halo around bright areas. The bright parts, blurred and tinted,
+        // are screened onto the picture (sRGB levels), so they show most against darker surroundings.
+        let halation = v("halation") / 100
+        if halation > 0 {
+            let encoded = Filters.encoded(output)
+            let bright = Filters.lookup(Filters.luma(encoded), table: Effects.halationSource())
+            let halo = Filters.affine(Filters.blurred(bright, radius: 0.012 * side, extent: extent),
+                                      scale: Effects.halationTint * halation, bias: RGB(0, 0, 0))
+            output = Filters.linear(halo.applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: encoded]))
+        }
+
         return output
     }
 

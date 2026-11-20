@@ -97,4 +97,15 @@ public enum Effects {
     public static func grainContrast(amount: Double) -> Double {
         0.6 * Swift.min(1, Swift.max(0, amount))
     }
+
+    // MARK: - Glow
+
+    /// Halation: how much light each brightness (sRGB luma) sends into the red halo; only the
+    /// bright end does.
+    public static func halationSource() -> [Double] {
+        table(count: 64) { l in smoothstep(0.8, 1.0, l) }
+    }
+
+    /// Halation's colour per unit of halo: film's red-orange.
+    public static let halationTint = RGB(0.8, 0.28, 0.1)
 }

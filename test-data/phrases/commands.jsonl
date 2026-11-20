@@ -513,3 +513,7 @@
 {"group":"effects","text":"grain roughness 80","expect":[{"op":"set","control":"grainRoughness","value":80}]}
 {"group":"effects","text":"reset grain roughness","expect":[{"op":"reset","control":"grainRoughness"}]}
 {"group":"effects","text":"grains up","expect":[{"op":"nudge","control":"grain","steps":1}]}
+{"group":"effects","text":"glow 40","expect":[{"op":"set","control":"glow","value":40}]}
+{"group":"effects","text":"bloom more","expect":[{"op":"nudge","control":"glow","steps":1}]}
+{"group":"effects","text":"halation 60","expect":[{"op":"set","control":"halation","value":60}]}
+{"group":"effects","text":"film halation up","expect":[{"op":"nudge","control":"halation","steps":1}]}
