@@ -127,7 +127,7 @@
 {"group":"out-of-scope","text":"undo","expect":[{"op":"unknown","word":"undo"}]}
 {"group":"out-of-scope","text":"hello","expect":[{"op":"unknown","word":"hello"}]}
 {"group":"out-of-scope","text":"blur more","expect":[{"op":"unknown","word":"blur"}]}
-{"group":"out-of-scope","text":"temperature more","expect":[{"op":"unknown","word":"temperature"}]}
+{"group":"color","text":"temperature more","expect":[{"op":"nudge","control":"temperature","steps":1}]}
 {"group":"out-of-scope","text":"clarity up","expect":[{"op":"unknown","word":"clarity"}]}
 {"group":"out-of-scope","text":"noise reduction more","expect":[{"op":"unknown","word":"noise"},{"op":"unknown","word":"reduction"}]}
 {"group":"light","text":"highlights up","expect":[{"op":"nudge","control":"highlights","steps":1}]}
@@ -194,3 +194,7 @@
 {"group":"color","text":"wb daylight","expect":[{"op":"set","control":"whiteBalance","value":2}]}
 {"group":"color","text":"white balance auto","expect":[{"op":"set","control":"whiteBalance","value":1}]}
 {"group":"color","text":"reset white balance","expect":[{"op":"reset","control":"whiteBalance"}]}
+{"group":"color","text":"temperature 30","expect":[{"op":"set","control":"temperature","value":30}]}
+{"group":"color","text":"temp down down","expect":[{"op":"nudge","control":"temperature","steps":-2}]}
+{"group":"color","text":"reset temperature","expect":[{"op":"reset","control":"temperature"}]}
+{"group":"color","text":"white balance tungsten temperature up by 10","expect":[{"op":"set","control":"whiteBalance","value":5},{"op":"add","control":"temperature","value":10}]}

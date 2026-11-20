@@ -29,7 +29,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 ### Color
 
 - [x] 16. **White balance presets** — As Shot, Auto, Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash
-- [ ] 17. **Temperature** — blue ↔ yellow
+- [x] 17. **Temperature** — blue ↔ yellow
 - [ ] 18. **Tint** — green ↔ magenta
 - [ ] 19. **White balance picker** — tap something that should be neutral grey
 - [ ] 20. **Vibrance** — boost muted colours, protect skin
