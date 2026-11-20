@@ -135,8 +135,19 @@ enum RenderGallery {
     /// - "warm": the test photo with a strong warm cast (white balance, match colour).
     /// - "negative": an orange-masked colour negative of the test photo (film negative conversion).
     /// - "chart": colour patches (8 hues × 3 shades, then neutrals), for the colour-band tools.
+    /// - "haze": the test photo seen through a bluish-grey haze (dehaze).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "haze":
+            // On sRGB levels: 55 % of the photo + 45 % haze colour.
+            let encoded = photo.applyingFilter("CILinearToSRGBToneCurve")
+            let hazy = encoded.applyingFilter("CIColorMatrix", parameters: [
+                "inputRVector": CIVector(x: 0.55, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: 0, y: 0.55, z: 0, w: 0),
+                "inputBVector": CIVector(x: 0, y: 0, z: 0.55, w: 0),
+                "inputBiasVector": CIVector(x: 0.38, y: 0.40, z: 0.43, w: 0),
+            ])
+            return hazy.applyingFilter("CISRGBToneCurveToLinear").cropped(to: photo.extent)
         case "warm":
             return photo.applyingFilter("CIColorMatrix", parameters: [
                 "inputRVector": CIVector(x: 1.25, y: 0, z: 0, w: 0),

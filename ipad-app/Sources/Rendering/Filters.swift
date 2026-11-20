@@ -1,3 +1,4 @@
+import CommandEngine
 import CoreImage
 
 /// Small Core Image building blocks shared by the Effects, Detail and Optics panels.
@@ -65,6 +66,26 @@ enum Filters {
             "inputBVector": CIVector(x: 0, y: 0, z: CGFloat(scale), w: 0),
             "inputBiasVector": CIVector(x: CGFloat(bias), y: CGFloat(bias), z: CGFloat(bias), w: 0),
         ])
+    }
+
+    /// Each colour channel × its own `scale` + `bias` (alpha untouched).
+    static func affine(_ image: CIImage, scale: RGB, bias: RGB) -> CIImage {
+        image.applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: CGFloat(scale.r), y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: CGFloat(scale.g), z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: CGFloat(scale.b), w: 0),
+            "inputBiasVector": CIVector(x: CGFloat(bias.r), y: CGFloat(bias.g), z: CGFloat(bias.b), w: 0),
+        ])
+    }
+
+    /// `image` resized to fill `extent` (smooth sampling; borders repeated so they don't fade).
+    static func resized(_ image: CIImage, to extent: CGRect) -> CIImage {
+        let from = image.extent
+        guard from.width > 0, from.height > 0 else { return image }
+        let transform = CGAffineTransform(translationX: extent.minX, y: extent.minY)
+            .scaledBy(x: extent.width / from.width, y: extent.height / from.height)
+            .translatedBy(x: -from.minX, y: -from.minY)
+        return image.clampedToExtent().transformed(by: transform).cropped(to: extent)
     }
 
     /// Each pixel's levels looked up in `table` (output levels for evenly spaced inputs over 0…1,

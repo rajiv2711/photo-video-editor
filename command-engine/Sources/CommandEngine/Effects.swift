@@ -31,4 +31,48 @@ public enum Effects {
     public static func midtones() -> [Double] {
         table(count: 64) { l in smoothstep(0.02, 0.35, l) * (1 - smoothstep(0.65, 0.98, l)) }
     }
+
+    // MARK: - Dehaze (dark channel prior)
+
+    /// Lowest transmission positive Dehaze divides by (stronger would blow up noise).
+    public static let dehazeFloor = 0.25
+
+    /// The haze colour ("airlight"): each channel's 99.5th percentile level, from histograms of sRGB
+    /// levels (share of pixels per bin, darkest first). At least 0.5, so a dark photo isn't read as haze.
+    public static func airlight(red: [Double], green: [Double], blue: [Double]) -> RGB {
+        func percentile(_ bins: [Double]) -> Double {
+            let total = bins.reduce(0, +)
+            guard total > 0, bins.count > 1 else { return 1 }
+            var sum = 0.0
+            for (i, share) in bins.enumerated() {
+                sum += share / total
+                if sum >= 0.995 { return Swift.max(0.5, Double(i) / Double(bins.count - 1)) }
+            }
+            return 1
+        }
+        return RGB(percentile(red), percentile(green), percentile(blue))
+    }
+
+    /// Positive Dehaze, per dark-channel level d (0…1; the darkest channel of colour ÷ airlight, taken
+    /// over a neighbourhood): `dehazeFloor` ÷ t, where the transmission t = max(floor, 1 − strength·d).
+    /// Kept within 0…1 so it fits a lookup table; the renderer divides by the floor afterwards.
+    public static func dehazeRatio(strength: Double) -> [Double] {
+        table(count: 256) { d in dehazeFloor / Swift.max(dehazeFloor, 1 - strength * d) }
+    }
+
+    /// What the renderer computes for one pixel (sRGB levels): with `strength` > 0 the haze is taken
+    /// out, J = A − (A − I) ÷ t; with `strength` < 0 haze is added, J = I·(1 − h) + A·h.
+    public static func dehaze(_ pixel: RGB, darkChannel d: Double, airlight a: RGB, strength: Double) -> RGB {
+        if strength < 0 {
+            let h = hazeAdded(strength)
+            return pixel * (1 - h) + a * h
+        }
+        let t = Swift.max(dehazeFloor, 1 - strength * d)
+        return a - (a - pixel) * (1 / t)
+    }
+
+    /// Negative Dehaze: the share of airlight mixed in (strength −1 → 0.6).
+    public static func hazeAdded(_ strength: Double) -> Double {
+        0.6 * Swift.min(1, Swift.max(0, -strength))
+    }
 }

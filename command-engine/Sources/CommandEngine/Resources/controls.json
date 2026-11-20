@@ -641,6 +641,8 @@
     {"id": "texture", "label": "Texture", "group": "effects", "kind": "slider",
       "synonyms": ["texture amount", "medium detail"], "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "clarity", "label": "Clarity", "group": "effects", "kind": "slider",
-      "synonyms": ["clarity amount", "midtone contrast", "local contrast"], "min": -100, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["clarity amount", "midtone contrast", "local contrast"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "dehaze", "label": "Dehaze", "group": "effects", "kind": "slider",
+      "synonyms": ["de haze", "de-haze", "dehazing", "haze removal", "remove haze", "dehaze amount"], "min": -100, "max": 100, "default": 0, "step": 5}
   ]
 }

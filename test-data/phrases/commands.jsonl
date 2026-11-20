@@ -493,3 +493,7 @@
 {"group":"effects","text":"clarity less less","expect":[{"op":"nudge","control":"clarity","steps":-2}]}
 {"group":"effects","text":"local contrast down","expect":[{"op":"nudge","control":"clarity","steps":-1}]}
 {"group":"effects","text":"clarty more","expect":[{"op":"nudge","control":"clarity","steps":1}]}
+{"group":"effects","text":"dehaze 50","expect":[{"op":"set","control":"dehaze","value":50}]}
+{"group":"effects","text":"dehaze more more","expect":[{"op":"nudge","control":"dehaze","steps":2}]}
+{"group":"effects","text":"remove haze up","expect":[{"op":"nudge","control":"dehaze","steps":1}]}
+{"group":"effects","text":"de haze minus 30","expect":[{"op":"set","control":"dehaze","value":-30}]}

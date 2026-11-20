@@ -33,7 +33,7 @@ final class GalleryCasesTests: XCTestCase {
     ]
     static let directions: Set = ["up", "down", "changed", "same"]
     /// Generated starting pictures; must match RenderGallery.sourceImage in the app.
-    static let sources: Set = ["warm", "negative", "chart"]
+    static let sources: Set = ["warm", "negative", "chart", "haze"]
 
     private var registry: ControlRegistry!
     private var cases: [Case] = []
