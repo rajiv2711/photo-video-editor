@@ -23,17 +23,28 @@ public enum ColorLook {
         "mixer" + band.prefix(1).uppercased() + band.dropFirst() + property
     }
 
-    /// Control ids that feed the cube; when all are at their neutral value the cube is skipped.
-    public static let controlIDs: [String] = mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
+    /// Point color: the picked hue, the shifts for colours near it, and how near counts.
+    public static let pointIDs = ["pointHue", "pointHueShift", "pointSaturationShift", "pointLuminanceShift", "pointRange"]
 
-    /// The value of each control that leaves the picture untouched.
+    /// Control ids that feed the cube.
+    public static let controlIDs: [String] = mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
+        + pointIDs
+
+    /// Controls that only say how another control acts (which hue, how wide): on their own they
+    /// change nothing, so they don't count when deciding whether the cube is needed.
+    static let modifierIDs: Set = ["pointHue", "pointRange"]
+
+    /// The value of each control that leaves the picture untouched (or its default, for modifiers).
     public static func neutral(_ id: String) -> Double {
-        0
+        switch id {
+        case "pointRange": return 50
+        default: return 0
+        }
     }
 
     /// Whether every cube control is at its neutral value, so the cube can be skipped.
     public static func isIdentity(_ value: (String) -> Double?) -> Bool {
-        controlIDs.allSatisfy { (value($0) ?? neutral($0)) == neutral($0) }
+        controlIDs.allSatisfy { modifierIDs.contains($0) || (value($0) ?? neutral($0)) == neutral($0) }
     }
 
     /// The current values of the cube's controls.
@@ -71,7 +82,9 @@ public enum ColorLook {
 
     /// Every cube step, in order, for one colour (sRGB levels).
     public static func transform(_ color: RGB, _ v: Values) -> RGB {
-        mixer(color, v)
+        var c = mixer(color, v)
+        c = pointColor(c, v)
+        return c
     }
 
     // MARK: - Color mixer
@@ -110,6 +123,47 @@ public enum ColorLook {
             }
         }
         return [(mixerBands[0], 1)]
+    }
+
+    // MARK: - Point color
+
+    /// Shifts the colours close to one picked hue. Point Range 0…100 sets how close: up to 10°…60°
+    /// away (35° by default), fading out towards the edge; greys are never picked.
+    /// Shifts as in the Color mixer: hue up to 30°, saturation to grey or double, luminance halfway.
+    static func pointColor(_ color: RGB, _ v: Values) -> RGB {
+        let hueShift = v["pointHueShift"], satShift = v["pointSaturationShift"], lumShift = v["pointLuminanceShift"]
+        guard hueShift != 0 || satShift != 0 || lumShift != 0 else { return color }
+        let w = pointWeight(color, v)
+        guard w > 0 else { return color }
+        var (h, s, l) = hsl(color)
+        h += w * hueShift / 100 * 30
+        s = Swift.min(Swift.max(s * (1 + w * satShift / 100), 0), 1)
+        let dl = w * lumShift / 100 * 0.5
+        l = dl > 0 ? l + (1 - l) * dl : l * (1 + dl)
+        return rgb(hue: h, saturation: s, lightness: l)
+    }
+
+    /// How much a colour belongs to the picked one (0…1).
+    static func pointWeight(_ color: RGB, _ v: Values) -> Double {
+        let chroma = color.max - color.min
+        guard chroma > 1e-6 else { return 0 }
+        let width = 10 + v["pointRange"] / 100 * 50
+        let distance = abs(hueDifference(hsl(color).h, v["pointHue"]))
+        guard distance < width else { return 0 }
+        return smoothstep(0, 1, 1 - distance / width) * smoothstep(0.02, 0.12, chroma)
+    }
+
+    /// The hue to pick from a tapped colour (linear light), or nil for a grey with no clear hue.
+    public static func pickedHue(linear color: RGB) -> Double? {
+        let c = color.encoded
+        guard c.max - c.min > 0.04 else { return nil }
+        return hsl(c).h
+    }
+
+    /// a − b as an angle in −180…180.
+    static func hueDifference(_ a: Double, _ b: Double) -> Double {
+        let d = wrap(a - b)
+        return d > 180 ? d - 360 : d
     }
 
     // MARK: - Colour helpers

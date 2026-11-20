@@ -130,6 +130,7 @@ final class EditorModel: ObservableObject {
     /// Picker tools and what they ask the user to tap.
     static let pickers: [String: String] = [
         "wbPicker": "Tap something on the photo that should be neutral grey.",
+        "pointColorPicker": "Tap the colour on the photo you want to change.",
     ]
 
     /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
@@ -159,6 +160,17 @@ final class EditorModel: ObservableObject {
             ], state: &state)
             focusedControlID = interpreter.lastControlID
             feedback = describe(outcomes)
+        case "pointColorPicker":
+            // The hue of the unedited photo there becomes Point color's target.
+            let color = ImageStats.averageColor(of: previewSource, in: Self.spot(x, y, in: previewSource.extent),
+                                                context: renderer.context)
+            if let hue = ColorLook.pickedHue(linear: color) {
+                let outcomes = interpreter.apply([.set("pointHue", hue.rounded())], state: &state)
+                focusedControlID = interpreter.lastControlID
+                feedback = describe(outcomes)
+            } else {
+                feedback = Feedback(text: "That spot is grey. Tap a coloured area.", isProblem: true)
+            }
         default:
             break
         }

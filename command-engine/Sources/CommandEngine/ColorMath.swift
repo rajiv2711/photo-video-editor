@@ -34,5 +34,11 @@ public struct RGB: Equatable, CustomStringConvertible {
     /// Straight-line mix: t = 0 gives self, t = 1 gives other.
     public func mixed(with other: RGB, _ t: Double) -> RGB { self + (other - self) * t }
 
+    /// Linear light → sRGB levels (each channel clipped to 0…1).
+    public var encoded: RGB { RGB(AutoTone.encoded(r), AutoTone.encoded(g), AutoTone.encoded(b)) }
+
+    /// sRGB levels → linear light.
+    public var linear: RGB { RGB(AutoTone.linear(r), AutoTone.linear(g), AutoTone.linear(b)) }
+
     public var description: String { String(format: "(%.4f, %.4f, %.4f)", r, g, b) }
 }

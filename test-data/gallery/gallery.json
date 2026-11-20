@@ -77,6 +77,13 @@
     {"id": "mixer-magenta-sat", "command": "magenta saturation -100", "source": "chart", "control": "mixerMagentaSaturation", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
     {"id": "mixer-magenta-lum", "command": "magenta luminance -100", "source": "chart", "control": "mixerMagentaLuminance", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "chart"}]},
     {"id": "mixer-red-sat-photo", "command": "red saturation -100", "control": "mixerRedSaturation", "expect": [{"metric": "mean_sat", "dir": "down"}, {"metric": "mean_r", "dir": "down", "min": 0.2}]},
+    {"id": "point-sat", "command": "point saturation shift -100", "source": "chart", "control": "pointSaturationShift", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "point-hue-shift", "command": "point hue shift 100", "source": "chart", "control": "pointHueShift", "expect": [{"metric": "diff", "dir": "changed", "vs": "chart"}]},
+    {"id": "point-lum", "command": "point luminance shift -100", "source": "chart", "control": "pointLuminanceShift", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "chart"}]},
+    {"id": "point-range-wide", "command": "point saturation -100 point range 100", "source": "chart", "control": "pointRange", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "point-sat"}]},
+    {"id": "point-target-blue", "command": "target hue 240 point saturation -100", "source": "chart", "control": "pointHue", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}, {"metric": "diff", "dir": "changed", "vs": "point-sat"}]},
+    {"id": "point-picker", "command": "target hue 240 point saturation -100 point color picker", "tap": [0.055, 0.12], "source": "chart", "control": "pointColorPicker", "expect": [{"metric": "diff", "dir": "same", "vs": "point-sat"}, {"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "point-sat-photo", "command": "point saturation -100", "control": "pointSaturationShift", "expect": [{"metric": "mean_sat", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

@@ -395,6 +395,19 @@
     {"id": "mixerMagentaSaturation", "label": "Magenta Saturation", "group": "color", "section": "Color mixer", "kind": "slider",
       "synonyms": ["magentas saturation", "magenta sat"], "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "mixerMagentaLuminance", "label": "Magenta Luminance", "group": "color", "section": "Color mixer", "kind": "slider",
-      "synonyms": ["magentas luminance", "luminance magenta", "magenta lum", "magenta lightness"], "min": -100, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["magentas luminance", "luminance magenta", "magenta lum", "magenta lightness"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "pointColorPicker", "label": "Point Color Picker", "group": "color", "section": "Point color", "kind": "action",
+      "synonyms": ["point picker", "pick point color", "pick point colour", "point colour picker", "pick target color"]},
+    {"id": "pointHue", "label": "Target Hue", "group": "color", "section": "Point color", "kind": "slider",
+      "synonyms": ["point target hue", "point color hue", "point colour hue", "target color", "target colour"],
+      "min": 0, "max": 360, "default": 0, "step": 5},
+    {"id": "pointHueShift", "label": "Point Hue Shift", "group": "color", "section": "Point color", "kind": "slider",
+      "synonyms": ["point hue"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "pointSaturationShift", "label": "Point Saturation Shift", "group": "color", "section": "Point color", "kind": "slider",
+      "synonyms": ["point saturation", "point sat"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "pointLuminanceShift", "label": "Point Luminance Shift", "group": "color", "section": "Point color", "kind": "slider",
+      "synonyms": ["point luminance", "point lum"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "pointRange", "label": "Point Range", "group": "color", "section": "Point color", "kind": "slider",
+      "synonyms": ["point color range", "point colour range", "range"], "min": 0, "max": 100, "default": 50, "step": 5}
   ]
 }

@@ -268,3 +268,15 @@
 {"group":"color","text":"blue luminance down orange saturation up","expect":[{"op":"nudge","control":"mixerBlueLuminance","steps":-1},{"op":"nudge","control":"mixerOrangeSaturation","steps":1}]}
 {"group":"color","text":"red curve 50 60 red hue 10","expect":[{"op":"set","control":"curveRed50","value":60},{"op":"set","control":"mixerRedHue","value":10}]}
 {"group":"color","text":"lumin more","expect":[{"op":"ambiguous","word":"lumin","candidates":["mixerRedLuminance","mixerOrangeLuminance","mixerYellowLuminance","mixerGreenLuminance","mixerAquaLuminance","mixerBlueLuminance","mixerPurpleLuminance","mixerMagentaLuminance"]}]}
+{"group":"color","text":"point color picker","expect":[{"op":"run","control":"pointColorPicker"}]}
+{"group":"color","text":"pick point colour","expect":[{"op":"run","control":"pointColorPicker"}]}
+{"group":"color","text":"target hue 200","expect":[{"op":"set","control":"pointHue","value":200}]}
+{"group":"color","text":"target colour up","expect":[{"op":"nudge","control":"pointHue","steps":1}]}
+{"group":"color","text":"point hue shift 40","expect":[{"op":"set","control":"pointHueShift","value":40}]}
+{"group":"color","text":"reset point hue","expect":[{"op":"reset","control":"pointHueShift"}]}
+{"group":"color","text":"point saturation -60","expect":[{"op":"set","control":"pointSaturationShift","value":-60}]}
+{"group":"color","text":"point sat more","expect":[{"op":"nudge","control":"pointSaturationShift","steps":1}]}
+{"group":"color","text":"point luminance shift 30","expect":[{"op":"set","control":"pointLuminanceShift","value":30}]}
+{"group":"color","text":"less point luminance","expect":[{"op":"nudge","control":"pointLuminanceShift","steps":-1}]}
+{"group":"color","text":"point range 80","expect":[{"op":"set","control":"pointRange","value":80}]}
+{"group":"color","text":"range down","expect":[{"op":"nudge","control":"pointRange","steps":-1}]}

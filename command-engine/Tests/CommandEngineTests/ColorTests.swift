@@ -177,4 +177,44 @@ final class ColorTests: XCTestCase {
         let i = (3 * 25 + 2 * 5 + 1) * 4
         XCTAssertEqual(Array(cube[i..<(i + 4)]), [0.25, 0.5, 0.75, 1])
     }
+
+    // MARK: - Point color
+
+    func testPointColorNames() {
+        XCTAssertEqual(parse("point color picker"), [.run("pointColorPicker")])
+        XCTAssertEqual(parse("target hue 200 point saturation -50"), [.set("pointHue", 200), .set("pointSaturationShift", -50)])
+        XCTAssertEqual(parse("point hue 30"), [.set("pointHueShift", 30)])
+        XCTAssertEqual(parse("red curve 50 60"), [.set("curveRed50", 60)])
+        XCTAssertEqual(parse("point curve 50 60"), [.set("curveRgb50", 60)], "point curve keeps its name")
+    }
+
+    func testPointColorShiftsOnlyColoursNearTheTarget() {
+        let v = look(["pointHue": 0, "pointSaturationShift": -100])
+        let red = RGB(0.8, 0.1, 0.1), orange = RGB(0.9, 0.5, 0.1), blue = RGB(0.1, 0.2, 0.8), grey = RGB(0.4, 0.4, 0.4)
+        let greyed = ColorLook.transform(red, v)
+        assertClose(greyed.r, greyed.g, 1e-9)
+        XCTAssertEqual(ColorLook.transform(blue, v), blue)
+        XCTAssertEqual(ColorLook.transform(grey, v), grey)
+        // Orange (30° away) is inside the default 35° but only partly.
+        let o = ColorLook.transform(orange, v)
+        XCTAssertLessThan(o.max - o.min, orange.max - orange.min)
+        XCTAssertGreaterThan(o.max - o.min, 0.05)
+        // A narrow range leaves orange alone.
+        XCTAssertEqual(ColorLook.transform(orange, look(["pointHue": 0, "pointSaturationShift": -100, "pointRange": 0])), orange)
+    }
+
+    func testPointColorWrapsAroundRed() {
+        let v = look(["pointHue": 355, "pointLuminanceShift": -100])
+        XCTAssertLessThan(ColorLook.transform(RGB(0.8, 0.1, 0.12), v).luma, RGB(0.8, 0.1, 0.12).luma)
+    }
+
+    func testPickedHueIgnoresGreys() {
+        XCTAssertNil(ColorLook.pickedHue(linear: RGB(0.2, 0.2, 0.21)))
+        XCTAssertEqual(ColorLook.pickedHue(linear: RGB(0, 0, 0.5)) ?? -1, 240, accuracy: 1e-9)
+    }
+
+    func testTargetHueAloneChangesNothing() {
+        XCTAssertTrue(ColorLook.isIdentity { $0 == "pointHue" ? 120 : nil })
+        XCTAssertFalse(ColorLook.isIdentity { $0 == "pointHueShift" ? 10 : nil })
+    }
 }
