@@ -165,6 +165,8 @@ struct MaskCanvas: View {
     @ObservedObject var model: EditorModel
     let tool: String
     @State private var points: [CGPoint] = []
+    /// Polygon lasso: the corners tapped so far.
+    @State private var corners: [CGPoint] = []
 
     var body: some View {
         GeometryReader { geo in
@@ -175,10 +177,17 @@ struct MaskCanvas: View {
                     path.addLines(points)
                 }
                 .stroke(Color.red.opacity(0.5), style: StrokeStyle(lineWidth: brushWidth(geo.size), lineCap: .round, lineJoin: .round))
+                if tool == "polygon", !corners.isEmpty {
+                    Path { path in path.addLines(corners) }.stroke(Color.white, lineWidth: 1.5)
+                    ForEach(Array(corners.enumerated()), id: \.offset) { item in
+                        Circle().fill(item.offset == 0 ? Color.accentColor : Color.white).frame(width: 9, height: 9).position(item.element)
+                    }
+                }
             }
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { drag in
+                        if tool == "polygon" { return }
                         if Self.painted.contains(tool) {
                             points.append(drag.location)
                         } else {
@@ -187,7 +196,9 @@ struct MaskCanvas: View {
                         }
                     }
                     .onEnded { drag in
-                        if Self.painted.contains(tool) {
+                        if tool == "polygon" {
+                            addCorner(drag.location, size: geo.size)
+                        } else if Self.painted.contains(tool) {
                             model.draw(points.map { Self.unit($0, in: geo.size) })
                         } else {
                             model.draw([Self.unit(drag.startLocation, in: geo.size), Self.unit(drag.location, in: geo.size)])
@@ -196,10 +207,24 @@ struct MaskCanvas: View {
                     }
             )
         }
+        .onChange(of: tool) { _, _ in
+            points = []
+            corners = []
+        }
     }
 
-    /// Parts painted with the brush (the others follow the drag as it goes).
-    static let painted: Set<String> = ["brush", "quickSelect"]
+    /// Parts drawn as a line and handed over when the finger lifts (the others follow the drag as it goes).
+    static let painted: Set<String> = ["brush", "quickSelect", "lasso"]
+
+    /// Polygon lasso: a tap adds a corner; a tap on the first corner (with three or more) closes it.
+    private func addCorner(_ p: CGPoint, size: CGSize) {
+        if corners.count >= 3, let first = corners.first, hypot(p.x - first.x, p.y - first.y) < 22 {
+            model.draw(corners.map { Self.unit($0, in: size) })
+            corners = []
+        } else {
+            corners.append(p)
+        }
+    }
 
     /// Lines of the selected gradient: where it is full, its middle, where it ends.
     @ViewBuilder
@@ -217,6 +242,27 @@ struct MaskCanvas: View {
                 Self.across(b, a, size).stroke(Color.white.opacity(0.6), lineWidth: 1)
                 Circle().fill(Color.white).frame(width: 10, height: 10).position(mid)
             }
+            .allowsHitTesting(false)
+        } else if ["lasso", "polygon"].contains(tool), let part = model.selectedPart, part.path.count >= 3 {
+            Path { path in
+                path.addLines(part.path.map { CGPoint(x: CGFloat($0.x) * size.width, y: CGFloat($0.y) * size.height) })
+                path.closeSubpath()
+            }
+            .stroke(Color.white, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+            .allowsHitTesting(false)
+        } else if ["rectangle", "ellipse"].contains(tool), let v = model.selectedPart?.values {
+            let box = CGRect(x: CGFloat(v["left"] ?? 0.25) * size.width, y: CGFloat(v["top"] ?? 0.25) * size.height,
+                             width: CGFloat((v["right"] ?? 0.75) - (v["left"] ?? 0.25)) * size.width,
+                             height: CGFloat((v["bottom"] ?? 0.75) - (v["top"] ?? 0.25)) * size.height)
+            Group {
+                if tool == "rectangle" {
+                    Rectangle().stroke(Color.white, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                } else {
+                    Ellipse().stroke(Color.white, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                }
+            }
+            .frame(width: box.width, height: box.height)
+            .position(x: box.midX, y: box.midY)
             .allowsHitTesting(false)
         } else if let point = model.selectedPart?.point {
             // A tapped sample (colour range, magic wand).
@@ -260,6 +306,7 @@ struct MaskCanvas: View {
     /// The brush's width on screen (Brush Size is a share of the photo's long side).
     private func brushWidth(_ size: CGSize) -> CGFloat {
         guard Self.painted.contains(tool) else { return 0 }
+        if tool == "lasso" { return 2 }
         let percent = model.registry.control(id: "brushSize").map { model.value(of: $0) } ?? 10
         return max(2, CGFloat(percent / 100) * max(size.width, size.height))
     }

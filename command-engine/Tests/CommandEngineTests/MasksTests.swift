@@ -726,3 +726,100 @@ final class LocalAdjustmentsTests: XCTestCase {
         XCTAssertEqual(strong.localValue(registry.control(id: "exposure")!), 3, "kept in the slider's range")
     }
 }
+
+/// Selection tools: lasso, polygon lasso, marquees, magic wand, quick select.
+final class SelectionToolsTests: XCTestCase {
+    private var registry: ControlRegistry!
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+    }
+
+    private func parse(_ text: String) -> [Command] {
+        CommandParser(registry: registry).parse(text)
+    }
+
+    /// Four flat patches: red, orange (top row), blue, a darker red (bottom row), 20 × 20 cells each.
+    private func patches() -> PixelGrid {
+        var rgb: [Float] = []
+        for y in 0..<40 {
+            for x in 0..<40 {
+                switch (x < 20, y < 20) {
+                case (true, true): rgb += [0.9, 0.14, 0.14]
+                case (false, true): rgb += [0.9, 0.52, 0.14]
+                case (true, false): rgb += [0.65, 0.26, 0.26]
+                default: rgb += [0.1, 0.2, 0.8]
+                }
+            }
+        }
+        return PixelGrid(width: 40, height: 40, rgb: rgb)
+    }
+
+    func testSelectionToolNames() {
+        XCTAssertEqual(parse("lasso"), [.run("lassoMask")])
+        XCTAssertEqual(parse("polygonal lasso"), [.run("polygonLasso")])
+        XCTAssertEqual(parse("marquee left"), [.run("rectangleMarquee", value: 3)])
+        XCTAssertEqual(parse("subtract ellipse marquee center"), [.run("ellipseMarquee", value: 0, mode: "subtract")])
+        XCTAssertEqual(parse("magic wand"), [.run("magicWand")])
+        XCTAssertEqual(parse("wand tolerance 50"), [.set("wandTolerance", 50)])
+        XCTAssertEqual(parse("quick select"), [.run("quickSelect")])
+    }
+
+    func testPolygonCoversItsInside() {
+        let square = [MaskPoint(0.25, 0.25), MaskPoint(0.75, 0.25), MaskPoint(0.75, 0.75), MaskPoint(0.25, 0.75)]
+        let grid = MaskRaster.polygon(square, width: 40, height: 40)
+        XCTAssertEqual(grid.reduce(0, +), 400, accuracy: 0.01)
+        XCTAssertEqual(grid[20 * 40 + 20], 1)
+        XCTAssertEqual(grid[5 * 40 + 5], 0)
+        let half = MaskRaster.polygon([MaskPoint(0.0125, 0), MaskPoint(1, 0), MaskPoint(1, 1), MaskPoint(0.0125, 1)], width: 40, height: 40)
+        XCTAssertEqual(half[0], 0.5, accuracy: 1e-6, "an edge through a cell covers part of it")
+        let triangle = MaskRaster.polygon([MaskPoint(0, 0), MaskPoint(1, 0), MaskPoint(0, 1)], width: 40, height: 40)
+        XCTAssertEqual(triangle.reduce(0, +), 800, accuracy: 1)
+        XCTAssertEqual(MaskRaster.polygon([MaskPoint(0, 0), MaskPoint(1, 1)], width: 4, height: 4).max(), 0, "a line has no inside")
+    }
+
+    func testMarqueesAndTheirPlacements() {
+        var state = EditState()
+        var interpreter = CommandInterpreter(registry: registry)
+        _ = interpreter.interpret("rectangle marquee left", state: &state)
+        let part = state.masks[0].components[0]
+        XCTAssertEqual([part.values["left"], part.values["top"], part.values["right"], part.values["bottom"]], [0, 0, 0.5, 1])
+        let grid = MaskRaster.part(part, width: 40, height: 20, pixels: nil)
+        XCTAssertEqual(grid[10 * 40 + 5], 1)
+        XCTAssertEqual(grid[10 * 40 + 30], 0)
+        let oval = MaskRaster.ellipse(left: 0.25, top: 0.25, right: 0.75, bottom: 0.75, width: 40, height: 40)
+        XCTAssertEqual(oval[20 * 40 + 20], 1)
+        XCTAssertEqual(oval[11 * 40 + 11], 0, "the box's corner is outside the ellipse")
+    }
+
+    func testMagicWandFillsTheJoinedPatchOfThatColour() {
+        let pixels = patches()
+        let wand = MaskRaster.magicWand(at: MaskPoint(0.1, 0.1), tolerance: 32, width: 40, height: 40, pixels: pixels)
+        XCTAssertEqual(wand.reduce(0, +), 400, "the red patch only")
+        let wide = MaskRaster.magicWand(at: MaskPoint(0.1, 0.1), tolerance: 100, width: 40, height: 40, pixels: pixels)
+        XCTAssertEqual(wide.reduce(0, +), 1200, "red, orange and dark red within 100 levels; blue is not")
+        XCTAssertEqual(MaskRaster.magicWand(at: nil, tolerance: 32, width: 40, height: 40, pixels: pixels).max(), 0, "nothing until tapped")
+    }
+
+    func testQuickSelectGrowsToTheEdges() {
+        let pixels = patches()
+        let stroke = MaskStroke(points: [MaskPoint(0.2, 0.2), MaskPoint(0.3, 0.3)], size: 5)
+        let grown = MaskRaster.quickSelect([stroke], width: 40, height: 40, pixels: pixels)
+        XCTAssertEqual(grown.reduce(0, +), 400, "the whole red patch, nothing across its edges")
+        XCTAssertEqual(grown[39 * 40 + 39], 0)
+        let erased = MaskRaster.quickSelect([stroke, MaskStroke(points: [MaskPoint(0.25, 0.25)], size: 30, feather: 0, erase: true)],
+                                            width: 40, height: 40, pixels: pixels)
+        XCTAssertEqual(erased[10 * 40 + 10], 0, "erased where the eraser went")
+        XCTAssertEqual(erased[2 * 40 + 2], 1)
+    }
+
+    func testOutlinesGoToTheSelectedLasso() {
+        var state = EditState()
+        var interpreter = CommandInterpreter(registry: registry)
+        _ = interpreter.interpret("lasso", state: &state)
+        XCTAssertFalse(state.setPath([MaskPoint(0, 0), MaskPoint(1, 1)]), "needs three points")
+        XCTAssertTrue(state.setPath([MaskPoint(0, 0), MaskPoint(1, 0), MaskPoint(0, 1)]))
+        _ = interpreter.interpret("quick select", state: &state)
+        XCTAssertTrue(state.addStroke(MaskStroke(points: [MaskPoint(0.5, 0.5)])))
+    }
+}

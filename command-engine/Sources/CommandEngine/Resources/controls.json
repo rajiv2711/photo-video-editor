@@ -866,6 +866,35 @@
     {"id": "maskOverlay", "label": "Mask Overlay", "group": "masks", "kind": "toggle",
       "synonyms": ["overlay", "overlay mask", "mask view", "view mask", "red overlay", "show overlay", "mask overlay view"]},
     {"id": "maskAmount", "label": "Mask Amount", "group": "masks", "section": "Mask", "kind": "slider", "scope": "mask",
-      "synonyms": ["mask strength", "mask effect", "local amount", "mask intensity"], "min": 0, "max": 200, "default": 100, "step": 10}
+      "synonyms": ["mask strength", "mask effect", "local amount", "mask intensity"], "min": 0, "max": 200, "default": 100, "step": 10},
+    {"id": "lassoMask", "label": "Lasso", "group": "masks", "kind": "action", "component": "lasso",
+      "synonyms": ["lasso tool", "freehand lasso", "freehand selection", "lasso selection", "lasso mask"]},
+    {"id": "polygonLasso", "label": "Polygon Lasso", "group": "masks", "kind": "action", "component": "polygon",
+      "synonyms": ["polygonal lasso", "polygon selection", "polygon", "polygon tool", "polygon mask"]},
+    {"id": "rectangleMarquee", "label": "Rectangle Marquee", "group": "masks", "kind": "action", "component": "rectangle",
+      "synonyms": ["rectangular marquee", "marquee", "rectangle selection", "rectangle", "box selection", "rectangle mask"],
+      "options": [
+        {"id": "center", "label": "Center", "synonyms": ["centre", "middle"]},
+        {"id": "top", "label": "Top", "synonyms": ["top half", "upper half"]},
+        {"id": "bottom", "label": "Bottom", "synonyms": ["bottom half", "lower half"]},
+        {"id": "left", "label": "Left", "synonyms": ["left half"]},
+        {"id": "right", "label": "Right", "synonyms": ["right half"]}
+      ]},
+    {"id": "ellipseMarquee", "label": "Ellipse Marquee", "group": "masks", "kind": "action", "component": "ellipse",
+      "synonyms": ["elliptical marquee", "ellipse selection", "ellipse", "oval marquee", "oval selection", "circle selection"],
+      "options": [
+        {"id": "center", "label": "Center", "synonyms": ["centre", "middle"]},
+        {"id": "top", "label": "Top", "synonyms": ["top half", "upper half"]},
+        {"id": "bottom", "label": "Bottom", "synonyms": ["bottom half", "lower half"]},
+        {"id": "left", "label": "Left", "synonyms": ["left half"]},
+        {"id": "right", "label": "Right", "synonyms": ["right half"]}
+      ]},
+    {"id": "magicWand", "label": "Magic Wand", "group": "masks", "kind": "action", "component": "magicWand",
+      "synonyms": ["wand", "magic wand tool", "wand selection", "magic wand mask"]},
+    {"id": "wandTolerance", "label": "Wand Tolerance", "group": "masks", "section": "Magic wand", "kind": "slider",
+      "scope": "component", "component": "magicWand",
+      "synonyms": ["magic wand tolerance", "tolerance", "wand range"], "min": 0, "max": 100, "default": 32, "step": 4},
+    {"id": "quickSelect", "label": "Quick Select", "group": "masks", "kind": "action", "component": "quickSelect",
+      "synonyms": ["quick selection", "quick select tool", "quick selection tool", "smart select", "quick select mask"]}
   ]
 }

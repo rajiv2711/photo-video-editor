@@ -106,7 +106,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 77. **Mask refine** — feather, edge, smooth, expand/contract; hair-fine edges
 - [x] 78. **Mask overlay** — show the mask as a coloured overlay
 - [x] 79. **Local adjustments** — any slider (incl. colour grading) inside a mask
-- [ ] 80. **Selection tools** — lasso, polygon lasso, marquee, magic wand, quick select
+- [x] 80. **Selection tools** — lasso, polygon lasso, marquee, magic wand, quick select
 
 ### Retouch & remove
 

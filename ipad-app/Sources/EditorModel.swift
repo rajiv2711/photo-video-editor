@@ -156,7 +156,7 @@ final class EditorModel: ObservableObject {
         dragBase = finished ? nil : base
         guard let tool = canvasTool, let start = points.first, let end = points.last else { return }
         switch tool {
-        case "brush":
+        case "brush", "quickSelect":
             func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
             state.addStroke(MaskStroke(points: points, size: v("brushSize"), feather: v("brushFeather"), flow: v("brushFlow"),
                                        density: v("brushDensity"), erase: v("brushErase") != 0, autoMask: v("brushAutoMask") != 0))
@@ -164,8 +164,14 @@ final class EditorModel: ObservableObject {
             guard start != end else { return }
             let g = MaskGeometry.linear(from: start, to: end, width: Double(photoSize.width), height: Double(photoSize.height))
             state.setComponentValues(["linearAngle": g.angle.rounded(), "linearPosition": g.position, "linearWidth": max(1, g.width)])
-        case "colorRange":
+        case "colorRange", "magicWand":
             state.setPoint(end)
+        case "lasso", "polygon":
+            state.setPath(points)
+        case "rectangle", "ellipse":
+            guard start != end else { return }
+            state.setComponentValues(["left": min(start.x, end.x), "top": min(start.y, end.y),
+                                      "right": max(start.x, end.x), "bottom": max(start.y, end.y)])
         case "luminanceRange":
             // The brightness there (before other edits), ±15.
             let image = renderer.whiteBalanceInput(previewSource, value: currentValue)
@@ -506,6 +512,12 @@ final class EditorModel: ObservableObject {
         "radial": "drag inside it to move it, outside to resize it",
         "colorRange": "tap the colour to select (or say a colour: “color range blue”)",
         "luminanceRange": "tap a brightness to select around it, or set Low and High",
+        "lasso": "draw around the area",
+        "polygon": "tap the corners; tap the first one again to close",
+        "rectangle": "drag from one corner to the other",
+        "ellipse": "drag from one corner of its box to the other",
+        "magicWand": "tap the area to select",
+        "quickSelect": "paint over the area; it grows out to its edges",
     ]
 
     nonisolated static func format(_ value: Double, _ control: Control?) -> String {

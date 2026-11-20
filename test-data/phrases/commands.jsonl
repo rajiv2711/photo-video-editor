@@ -673,3 +673,17 @@
 {"group":"masks","text":"mask temperature more","expect":[{"op":"select","control":"mask"},{"op":"nudge","control":"temperature","steps":1}]}
 {"group":"masks","text":"mask amount 150","expect":[{"op":"set","control":"maskAmount","value":150}]}
 {"group":"masks","text":"mask strength down","expect":[{"op":"nudge","control":"maskAmount","steps":-1}]}
+{"group":"masks","text":"lasso","expect":[{"op":"run","control":"lassoMask"}]}
+{"group":"masks","text":"freehand selection","expect":[{"op":"run","control":"lassoMask"}]}
+{"group":"masks","text":"polygon lasso","expect":[{"op":"run","control":"polygonLasso"}]}
+{"group":"masks","text":"polygonal lasso","expect":[{"op":"run","control":"polygonLasso"}]}
+{"group":"masks","text":"rectangle marquee","expect":[{"op":"run","control":"rectangleMarquee"}]}
+{"group":"masks","text":"marquee left","expect":[{"op":"run","control":"rectangleMarquee","value":3}]}
+{"group":"masks","text":"ellipse marquee","expect":[{"op":"run","control":"ellipseMarquee"}]}
+{"group":"masks","text":"subtract ellipse marquee center","expect":[{"op":"run","control":"ellipseMarquee","value":0,"mode":"subtract"}]}
+{"group":"masks","text":"magic wand","expect":[{"op":"run","control":"magicWand"}]}
+{"group":"masks","text":"add magic wand","expect":[{"op":"run","control":"magicWand","mode":"add"}]}
+{"group":"masks","text":"wand tolerance 50","expect":[{"op":"set","control":"wandTolerance","value":50}]}
+{"group":"masks","text":"tolerance more","expect":[{"op":"nudge","control":"wandTolerance","steps":1}]}
+{"group":"masks","text":"quick select","expect":[{"op":"run","control":"quickSelect"}]}
+{"group":"masks","text":"quick selection","expect":[{"op":"run","control":"quickSelect"}]}

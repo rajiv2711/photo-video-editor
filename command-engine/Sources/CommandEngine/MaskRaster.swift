@@ -214,6 +214,19 @@ public enum MaskRaster {
         case "linear":
             values = linear(angle: part.values["linearAngle"] ?? 0, position: part.values["linearPosition"] ?? 25,
                             fade: part.values["linearWidth"] ?? 50, width: width, height: height)
+        case "lasso", "polygon":
+            values = polygon(part.path, width: width, height: height)
+        case "rectangle", "ellipse":
+            let v = part.values
+            let box = (left: v["left"] ?? 0.25, top: v["top"] ?? 0.25, right: v["right"] ?? 0.75, bottom: v["bottom"] ?? 0.75)
+            values = part.kind == "rectangle"
+                ? polygon([MaskPoint(box.left, box.top), MaskPoint(box.right, box.top), MaskPoint(box.right, box.bottom),
+                           MaskPoint(box.left, box.bottom)], width: width, height: height)
+                : ellipse(left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: width, height: height)
+        case "magicWand":
+            values = magicWand(at: part.point, tolerance: part.values["wandTolerance"] ?? 32, width: width, height: height, pixels: pixels)
+        case "quickSelect":
+            values = quickSelect(part.strokes, width: width, height: height, pixels: pixels)
         case "colorRange":
             values = colorRange(part, width: width, height: height, pixels: pixels)
         case "luminanceRange":
@@ -281,6 +294,138 @@ public enum MaskRaster {
             }
         }
         return out
+    }
+
+    // MARK: - Selection tools
+
+    /// Inside an outline (lasso, polygon lasso, rectangle marquee), points from the top-left 0…1,
+    /// closed back to the first point; where it crosses itself, inside and outside alternate.
+    /// Edge cells get the share of them that is inside (4 rows per cell).
+    public static func polygon(_ path: [MaskPoint], width: Int, height: Int) -> [Float] {
+        var out = [Float](repeating: 0, count: width * height)
+        guard path.count >= 3 else { return out }
+        let points = path.map { (x: $0.x * Double(width), y: $0.y * Double(height)) }
+        let rows = 4
+        var crossings: [Double] = []
+        for row in 0..<height {
+            for k in 0..<rows {
+                let y = Double(row) + (Double(k) + 0.5) / Double(rows)
+                crossings.removeAll(keepingCapacity: true)
+                for i in points.indices {
+                    let a = points[i], b = points[(i + 1) % points.count]
+                    if (a.y <= y) != (b.y <= y) {
+                        crossings.append(a.x + (y - a.y) / (b.y - a.y) * (b.x - a.x))
+                    }
+                }
+                crossings.sort()
+                var j = 0
+                while j + 1 < crossings.count {
+                    let x0 = Swift.max(0, crossings[j]), x1 = Swift.min(Double(width), crossings[j + 1])
+                    if x1 > x0 {
+                        for column in Int(x0)...Swift.min(width - 1, Int(x1)) {
+                            let cover = Swift.min(x1, Double(column + 1)) - Swift.max(x0, Double(column))
+                            if cover > 0 { out[row * width + column] += Float(cover / Double(rows)) }
+                        }
+                    }
+                    j += 2
+                }
+            }
+        }
+        for i in out.indices { out[i] = Swift.min(1, out[i]) }
+        return out
+    }
+
+    /// The ellipse inside a box (ellipse marquee), with a one-cell soft edge.
+    public static func ellipse(left: Double, top: Double, right: Double, bottom: Double, width: Int, height: Int) -> [Float] {
+        let w = Double(width), h = Double(height)
+        let rx = Swift.max(0.5, abs(right - left) * w / 2), ry = Swift.max(0.5, abs(bottom - top) * h / 2)
+        let cx = (left + right) / 2 * w, cy = (top + bottom) / 2 * h
+        var out = [Float](repeating: 0, count: width * height)
+        for row in 0..<height {
+            let v = (Double(row) + 0.5 - cy) / ry
+            for column in 0..<width {
+                let u = (Double(column) + 0.5 - cx) / rx
+                let d = (u * u + v * v).squareRoot()
+                out[row * width + column] = Float(Swift.min(1, Swift.max(0, (1 - d) * Swift.min(rx, ry) + 0.5)))
+            }
+        }
+        return out
+    }
+
+    /// Magic wand: the patch around the tapped point whose colours are within `tolerance` (0…100
+    /// levels of 255, on any channel) of the tapped colour, joined to it (no jumping across).
+    public static func magicWand(at point: MaskPoint?, tolerance: Double, width: Int, height: Int, pixels: PixelGrid?) -> [Float] {
+        var out = [Float](repeating: 0, count: width * height)
+        guard let point, let pixels, pixels.width == width, pixels.height == height else { return out }
+        let x = Swift.min(width - 1, Swift.max(0, Int(point.x * Double(width))))
+        let y = Swift.min(height - 1, Swift.max(0, Int(point.y * Double(height))))
+        let seed = pixels.color(y * width + x)
+        let limit = Float(tolerance / 255)
+        flood(from: [y * width + x], into: &out, width: width, height: height) { _, n in
+            close(pixels.color(n), seed, limit)
+        }
+        return out
+    }
+
+    /// Quick select: each painted stroke grows into the area around it, as far as the colour stays
+    /// close to the stroke's average colour (0.3 on any channel) without crossing an edge (a step of
+    /// more than 0.06 between neighbours). Eraser strokes take their own dabs away again.
+    public static func quickSelect(_ strokes: [MaskStroke], width: Int, height: Int, pixels: PixelGrid?) -> [Float] {
+        var out = [Float](repeating: 0, count: width * height)
+        guard let pixels, pixels.width == width, pixels.height == height else { return out }
+        for stroke in strokes where !stroke.erase {
+            var hard = stroke
+            hard.feather = 0
+            hard.flow = 100
+            hard.density = 100
+            hard.autoMask = false
+            let under = MaskRaster.strokes([hard], width: width, height: height, pixels: nil)
+            let seeds = under.indices.filter { under[$0] > 0.5 }
+            guard !seeds.isEmpty else { continue }
+            var sum: (Float, Float, Float) = (0, 0, 0)
+            for i in seeds {
+                let c = pixels.color(i)
+                sum = (sum.0 + c.0, sum.1 + c.1, sum.2 + c.2)
+            }
+            let n = Float(seeds.count)
+            let mean = (sum.0 / n, sum.1 / n, sum.2 / n)
+            var grown = [Float](repeating: 0, count: width * height)
+            flood(from: seeds, into: &grown, width: width, height: height) { from, to in
+                close(pixels.color(to), pixels.color(from), 0.06) && close(pixels.color(to), mean, 0.3)
+            }
+            for i in out.indices { out[i] = Swift.max(out[i], grown[i]) }
+        }
+        let erased = strokes.filter(\.erase).map { stroke -> MaskStroke in
+            var s = stroke
+            s.erase = false
+            return s
+        }
+        if !erased.isEmpty {
+            let gone = MaskRaster.strokes(erased, width: width, height: height, pixels: nil)
+            for i in out.indices { out[i] *= 1 - gone[i] }
+        }
+        return out
+    }
+
+    /// Fills `out` with 1 from the seed cells outwards to the four neighbours `joins(from, to)` allows.
+    static func flood(from seeds: [Int], into out: inout [Float], width: Int, height: Int, joins: (Int, Int) -> Bool) {
+        var stack = seeds
+        for i in seeds { out[i] = 1 }
+        while let i = stack.popLast() {
+            let x = i % width, y = i / width
+            for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] where nx >= 0 && ny >= 0 && nx < width && ny < height {
+                let n = ny * width + nx
+                if out[n] == 0, joins(i, n) {
+                    out[n] = 1
+                    stack.append(n)
+                }
+            }
+        }
+    }
+
+    /// Whether two colours differ by at most `limit` on every channel.
+    static func close(_ a: (Float, Float, Float), _ b: (Float, Float, Float), _ limit: Float) -> Bool {
+        abs(a.0 - b.0) <= limit && abs(a.1 - b.1) <= limit && abs(a.2 - b.2) <= limit
     }
 
     // MARK: - Luminance range
