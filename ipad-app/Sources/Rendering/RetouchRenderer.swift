@@ -72,13 +72,22 @@ final class RetouchRenderer {
             slot.pending = nil
             return picture
         }
+        lock.lock()
+        wanted = steps
+        lock.unlock()
         if slot.pending != steps {
             slot.pending = steps
-            lock.lock()
-            wanted = steps
-            lock.unlock()
             queue.async { [weak self, slot] in
-                guard let self, self.isWanted(steps), let result = slot.canvas?.render(steps) else { return }
+                guard let self else { return }
+                guard self.isWanted(steps), let result = slot.canvas?.render(steps) else {
+                    // Skipped (other steps were asked for meanwhile): a later render may ask again.
+                    DispatchQueue.main.async {
+                        guard slot.pending == steps else { return }
+                        slot.pending = nil
+                        self.onFinish?()
+                    }
+                    return
+                }
                 let picture = Self.picture(result.image, extent: extent)
                 DispatchQueue.main.async {
                     guard slot.pending == steps else { return }

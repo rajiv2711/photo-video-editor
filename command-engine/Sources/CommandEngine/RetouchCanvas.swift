@@ -214,7 +214,7 @@ public final class RetouchCanvas {
             result = known
         } else {
             result = compute(step, plan: plan, image: image)
-            if cachedFloats + result.count > 40_000_000 {
+            if cachedFloats + result.count > 16_000_000 {  // at most 64 MB of kept results
                 results = [:]
                 cachedFloats = 0
             }
