@@ -89,6 +89,17 @@
       "step": 5
     },
     {
+      "id": "fade",
+      "label": "Fade",
+      "group": "light",
+      "kind": "slider",
+      "synonyms": ["matte", "faded"],
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

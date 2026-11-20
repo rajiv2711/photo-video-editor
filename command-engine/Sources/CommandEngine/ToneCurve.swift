@@ -2,7 +2,7 @@ import Foundation
 
 /// Tone math for the Light panel, shared by the iPad renderer and the Linux tests.
 ///
-/// The global tone controls (Highlights brightening, Whites, Blacks, Brightness; later curves, levels…) become one
+/// The global tone controls (Highlights brightening, Whites, Blacks, Brightness, Fade; later curves, levels) become one
 /// lookup table per colour channel, applied in a single Core Image pass (CIColorCurves). Inputs and
 /// outputs are sRGB-encoded levels (0 = black, 1 = SDR white), i.e. what the eye sees.
 ///
@@ -37,7 +37,7 @@ public enum ToneCurve {
     }
 
     /// Control ids that feed the table; when all are at their default the table is skipped.
-    public static let controlIDs: [String] = ["highlights", "whites", "blacks", "brightness"]
+    public static let controlIDs: [String] = ["highlights", "whites", "blacks", "brightness", "fade"]
 
     /// The value of each tone control that leaves the picture untouched.
     public static func neutral(_ id: String) -> Double {
@@ -82,7 +82,7 @@ public enum ToneCurve {
 
         /// Output (red, green, blue) for one input level 0…1.
         func channels(_ x: Double) -> (Double, Double, Double) {
-            let y = basic(x)
+            let y = fade(basic(x))
             return (y, y, y)
         }
 
@@ -105,6 +105,12 @@ public enum ToneCurve {
                 y = pow(y, pow(2, -0.8 * brightness))
             }
             return y
+        }
+
+        /// Fade: lifts black towards grey for a matte look (up to a quarter); white stays white.
+        func fade(_ x: Double) -> Double {
+            let f = value("fade") / 100 * 0.25
+            return f == 0 ? x : f + (1 - f) * x
         }
     }
 
