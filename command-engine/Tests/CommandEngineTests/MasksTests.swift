@@ -612,11 +612,22 @@ final class MaskRefineTests: XCTestCase {
 
     func testExpandAndContract() {
         let sq = square()
-        // 100 cells long side: 100 % expand = 3 cells.
+        // 100 cells long side: 100 % expand = 3 cells, round-cornered (an octagon, not a square).
         let grown = MaskRaster.refine(sq, settings: ["maskExpand": 100], width: 100, height: 100, pixels: nil)
-        XCTAssertEqual(grown.reduce(0, +), 26 * 26)
         XCTAssertEqual(grown[50 * 100 + 37], 1)
         XCTAssertEqual(grown[50 * 100 + 36], 0)
+        XCTAssertEqual(grown[37 * 100 + 50], 1)
+        XCTAssertEqual(grown[37 * 100 + 37], 0, "the corner grows less than the sides")
+        XCTAssertGreaterThan(grown.reduce(0, +), 20 * 20 + 4 * 20 * 3)
+        XCTAssertLessThan(grown.reduce(0, +), 26 * 26)
+        // A dot grows into an octagon about 2 × 6 cells across.
+        var dot = [Float](repeating: 0, count: 100 * 100)
+        dot[50 * 100 + 50] = 1
+        let blob = MaskRaster.extreme(dot, width: 100, height: 100, radius: 6, grow: true)
+        XCTAssertEqual(blob[50 * 100 + 56], 1)
+        XCTAssertEqual(blob[50 * 100 + 57], 0)
+        XCTAssertEqual(blob[54 * 100 + 54], 1, "a diagonal reaches about as far")
+        XCTAssertEqual(blob[56 * 100 + 56], 0)
         let shrunk = MaskRaster.refine(sq, settings: ["maskExpand": -100], width: 100, height: 100, pixels: nil)
         XCTAssertEqual(shrunk.reduce(0, +), 14 * 14)
         // At the picture's edge the edge value repeats outwards.

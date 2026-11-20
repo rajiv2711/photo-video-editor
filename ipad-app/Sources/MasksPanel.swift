@@ -113,7 +113,7 @@ struct MasksPanel: View {
         .padding(.horizontal, 10)
         if let part = mask.component {
             if let hint = EditorModel.hints[part.kind] {
-                Text(hint.prefix(1).uppercased() + hint.dropFirst() + ".")
+                Text(hint.prefix(1).uppercased() + String(hint.dropFirst()) + ".")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 10)

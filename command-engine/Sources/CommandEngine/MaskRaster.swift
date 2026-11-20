@@ -147,11 +147,25 @@ public enum MaskRaster {
         return out
     }
 
-    /// Largest (`grow`) or smallest value within a (2r + 1)² square around each cell.
+    /// Largest (`grow`) or smallest value within `radius` cells of each cell: a regular octagon (as
+    /// round as straight runs allow: runs along both axes and both diagonals, each 0.83 × radius
+    /// long), or a square for radii under 3.
     static func extreme(_ values: [Float], width: Int, height: Int, radius r: Int, grow: Bool) -> [Float] {
+        guard r > 0 else { return values }
+        let along = r < 3 ? r : Int((Double(r) * (2.0.squareRoot() - 1)).rounded())
+        let diagonal = r < 3 ? 0 : Int((Double(r) * (1 - 1 / 2.0.squareRoot())).rounded())
+        var out = values
+        for (dx, dy, k) in [(1, 0, along), (0, 1, along), (1, 1, diagonal), (1, -1, diagonal)] where k > 0 {
+            out = extreme(out, width: width, height: height, step: (dx, dy), radius: k, grow: grow)
+        }
+        return out
+    }
+
+    /// The extreme within `r` steps along one direction (each line of cells on its own).
+    static func extreme(_ values: [Float], width: Int, height: Int, step: (Int, Int), radius r: Int, grow: Bool) -> [Float] {
         func pick(_ a: Float, _ b: Float) -> Float { grow ? Swift.max(a, b) : Swift.min(a, b) }
-        /// One row or column: the extreme within r on each side, edges repeated outwards (blocks of
-        /// 2r + 1 with running extremes from each block's start and end, so any window is two lookups).
+        /// One line: the extreme within r on each side, ends repeated outwards (blocks of 2r + 1 with
+        /// running extremes from each block's start and end, so any window is two lookups).
         func line(_ v: [Float]) -> [Float] {
             let n = v.count, k = 2 * r + 1
             let padded = (0..<(n + 2 * r)).map { v[Swift.min(n - 1, Swift.max(0, $0 - r))] }
@@ -161,14 +175,23 @@ public enum MaskRaster {
             for j in stride(from: m - 2, through: 0, by: -1) where (j + 1) % k != 0 { suffix[j] = pick(suffix[j + 1], padded[j]) }
             return (0..<n).map { i in pick(suffix[i], prefix[i + 2 * r]) }
         }
+        let (dx, dy) = step
         var out = values
+        // Every line starts at a cell whose step backwards leaves the grid.
         for y in 0..<height {
-            let row = line(Array(out[(y * width)..<((y + 1) * width)]))
-            for x in 0..<width { out[y * width + x] = row[x] }
-        }
-        for x in 0..<width {
-            let column = line((0..<height).map { out[$0 * width + x] })
-            for y in 0..<height { out[y * width + x] = column[y] }
+            for x in 0..<width {
+                let px = x - dx, py = y - dy
+                guard px < 0 || py < 0 || px >= width || py >= height else { continue }
+                var cells: [Int] = []
+                var cx = x, cy = y
+                while cx >= 0, cy >= 0, cx < width, cy < height {
+                    cells.append(cy * width + cx)
+                    cx += dx
+                    cy += dy
+                }
+                let filtered = line(cells.map { values[$0] })
+                for (i, cell) in cells.enumerated() { out[cell] = filtered[i] }
+            }
         }
         return out
     }
