@@ -34,7 +34,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 19. **White balance picker** — tap something that should be neutral grey
 - [x] 20. **Vibrance** — boost muted colours, protect skin
 - [x] 21. **Saturation** — intensity of all colours
-- [ ] 22. **Hue** — rotate all colours around the colour wheel
+- [x] 22. **Hue** — rotate all colours around the colour wheel
 - [ ] 23. **Color mixer (HSL)** — hue, saturation, luminance for 8 colour bands
 - [ ] 24. **Point color** — pick one exact colour and shift it, with a range
 - [ ] 25. **Variance** — even out uneven shades of one colour (e.g. skin)

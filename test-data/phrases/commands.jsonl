@@ -211,3 +211,7 @@
 {"group":"color","text":"vibrance up saturation down","expect":[{"op":"nudge","control":"vibrance","steps":1},{"op":"nudge","control":"saturation","steps":-1}]}
 {"group":"color","text":"colour saturation 30","expect":[{"op":"set","control":"saturation","value":30}]}
 {"group":"color","text":"auto colour","expect":[{"op":"run","control":"auto"}]}
+{"group":"color","text":"hue 30","expect":[{"op":"set","control":"hue","value":30}]}
+{"group":"color","text":"hue more more","expect":[{"op":"nudge","control":"hue","steps":2}]}
+{"group":"color","text":"reset hue","expect":[{"op":"reset","control":"hue"}]}
+{"group":"color","text":"hue shift minus 45","expect":[{"op":"set","control":"hue","value":-45}]}

@@ -336,6 +336,17 @@
       "max": 100,
       "default": 0,
       "step": 5
+    },
+    {
+      "id": "hue",
+      "label": "Hue",
+      "group": "color",
+      "kind": "slider",
+      "synonyms": ["hue shift", "hue rotate", "hue rotation", "global hue shift"],
+      "min": -180,
+      "max": 180,
+      "default": 0,
+      "step": 5
     }
   ]
 }

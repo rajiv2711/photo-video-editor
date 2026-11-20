@@ -3,7 +3,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 
 /// The Color panel, in Lightroom's order. `input` runs before the Light panel (white balance);
-/// `apply` runs after it (vibrance, saturation, …). The colour math lives in CommandEngine (WhiteBalance,
+/// `apply` runs after it (vibrance, saturation, hue, …). The colour math lives in CommandEngine (WhiteBalance,
 /// …) so it is tested on Linux.
 struct ColorRenderer {
     let context: CIContext
@@ -33,6 +33,15 @@ struct ColorRenderer {
             filter.brightness = 0
             filter.contrast = 1
             filter.saturation = Float(1 + saturation / 100)
+            output = filter.outputImage ?? output
+        }
+
+        // Hue: turns every colour around the colour wheel by this many degrees; greys stay grey.
+        let hue = value("hue") ?? 0  // −180…180°
+        if hue != 0 {
+            let filter = CIFilter.hueAdjust()
+            filter.inputImage = output
+            filter.angle = Float(hue * .pi / 180)
             output = filter.outputImage ?? output
         }
 

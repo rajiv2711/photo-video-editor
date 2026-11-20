@@ -51,6 +51,7 @@
     {"id": "wb-picker", "command": "temperature 80 white balance picker", "tap": [0.85, 0.08], "control": "wbPicker", "expect": [{"metric": "mean_b", "dir": "up", "vs": "temperature-plus"}, {"metric": "diff", "dir": "same"}]},
     {"id": "vibrance-plus", "command": "vibrance 100", "control": "vibrance", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "vibrance-minus", "command": "vibrance -100", "source": "chart", "control": "vibrance", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "hue-half-turn", "command": "hue 180", "source": "chart", "control": "hue", "expect": [{"metric": "diff", "dir": "changed", "vs": "chart"}, {"metric": "mean_sat", "dir": "same", "min": 3, "vs": "chart"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]
