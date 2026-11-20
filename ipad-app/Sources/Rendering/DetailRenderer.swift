@@ -17,16 +17,16 @@ final class DetailRenderer {
         let side = Double(max(extent.width, extent.height))
         var output = image
 
-        // Luminance noise reduction: a median and blur, used where the picture is flat or lightly
-        // textured and only for brightness, so colours stay put. Edges are found on a median-smoothed
-        // copy (so noise doesn't look like detail) within twice the blur's reach (so they get no halo).
+        // Luminance noise reduction: a blurred copy, used where the picture is flat or lightly textured
+        // and only for brightness, so colours stay put. Edges are found on a lightly blurred copy (so
+        // noise doesn't look like detail) within twice the blur's reach (so they get no halo). No median
+        // filter: it would erase thin lettering.
         let luminanceNR = v("noiseReduction") / 100
         if luminanceNR > 0 {
             let encoded = Filters.encoded(output)
             let radius = Detail.pixels(Detail.noiseRadius(amount: luminanceNR, color: false), longSide: side)
-            let median = encoded.applyingFilter("CIMedianFilter")
-            let soft = Filters.blurred(median, radius: radius, extent: extent)
-            let calm = Filters.blurred(median, radius: Detail.pixels(1, longSide: side), extent: extent)
+            let soft = Filters.blurred(encoded, radius: radius, extent: extent)
+            let calm = Filters.blurred(encoded, radius: Detail.pixels(1, longSide: side), extent: extent)
             let range = Filters.localRange(calm, extent: extent, radius: 2 * radius)
             let smoothed = Filters.blend(soft, over: encoded, mask: Filters.lookup(range, table: Detail.noiseSmoothing(amount: luminanceNR)))
             let brightnessOnly = smoothed.applyingFilter("CILuminosityBlendMode", parameters: [kCIInputBackgroundImageKey: encoded])

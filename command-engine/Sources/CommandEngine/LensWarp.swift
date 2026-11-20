@@ -91,9 +91,9 @@ public struct LensWarp: Equatable {
         return 1 / Swift.max(c, 0.2)
     }
 
-    /// The largest scale (corrected point × scale → lookup) at which every point on the frame's edge
-    /// still finds its colour inside the photo as shot, so the frame stays filled. 1 when the edge
-    /// stays put.
+    /// The largest scale (corrected point × scale → lookup), at most 1, at which every point on the
+    /// frame's edge still finds its colour inside the photo as shot, so the frame stays filled. Never
+    /// more than 1: zooming out past the original frame could fold a strong warp back on itself.
     public func fillScale(width: Double, height: Double) -> Double {
         func fits(_ s: Double) -> Bool {
             let n = 32
@@ -111,7 +111,7 @@ public struct LensWarp: Equatable {
             }
             return true
         }
-        var lo = 0.25, hi = 4.0
+        var lo = 0.25, hi = 1.0
         if !fits(lo) { return lo }
         if fits(hi) { return hi }
         for _ in 0..<40 {

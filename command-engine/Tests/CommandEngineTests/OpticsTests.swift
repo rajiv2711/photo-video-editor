@@ -192,6 +192,9 @@ final class OpticsTests: XCTestCase {
                        "320° still reaches 300°")
         XCTAssertNotEqual(Defringe.apply(magenta, purple: 1, purpleHue: Defringe.purpleHue(0), green: 0, greenHue: g), fixed)
         XCTAssertEqual(Defringe.cube(purple: 1, purpleHue: p, green: 1, greenHue: g, size: 5).count, 5 * 5 * 5 * 4)
+        let mask = Defringe.edgeMask()
+        XCTAssertEqual(mask[Int(0.05 * 63)], 0, "flat areas keep their colour")
+        XCTAssertEqual(mask[Int(0.3 * 63)], 1, "high-contrast edges get defringed")
     }
 
     // MARK: - Manual distortion
@@ -226,6 +229,18 @@ final class OpticsTests: XCTestCase {
         XCTAssertGreaterThan(none, 1.5, "the shot line is bowed")
         XCTAssertLessThan(fixed, none / 5, "positive distortion straightens it")
         XCTAssertGreaterThan(bow(LensWarp(distortion: -0.24)), none, "negative bows it more")
+    }
+
+    func testStrongPincushionWarpDoesNotZoomOutOrFold() {
+        let warp = LensWarp(distortion: 1)
+        XCTAssertEqual(warp.fillScale(width: 300, height: 200), 1)
+        // Along a ray to the corner, points read from further out the further out they are.
+        var last = -1.0
+        for i in 0...20 {
+            let r = warp.source(of: LensWarp.Point(x: 150 * Double(i) / 20, y: 100 * Double(i) / 20), width: 300, height: 200).green.length
+            XCTAssertGreaterThan(r, last)
+            last = r
+        }
     }
 
     func testDistortionKeepsTheFrameFilled() {
