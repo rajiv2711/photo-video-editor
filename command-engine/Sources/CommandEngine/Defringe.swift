@@ -47,6 +47,6 @@ public enum Defringe {
 
     /// Where fringes can be: by the local brightness range around a pixel (sRGB levels), strong edges only.
     public static func edgeMask() -> [Double] {
-        Effects.table(count: 64) { range in Effects.smoothstep(0.12, 0.3, range) }
+        Effects.table(count: 64) { range in Effects.smoothstep(0.08, 0.22, range) }
     }
 }

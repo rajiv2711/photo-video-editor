@@ -100,7 +100,7 @@ final class OpticsRenderer {
             "inputColorSpace": space,
         ])
         let side = Double(max(extent.width, extent.height))
-        let range = Filters.localRange(Filters.encoded(image), extent: extent, radius: Detail.pixels(3, longSide: side))
+        let range = Filters.localRange(Filters.encoded(image), extent: extent, radius: Detail.pixels(4, longSide: side))
         return Filters.blend(defringed, over: image, mask: Filters.lookup(range, table: Defringe.edgeMask()))
     }
 

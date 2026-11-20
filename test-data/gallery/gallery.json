@@ -231,7 +231,7 @@
 
     {"id": "grid", "command": "", "source": "grid", "expect": [{"metric": "diff", "dir": "changed"}]},
     {"id": "lens-cast", "command": "", "source": "lens", "expect": [{"metric": "diff", "dir": "same", "vs": "grid"}]},
-    {"id": "lens-profile", "command": "lens profile correction on", "source": "lens", "control": "lensProfile", "expect": [{"metric": "diff", "dir": "changed", "vs": "lens-cast"}, {"metric": "corner_luma", "dir": "up", "vs": "lens-cast"}, {"metric": "center_luma", "dir": "same", "vs": "lens-cast"}]},
+    {"id": "lens-profile", "command": "lens profile correction on", "source": "lens", "control": "lensProfile", "expect": [{"metric": "diff", "dir": "changed", "vs": "lens-cast"}, {"metric": "corner_luma", "dir": "up", "vs": "lens-cast"}, {"metric": "center_luma", "dir": "same", "vs": "lens-cast", "min": 8}]},
     {"id": "lens-profile-unknown", "command": "lens profile correction on", "control": "lensProfile", "expect": [{"metric": "diff", "dir": "same"}]},
     {"id": "lateral-ca-cast", "command": "", "source": "lateral-ca", "expect": [{"metric": "fringe", "dir": "up", "vs": "grid"}]},
     {"id": "remove-ca", "command": "remove chromatic aberration", "source": "lateral-ca", "control": "removeCA", "expect": [{"metric": "fringe", "dir": "down", "vs": "lateral-ca-cast"}, {"metric": "fringe", "dir": "same", "vs": "grid", "min": 2}]},

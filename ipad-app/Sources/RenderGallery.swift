@@ -150,10 +150,12 @@ enum RenderGallery {
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
         case "fringe":
-            guard let grid = softGrid(size: photo.extent.integral.size) else { return photo }
-            let lines = CIImage(cgImage: grid).applyingFilter("CILinearToSRGBToneCurve")
+            // High contrast, as where real fringes show: the sharp grid inverted (bright lines on dark).
+            guard let grid = gridPicture(size: photo.extent.integral.size) else { return photo }
+            let inverted = CIImage(cgImage: grid).applyingFilter("CILinearToSRGBToneCurve")
                 .applyingFilter("CIColorInvert").applyingFilter("CISRGBToneCurveToLinear")
-            let spread = lines.clampedToExtent().applyingGaussianBlur(sigma: 2.5).cropped(to: lines.extent)
+            let lines = inverted.clampedToExtent().applyingGaussianBlur(sigma: 0.7).cropped(to: inverted.extent)
+            let spread = inverted.clampedToExtent().applyingGaussianBlur(sigma: 2.5).cropped(to: inverted.extent)
             let redBlue = spread.applyingFilter("CIColorMatrix", parameters: [
                 "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 0),
             ])
