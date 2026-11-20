@@ -146,6 +146,7 @@ enum RenderGallery {
     ///   (red/cyan and blue/yellow fringes towards the corners), for chromatic aberration.
     /// - "fringe": bright lines on dark (the grid inverted) with red and blue more blurred than green:
     ///   purple fringes outside the lines, green inside (defringe).
+    /// - "fisheye": the grid as a 120° fisheye lens would show it (fisheye correction).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
         case "fringe":
@@ -161,7 +162,7 @@ enum RenderGallery {
                 "inputBVector": CIVector(x: 0, y: 0, z: 0, w: 0),
             ])
             return redBlue.applyingFilter("CIMaximumCompositing", parameters: [kCIInputBackgroundImageKey: greenOnly])
-        case "grid", "lens", "lateral-ca":
+        case "grid", "lens", "lateral-ca", "fisheye":
             let size = photo.extent.integral.size
             guard let grid = softGrid(size: size) else { return photo }
             switch source {
@@ -172,6 +173,8 @@ enum RenderGallery {
             case "lateral-ca":
                 let fringes = LensWarp(redScale: 1 / 1.004, blueScale: 1 / 0.996)
                 return OpticsRenderer.remap(CIImage(cgImage: grid), fringes, context: context)
+            case "fisheye":
+                return OpticsRenderer.remap(CIImage(cgImage: grid), LensWarp(fisheye: -1), context: context)
             default:
                 return CIImage(cgImage: grid)
             }

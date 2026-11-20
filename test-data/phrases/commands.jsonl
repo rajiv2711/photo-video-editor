@@ -569,3 +569,7 @@
 {"group":"optics","text":"lens vignetting midpoint 20","expect":[{"op":"set","control":"lensVignettingMidpoint","value":20}]}
 {"group":"optics","text":"vignetting up","expect":[{"op":"nudge","control":"lensVignetting","steps":1}]}
 {"group":"optics","text":"vignette up","expect":[{"op":"nudge","control":"vignette","steps":1}]}
+{"group":"optics","text":"fisheye correction 50","expect":[{"op":"set","control":"fisheye","value":50}]}
+{"group":"optics","text":"fish eye more","expect":[{"op":"nudge","control":"fisheye","steps":1}]}
+{"group":"optics","text":"wide angle correction up","expect":[{"op":"nudge","control":"fisheye","steps":1}]}
+{"group":"optics","text":"defish 100","expect":[{"op":"set","control":"fisheye","value":100}]}

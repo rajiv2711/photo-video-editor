@@ -721,6 +721,9 @@
       "synonyms": ["lens vignette", "vignetting", "vignetting correction", "lens vignetting amount", "manual vignetting"],
       "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "lensVignettingMidpoint", "label": "Lens Vignetting Midpoint", "group": "optics", "section": "Lens vignetting", "kind": "slider",
-      "synonyms": ["lens vignette midpoint", "lens midpoint", "vignetting midpoint"], "min": 0, "max": 100, "default": 50, "step": 5}
+      "synonyms": ["lens vignette midpoint", "lens midpoint", "vignetting midpoint"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "fisheye", "label": "Fisheye Correction", "group": "optics", "kind": "slider",
+      "synonyms": ["fisheye", "fish eye", "fish eye correction", "wide angle correction", "wide-angle correction", "defish"],
+      "min": 0, "max": 100, "default": 0, "step": 5}
   ]
 }

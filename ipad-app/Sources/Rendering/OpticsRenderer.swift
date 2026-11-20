@@ -2,8 +2,8 @@ import CommandEngine
 import CoreImage
 
 /// The Optics panel. It runs first, on the photo as shot (as in Lightroom, lens fixes come before any
-/// tone or colour work): lens profile correction, chromatic aberration, manual distortion, lens
-/// vignetting, defringe. The geometry is LensWarp in CommandEngine, a CPU pass on a float copy of the
+/// tone or colour work): lens profile correction, chromatic aberration, manual distortion, fisheye
+/// correction, lens vignetting, defringe. The geometry is LensWarp in CommandEngine, a CPU pass on a float copy of the
 /// picture; its result is kept until the picture or the optics settings change, so the other sliders
 /// stay fast. Lens vignetting and defringe are ordinary Core Image passes after it.
 final class OpticsRenderer {
@@ -45,6 +45,7 @@ final class OpticsRenderer {
         warp.redScale *= ChromaticAberration.scale(slider: v("caRedCyan"))
         warp.blueScale *= ChromaticAberration.scale(slider: v("caBlueYellow"))
         warp.distortion = v("distortion") / 100
+        warp.fisheye = v("fisheye") / 100
         var output = warp.isIdentity ? image : warped(image, warp)
 
         // Lens vignetting: corners brighter (or darker) by up to a stop, in linear light.

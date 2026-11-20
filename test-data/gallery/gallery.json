@@ -1,5 +1,5 @@
 {
-  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart, haze, noise, moire, grid, lens, lateral-ca, fringe) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
+  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart, haze, noise, moire, grid, lens, lateral-ca, fringe, fisheye) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
   "cases": [
     {"id": "base", "command": "", "expect": []},
     {"id": "warm-cast", "command": "", "source": "warm", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
@@ -246,6 +246,9 @@
     {"id": "distortion-minus", "command": "distortion -100", "source": "grid", "control": "distortion", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid"}, {"metric": "diff", "dir": "changed", "vs": "distortion-plus"}]},
     {"id": "lens-vignetting-plus", "command": "lens vignetting 100", "control": "lensVignetting", "expect": [{"metric": "corner_luma", "dir": "up"}, {"metric": "center_luma", "dir": "same"}]},
     {"id": "lens-vignetting-minus", "command": "lens vignetting -100", "control": "lensVignetting", "expect": [{"metric": "corner_luma", "dir": "down"}, {"metric": "center_luma", "dir": "same"}]},
-    {"id": "lens-vignetting-midpoint", "command": "lens vignetting -100 lens vignetting midpoint 0", "control": "lensVignettingMidpoint", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "lens-vignetting-minus"}]}
+    {"id": "lens-vignetting-midpoint", "command": "lens vignetting -100 lens vignetting midpoint 0", "control": "lensVignettingMidpoint", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "lens-vignetting-minus"}]},
+    {"id": "fisheye-cast", "command": "", "source": "fisheye", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid"}]},
+    {"id": "fisheye-fix", "command": "fisheye correction 100", "source": "fisheye", "control": "fisheye", "expect": [{"metric": "diff", "dir": "changed", "vs": "fisheye-cast"}, {"metric": "mean_luma", "dir": "same", "vs": "fisheye-cast", "min": 3}]},
+    {"id": "fisheye-grid", "command": "fisheye correction 50", "source": "grid", "control": "fisheye", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid"}]}
   ]
 }

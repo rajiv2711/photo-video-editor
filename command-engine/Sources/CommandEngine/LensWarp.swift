@@ -16,17 +16,22 @@ public struct LensWarp: Equatable {
     /// Manual distortion, −1…1: positive straightens barrel distortion (lines bowing out), negative
     /// straightens pincushion distortion (lines bowing in).
     public var distortion: Double
+    /// Fisheye correction, 0…1: shows a fisheye photo (up to 120° across the diagonal) as a normal,
+    /// straight-lined one. Negative values do the opposite, a fisheye look (for test pictures).
+    public var fisheye: Double
 
-    public init(profile: LensCorrection? = nil, redScale: Double = 1, blueScale: Double = 1, distortion: Double = 0) {
+    public init(profile: LensCorrection? = nil, redScale: Double = 1, blueScale: Double = 1, distortion: Double = 0,
+                fisheye: Double = 0) {
         self.profile = profile
         self.redScale = redScale
         self.blueScale = blueScale
         self.distortion = distortion
+        self.fisheye = fisheye
     }
 
     /// Nothing to do.
     public var isIdentity: Bool {
-        profile == nil && redScale == 1 && blueScale == 1 && distortion == 0
+        profile == nil && redScale == 1 && blueScale == 1 && distortion == 0 && fisheye == 0
     }
 
     /// A position in pixels from the photo's centre.
@@ -48,6 +53,18 @@ public struct LensWarp: Equatable {
     public func source(of p: Point, width: Double, height: Double) -> (red: Point, green: Point, blue: Point) {
         var q = p
         let corner = (width * width + height * height).squareRoot() / 2
+        // Fisheye correction: an equidistant fisheye puts a ray at angle a at radius a ÷ θ (r = 1 at the
+        // corner, θ the corner's angle); a normal lens at tan a ÷ tan θ. So a corrected point at r is
+        // read from atan(r·tan θ) ÷ θ, and the fisheye look the other way round.
+        if fisheye != 0 {
+            let theta = Swift.min(1, abs(fisheye)) * Double.pi / 3
+            let r = q.length / corner
+            if r > 0 {
+                let to = fisheye > 0 ? atan(r * tan(theta)) / theta
+                    : tan(Swift.min(r * theta, Double.pi / 2 - 1e-6)) / tan(theta)
+                q = q.scaled(to / r)
+            }
+        }
         // Manual distortion: read from r·(1 + k r²), r = 1 at the corner. k < 0 pulls the corners in
         // (a pincushion warp, which straightens barrel distortion).
         if distortion != 0 {

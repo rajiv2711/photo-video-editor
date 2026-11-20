@@ -84,7 +84,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 60. **Defringe** — remove purple/green fringes by hue range
 - [x] 61. **Manual distortion** — barrel ↔ pincushion
 - [x] 62. **Manual lens vignetting** — amount and midpoint
-- [ ] 63. **Wide-angle / fisheye correction** — straighten curved lines
+- [x] 63. **Wide-angle / fisheye correction** — straighten curved lines
 
 ## B. Masking & retouching
 

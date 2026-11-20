@@ -17,7 +17,8 @@ final class OpticsTests: XCTestCase {
 
     func testOpticsControlsAreInTheOpticsPanel() {
         for id in ["lensProfile", "removeCA", "caRedCyan", "caBlueYellow", "defringePurple", "defringePurpleHue",
-                   "defringeGreen", "defringeGreenHue", "distortion", "lensVignetting", "lensVignettingMidpoint"] {
+                   "defringeGreen", "defringeGreenHue", "distortion", "lensVignetting", "lensVignettingMidpoint",
+                   "fisheye"] {
             XCTAssertEqual(registry.control(id: id)?.group, "optics", id)
         }
     }
@@ -253,5 +254,36 @@ final class OpticsTests: XCTestCase {
         XCTAssertGreaterThan(Vignette.lensGain(u: 0.5, v: 0, aspect: 1.5, amount: 1, midpoint: 0),
                              Vignette.lensGain(u: 0.5, v: 0, aspect: 1.5, amount: 1, midpoint: 1), "midpoint 0 reaches further in")
         XCTAssertEqual(Vignette.lensMask(width: 4, height: 3, amount: 1, midpoint: 0.5).count, 12)
+    }
+
+    // MARK: - Fisheye correction
+
+    func testFisheyeNames() {
+        XCTAssertEqual(parse("fisheye correction 50"), [.set("fisheye", 50)])
+        XCTAssertEqual(parse("fish eye more"), [.nudge("fisheye", 1)])
+        XCTAssertEqual(parse("wide angle correction up"), [.nudge("fisheye", 1)])
+        XCTAssertEqual(parse("defish 100"), [.set("fisheye", 100)])
+    }
+
+    func testFisheyeCorrectionUndoesTheFisheyeLook() {
+        let look = LensWarp(fisheye: -1), fix = LensWarp(fisheye: 1)
+        for p in [LensWarp.Point(x: 40, y: 10), LensWarp.Point(x: -120, y: 80), LensWarp.Point(x: 149, y: -99)] {
+            let there = look.source(of: fix.source(of: p, width: 300, height: 200).green, width: 300, height: 200).green
+            XCTAssertEqual(there.x, p.x, accuracy: 1e-6)
+            XCTAssertEqual(there.y, p.y, accuracy: 1e-6)
+        }
+        // Corrected: a point halfway out is read from further out (the fisheye squeezed the edges).
+        let half = fix.source(of: LensWarp.Point(x: 90, y: 0), width: 300, height: 200).green
+        XCTAssertGreaterThan(half.x, 90)
+        XCTAssertEqual(LensWarp(fisheye: 1).source(of: LensWarp.Point(x: 0, y: 0), width: 300, height: 200).green.x, 0)
+    }
+
+    func testFisheyeCorrectionStaysFilled() {
+        let warp = LensWarp(fisheye: 1)
+        let s = warp.fillScale(width: 300, height: 200)
+        XCTAssertLessThan(s, 1, "straightening crops into the picture")
+        XCTAssertGreaterThan(s, 0.5)
+        let look = LensWarp(fisheye: -1)
+        XCTAssertEqual(look.fillScale(width: 300, height: 200), 1, accuracy: 1e-3, "the fisheye look keeps the corners")
     }
 }
