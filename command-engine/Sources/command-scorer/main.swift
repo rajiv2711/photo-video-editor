@@ -77,6 +77,7 @@ let applier = CommandApplier(registry: registry)
 func describe(_ outcome: CommandOutcome) -> String {
     switch outcome {
     case .changed(let id, let from, let to): return "\(id) \(from) → \(to)"
+    case .ran(let id): return "ran \(id)"
     case .unchanged(let id, let value): return "\(id) stays \(value)"
     case .ambiguous(let word, let ids): return "“\(word)” could be \(ids.joined(separator: "/"))"
     case .unknown(let word): return "unknown “\(word)”"

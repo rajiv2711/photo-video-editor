@@ -206,6 +206,8 @@ final class EditorModel: ObservableObject {
             case .changed(let id, let from, let to):
                 let control = registry.control(id: id)
                 parts.append("\(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))")
+            case .ran(let id):
+                parts.append(registry.control(id: id)?.label ?? id)
             case .unchanged(let id, let value):
                 let control = registry.control(id: id)
                 parts.append("\(control?.label ?? id) stays at \(Self.format(value, control))")

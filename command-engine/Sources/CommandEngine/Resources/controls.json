@@ -3,6 +3,8 @@
     {
       "id": "exposure",
       "label": "Exposure",
+      "group": "light",
+      "kind": "slider",
       "synonyms": ["brightness", "bright", "light", "exposer"],
       "min": -3,
       "max": 3,
@@ -12,6 +14,8 @@
     {
       "id": "contrast",
       "label": "Contrast",
+      "group": "light",
+      "kind": "slider",
       "synonyms": ["punch", "contrasty"],
       "min": -100,
       "max": 100,
@@ -21,6 +25,8 @@
     {
       "id": "saturation",
       "label": "Saturation",
+      "group": "color",
+      "kind": "slider",
       "synonyms": ["color", "colour", "colors", "colours", "vividness"],
       "min": -100,
       "max": 100,

@@ -3,6 +3,8 @@ import Foundation
 /// What happened when commands were applied; the UI turns these into feedback.
 public enum CommandOutcome: Equatable {
     case changed(controlID: String, from: Double, to: Double)
+    /// An action control ran ("auto"); the changes it made follow as `.changed` outcomes.
+    case ran(controlID: String)
     /// The control was named or nudged but its value did not move (e.g. already at max).
     case unchanged(controlID: String, value: Double)
     /// A word matched several controls equally well; the UI should offer them as choices.
@@ -16,9 +18,13 @@ public enum CommandOutcome: Equatable {
 /// Consecutive commands on the same control report as one change ("contrast 20 more" → 0 → 25).
 public struct CommandApplier {
     public let registry: ControlRegistry
+    /// Runs an action control ("auto") and returns the commands it stands for, e.g. a `set` per
+    /// slider. The app supplies it, because actions look at the photo. Without it actions only report `.ran`.
+    public var actionHandler: ((String) -> [Command])?
 
-    public init(registry: ControlRegistry) {
+    public init(registry: ControlRegistry, actionHandler: ((String) -> [Command])? = nil) {
         self.registry = registry
+        self.actionHandler = actionHandler
     }
 
     public func apply(_ commands: [Command], state: inout EditState, focus: inout String?) -> [CommandOutcome] {
@@ -66,6 +72,19 @@ public struct CommandApplier {
                 outcomes.append(.unknown(word: id))  // e.g. a model invented a control
                 continue
             }
+            if control.kind == .action {
+                // Any command on an action runs it; its own commands are applied right here, in order.
+                flush()
+                outcomes.append(.ran(controlID: control.id))
+                let produced = (actionHandler?(control.id) ?? []).filter { $0.op != .run }
+                var inner = self
+                inner.actionHandler = nil
+                outcomes += inner.apply(produced, state: &state, focus: &focus).filter {
+                    if case .unchanged = $0 { return false }
+                    return true
+                }
+                continue
+            }
             if run?.control.id != control.id {
                 flush()
                 run = (control, state.value(of: control))
@@ -80,7 +99,7 @@ public struct CommandApplier {
             case .reset: state.set(control, to: control.defaultValue)
             case .max: state.set(control, to: control.max)
             case .min: state.set(control, to: control.min)
-            case .select, .resetAll, .ambiguous, .unknown: break
+            case .select, .run, .resetAll, .ambiguous, .unknown: break
             }
         }
         flush()

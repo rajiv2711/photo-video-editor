@@ -7,10 +7,12 @@ import Foundation
 ///     {"op":"set","control":"exposure","value":0.5}   "exposure 0.5"
 ///     {"op":"add","control":"contrast","value":20}    "contrast up by 20"
 ///     {"op":"nudge","steps":1}                        "more"  (no control = the focused one)
+///     {"op":"set","control":"hdr","value":1}          "hdr on" (toggles are 0/1)
+///     {"op":"run","control":"auto"}                   "auto"  (an action control)
 ///     {"op":"unknown","word":"vignette"}              anything that isn't a control
 public struct Command: Codable, Equatable, CustomStringConvertible {
     public enum Op: String, Codable {
-        case nudge, add, set, reset, max, min, select
+        case nudge, add, set, reset, max, min, select, run
         case resetAll = "reset_all"
         case ambiguous, unknown
     }
@@ -39,6 +41,7 @@ public struct Command: Codable, Equatable, CustomStringConvertible {
     public static func max(_ control: String?) -> Command { Command(op: .max, control: control) }
     public static func min(_ control: String?) -> Command { Command(op: .min, control: control) }
     public static func select(_ control: String) -> Command { Command(op: .select, control: control) }
+    public static func run(_ control: String) -> Command { Command(op: .run, control: control) }
     public static let resetAll = Command(op: .resetAll)
     public static func ambiguous(_ word: String, _ candidates: [String]) -> Command { Command(op: .ambiguous, word: word, candidates: candidates) }
     public static func unknown(_ word: String) -> Command { Command(op: .unknown, word: word) }

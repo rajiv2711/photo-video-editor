@@ -12,7 +12,13 @@ public struct CommandInterpreter {
     public private(set) var lastControlID: String?
     public private(set) var lastCommands: [Command] = []
     private let parser: CommandParser
-    private let applier: CommandApplier
+    private var applier: CommandApplier
+
+    /// Runs action controls such as "auto" (see `CommandApplier.actionHandler`).
+    public var actionHandler: ((String) -> [Command])? {
+        get { applier.actionHandler }
+        set { applier.actionHandler = newValue }
+    }
 
     public init(registry: ControlRegistry) {
         self.registry = registry
@@ -27,6 +33,12 @@ public struct CommandInterpreter {
 
     public mutating func interpret(_ text: String, state: inout EditState) -> [Outcome] {
         let commands = parser.parse(text)
+        lastCommands = commands
+        return applier.apply(commands, state: &state, focus: &lastControlID)
+    }
+
+    /// Applies commands that didn't come from text, e.g. a button press: `[.run("auto")]`.
+    public mutating func apply(_ commands: [Command], state: inout EditState) -> [Outcome] {
         lastCommands = commands
         return applier.apply(commands, state: &state, focus: &lastControlID)
     }

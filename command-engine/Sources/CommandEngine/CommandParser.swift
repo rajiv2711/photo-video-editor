@@ -5,6 +5,8 @@ import Foundation
 ///
 /// Name-first grammar: a control name opens a clause; the words after it act on that control.
 /// Actions said before any name act on the focused control (`control: nil`).
+/// Names may be several words ("tone curve highlights", "red curve 50"); the longest one wins.
+/// Toggles take "on"/"off", choices take an option name, actions run when named.
 public struct CommandParser {
     public let registry: ControlRegistry
     private let matcher: NameMatcher
@@ -29,14 +31,19 @@ public struct CommandParser {
 
         func begin(_ control: Control) {
             finish()
-            clause = Clause(control: control.id, named: true)
+            clause = Clause(control: control.id, kind: control.kind, named: true)
             blocked = false
         }
 
         func act(_ action: Clause.Action) {
             if blocked { return }
-            if clause == nil { clause = Clause(control: nil, named: false) }
+            if clause == nil { clause = Clause(control: nil, kind: .slider, named: false) }
             clause?.actions.append(action)
+        }
+
+        /// The control the current clause names, if any.
+        func named() -> Control? {
+            clause.flatMap { $0.control }.flatMap { registry.control(id: $0) }
         }
 
         func reject(_ command: Command) {
@@ -49,6 +56,20 @@ public struct CommandParser {
 
         while let token = tokens.popFirst() {
             if Self.fillers.contains(token) { continue }
+
+            // A choice's option ("white balance cloudy") comes before every other reading:
+            // option names may also be words like "auto".
+            if let control = named(), control.kind == .choice, let picked = option(of: control, token, tokens) {
+                tokens.removeFirst(picked.extra)
+                act(.set(Double(picked.index)))
+                continue
+            }
+
+            // "on"/"off" switch a toggle ("hdr on"); anywhere else they are filler.
+            if let on = Self.switchWord(token) {
+                if named()?.kind == .toggle { act(.set(on ? 1 : 0)) }
+                continue
+            }
 
             if token == "reset" || token == "default" {
                 if let next = tokens.first, next == "all" || next == "everything" {
@@ -89,10 +110,10 @@ public struct CommandParser {
                 continue
             }
 
-            // Anything else should be a control name, possibly two words ("white balance").
-            if let next = tokens.first, let control = matcher.exact(token + " " + next) {
-                tokens.removeFirst()
-                begin(control)
+            // Anything else should be a control name, possibly several words ("tone curve highlights").
+            if let found = longestName(token, tokens) {
+                tokens.removeFirst(found.extra)
+                begin(found.control)
                 continue
             }
             switch matcher.match(token) {
@@ -110,10 +131,48 @@ public struct CommandParser {
 
     // MARK: - Parsing helpers
 
+    /// The control named by `first` plus one to three following words, longest name first.
+    /// ("red curve 50" beats "red"; single words go through the fuzzy matcher instead.)
+    private func longestName(_ first: String, _ rest: ArraySlice<String>) -> (control: Control, extra: Int)? {
+        let words = rest.prefix(3).map { $0.replacingOccurrences(of: "%", with: "") }
+        for extra in stride(from: words.count, through: 1, by: -1) {
+            if let control = matcher.exact(([first] + words.prefix(extra)).joined(separator: " ")) {
+                return (control, extra)
+            }
+        }
+        return nil
+    }
+
+    /// The option of a choice control named by `first` (plus up to two more words), as its index
+    /// and the number of extra words used. Near-miss single words count when only one option is close.
+    private func option(of control: Control, _ first: String, _ rest: ArraySlice<String>) -> (index: Int, extra: Int)? {
+        let words = Array(rest.prefix(2))
+        for extra in stride(from: words.count, through: 0, by: -1) {
+            let phrase = ([first] + words.prefix(extra)).joined(separator: " ")
+            if let index = control.options.firstIndex(where: { $0.names.contains(phrase) }) {
+                return (index, extra)
+            }
+        }
+        let close = control.options.indices.filter { i in
+            control.options[i].names.contains { NameMatcher.score(first, against: $0) != nil }
+        }
+        return close.count == 1 ? (close[0], 0) : nil
+    }
+
     static let fillers: Set<String> = [
         "a", "an", "the", "it", "its", "bit", "little", "some", "please", "and", "then",
         "make", "set", "to", "by", "of", "much", "lot", "slightly", "again", "now", "go",
+        "turn", "switch",
     ]
+
+    /// true for "on", false for "off", nil for any other word.
+    static func switchWord(_ token: String) -> Bool? {
+        switch token {
+        case "on", "enable", "enabled": return true
+        case "off", "disable", "disabled": return false
+        default: return nil
+        }
+    }
 
     static func direction(of token: String) -> Int? {
         switch token {
@@ -150,13 +209,19 @@ private struct Clause {
     }
 
     let control: String?
+    let kind: Control.Kind
     let named: Bool
     var actions: [Action] = []
 
     /// Consecutive nudges merge into one ("more more less" → steps 1).
+    /// A named action always just runs; a bare toggle name turns it on; a bare name selects.
     func commands() -> [Command] {
+        if kind == .action, let control {
+            return [.run(control)]
+        }
         if actions.isEmpty {
-            return named ? [.select(control!)] : []
+            guard named, let control else { return [] }
+            return kind == .toggle ? [.set(control, 1)] : [.select(control)]
         }
         var out: [Command] = []
         var pendingSteps: Int?
