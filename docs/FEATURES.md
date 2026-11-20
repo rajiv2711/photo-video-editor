@@ -64,7 +64,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [ ] 46. **Lens blur** — AI depth-based background blur, bokeh shapes, focus point **AI · later**
 - [x] 47. **Posterize** — reduce to a few tone levels
 - [x] 48. **Threshold** — pure black & white at a cut-off
-- [ ] 49. **Solarize** — partial tone inversion
+- [x] 49. **Solarize** — partial tone inversion
 
 ### Detail
 

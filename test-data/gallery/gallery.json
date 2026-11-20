@@ -213,6 +213,8 @@
     {"id": "posterize", "command": "posterize on", "control": "posterize", "expect": [{"metric": "diff", "dir": "changed"}]},
     {"id": "posterize-levels", "command": "posterize on posterize levels 2", "control": "posterizeLevels", "expect": [{"metric": "p5_luma", "dir": "down"}, {"metric": "p95_luma", "dir": "up"}]},
     {"id": "threshold", "command": "threshold on", "control": "threshold", "expect": [{"metric": "p5_luma", "dir": "down"}, {"metric": "p95_luma", "dir": "up"}, {"metric": "mean_sat", "dir": "same", "vs": "saturation-minus"}]},
-    {"id": "threshold-level", "command": "threshold on threshold level 230", "control": "thresholdLevel", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "threshold"}]}
+    {"id": "threshold-level", "command": "threshold on threshold level 230", "control": "thresholdLevel", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "threshold"}]},
+    {"id": "solarize-half", "command": "solarize 50", "control": "solarize", "expect": [{"metric": "p95_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "same"}]},
+    {"id": "solarize-full", "command": "solarize 100", "control": "solarize", "expect": [{"metric": "mean_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]}
   ]
 }

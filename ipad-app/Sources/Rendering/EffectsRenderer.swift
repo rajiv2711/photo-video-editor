@@ -90,6 +90,12 @@ final class EffectsRenderer {
             output = Filters.linear(Filters.lookup(Filters.luma(Filters.encoded(output)), table: Effects.threshold(level: level)))
         }
 
+        // Solarize: the bright levels fold back down (sRGB levels).
+        let solarize = v("solarize") / 100
+        if solarize > 0 {
+            output = Filters.linear(Filters.lookup(Filters.encoded(output), table: Effects.solarize(amount: solarize)))
+        }
+
         return output
     }
 

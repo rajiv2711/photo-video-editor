@@ -124,4 +124,16 @@ public enum Effects {
     public static func threshold(level: Double) -> [Double] {
         table(count: stepTableSize) { x in x * 255 < level ? 0 : 1 }
     }
+
+    /// Solarize (`amount` 0…1), as in a darkroom Sabattier print: the tone curve rises to a peak at
+    /// level 1 − amount and folds back down to black at white. 0.5 is the classic look (darks kept,
+    /// everything above mid-grey inverted); 1 inverts everything; 0 is off.
+    public static func solarize(amount: Double) -> [Double] {
+        let t = 1 - Swift.min(1, Swift.max(0, amount))
+        let peak = Swift.max(t, 1 - t)
+        return table(count: stepTableSize) { x in
+            if t == 1 { return x }
+            return x < t ? x * peak / t : peak * (1 - x) / (1 - t)
+        }
+    }
 }

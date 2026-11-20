@@ -525,3 +525,6 @@
 {"group":"effects","text":"turn off threshold","expect":[{"op":"set","control":"threshold","value":0}]}
 {"group":"effects","text":"threshold level 90","expect":[{"op":"set","control":"thresholdLevel","value":90}]}
 {"group":"effects","text":"threshold cutoff up","expect":[{"op":"nudge","control":"thresholdLevel","steps":1}]}
+{"group":"effects","text":"solarize 50","expect":[{"op":"set","control":"solarize","value":50}]}
+{"group":"effects","text":"solarise more","expect":[{"op":"nudge","control":"solarize","steps":1}]}
+{"group":"effects","text":"reset solarization","expect":[{"op":"reset","control":"solarize"}]}

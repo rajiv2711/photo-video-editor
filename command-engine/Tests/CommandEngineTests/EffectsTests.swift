@@ -18,7 +18,7 @@ final class EffectsTests: XCTestCase {
     func testEffectsControlsAreInTheEffectsPanel() {
         for id in ["texture", "clarity", "dehaze", "vignette", "vignetteMidpoint", "vignetteRoundness", "vignetteFeather", "vignetteHighlights",
                    "grain", "grainSize", "grainRoughness", "glow", "halation",
-                   "posterize", "posterizeLevels", "threshold", "thresholdLevel"] {
+                   "posterize", "posterizeLevels", "threshold", "thresholdLevel", "solarize"] {
             XCTAssertEqual(registry.control(id: id)?.group, "effects", id)
         }
     }
@@ -231,5 +231,21 @@ final class EffectsTests: XCTestCase {
         XCTAssertEqual(Set(table), [0, 1])
         XCTAssertEqual(table[Int(127.0 / 255 * 1023)], 0)
         XCTAssertEqual(table[Int(129.0 / 255 * 1023)], 1)
+    }
+
+    func testSolarizeNames() {
+        XCTAssertEqual(parse("solarize 50"), [.set("solarize", 50)])
+        XCTAssertEqual(parse("solarise more"), [.nudge("solarize", 1)])
+    }
+
+    func testSolarizeFoldsTheBrightLevels() {
+        let classic = Effects.solarize(amount: 0.5)
+        XCTAssertEqual(classic[200], 200.0 / 1023, accuracy: 1e-12, "darks untouched")
+        XCTAssertEqual(classic[1023], 0, "white turns black")
+        XCTAssertEqual(classic[767], 1 - 767.0 / 1023, accuracy: 1e-12)
+        let full = Effects.solarize(amount: 1)
+        XCTAssertEqual(full[0], 1)
+        XCTAssertEqual(full[1023], 0)
+        XCTAssertEqual(Effects.solarize(amount: 0), Effects.table(count: Effects.stepTableSize) { $0 }, "0 is off")
     }
 }

@@ -672,6 +672,8 @@
     {"id": "threshold", "label": "Threshold", "group": "effects", "section": "Threshold", "kind": "toggle",
       "synonyms": ["thresholding", "threshold effect"]},
     {"id": "thresholdLevel", "label": "Threshold Level", "group": "effects", "section": "Threshold", "kind": "slider",
-      "synonyms": ["threshold value", "threshold cutoff", "threshold cut off", "threshold point"], "min": 1, "max": 255, "default": 128, "step": 5}
+      "synonyms": ["threshold value", "threshold cutoff", "threshold cut off", "threshold point"], "min": 1, "max": 255, "default": 128, "step": 5},
+    {"id": "solarize", "label": "Solarize", "group": "effects", "kind": "slider",
+      "synonyms": ["solarise", "solarization", "solarisation", "sabattier"], "min": 0, "max": 100, "default": 0, "step": 5}
   ]
 }
