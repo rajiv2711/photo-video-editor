@@ -664,3 +664,15 @@ final class MaskRefineTests: XCTestCase {
         XCTAssertEqual(MaskRaster.box([3, 0, 0], width: 3, height: 1, radius: 1), [1.5, 1, 0])
     }
 }
+
+/// Mask overlay: a photo-wide switch (the app tints the selected mask red on the preview only).
+final class MaskOverlayTests: XCTestCase {
+    func testOverlayNames() throws {
+        let registry = try ControlRegistry.bundled()
+        let parser = CommandParser(registry: registry)
+        XCTAssertEqual(parser.parse("show mask overlay"), [.set("maskOverlay", 1)])
+        XCTAssertEqual(parser.parse("hide mask overlay"), [.set("maskOverlay", 0)])
+        XCTAssertEqual(parser.parse("overlay off"), [.set("maskOverlay", 0)])
+        XCTAssertNil(registry.control(id: "maskOverlay")?.scope, "one switch for every mask")
+    }
+}

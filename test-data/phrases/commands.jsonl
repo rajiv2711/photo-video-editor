@@ -664,3 +664,7 @@
 {"group":"masks","text":"shift edge -20","expect":[{"op":"set","control":"maskExpand","value":-20}]}
 {"group":"masks","text":"refine edge 60","expect":[{"op":"set","control":"maskRefineEdge","value":60}]}
 {"group":"masks","text":"mask refine more","expect":[{"op":"nudge","control":"maskRefineEdge","steps":1}]}
+{"group":"masks","text":"show mask overlay","expect":[{"op":"set","control":"maskOverlay","value":1}]}
+{"group":"masks","text":"hide mask overlay","expect":[{"op":"set","control":"maskOverlay","value":0}]}
+{"group":"masks","text":"overlay on","expect":[{"op":"set","control":"maskOverlay","value":1}]}
+{"group":"masks","text":"mask overlay","expect":[{"op":"set","control":"maskOverlay","value":1}]}

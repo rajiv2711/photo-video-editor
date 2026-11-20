@@ -862,6 +862,8 @@
       "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "maskRefineEdge", "label": "Refine Edge", "group": "masks", "section": "Mask", "kind": "slider", "scope": "mask",
       "synonyms": ["mask refine", "refine mask", "edge refine", "refine mask edge", "refine selection", "hair edges"],
-      "min": 0, "max": 100, "default": 0, "step": 5}
+      "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "maskOverlay", "label": "Mask Overlay", "group": "masks", "kind": "toggle",
+      "synonyms": ["overlay", "overlay mask", "mask view", "view mask", "red overlay", "show overlay", "mask overlay view"]}
   ]
 }

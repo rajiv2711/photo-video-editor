@@ -29,6 +29,11 @@ struct MasksPanel: View {
                     maskRow(item.offset, item.element)
                 }
 
+                // Shows the selected mask as a red tint (preview only, never saved).
+                if let overlay = model.registry.control(id: "maskOverlay"), !model.state.masks.isEmpty {
+                    ControlRow(model: model, control: overlay)
+                }
+
                 if let m = model.state.selectedMask, model.state.masks.indices.contains(m) {
                     selected(model.state.masks[m])
                 }
