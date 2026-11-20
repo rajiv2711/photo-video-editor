@@ -600,3 +600,13 @@
 {"group":"masks","text":"eraser","expect":[{"op":"set","control":"brushErase","value":1}]}
 {"group":"masks","text":"erase off","expect":[{"op":"set","control":"brushErase","value":0}]}
 {"group":"masks","text":"eraser mode on","expect":[{"op":"set","control":"brushErase","value":1}]}
+{"group":"masks","text":"linear gradient","expect":[{"op":"run","control":"linearGradient"}]}
+{"group":"masks","text":"linear gradient from top","expect":[{"op":"run","control":"linearGradient","value":0}]}
+{"group":"masks","text":"new linear gradient mask","expect":[{"op":"run","control":"linearGradient","mode":"new"}]}
+{"group":"masks","text":"graduated filter from bottom exposure -1","expect":[{"op":"run","control":"linearGradient","value":1},{"op":"set","control":"exposure","value":-1}]}
+{"group":"masks","text":"linear angle 45","expect":[{"op":"set","control":"linearAngle","value":45}]}
+{"group":"masks","text":"gradient angle less","expect":[{"op":"nudge","control":"linearAngle","steps":-1}]}
+{"group":"masks","text":"linear position 40","expect":[{"op":"set","control":"linearPosition","value":40}]}
+{"group":"masks","text":"gradient position up","expect":[{"op":"nudge","control":"linearPosition","steps":1}]}
+{"group":"masks","text":"linear width 30","expect":[{"op":"set","control":"linearWidth","value":30}]}
+{"group":"masks","text":"gradient feather more","expect":[{"op":"nudge","control":"linearWidth","steps":1}]}

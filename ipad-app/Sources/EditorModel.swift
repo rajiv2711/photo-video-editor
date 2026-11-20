@@ -136,15 +136,28 @@ final class EditorModel: ObservableObject {
         render()
     }
 
-    /// A finger or Pencil drew on the photo (points from the top-left, 0…1): a brush stroke with
-    /// the current brush settings.
+    /// The selected mask's selected part.
+    var selectedPart: MaskComponent? {
+        state.selectedComponent.map { state.masks[$0.mask].components[$0.component] }
+    }
+
+    /// The preview's width and height in pixels (gradient angles are measured on the photo).
+    var photoSize: CGSize { previewSource.extent.size }
+
+    /// A finger or Pencil drew on the photo (points from the top-left, 0…1), for the selected mask
+    /// part: a brush stroke with the current brush settings, or a gradient drawn from where the
+    /// effect is full (first point) to where it ends (last point).
     func draw(_ points: [MaskPoint]) {
-        guard let tool = canvasTool, !points.isEmpty else { return }
+        guard let tool = canvasTool, let start = points.first, let end = points.last else { return }
         switch tool {
         case "brush":
             func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
             state.addStroke(MaskStroke(points: points, size: v("brushSize"), feather: v("brushFeather"), flow: v("brushFlow"),
                                        density: v("brushDensity"), erase: v("brushErase") != 0, autoMask: v("brushAutoMask") != 0))
+        case "linear":
+            guard start != end else { return }
+            let g = MaskGeometry.linear(from: start, to: end, width: Double(photoSize.width), height: Double(photoSize.height))
+            state.setComponentValues(["linearAngle": g.angle.rounded(), "linearPosition": g.position, "linearWidth": max(1, g.width)])
         default:
             return
         }
@@ -467,6 +480,7 @@ final class EditorModel: ObservableObject {
     /// What to do on the photo after making a mask part.
     static let hints: [String: String] = [
         "brush": "paint on the photo",
+        "linear": "drag on the photo from where it is full to where it ends",
     ]
 
     nonisolated static func format(_ value: Double, _ control: Control?) -> String {

@@ -225,3 +225,81 @@ final class MasksTests: XCTestCase {
         XCTAssertEqual(MaskRaster.resample([(3, 4)], spacing: 1).count, 1, "a tap is one dab")
     }
 }
+
+/// Linear gradient: names, placements and the gradient's maths.
+final class LinearGradientTests: XCTestCase {
+    private var registry: ControlRegistry!
+    private var interpreter: CommandInterpreter!
+    private var state = EditState()
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+        interpreter = CommandInterpreter(registry: registry)
+    }
+
+    private func parse(_ text: String) -> [Command] {
+        CommandParser(registry: registry).parse(text)
+    }
+
+    func testLinearGradientNames() {
+        XCTAssertEqual(parse("linear gradient"), [.run("linearGradient")])
+        XCTAssertEqual(parse("linear gradient from top"), [.run("linearGradient", value: 0)])
+        XCTAssertEqual(parse("new linear gradient mask"), [.run("linearGradient", value: nil, mode: "new")])
+        XCTAssertEqual(parse("graduated filter from bottom exposure -1"), [.run("linearGradient", value: 1), .set("exposure", -1)])
+        XCTAssertEqual(parse("linear gradient left"), [.run("linearGradient", value: 2)])
+        XCTAssertEqual(parse("linear angle 45"), [.set("linearAngle", 45)])
+        XCTAssertEqual(parse("gradient position up"), [.nudge("linearPosition", 1)])
+        XCTAssertEqual(parse("linear width 30"), [.set("linearWidth", 30)])
+    }
+
+    func testPlacementsAndSettingsGoToTheGradient() {
+        _ = interpreter.interpret("linear gradient from right", state: &state)
+        let part = state.masks[0].components[0]
+        XCTAssertEqual(part.kind, "linear")
+        XCTAssertEqual(part.values["linearAngle"], 90)
+        XCTAssertEqual(part.values["linearPosition"], 25)
+        XCTAssertEqual(interpreter.interpret("linear width 20", state: &state),
+                       [.changedInMask(mask: 1, controlID: "linearWidth", from: 50, to: 20)])
+        _ = interpreter.interpret("done", state: &state)
+        XCTAssertEqual(interpreter.interpret("linear width 30", state: &state), [.needsMask(controlID: "linearWidth")])
+        _ = interpreter.interpret("brush mask", state: &state)
+        XCTAssertEqual(interpreter.interpret("linear angle 10", state: &state), [.needsMask(controlID: "linearAngle")],
+                       "a brush mask has no linear gradient")
+    }
+
+    func testFromTopIsFullAtTheTopAndGoneByTheMiddle() {
+        let w = 60, h = 80
+        let grid = MaskRaster.linear(angle: 0, position: 25, fade: 50, width: w, height: h)
+        XCTAssertEqual(grid[0], 1, accuracy: 1e-3)
+        XCTAssertEqual(grid[(h / 2 + 1) * w], 0, accuracy: 1e-6)
+        XCTAssertEqual(grid[(h / 4) * w], 0.5, accuracy: 0.05)
+        for row in 1..<h { XCTAssertLessThanOrEqual(grid[row * w + 7], grid[(row - 1) * w + 7]) }
+        XCTAssertEqual(grid[5], grid[w - 5], "the same across each row")
+    }
+
+    func testSidesTurnClockwise() {
+        let w = 40, h = 40
+        let right = MaskRaster.linear(angle: 90, position: 25, fade: 50, width: w, height: h)
+        XCTAssertEqual(right[20 * w + (w - 1)], 1, accuracy: 1e-2)
+        XCTAssertEqual(right[20 * w], 0)
+        let bottom = MaskRaster.linear(angle: 180, position: 25, fade: 50, width: w, height: h)
+        XCTAssertEqual(bottom[(h - 1) * w + 20], 1, accuracy: 1e-2)
+        XCTAssertEqual(bottom[20], 0)
+        let left = MaskRaster.linear(angle: -90, position: 25, fade: 50, width: w, height: h)
+        XCTAssertEqual(left[20 * w], 1, accuracy: 1e-2)
+    }
+
+    func testADragSetsAngleSpotAndWidth() {
+        let g = MaskGeometry.linear(from: MaskPoint(0.5, 0), to: MaskPoint(0.5, 0.5), width: 300, height: 200)
+        XCTAssertEqual(g.angle, 0, accuracy: 1e-9)
+        XCTAssertEqual(g.position, 25, accuracy: 1e-9)
+        XCTAssertEqual(g.width, 50, accuracy: 1e-9)
+        // The handles drawn for any drag (on the line through the middle) make the same gradient.
+        let d = MaskGeometry.linear(from: MaskPoint(0.2, 0.7), to: MaskPoint(0.6, 0.4), width: 300, height: 200)
+        let back = MaskGeometry.linearHandles(angle: d.angle, position: d.position, width: d.width, width: 300, height: 200)
+        let again = MaskGeometry.linear(from: back.start, to: back.end, width: 300, height: 200)
+        XCTAssertEqual(again.angle, d.angle, accuracy: 1e-9)
+        XCTAssertEqual(again.position, d.position, accuracy: 1e-9)
+        XCTAssertEqual(again.width, d.width, accuracy: 1e-9)
+    }
+}

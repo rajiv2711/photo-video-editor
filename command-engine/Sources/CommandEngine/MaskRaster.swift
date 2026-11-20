@@ -83,6 +83,9 @@ public enum MaskRaster {
         switch part.kind {
         case "brush":
             values = strokes(part.strokes, width: width, height: height, pixels: pixels)
+        case "linear":
+            values = linear(angle: part.values["linearAngle"] ?? 0, position: part.values["linearPosition"] ?? 25,
+                            fade: part.values["linearWidth"] ?? 50, width: width, height: height)
         default:
             values = [Float](repeating: 0, count: width * height)
         }
@@ -90,6 +93,30 @@ public enum MaskRaster {
             for i in values.indices { values[i] = 1 - values[i] }
         }
         return values
+    }
+
+    // MARK: - Linear gradient
+
+    /// Full on one side of a line, fading to nothing across `fade` % of the photo's span in that
+    /// direction. `angle`: the full side, 0 = top, turning clockwise (90 = right, 180 = bottom,
+    /// −90 = left); `position`: where the middle of the fade sits, % across from the full side.
+    public static func linear(angle: Double, position: Double, fade: Double, width: Int, height: Int) -> [Float] {
+        let a = angle * .pi / 180
+        let nx = -sin(a), ny = cos(a)  // from the full side towards none
+        let w = Double(width), h = Double(height)
+        let span = abs(nx) * w + abs(ny) * h
+        let offset = (position / 100 - 0.5) * span
+        let length = Swift.max(1, fade / 100 * span)
+        var out = [Float](repeating: 0, count: width * height)
+        for row in 0..<height {
+            let y = Double(row) + 0.5 - h / 2
+            for column in 0..<width {
+                let x = Double(column) + 0.5 - w / 2
+                let t = (x * nx + y * ny - offset) / length + 0.5
+                out[row * width + column] = Float(1 - Effects.smoothstep(0, 1, t))
+            }
+        }
+        return out
     }
 
     // MARK: - Brush

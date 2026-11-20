@@ -745,6 +745,26 @@
     {"id": "brushAutoMask", "label": "Auto Mask", "group": "masks", "section": "Brush", "kind": "toggle",
       "synonyms": ["automask", "brush auto mask", "auto edge", "edge aware brush", "smart edge"]},
     {"id": "brushErase", "label": "Eraser", "group": "masks", "section": "Brush", "kind": "toggle",
-      "synonyms": ["erase", "brush erase", "erase mode", "eraser mode", "erase brush", "brush eraser"]}
+      "synonyms": ["erase", "brush erase", "erase mode", "eraser mode", "erase brush", "brush eraser"]},
+    {"id": "linearGradient", "label": "Linear Gradient", "group": "masks", "kind": "action", "component": "linear",
+      "synonyms": ["linear gradient mask", "linear mask", "graduated filter", "gradient filter", "grad filter", "linear"],
+      "options": [
+        {"id": "top", "label": "Top", "synonyms": ["sky", "upper", "top edge"]},
+        {"id": "bottom", "label": "Bottom", "synonyms": ["lower", "ground", "bottom edge"]},
+        {"id": "left", "label": "Left", "synonyms": ["left side", "left edge"]},
+        {"id": "right", "label": "Right", "synonyms": ["right side", "right edge"]}
+      ]},
+    {"id": "linearAngle", "label": "Linear Angle", "group": "masks", "section": "Linear gradient", "kind": "slider",
+      "scope": "component", "component": "linear",
+      "synonyms": ["linear gradient angle", "gradient angle", "linear rotation", "gradient rotation"],
+      "min": -180, "max": 180, "default": 0, "step": 5},
+    {"id": "linearPosition", "label": "Linear Position", "group": "masks", "section": "Linear gradient", "kind": "slider",
+      "scope": "component", "component": "linear",
+      "synonyms": ["linear gradient position", "gradient position", "linear middle", "gradient middle"],
+      "min": 0, "max": 100, "default": 25, "step": 5},
+    {"id": "linearWidth", "label": "Linear Width", "group": "masks", "section": "Linear gradient", "kind": "slider",
+      "scope": "component", "component": "linear",
+      "synonyms": ["linear gradient width", "gradient width", "linear feather", "gradient feather", "linear softness"],
+      "min": 1, "max": 100, "default": 50, "step": 5}
   ]
 }

@@ -113,8 +113,9 @@ struct MasksPanel: View {
     }
 }
 
-/// Touches on the photo for the selected mask part: brush strokes (finger or Pencil), drawn as a
-/// line while painting and handed to the mask when the stroke ends.
+/// Touches on the photo for the selected mask part (finger or Pencil): brush strokes, drawn as a
+/// line while painting and handed to the mask when the stroke ends; gradients follow the drag.
+/// Handles show where a gradient is.
 struct MaskCanvas: View {
     @ObservedObject var model: EditorModel
     let tool: String
@@ -124,6 +125,7 @@ struct MaskCanvas: View {
         GeometryReader { geo in
             ZStack {
                 Color.clear.contentShape(Rectangle())
+                handles(geo.size)
                 Path { path in
                     path.addLines(points)
                 }
@@ -131,17 +133,61 @@ struct MaskCanvas: View {
             }
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .onChanged { drag in points.append(drag.location) }
+                    .onChanged { drag in
+                        if Self.painted.contains(tool) {
+                            points.append(drag.location)
+                        } else {
+                            model.draw([Self.unit(drag.startLocation, in: geo.size), Self.unit(drag.location, in: geo.size)])
+                        }
+                    }
                     .onEnded { _ in
-                        model.draw(points.map { Self.unit($0, in: geo.size) })
+                        if Self.painted.contains(tool) { model.draw(points.map { Self.unit($0, in: geo.size) }) }
                         points = []
                     }
             )
         }
     }
 
+    /// Parts painted with the brush (the others follow the drag as it goes).
+    static let painted: Set<String> = ["brush", "quickSelect"]
+
+    /// Lines of the selected gradient: where it is full, its middle, where it ends.
+    @ViewBuilder
+    private func handles(_ size: CGSize) -> some View {
+        if tool == "linear", let part = model.selectedPart {
+            let ends = MaskGeometry.linearHandles(angle: part.values["linearAngle"] ?? 0, position: part.values["linearPosition"] ?? 25,
+                                                  width: part.values["linearWidth"] ?? 50,
+                                                  width: Double(size.width), height: Double(size.height))
+            let a = CGPoint(x: CGFloat(ends.start.x) * size.width, y: CGFloat(ends.start.y) * size.height)
+            let b = CGPoint(x: CGFloat(ends.end.x) * size.width, y: CGFloat(ends.end.y) * size.height)
+            let mid = CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+            ZStack {
+                Self.across(a, b, size).stroke(Color.white, lineWidth: 1.5)
+                Self.across(mid, b, size, through: mid).stroke(Color.white, style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                Self.across(b, a, size).stroke(Color.white.opacity(0.6), lineWidth: 1)
+                Circle().fill(Color.white).frame(width: 10, height: 10).position(mid)
+            }
+            .allowsHitTesting(false)
+        }
+    }
+
+    /// A line across the photo through `p` (or `through`), at right angles to the direction p → q.
+    private static func across(_ p: CGPoint, _ q: CGPoint, _ size: CGSize, through: CGPoint? = nil) -> Path {
+        let c = through ?? p
+        var dx = q.x - p.x, dy = q.y - p.y
+        let length = max((dx * dx + dy * dy).squareRoot(), 0.001)
+        dx /= length
+        dy /= length
+        let reach = size.width + size.height
+        return Path { path in
+            path.move(to: CGPoint(x: c.x - dy * reach, y: c.y + dx * reach))
+            path.addLine(to: CGPoint(x: c.x + dy * reach, y: c.y - dx * reach))
+        }
+    }
+
     /// The brush's width on screen (Brush Size is a share of the photo's long side).
     private func brushWidth(_ size: CGSize) -> CGFloat {
+        guard Self.painted.contains(tool) else { return 0 }
         let percent = model.registry.control(id: "brushSize").map { model.value(of: $0) } ?? 10
         return max(2, CGFloat(percent / 100) * max(size.width, size.height))
     }
