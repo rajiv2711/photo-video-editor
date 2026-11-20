@@ -423,4 +423,22 @@ final class ColorTests: XCTestCase {
         XCTAssertGreaterThan(stronger.r - stronger.b, warm.r - warm.b)
         XCTAssertTrue(ColorLook.isIdentity { $0 == "photoFilterDensity" ? 80 : nil })
     }
+
+    // MARK: - Gradient map
+
+    func testGradientMapOptionsMatchControlsJSON() {
+        XCTAssertEqual(options("gradientMap"), ColorLook.gradientMapOptions)
+        XCTAssertEqual(parse("gradient map fire"), [.set("gradientMap", 4)])
+    }
+
+    func testGradientMapFollowsBrightness() {
+        let v = look(["gradientMap": 2])  // sunset
+        let dark = ColorLook.transform(RGB(0.05, 0.05, 0.05), v), light = ColorLook.transform(RGB(0.95, 0.95, 0.95), v)
+        XCTAssertGreaterThan(light.luma, dark.luma)
+        XCTAssertGreaterThan(light.r, light.b)
+        let noir = ColorLook.transform(RGB(0.8, 0.2, 0.1), look(["gradientMap": 1]))
+        assertClose(noir.r, noir.b, 1e-9)
+        let half = ColorLook.transform(RGB(0.8, 0.2, 0.1), look(["gradientMap": 1, "gradientMapAmount": 50]))
+        assertClose(half.r, (0.8 + noir.r) / 2, 1e-9)
+    }
 }

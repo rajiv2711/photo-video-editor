@@ -168,6 +168,10 @@
     {"id": "photo-filter-warming", "command": "photo filter warming", "control": "photoFilter", "expect": [{"metric": "mean_b", "dir": "down"}, {"metric": "mean_r", "dir": "up"}]},
     {"id": "photo-filter-cooling", "command": "photo filter cooling", "control": "photoFilter", "expect": [{"metric": "mean_b", "dir": "up"}, {"metric": "mean_r", "dir": "down"}]},
     {"id": "photo-filter-density", "command": "photo filter warming filter density 100", "control": "photoFilterDensity", "expect": [{"metric": "mean_b", "dir": "down", "vs": "photo-filter-warming"}]},
+    {"id": "gradient-map-sunset", "command": "gradient map sunset", "control": "gradientMap", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
+    {"id": "gradient-map-ocean", "command": "gradient map ocean", "control": "gradientMap", "expect": [{"metric": "mean_r", "dir": "down"}, {"metric": "mean_sat", "dir": "up"}]},
+    {"id": "gradient-map-noir", "command": "gradient map noir", "source": "chart", "control": "gradientMap", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "gradient-map-amount", "command": "gradient map sunset gradient map amount 40", "control": "gradientMapAmount", "expect": [{"metric": "mean_b", "dir": "up", "vs": "gradient-map-sunset"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

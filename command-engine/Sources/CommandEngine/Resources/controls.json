@@ -468,6 +468,18 @@
       ]},
     {"id": "photoFilterDensity", "label": "Filter Density", "group": "color", "section": "Photo filter", "kind": "slider",
       "synonyms": ["density", "photo filter density"], "min": 0, "max": 100, "default": 25, "step": 5},
+    {"id": "gradientMap", "label": "Gradient Map", "group": "color", "section": "Gradient map", "kind": "choice",
+      "synonyms": ["gradient mapping", "gradient map style"],
+      "options": [
+        {"id": "none", "label": "None", "synonyms": ["off", "no gradient"]},
+        {"id": "noir", "label": "Noir", "synonyms": ["black to white", "black and white"]},
+        {"id": "sunset", "label": "Sunset"},
+        {"id": "ocean", "label": "Ocean", "synonyms": ["sea"]},
+        {"id": "fire", "label": "Fire", "synonyms": ["infrared", "heat"]},
+        {"id": "pastel", "label": "Pastel", "synonyms": ["pastels"]}
+      ]},
+    {"id": "gradientMapAmount", "label": "Gradient Map Amount", "group": "color", "section": "Gradient map", "kind": "slider",
+      "synonyms": ["gradient amount", "gradient map strength"], "min": 0, "max": 100, "default": 100, "step": 5},
     {"id": "channelRedFromRed", "label": "Red from Red", "group": "color", "section": "Channel mixer", "kind": "slider",
       "synonyms": ["red channel red", "channel mixer red red"], "min": -200, "max": 200, "default": 100, "step": 5},
     {"id": "channelRedFromGreen", "label": "Red from Green", "group": "color", "section": "Channel mixer", "kind": "slider",

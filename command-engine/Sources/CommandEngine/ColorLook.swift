@@ -57,13 +57,14 @@ public enum ColorLook {
     /// Control ids that feed the cube, in the order the steps run.
     public static let controlIDs: [String] = [
         calibrationIDs, mixerIDs, pointIDs, bwIDs, gradingIDs, selectiveIDs, channelIDs, ["toning", "toningAmount"],
-        ["photoFilter", "photoFilterDensity"],
+        ["photoFilter", "photoFilterDensity", "gradientMap", "gradientMapAmount"],
     ].flatMap { $0 }
 
     /// Controls that only say how another control acts (which hue, how wide): on their own they
     /// change nothing, so they don't count when deciding whether the cube is needed.
     static let modifierIDs: Set<String> = Set([
-        ["pointHue", "pointRange", "gradingBlending", "gradingBalance", "toningAmount", "photoFilterDensity"],
+        ["pointHue", "pointRange", "gradingBlending", "gradingBalance", "toningAmount", "photoFilterDensity",
+         "gradientMapAmount"],
         gradingZones.map { "grading" + $0 + "Hue" },
         Array(bwIDs.dropFirst()),
     ].flatMap { $0 })
@@ -73,7 +74,7 @@ public enum ColorLook {
         switch id {
         case "pointRange", "gradingBlending": return 50
         case "photoFilterDensity": return 25
-        case "toningAmount", "channelRedFromRed", "channelGreenFromGreen", "channelBlueFromBlue": return 100
+        case "toningAmount", "gradientMapAmount", "channelRedFromRed", "channelGreenFromGreen", "channelBlueFromBlue": return 100
         default: return 0
         }
     }
@@ -152,6 +153,7 @@ public enum ColorLook {
         c = channelMixer(c, v)
         c = toning(c, v)
         c = photoFilter(c, v)
+        c = gradientMap(c, v)
         return c
     }
 
@@ -446,6 +448,27 @@ public enum ColorLook {
 
     static func hex(_ value: Int) -> RGB {
         RGB(Double((value >> 16) & 0xFF) / 255, Double((value >> 8) & 0xFF) / 255, Double(value & 0xFF) / 255)
+    }
+
+    // MARK: - Gradient map
+
+    /// Option ids of the Gradient Map choice (controls.json order) and their gradients, dark to light.
+    public static let gradientMapOptions = ["none", "noir", "sunset", "ocean", "fire", "pastel"]
+    static let gradientMaps: [String: [(Double, RGB)]] = [
+        "noir": [(0, RGB(0, 0, 0)), (1, RGB(1, 1, 1))],
+        "sunset": [(0, RGB(0.18, 0.05, 0.30)), (0.5, RGB(0.90, 0.35, 0.25)), (1, RGB(1, 0.90, 0.45))],
+        "ocean": [(0, RGB(0.02, 0.06, 0.20)), (0.5, RGB(0.05, 0.55, 0.60)), (1, RGB(0.90, 1, 0.98))],
+        "fire": [(0, RGB(0, 0, 0)), (0.4, RGB(0.70, 0.08, 0.02)), (0.75, RGB(1, 0.65, 0.05)), (1, RGB(1, 1, 0.85))],
+        "pastel": [(0, RGB(0.25, 0.30, 0.55)), (0.5, RGB(0.95, 0.60, 0.75)), (1, RGB(1, 0.97, 0.88))],
+    ]
+
+    /// Each colour becomes the gradient's colour at its brightness, mixed in by Gradient Map Amount.
+    static func gradientMap(_ color: RGB, _ v: Values) -> RGB {
+        let index = Int(v["gradientMap"])
+        guard gradientMapOptions.indices.contains(index), let stops = gradientMaps[gradientMapOptions[index]] else {
+            return color
+        }
+        return color.mixed(with: gradient(stops, color.luma), v["gradientMapAmount"] / 100)
     }
 
     // MARK: - Colour helpers
