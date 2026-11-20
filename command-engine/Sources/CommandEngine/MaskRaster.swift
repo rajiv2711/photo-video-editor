@@ -100,6 +100,9 @@ public enum MaskRaster {
                             fade: part.values["linearWidth"] ?? 50, width: width, height: height)
         case "colorRange":
             values = colorRange(part, width: width, height: height, pixels: pixels)
+        case "luminanceRange":
+            values = luminanceRange(low: part.values["luminanceRangeLow"] ?? 75, high: part.values["luminanceRangeHigh"] ?? 100,
+                                    smoothness: part.values["luminanceRangeSmooth"] ?? 50, width: width, height: height, pixels: pixels)
         case "radial":
             let v = part.values
             values = radial(x: v["radialX"] ?? 50, y: v["radialY"] ?? 50, size: v["radialSize"] ?? 60, aspect: v["radialAspect"] ?? 0,
@@ -160,6 +163,31 @@ public enum MaskRaster {
                 let d = (u * u + v * v).squareRoot()
                 out[row * width + column] = d >= 1 ? 0 : Float(1 - Effects.smoothstep(1 - soft, 1, d))
             }
+        }
+        return out
+    }
+
+    // MARK: - Luminance range
+
+    /// Cells whose brightness (Rec. 709 luma of sRGB levels, 0…100) is between `low` and `high`,
+    /// fading out over 1…31 luma beyond them by `smoothness` 0…100.
+    public static func luminanceRange(low: Double, high: Double, smoothness: Double, width: Int, height: Int,
+                                      pixels: PixelGrid?) -> [Float] {
+        guard let pixels, pixels.width == width, pixels.height == height else {
+            return [Float](repeating: 0, count: width * height)
+        }
+        let lo = Swift.min(low, high), hi = Swift.max(low, high)
+        let fade = 1 + 0.3 * Swift.min(100, Swift.max(0, smoothness))
+        // One table for every level, so each cell is a lookup.
+        let table: [Float] = (0...1000).map { i in
+            let y = Double(i) / 10
+            return Float(Effects.smoothstep(lo - fade, lo, y) * (1 - Effects.smoothstep(hi, hi + fade, y)))
+        }
+        var out = [Float](repeating: 0, count: width * height)
+        for i in out.indices {
+            let (r, g, b) = pixels.color(i)
+            let y = Swift.min(1, Swift.max(0, 0.2126 * r + 0.7152 * g + 0.0722 * b))
+            out[i] = table[Int((y * 1000).rounded())]
         }
         return out
     }

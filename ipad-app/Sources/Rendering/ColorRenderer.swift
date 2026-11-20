@@ -168,7 +168,7 @@ final class ColorRenderer {
     /// White balance: the preset's light plus the Temperature and Tint sliders, as one multiplier
     /// per channel in linear light (Core Image's working space). As Shot leaves a JPEG as it is;
     /// Auto makes the photo's average colour neutral.
-    private func whiteBalance(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+    func whiteBalance(_ image: CIImage, value: (String) -> Double?) -> CIImage {
         let index = Int(value("whiteBalance") ?? 0)
         let preset = WhiteBalance.presetIDs.indices.contains(index) ? WhiteBalance.presetIDs[index] : "asShot"
         var offset = WhiteBalance.offset(preset: preset)

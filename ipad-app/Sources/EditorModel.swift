@@ -166,6 +166,12 @@ final class EditorModel: ObservableObject {
             state.setComponentValues(["linearAngle": g.angle.rounded(), "linearPosition": g.position, "linearWidth": max(1, g.width)])
         case "colorRange":
             state.setPoint(end)
+        case "luminanceRange":
+            // The brightness there (before other edits), ±15.
+            let image = renderer.whiteBalanceInput(previewSource, value: currentValue)
+            let color = ImageStats.averageColor(of: image, in: Self.spot(end.x, end.y, in: image.extent), context: renderer.context)
+            let range = MaskPresets.luminanceRange(around: color.encoded.luma * 100)
+            state.setComponentValues(["luminanceRangeLow": range.low, "luminanceRangeHigh": range.high])
         case "radial":
             guard start != end, let base else { return }
             state.setComponentValues(MaskGeometry.radialDrag(base.values, from: start, to: end,
@@ -499,6 +505,7 @@ final class EditorModel: ObservableObject {
         "linear": "drag on the photo from where it is full to where it ends",
         "radial": "drag inside it to move it, outside to resize it",
         "colorRange": "tap the colour to select (or say a colour: “color range blue”)",
+        "luminanceRange": "tap a brightness to select around it, or set Low and High",
     ]
 
     nonisolated static func format(_ value: Double, _ control: Control?) -> String {

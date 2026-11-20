@@ -631,3 +631,13 @@
 {"group":"masks","text":"new color range mask blue exposure -1","expect":[{"op":"run","control":"colorRange","value":5,"mode":"new"},{"op":"set","control":"exposure","value":-1}]}
 {"group":"masks","text":"color range refine 70","expect":[{"op":"set","control":"colorRangeRefine","value":70}]}
 {"group":"masks","text":"range refine more","expect":[{"op":"nudge","control":"colorRangeRefine","steps":1}]}
+{"group":"masks","text":"luminance range","expect":[{"op":"run","control":"luminanceRange"}]}
+{"group":"masks","text":"luminance range shadows","expect":[{"op":"run","control":"luminanceRange","value":0}]}
+{"group":"masks","text":"brightness range highlights exposure -1","expect":[{"op":"run","control":"luminanceRange","value":4},{"op":"set","control":"exposure","value":-1}]}
+{"group":"masks","text":"subtract luminance range","expect":[{"op":"run","control":"luminanceRange","mode":"subtract"}]}
+{"group":"masks","text":"luminance range low 40","expect":[{"op":"set","control":"luminanceRangeLow","value":40}]}
+{"group":"masks","text":"range low up","expect":[{"op":"nudge","control":"luminanceRangeLow","steps":1}]}
+{"group":"masks","text":"luminance range high 80","expect":[{"op":"set","control":"luminanceRangeHigh","value":80}]}
+{"group":"masks","text":"range high down","expect":[{"op":"nudge","control":"luminanceRangeHigh","steps":-1}]}
+{"group":"masks","text":"luminance range smoothness 70","expect":[{"op":"set","control":"luminanceRangeSmooth","value":70}]}
+{"group":"masks","text":"range smoothness less","expect":[{"op":"nudge","control":"luminanceRangeSmooth","steps":-1}]}

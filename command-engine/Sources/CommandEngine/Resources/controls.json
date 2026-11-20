@@ -814,6 +814,26 @@
       "scope": "component", "component": "colorRange",
       "synonyms": ["colour range refine", "range refine", "color range amount", "colour range amount", "color tolerance",
                    "colour tolerance"],
+      "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "luminanceRange", "label": "Luminance Range", "group": "masks", "kind": "action", "component": "luminanceRange",
+      "synonyms": ["luminance range mask", "brightness range", "luma range", "tonal range", "range mask luminance",
+                   "luminance selection"],
+      "options": [
+        {"id": "shadows", "label": "Shadows", "synonyms": ["shadow", "blacks"]},
+        {"id": "darks", "label": "Darks", "synonyms": ["dark", "dark tones"]},
+        {"id": "midtones", "label": "Midtones", "synonyms": ["midtone", "mids", "middle tones"]},
+        {"id": "lights", "label": "Lights", "synonyms": ["light", "light tones"]},
+        {"id": "highlights", "label": "Highlights", "synonyms": ["highlight", "whites", "brights"]}
+      ]},
+    {"id": "luminanceRangeLow", "label": "Luminance Range Low", "group": "masks", "section": "Luminance range", "kind": "slider",
+      "scope": "component", "component": "luminanceRange",
+      "synonyms": ["range low", "luminance low", "brightness range low"], "min": 0, "max": 100, "default": 75, "step": 5},
+    {"id": "luminanceRangeHigh", "label": "Luminance Range High", "group": "masks", "section": "Luminance range", "kind": "slider",
+      "scope": "component", "component": "luminanceRange",
+      "synonyms": ["range high", "luminance high", "brightness range high"], "min": 0, "max": 100, "default": 100, "step": 5},
+    {"id": "luminanceRangeSmooth", "label": "Luminance Range Smoothness", "group": "masks", "section": "Luminance range", "kind": "slider",
+      "scope": "component", "component": "luminanceRange",
+      "synonyms": ["luminance range smooth", "range smoothness", "luminance smoothness", "brightness range smoothness"],
       "min": 0, "max": 100, "default": 50, "step": 5}
   ]
 }

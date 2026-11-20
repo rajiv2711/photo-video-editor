@@ -453,3 +453,56 @@ final class ColorRangeTests: XCTestCase {
         XCTAssertEqual(state.masks[0].components[0].point, MaskPoint(0.2, 0.3))
     }
 }
+
+/// Luminance range: names, tones and the brightness maths.
+final class LuminanceRangeTests: XCTestCase {
+    private var registry: ControlRegistry!
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+    }
+
+    private func parse(_ text: String) -> [Command] {
+        CommandParser(registry: registry).parse(text)
+    }
+
+    /// A grey ramp, black to white, 101 cells wide.
+    private let ramp = PixelGrid(width: 101, height: 1, rgb: (0...100).flatMap { i in [Float(i) / 100, Float(i) / 100, Float(i) / 100] })
+
+    func testLuminanceRangeNames() {
+        XCTAssertEqual(parse("luminance range"), [.run("luminanceRange")])
+        XCTAssertEqual(parse("luminance range shadows"), [.run("luminanceRange", value: 0)])
+        XCTAssertEqual(parse("subtract luminance range"), [.run("luminanceRange", value: nil, mode: "subtract")])
+        XCTAssertEqual(parse("brightness range highlights exposure -1"), [.run("luminanceRange", value: 4), .set("exposure", -1)])
+        XCTAssertEqual(parse("luminance range low 40"), [.set("luminanceRangeLow", 40)])
+        XCTAssertEqual(parse("lumin more"), [.ambiguous("lumin", [
+            "mixerRedLuminance", "mixerOrangeLuminance", "mixerYellowLuminance", "mixerGreenLuminance", "mixerAquaLuminance",
+            "mixerBlueLuminance", "mixerPurpleLuminance", "mixerMagentaLuminance"])], "a near-miss still asks among the mixer")
+    }
+
+    func testOnlyTheRangeIsSelected() {
+        let grid = MaskRaster.luminanceRange(low: 40, high: 60, smoothness: 0, width: 101, height: 1, pixels: ramp)
+        XCTAssertEqual(grid[50], 1)
+        XCTAssertEqual(grid[40], 1)
+        XCTAssertEqual(grid[60], 1)
+        XCTAssertEqual(grid[30], 0)
+        XCTAssertEqual(grid[70], 0)
+        let smooth = MaskRaster.luminanceRange(low: 40, high: 60, smoothness: 100, width: 101, height: 1, pixels: ramp)
+        XCTAssertGreaterThan(smooth[30], 0.2, "smoothness fades it out farther")
+        XCTAssertEqual(smooth[5], 0)
+        XCTAssertEqual(MaskRaster.luminanceRange(low: 60, high: 40, smoothness: 0, width: 101, height: 1, pixels: ramp)[50], 1,
+                       "low and high can be swapped")
+    }
+
+    func testTonesAndTaps() {
+        var state = EditState()
+        var interpreter = CommandInterpreter(registry: registry)
+        _ = interpreter.interpret("luminance range", state: &state)
+        XCTAssertEqual(state.masks[0].components[0].values["luminanceRangeLow"], 75, "highlights unless told")
+        _ = interpreter.interpret("luminance range midtones", state: &state)
+        XCTAssertEqual(state.masks[1].components[0].values["luminanceRangeLow"], 25)
+        XCTAssertEqual(state.masks[1].components[0].values["luminanceRangeHigh"], 75)
+        XCTAssertTrue(MaskPresets.luminanceRange(around: 50) == (35, 65))
+        XCTAssertTrue(MaskPresets.luminanceRange(around: 5) == (0, 20))
+    }
+}

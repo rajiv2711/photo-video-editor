@@ -49,9 +49,10 @@ final class PhotoRenderer {
     func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         let extent = image.extent
-        let lensFixed = optics.apply(image, value: value)  // lens corrections
+        // Lens corrections, then film negative conversion: the picture range masks and pickers look at.
+        let lensFixed = color.filmNegative(optics.apply(image, value: value), value: value)
         let lensKey = Self.opticsIDs.map { value($0) ?? 0 }
-        var output = color.input(lensFixed, value: value)  // film negative, white balance
+        var output = color.whiteBalance(lensFixed, value: value)
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: extent, value: value)
         output = effects.apply(output, extent: extent, value: value)
@@ -84,10 +85,10 @@ final class PhotoRenderer {
         return detail.apply(output, extent: extent, value: value)
     }
 
-    /// The lens settings: when they change, the picture masks look at changes too.
+    /// The lens settings and film negative conversion: when they change, the picture masks look at changes too.
     static let opticsIDs = ["lensProfile", "removeCA", "caRedCyan", "caBlueYellow", "defringePurple", "defringePurpleHue",
                             "defringeGreen", "defringeGreenHue", "distortion", "lensVignetting", "lensVignettingMidpoint",
-                            "fisheye"]
+                            "fisheye", "filmNegative"]
 
     /// The picture the white balance step works on (after lens corrections and film negative
     /// conversion): what the picker tools sample.
