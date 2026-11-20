@@ -94,3 +94,9 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `subtract luminance range` · `intersect linear gradient from left` · `invert mask` · `outside` · `duplicate mask` · `component 2` · `delete component` | Mask math: parts add, subtract or intersect; invert a mask or one part |
 | `mask feather 50` · `expand mask 20` · `refine edge 60` · `mask amount 150` · `show mask overlay` | Refine the selected mask, scale its sliders, show it in red |
 | `lasso` · `polygon lasso` · `marquee left` · `magic wand` · `quick select` · `brush size 20` · `eraser` | Selection tools and brush settings |
+| `remove brush` · `heal` · `clone` · `patch` · `content aware move` | Retouch tools: then paint, tap, or draw around an area and drag it, on the photo (`brush size`, `brush feather` are shared with the mask brush) |
+| `clone source` · `spot 2` · `spot opacity 50` · `delete spot 2` · `undo last spot` | Choose where the selected spot copies from (then tap), select a spot, change or delete it |
+| `red eye` · `pet eye` · `pupil size 70` · `pupil darken 80` · `catchlight off` | Eye fixes: tap the eye or draw around it; the settings change the selected eye |
+| `liquify pucker` · `liquify mode bloat` · `tool strength 80` | Liquify: push, twirl, pucker, bloat, reconstruct |
+| `dodge midtones` · `burn shadows` · `sponge desaturate` · `blur brush` · `sharpen brush` · `smudge` | Toning and touch-up brushes (Apple Pencil pressure counts) |
+| `show spots` · `visualize threshold 70` | Visualize Spots: dust and specks white on black (preview only) |
