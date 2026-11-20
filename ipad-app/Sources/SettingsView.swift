@@ -16,11 +16,11 @@ struct SettingsView: View {
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    SecureField("Token from voice-server/.env", text: $token)
+                    SecureField("Token (optional for now)", text: $token)
                 } header: {
                     Text("Voice server")
                 } footer: {
-                    Text("The laptop turns speech into text during development. The token stays on this iPad.")
+                    Text("The laptop turns speech into text during development. The address is built in; the token is optional until security is added.")
                 }
                 Section {
                     Button(checking ? "Checking…" : "Test connection") {

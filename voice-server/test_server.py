@@ -84,3 +84,9 @@ def test_non_wav_audio_gets_415(tmp_path):
 
     r = client(tmp_path, DecodingTranscriber()).post("/transcribe", content=b"not audio", headers=auth())
     assert r.status_code == 415
+
+
+def test_token_check_can_be_turned_off(tmp_path):
+    c = TestClient(create_app(FakeTranscriber(), TOKEN, log_dir=tmp_path, require_token=False))
+    assert c.post("/transcribe", content=b"RIFFfake").status_code == 200
+    assert c.get("/info").status_code == 200

@@ -5,7 +5,7 @@ text; the iPad's CommandEngine parses the text. Every request is logged under re
 usage becomes test and training data.
 
 Run:   uv run --project voice-server voice-server/server.py
-Then:  ngrok http 8765 --url=<your ngrok domain>     (in another terminal)
+Then:  ngrok http 8765     (in another terminal; free accounts get a fixed domain)
 
 Endpoints
   GET  /health      no auth   {"ok": true}
@@ -13,7 +13,8 @@ Endpoints
   POST /transcribe  token     body = 16-bit PCM WAV bytes  →  {"text": "...", ...}
 
 Auth: header "Authorization: Bearer <token>". The token lives in voice-server/.env (git-ignored)
-and is created on first start; paste it into the iPad app's Settings once.
+and is created on first start. REQUIRE_TOKEN=false in .env turns the check off (development only:
+anyone with the URL can then use the server).
 """
 from __future__ import annotations
 
@@ -157,11 +158,14 @@ class WhisperTranscriber:
         }
 
 
-def create_app(transcriber, token: str, log_dir: Path | None = RECORDINGS):
+def create_app(transcriber, token: str, log_dir: Path | None = RECORDINGS, require_token: bool = True):
     app = FastAPI(title="Editor voice server", docs_url=None, redoc_url=None)
+    require_token_flag = require_token
     bearer = HTTPBearer(auto_error=False)
 
     def require_token(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        if not require_token_flag:
+            return
         if creds is None or not secrets.compare_digest(creds.credentials, token):
             raise HTTPException(status_code=401, detail="Missing or wrong token")
 
@@ -216,12 +220,16 @@ def main() -> None:
     model = env.get("WHISPER_MODEL", "large-v3-turbo")
     device = env.get("WHISPER_DEVICE", "auto")
     port = int(env.get("PORT", "8765"))
+    require_token = env.get("REQUIRE_TOKEN", "true").strip().lower() != "false"
     print(f"Loading Whisper {model} (device: {device}) …")
     transcriber = WhisperTranscriber(model, device)
     print(f"Ready on http://127.0.0.1:{port}  ·  device={transcriber.device}  ·  token in {ENV_FILE}")
-    print(f"Expose it with:  ngrok http {port} --url=<your ngrok domain>")
+    if not require_token:
+        print("WARNING: token check is OFF (REQUIRE_TOKEN=false) - anyone with the URL can use this server")
+    print(f"Expose it with:  ngrok http {port}")
     # 127.0.0.1 only: reachable from this laptop and through ngrok, not from the local network.
-    uvicorn.run(create_app(transcriber, env["VOICE_SERVER_TOKEN"]), host="127.0.0.1", port=port, log_level="info")
+    app = create_app(transcriber, env["VOICE_SERVER_TOKEN"], require_token=require_token)
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
 
 
 if __name__ == "__main__":

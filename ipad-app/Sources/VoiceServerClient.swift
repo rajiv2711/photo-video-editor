@@ -5,7 +5,7 @@ import Security
 /// gets back the text Whisper heard. The CommandEngine on the iPad then parses that text.
 enum VoiceServerClient {
     /// The laptop's ngrok address, built into the app. Can be changed in Settings.
-    static let defaultURL = ""
+    static let defaultURL = "https://65b58fc8bfcd.ngrok.app"
 
     struct Transcription: Decodable {
         let text: String
@@ -18,7 +18,7 @@ enum VoiceServerClient {
 
         var errorDescription: String? {
             switch self {
-            case .notConfigured: return "Set the voice server address and token in Settings."
+            case .notConfigured: return "Set the voice server address in Settings."
             case .server(let code, let detail): return "Voice server error \(code): \(detail)"
             }
         }
@@ -29,14 +29,14 @@ enum VoiceServerClient {
         set { UserDefaults.standard.set(newValue, forKey: "voiceServerURL") }
     }
 
-    /// Kept in the Keychain, never in the app bundle (the repo and its builds are public).
+    /// Optional while the server's token check is off. Kept in the Keychain, never in the app bundle.
     static var token: String {
         get { Keychain.read(account: "token") ?? "" }
         set { Keychain.write(newValue, account: "token") }
     }
 
     static var isConfigured: Bool {
-        URL(string: baseURL)?.host != nil && !token.isEmpty
+        URL(string: baseURL)?.host != nil
     }
 
     static func transcribe(wav: Data) async throws -> Transcription {
@@ -65,7 +65,9 @@ enum VoiceServerClient {
         guard isConfigured, let base = URL(string: baseURL) else { throw ClientError.notConfigured }
         var request = URLRequest(url: base.appendingPathComponent(path))
         request.timeoutInterval = 30
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         request.setValue("1", forHTTPHeaderField: "ngrok-skip-browser-warning")
         return request
     }
