@@ -15,9 +15,10 @@ License: [MIT](LICENSE)
 | [`voice-server/`](voice-server) | Laptop server for development: the iPad sends a voice clip, Whisper returns the text. Reached through ngrok. |
 | [`test-data/photos/`](test-data/photos) | The test photo, used by the app as its default image and by the reports. |
 | [`test-data/phrases/`](test-data/phrases) | Test phrases with the commands each should produce (`commands.jsonl`). |
+| [`test-data/gallery/`](test-data/gallery) | Render test cases (`gallery.json`): a command per operation and the change it must cause. |
 | [`docs/FEATURES.md`](docs/FEATURES.md) | Feature checklist: every planned photo operation, ticked when built. |
-| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report). |
-| [`.github/workflows/`](.github/workflows) | Cloud build: Linux tests → unsigned `.ipa` + iPad simulator screenshots. |
+| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report), `ci_results.py` (cloud render checks). |
+| [`.github/workflows/`](.github/workflows) | Cloud build: Linux tests → unsigned `.ipa` + iPad simulator render gallery and screenshots (feature branches publish them to `ci-renders`). |
 | `reports/`, `research_notes/` | Local only, git-ignored. |
 
 ## How a command flows
@@ -38,6 +39,13 @@ docker run --rm -v "$PWD":/src -w /src swift:6.2 bash -c \
    swift run --package-path command-engine command-scorer test-data/phrases/commands.jsonl --out reports/parser/results.json"
 # HTML report with before/after photos
 python3 dev-tools/make_report.py reports/parser/results.json
+```
+
+## Test the photo operations (cloud renders)
+Every push of a feature branch renders each case in `test-data/gallery/gallery.json` on an iPad
+simulator (`-renderGallery`) and publishes the pictures to the `ci-renders` branch.
+```sh
+python3 dev-tools/ci_results.py --wait   # waits for HEAD's build, checks every case → "reports/Operation test report.html"
 ```
 
 ## Voice server (laptop)

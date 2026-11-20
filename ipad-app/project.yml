@@ -16,6 +16,8 @@ targets:
       - Sources
       - path: ../test-data/photos/test.jpg
         buildPhase: resources
+      - path: ../test-data/gallery/gallery.json
+        buildPhase: resources
     dependencies:
       - package: CommandEngine
     scheme: {}

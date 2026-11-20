@@ -27,23 +27,29 @@ final class EditorModel: ObservableObject {
     private var interpreter: CommandInterpreter
     private var original: CIImage
     private var previewSource: CIImage
-    private let renderer = PhotoRenderer()
+    private let previewSide: CGFloat
+    let renderer = PhotoRenderer()
     private let recorder = AudioRecorder()
 
-    init() {
+    /// `image` replaces the bundled test photo (the render gallery passes a small copy);
+    /// `previewSide` is the long side of the live preview.
+    init(image: CIImage? = nil, previewSide: CGFloat = 2048) {
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
         self.registry = registry
         self.interpreter = CommandInterpreter(registry: registry)
         // Default picture: the committed test photo, or a generated gradient if it's missing.
         let start: CIImage
-        if let url = Bundle.main.url(forResource: "test", withExtension: "jpg"),
-           let photo = CIImage(contentsOf: url, options: [.applyOrientationProperty: true]) {
+        if let image {
+            start = image
+        } else if let url = Bundle.main.url(forResource: "test", withExtension: "jpg"),
+                  let photo = CIImage(contentsOf: url, options: [.applyOrientationProperty: true]) {
             start = photo
         } else {
             start = PhotoRenderer.sample()
         }
         self.original = start
-        self.previewSource = PhotoRenderer.downscaled(start, maxSide: 2048)
+        self.previewSide = previewSide
+        self.previewSource = PhotoRenderer.downscaled(start, maxSide: previewSide)
         render()
 
         // Launch argument used by the cloud build to screenshot a command's effect.
@@ -64,6 +70,24 @@ final class EditorModel: ObservableObject {
 
     func reset(_ control: Control) {
         setFromSlider(control, to: control.defaultValue)
+    }
+
+    /// Back to the untouched photo: every control at its default, nothing focused, no feedback.
+    func startOver() {
+        state = EditState()
+        interpreter = CommandInterpreter(registry: registry)
+        focusedControlID = nil
+        feedback = nil
+        render()
+    }
+
+    /// Controls that are not at their default, by id (for the render gallery's manifest).
+    func changedValues() -> [String: Double] {
+        var out: [String: Double] = [:]
+        for control in registry.controls where !state.isDefault(control) {
+            out[control.id] = state.value(of: control)
+        }
+        return out
     }
 
     func focus(_ control: Control) {
@@ -142,15 +166,13 @@ final class EditorModel: ObservableObject {
             return
         }
         original = image
-        previewSource = PhotoRenderer.downscaled(image, maxSide: 2048)
+        previewSource = PhotoRenderer.downscaled(image, maxSide: previewSide)
         render()
     }
 
     /// Renders the full-resolution photo and saves it to the photo library.
     func save() {
-        let edited = renderer.apply(to: original) { [state, registry] id in
-            registry.control(id: id).map { state.value(of: $0) } ?? 0
-        }
+        let edited = renderer.apply(to: original, value: currentValue)
         guard let image = renderer.uiImage(edited) else {
             feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
             return
@@ -159,11 +181,20 @@ final class EditorModel: ObservableObject {
         feedback = Feedback(text: "Saved to Photos.")
     }
 
-    private func render() {
-        let edited = renderer.apply(to: previewSource) { [state, registry] id in
+    /// The preview photo with the current edits (not yet turned into pixels).
+    func editedPreview() -> CIImage {
+        renderer.apply(to: previewSource, value: currentValue)
+    }
+
+    /// Looks up a control's current value by id; unknown ids read as 0.
+    private var currentValue: (String) -> Double {
+        { [state, registry] id in
             registry.control(id: id).map { state.value(of: $0) } ?? 0
         }
-        preview = renderer.uiImage(edited)
+    }
+
+    private func render() {
+        preview = renderer.uiImage(editedPreview())
     }
 
     private func describe(_ outcomes: [CommandInterpreter.Outcome]) -> Feedback {

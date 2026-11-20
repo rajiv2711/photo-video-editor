@@ -1,0 +1,13 @@
+{
+  "about": "Render test cases. The cloud build runs each command on the test photo (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak. Directions: up, down, changed, same.",
+  "cases": [
+    {"id": "base", "command": "", "expect": []},
+
+    {"id": "exposure-plus", "command": "exposure 1", "control": "exposure", "expect": [{"metric": "mean_luma", "dir": "up"}]},
+    {"id": "exposure-minus", "command": "exposure -1", "control": "exposure", "expect": [{"metric": "mean_luma", "dir": "down"}]},
+    {"id": "contrast-plus", "command": "contrast 100", "control": "contrast", "expect": [{"metric": "p95_luma", "dir": "up"}, {"metric": "p5_luma", "dir": "down"}]},
+    {"id": "contrast-minus", "command": "contrast -100", "control": "contrast", "expect": [{"metric": "p95_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]},
+    {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
+    {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
+  ]
+}

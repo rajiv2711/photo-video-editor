@@ -1,0 +1,86 @@
+import XCTest
+@testable import CommandEngine
+
+/// Checks test-data/gallery/gallery.json, the render cases the cloud build draws on the iPad
+/// simulator: every command must reach real controls (no unknown or ambiguous words), and every
+/// control in controls.json needs at least one case, so each new operation gets a picture test.
+final class GalleryCasesTests: XCTestCase {
+    struct Expectation: Decodable {
+        let metric: String
+        let dir: String
+        let vs: String?
+    }
+
+    struct Case: Decodable {
+        let id: String
+        let command: String
+        let control: String?
+        let expect: [Expectation]
+    }
+
+    struct File: Decodable {
+        let cases: [Case]
+    }
+
+    /// Must match dev-tools/ci_results.py.
+    static let metrics: Set = [
+        "mean_luma", "p5_luma", "p25_luma", "p50_luma", "p75_luma", "p95_luma",
+        "mean_sat", "mean_r", "mean_g", "mean_b", "diff", "peak",
+    ]
+    static let directions: Set = ["up", "down", "changed", "same"]
+
+    private var registry: ControlRegistry!
+    private var cases: [Case] = []
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+        // command-engine/Tests/CommandEngineTests/ → repo root
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let data = try Data(contentsOf: root.appendingPathComponent("test-data/gallery/gallery.json"))
+        cases = try JSONDecoder().decode(File.self, from: data).cases
+    }
+
+    func testThereIsABaseCaseWithNoEdits() {
+        XCTAssertEqual(cases.first?.id, "base")
+        XCTAssertEqual(cases.first?.command, "")
+    }
+
+    func testIdsAreUniqueAndExpectationsAreWellFormed() {
+        let ids = cases.map(\.id)
+        XCTAssertEqual(Set(ids).count, ids.count, "duplicate case ids")
+        for c in cases {
+            XCTAssertFalse(c.id.contains("/") || c.id.contains(" "), "\(c.id): use letters, digits and dashes")
+            if c.id != "base" { XCTAssertFalse(c.expect.isEmpty, "\(c.id) has no expectation") }
+            for e in c.expect {
+                XCTAssertTrue(Self.metrics.contains(e.metric), "\(c.id): unknown metric \(e.metric)")
+                XCTAssertTrue(Self.directions.contains(e.dir), "\(c.id): unknown direction \(e.dir)")
+                if let vs = e.vs { XCTAssertTrue(ids.contains(vs), "\(c.id): vs \(vs) is not a case") }
+            }
+        }
+    }
+
+    func testEveryCommandReachesItsControl() {
+        let parser = CommandParser(registry: registry)
+        for c in cases where !c.command.isEmpty {
+            let commands = parser.parse(c.command)
+            XCTAssertFalse(commands.isEmpty, "\(c.id): nothing parsed")
+            for command in commands {
+                XCTAssertNotEqual(command.op, .unknown, "\(c.id): unknown word in “\(c.command)”")
+                XCTAssertNotEqual(command.op, .ambiguous, "\(c.id): ambiguous word in “\(c.command)”")
+            }
+            if let control = c.control {
+                XCTAssertNotNil(registry.control(id: control), "\(c.id): no control \(control)")
+                XCTAssertTrue(commands.contains { $0.control == control }, "\(c.id): “\(c.command)” doesn't reach \(control)")
+            }
+        }
+    }
+
+    func testEveryControlHasACase() {
+        let covered = Set(cases.compactMap(\.control))
+        for control in registry.controls {
+            XCTAssertTrue(covered.contains(control.id), "no gallery case for \(control.id)")
+        }
+    }
+}

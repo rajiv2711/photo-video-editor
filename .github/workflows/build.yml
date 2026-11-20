@@ -2,6 +2,7 @@ name: Build
 
 on:
   push:
+    branches-ignore: [ci-renders]   # test results published by this workflow
   pull_request:
   workflow_dispatch:
 
@@ -46,33 +47,77 @@ jobs:
           path: PhotoVideoEditor.ipa
           retention-days: 30
 
-  screenshots:
-    name: iPad simulator screenshots
+  # Builds for the simulator, renders the test gallery (test-data/gallery/gallery.json), takes
+  # screenshots, and (on feature branches) force-pushes everything to the `ci-renders` branch,
+  # where dev-tools/ci_results.py picks it up. Steps keep going after a failure so a compile error
+  # still publishes status.json and build-errors.txt.
+  simulator:
+    name: iPad simulator (render gallery + screenshots)
     needs: core-tests
+    if: ${{ !cancelled() }}
     runs-on: macos-15
+    permissions:
+      contents: write
+    env:
+      APP: io.github.rajiv2711.photovideoeditor
     steps:
       - uses: actions/checkout@v4
       - name: Generate Xcode project
-        run: brew install xcodegen && xcodegen generate --spec ipad-app/project.yml
+        id: generate
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          brew install xcodegen
+          xcodegen generate --spec ipad-app/project.yml 2>&1 | tee xcodegen.log
       - name: Build for iPad simulator
+        id: build
+        if: steps.generate.outcome == 'success'
+        continue-on-error: true
         run: |
           command -v xcbeautify >/dev/null || brew install xcbeautify
           set -o pipefail
           xcodebuild -project ipad-app/PhotoVideoEditor.xcodeproj -scheme PhotoVideoEditor \
             -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build CODE_SIGNING_ALLOWED=NO \
-            build | xcbeautify --renderer github-actions
-      - name: Launch on an iPad simulator and screenshot
+            build 2>&1 | tee build.log | xcbeautify --renderer github-actions
+      - name: Boot an iPad simulator and install the app
+        id: install
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
         run: |
           UDID=$(xcrun simctl list devices available -j | python3 -c '
           import json, sys
           devices = json.load(sys.stdin)["devices"]
           print(next(d["udid"] for runtime, ds in devices.items() if "iOS" in runtime for d in ds if "iPad" in d["name"]))')
           echo "Simulator: $UDID"
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/PhotoVideoEditor.app
-          APP=io.github.rajiv2711.photovideoeditor
+      - name: Render the test gallery
+        id: gallery
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: |
+          xcrun simctl launch "$UDID" "$APP" -renderGallery YES
+          DATA=$(xcrun simctl get_app_container "$UDID" "$APP" data)
+          MANIFEST="$DATA/Documents/gallery/manifest.json"
+          for i in $(seq 1 120); do
+            [ -f "$MANIFEST" ] && break
+            sleep 2
+          done
+          sleep 1
+          xcrun simctl terminate "$UDID" "$APP" 2>/dev/null || true
+          mkdir -p gallery
+          cp -R "$DATA/Documents/gallery/." gallery/ 2>/dev/null || true
+          ls gallery
+          test -f gallery/manifest.json
+          python3 -c 'import json, sys; m = json.load(open("gallery/manifest.json")); print(m.get("error") or "%d cases" % len(m["cases"])); sys.exit(1 if m.get("error") else 0)'
+      - name: Launch and screenshot
+        id: screenshots
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: |
           mkdir -p screenshots
           xcrun simctl launch "$UDID" "$APP"
           sleep 10
@@ -82,7 +127,49 @@ jobs:
           sleep 10
           xcrun simctl io "$UDID" screenshot screenshots/2-after-command.png
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: ipad-screenshots
           path: screenshots
+          if-no-files-found: ignore
           retention-days: 30
+      - name: Publish results to the ci-renders branch
+        if: always() && github.event_name != 'pull_request' && github.ref != 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          LINUX_TESTS: ${{ needs.core-tests.result }}
+          GENERATE: ${{ steps.generate.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          GALLERY: ${{ steps.gallery.outcome }}
+          SCREENSHOTS: ${{ steps.screenshots.outcome }}
+        run: |
+          OUT="$RUNNER_TEMP/ci-renders"
+          rm -rf "$OUT" && mkdir -p "$OUT/gallery" "$OUT/screenshots"
+          echo "$SHA" > "$OUT/sha.txt"
+          python3 - "$OUT/status.json" <<'PY'
+          import json, os, sys
+          keys = ["LINUX_TESTS", "GENERATE", "BUILD", "INSTALL", "GALLERY", "SCREENSHOTS"]
+          status = {k.lower(): os.environ.get(k) or "skipped" for k in keys}
+          status.update(sha=os.environ["SHA"], ref=os.environ["REF"], run=os.environ["RUN_URL"])
+          json.dump(status, open(sys.argv[1], "w"), indent=2)
+          PY
+          # Compiler errors, with the checkout folder stripped from paths.
+          touch "$OUT/build-errors.txt"
+          if [ "$GENERATE" = "failure" ] && [ -f xcodegen.log ]; then tail -n 40 xcodegen.log > "$OUT/build-errors.txt"; fi
+          if [ "$BUILD" = "failure" ] && [ -f build.log ]; then
+            grep -E '(error|fatal error): ' build.log | sed "s|$GITHUB_WORKSPACE/||g" | sort -u > "$OUT/build-errors.txt" || true
+            [ -s "$OUT/build-errors.txt" ] || tail -n 60 build.log > "$OUT/build-errors.txt"
+          fi
+          cp -R gallery/. "$OUT/gallery/" 2>/dev/null || true
+          cp -R screenshots/. "$OUT/screenshots/" 2>/dev/null || true
+          cat "$OUT/status.json"
+          cd "$OUT"
+          git init -q -b ci-renders
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "CI renders for $SHA ($REF)"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-renders

@@ -36,6 +36,23 @@ final class PhotoRenderer {
         return UIImage(cgImage: cg)
     }
 
+    /// JPEG bytes (sRGB), as the render gallery saves them.
+    func jpegData(_ image: CIImage) -> Data? {
+        uiImage(image)?.jpegData(compressionQuality: 0.92)
+    }
+
+    /// The brightest channel value in the image, in linear light (1 = SDR white).
+    func peak(of image: CIImage) -> Double {
+        let filter = CIFilter.areaMaximum()
+        filter.inputImage = image
+        filter.extent = image.extent
+        guard let output = filter.outputImage else { return 0 }
+        var pixel = [Float](repeating: 0, count: 4)
+        context.render(output, toBitmap: &pixel, rowBytes: 16, bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+                       format: .RGBAf, colorSpace: nil)
+        return Double(max(pixel[0], pixel[1], pixel[2]))
+    }
+
     /// A smaller copy for live preview, so sliders stay smooth on large photos.
     static func downscaled(_ image: CIImage, maxSide: CGFloat) -> CIImage {
         let side = max(image.extent.width, image.extent.height)
