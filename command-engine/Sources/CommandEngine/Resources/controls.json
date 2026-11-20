@@ -255,6 +255,13 @@
       "synonyms": ["equalise", "equalization", "equalisation", "histogram equalize"]
     },
     {
+      "id": "auto",
+      "label": "Auto",
+      "group": "light",
+      "kind": "action",
+      "synonyms": ["auto tone", "auto adjust", "auto light", "automatic", "auto fix"]
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

@@ -182,3 +182,6 @@
 {"group":"light","text":"equalize","expect":[{"op":"set","control":"equalize","value":1}]}
 {"group":"light","text":"turn off equalise","expect":[{"op":"set","control":"equalize","value":0}]}
 {"group":"light","text":"reset equalize","expect":[{"op":"reset","control":"equalize"}]}
+{"group":"light","text":"auto","expect":[{"op":"run","control":"auto"}]}
+{"group":"light","text":"auto tone please","expect":[{"op":"run","control":"auto"}]}
+{"group":"light","text":"auto then contrast more","expect":[{"op":"run","control":"auto"},{"op":"nudge","control":"contrast","steps":1}]}

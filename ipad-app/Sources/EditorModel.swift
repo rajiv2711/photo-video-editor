@@ -50,6 +50,7 @@ final class EditorModel: ObservableObject {
         self.original = start
         self.previewSide = previewSide
         self.previewSource = PhotoRenderer.downscaled(start, maxSide: previewSide)
+        installActions()
         render()
 
         // Launch argument used by the cloud build to screenshot a command's effect.
@@ -76,6 +77,7 @@ final class EditorModel: ObservableObject {
     func startOver() {
         state = EditState()
         interpreter = CommandInterpreter(registry: registry)
+        installActions()
         focusedControlID = nil
         feedback = nil
         render()
@@ -93,6 +95,18 @@ final class EditorModel: ObservableObject {
     func focus(_ control: Control) {
         interpreter.focus(controlID: control.id)
         focusedControlID = control.id
+    }
+
+    /// Action controls look at the photo: Auto reads the unedited preview's brightness histogram
+    /// and sets the light sliders (AutoTone in CommandEngine), so its result stays editable.
+    private func installActions() {
+        let source = previewSource
+        let context = renderer.context
+        interpreter.actionHandler = { id in
+            guard id == "auto" else { return [] }
+            let histogram = ImageStats.lumaHistogram(of: source, extent: source.extent, context: context)
+            return AutoTone.commands(lumaHistogram: histogram)
+        }
     }
 
     /// A button for an action control (e.g. Auto) was tapped.
@@ -175,6 +189,7 @@ final class EditorModel: ObservableObject {
         }
         original = image
         previewSource = PhotoRenderer.downscaled(image, maxSide: previewSide)
+        installActions()
         render()
     }
 
