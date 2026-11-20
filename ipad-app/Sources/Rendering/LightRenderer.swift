@@ -9,7 +9,7 @@ struct LightRenderer {
     let context: CIContext
 
     func apply(_ image: CIImage, value: (String) -> Double?) -> CIImage {
-        let v = { (id: String) in value(id) ?? 0 }
+        func v(_ id: String) -> Double { value(id) ?? 0 }
         var output = image
 
         let exposure = v("exposure")  // EV, −3…3
