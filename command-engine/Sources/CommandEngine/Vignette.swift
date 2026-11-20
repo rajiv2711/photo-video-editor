@@ -49,4 +49,30 @@ public enum Vignette {
         let scale = Double(cells) / Swift.max(width, height)
         return (Swift.max(2, Int((width * scale).rounded())), Swift.max(2, Int((height * scale).rounded())))
     }
+
+    // MARK: - Lens vignetting (Optics)
+
+    /// Manual lens vignetting: a brightness gain in linear light, 2^(amount × r^p), r = 1 at the
+    /// corners. `amount` −1…1 (±1 stop at the corners); `midpoint` 0…1 sets how far in it reaches
+    /// (p = 1 + 5 × midpoint, so 0 reaches the middle, 1 only the corners).
+    public static func lensGain(u: Double, v: Double, aspect: Double, amount: Double, midpoint: Double) -> Double {
+        let r2 = (u * u * aspect * aspect + v * v) / (aspect * aspect + 1)
+        let power = 1 + 5 * Swift.min(1, Swift.max(0, midpoint))
+        return pow(2, amount * pow(r2, power / 2))
+    }
+
+    /// `lensGain` on a grid of `width` × `height` cells, row by row from the top, at cell centres.
+    public static func lensMask(width: Int, height: Int, amount: Double, midpoint: Double) -> [Double] {
+        let aspect = Double(width) / Double(height)
+        var out: [Double] = []
+        out.reserveCapacity(width * height)
+        for row in 0..<height {
+            let v = (Double(row) + 0.5) / Double(height) * 2 - 1
+            for column in 0..<width {
+                let u = (Double(column) + 0.5) / Double(width) * 2 - 1
+                out.append(lensGain(u: u, v: v, aspect: aspect, amount: amount, midpoint: midpoint))
+            }
+        }
+        return out
+    }
 }

@@ -17,7 +17,7 @@ final class OpticsTests: XCTestCase {
 
     func testOpticsControlsAreInTheOpticsPanel() {
         for id in ["lensProfile", "removeCA", "caRedCyan", "caBlueYellow", "defringePurple", "defringePurpleHue",
-                   "defringeGreen", "defringeGreenHue", "distortion"] {
+                   "defringeGreen", "defringeGreenHue", "distortion", "lensVignetting", "lensVignettingMidpoint"] {
             XCTAssertEqual(registry.control(id: id)?.group, "optics", id)
         }
     }
@@ -235,5 +235,23 @@ final class OpticsTests: XCTestCase {
             XCTAssertLessThanOrEqual(abs(corner.x), 150 + 1e-6)
             XCTAssertLessThanOrEqual(abs(corner.y), 100 + 1e-6)
         }
+    }
+
+    // MARK: - Lens vignetting
+
+    func testLensVignettingNames() {
+        XCTAssertEqual(parse("lens vignetting 40"), [.set("lensVignetting", 40)])
+        XCTAssertEqual(parse("lens vignetting midpoint 20"), [.set("lensVignettingMidpoint", 20)])
+        XCTAssertEqual(parse("vignetting up"), [.nudge("lensVignetting", 1)])
+        XCTAssertEqual(parse("vignette up"), [.nudge("vignette", 1)], "vignette is the Effects one")
+    }
+
+    func testLensVignettingGain() {
+        XCTAssertEqual(Vignette.lensGain(u: 0, v: 0, aspect: 1.5, amount: 1, midpoint: 0.5), 1, "centre untouched")
+        XCTAssertEqual(Vignette.lensGain(u: 1, v: 1, aspect: 1.5, amount: 1, midpoint: 0.5), 2, accuracy: 1e-9, "+1 stop at the corner")
+        XCTAssertEqual(Vignette.lensGain(u: -1, v: 1, aspect: 1.5, amount: -1, midpoint: 0.5), 0.5, accuracy: 1e-9)
+        XCTAssertGreaterThan(Vignette.lensGain(u: 0.5, v: 0, aspect: 1.5, amount: 1, midpoint: 0),
+                             Vignette.lensGain(u: 0.5, v: 0, aspect: 1.5, amount: 1, midpoint: 1), "midpoint 0 reaches further in")
+        XCTAssertEqual(Vignette.lensMask(width: 4, height: 3, amount: 1, midpoint: 0.5).count, 12)
     }
 }

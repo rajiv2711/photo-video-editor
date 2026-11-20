@@ -2,10 +2,10 @@ import CommandEngine
 import CoreImage
 
 /// The Optics panel. It runs first, on the photo as shot (as in Lightroom, lens fixes come before any
-/// tone or colour work): lens profile correction, chromatic aberration, manual distortion, defringe.
-/// The geometry is LensWarp in
-/// CommandEngine, a CPU pass on a float copy of the picture; its result is kept until the picture or
-/// the optics settings change, so the other sliders stay fast.
+/// tone or colour work): lens profile correction, chromatic aberration, manual distortion, lens
+/// vignetting, defringe. The geometry is LensWarp in CommandEngine, a CPU pass on a float copy of the
+/// picture; its result is kept until the picture or the optics settings change, so the other sliders
+/// stay fast. Lens vignetting and defringe are ordinary Core Image passes after it.
 final class OpticsRenderer {
     let context: CIContext
     /// The photo's lens (EXIF); setting it looks up its profile.
@@ -23,6 +23,8 @@ final class OpticsRenderer {
     private var measuredCA: (source: CIImage, red: Double, blue: Double)?
     /// The last defringe colour cube and the settings it was made for.
     private var cachedDefringe: (key: [Double], data: Data)?
+    /// The last lens vignetting gain grid and its settings (grid size, amount, midpoint).
+    private var cachedVignetting: (key: [Double], values: [Double])?
 
     init(context: CIContext) {
         self.context = context
@@ -45,6 +47,12 @@ final class OpticsRenderer {
         warp.distortion = v("distortion") / 100
         var output = warp.isIdentity ? image : warped(image, warp)
 
+        // Lens vignetting: corners brighter (or darker) by up to a stop, in linear light.
+        let vignetting = v("lensVignetting") / 100
+        if vignetting != 0 {
+            output = lensVignetting(output, amount: vignetting, midpoint: (value("lensVignettingMidpoint") ?? 50) / 100)
+        }
+
         // Defringe: purple and green fringes along strong edges lose their colour.
         let purple = v("defringePurple") / 100, green = v("defringeGreen") / 100
         if purple > 0 || green > 0 {
@@ -52,6 +60,22 @@ final class OpticsRenderer {
             output = defringe(output, key: key)
         }
         return output
+    }
+
+    /// The gain grid (Vignette.lensMask in CommandEngine), stretched over the photo and multiplied in.
+    private func lensVignetting(_ image: CIImage, amount: Double, midpoint: Double) -> CIImage {
+        let extent = image.extent
+        let grid = Vignette.gridSize(width: Double(extent.width), height: Double(extent.height))
+        let key = [Double(grid.width), Double(grid.height), amount, midpoint]
+        let values: [Double]
+        if let cachedVignetting, cachedVignetting.key == key {
+            values = cachedVignetting.values
+        } else {
+            values = Vignette.lensMask(width: grid.width, height: grid.height, amount: amount, midpoint: midpoint)
+            cachedVignetting = (key, values)
+        }
+        let gain = Filters.mask(values, width: grid.width, height: grid.height, over: extent)
+        return image.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: gain])
     }
 
     /// The defringe colour cube (Defringe in CommandEngine) on sRGB levels, used near strong edges only.

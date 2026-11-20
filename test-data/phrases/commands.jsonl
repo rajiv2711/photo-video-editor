@@ -564,3 +564,8 @@
 {"group":"optics","text":"distortion 30","expect":[{"op":"set","control":"distortion","value":30}]}
 {"group":"optics","text":"lens distortion less","expect":[{"op":"nudge","control":"distortion","steps":-1}]}
 {"group":"optics","text":"reset distortion","expect":[{"op":"reset","control":"distortion"}]}
+{"group":"optics","text":"lens vignetting 40","expect":[{"op":"set","control":"lensVignetting","value":40}]}
+{"group":"optics","text":"lens vignette more","expect":[{"op":"nudge","control":"lensVignetting","steps":1}]}
+{"group":"optics","text":"lens vignetting midpoint 20","expect":[{"op":"set","control":"lensVignettingMidpoint","value":20}]}
+{"group":"optics","text":"vignetting up","expect":[{"op":"nudge","control":"lensVignetting","steps":1}]}
+{"group":"optics","text":"vignette up","expect":[{"op":"nudge","control":"vignette","steps":1}]}

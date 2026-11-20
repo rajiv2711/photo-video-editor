@@ -243,6 +243,9 @@
     {"id": "defringe-green", "command": "green fringe 100", "source": "fringe", "control": "defringeGreen", "expect": [{"metric": "fringe", "dir": "down", "vs": "fringe-cast"}]},
     {"id": "defringe-green-hue", "command": "green fringe 100 green fringe hue 100", "source": "fringe", "control": "defringeGreenHue", "expect": [{"metric": "diff", "dir": "changed", "vs": "defringe-green", "min": 0.3}]},
     {"id": "distortion-plus", "command": "distortion 100", "source": "grid", "control": "distortion", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid"}, {"metric": "mean_luma", "dir": "same", "vs": "grid", "min": 3}]},
-    {"id": "distortion-minus", "command": "distortion -100", "source": "grid", "control": "distortion", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid"}, {"metric": "diff", "dir": "changed", "vs": "distortion-plus"}]}
+    {"id": "distortion-minus", "command": "distortion -100", "source": "grid", "control": "distortion", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid"}, {"metric": "diff", "dir": "changed", "vs": "distortion-plus"}]},
+    {"id": "lens-vignetting-plus", "command": "lens vignetting 100", "control": "lensVignetting", "expect": [{"metric": "corner_luma", "dir": "up"}, {"metric": "center_luma", "dir": "same"}]},
+    {"id": "lens-vignetting-minus", "command": "lens vignetting -100", "control": "lensVignetting", "expect": [{"metric": "corner_luma", "dir": "down"}, {"metric": "center_luma", "dir": "same"}]},
+    {"id": "lens-vignetting-midpoint", "command": "lens vignetting -100 lens vignetting midpoint 0", "control": "lensVignettingMidpoint", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "lens-vignetting-minus"}]}
   ]
 }
