@@ -138,14 +138,15 @@ final class ColorTests: XCTestCase {
     }
 
     func testBandWeightsShareBetweenNeighbours() {
+        func names(_ weights: [(Int, Double)]) -> [String] { weights.map { ColorLook.mixerBands[$0.0] } }
         let red = ColorLook.bandWeights(hue: 0)
-        XCTAssertEqual(red.first?.0, "red")
+        XCTAssertEqual(names(red).first, "red")
         XCTAssertEqual(red.first?.1, 1)
         let between = ColorLook.bandWeights(hue: 90)  // halfway yellow → green
-        XCTAssertEqual(between.map(\.0), ["yellow", "green"])
+        XCTAssertEqual(names(between), ["yellow", "green"])
         assertClose(between[0].1, 0.5)
         let wrap = ColorLook.bandWeights(hue: 330)  // halfway magenta → red
-        XCTAssertEqual(wrap.map(\.0), ["magenta", "red"])
+        XCTAssertEqual(names(wrap), ["magenta", "red"])
     }
 
     func testMixerChangesOnlyItsBand() {
@@ -166,6 +167,13 @@ final class ColorTests: XCTestCase {
         XCTAssertLessThan(darker.luma, red.luma * 0.8)
         let lighter = ColorLook.transform(red, look([ColorLook.mixerID("red", "Luminance"): 100]))
         XCTAssertGreaterThan(lighter.luma, red.luma)
+    }
+
+    func testCubeIsQuickEnough() {
+        // Every slider move rebuilds the 33³ cube; keep it well under a second even unoptimised.
+        let start = Date()
+        _ = ColorLook.cube({ $0 == "mixerRedHue" ? 20 : $0 == "selectiveRedsCyan" ? 10 : $0 == "gradingShadowsSaturation" ? 30 : nil })
+        XCTAssertLessThan(Date().timeIntervalSince(start), 2)
     }
 
     func testCubeIsIdentityWhenUntouched() {
@@ -364,10 +372,37 @@ final class ColorTests: XCTestCase {
     func testChannelMixerRebuildsChannels() {
         let c = RGB(0.2, 0.5, 0.8)
         XCTAssertEqual(ColorLook.channelMixer(c, look([:])), c)
+        XCTAssertEqual(ColorLook.transform(c, look([:])), c)
         let swapped = ColorLook.channelMixer(c, look(["channelRedFromRed": 0, "channelRedFromBlue": 100]))
         assertClose(swapped.r, 0.8)
         assertClose(swapped.g, 0.5)
         let mono = ColorLook.channelMixer(c, look(["channelGreenFromRed": 50, "channelGreenFromGreen": 50]))
         assertClose(mono.g, 0.35)
+    }
+
+    // MARK: - Selective color
+
+    func testSelectiveColorNames() {
+        XCTAssertEqual(parse("reds cyan 20"), [.set("selectiveRedsCyan", 20)])
+        XCTAssertEqual(parse("whites black -10"), [.set("selectiveWhitesBlack", -10)])
+        XCTAssertEqual(parse("whites 30"), [.set("whites", 30)])
+        XCTAssertEqual(parse("blacks black up"), [.nudge("selectiveBlacksBlack", 1)])
+        XCTAssertEqual(parse("blacks up"), [.nudge("blacks", 1)])
+        XCTAssertEqual(parse("neutral magenta 15"), [.set("selectiveNeutralsMagenta", 15)])
+        XCTAssertEqual(registry.controls.filter { $0.section == "Selective color" }.map(\.id), ColorLook.selectiveIDs)
+    }
+
+    func testSelectiveColorActsOnItsFamily() {
+        let red = RGB(0.8, 0.1, 0.1), blue = RGB(0.1, 0.1, 0.8), grey = RGB(0.5, 0.5, 0.5)
+        let v = look(["selectiveRedsCyan": 100])
+        XCTAssertLessThan(ColorLook.transform(red, v).r, red.r - 0.2)
+        XCTAssertEqual(ColorLook.transform(blue, v), blue)
+        XCTAssertEqual(ColorLook.transform(grey, v), grey)
+        let neutral = ColorLook.transform(grey, look(["selectiveNeutralsYellow": 100]))
+        XCTAssertLessThan(neutral.b, 0.5)
+        let darker = ColorLook.transform(RGB(0.9, 0.9, 0.9), look(["selectiveWhitesBlack": 100]))
+        XCTAssertLessThan(darker.r, 0.9)
+        let lighter = ColorLook.transform(RGB(0.1, 0.1, 0.1), look(["selectiveBlacksBlack": -100]))
+        XCTAssertGreaterThan(lighter.r, 0.1)
     }
 }

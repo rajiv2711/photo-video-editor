@@ -375,3 +375,75 @@
 {"group":"color","text":"reset blue from green","expect":[{"op":"reset","control":"channelBlueFromGreen"}]}
 {"group":"color","text":"blue from blue 150","expect":[{"op":"set","control":"channelBlueFromBlue","value":150}]}
 {"group":"color","text":"channel mixer blue blue down","expect":[{"op":"nudge","control":"channelBlueFromBlue","steps":-1}]}
+{"group":"color","text":"reds cyan 20","expect":[{"op":"set","control":"selectiveRedsCyan","value":20}]}
+{"group":"color","text":"more red cyan","expect":[{"op":"nudge","control":"selectiveRedsCyan","steps":1}]}
+{"group":"color","text":"reds magenta -40","expect":[{"op":"set","control":"selectiveRedsMagenta","value":-40}]}
+{"group":"color","text":"reset reds magenta","expect":[{"op":"reset","control":"selectiveRedsMagenta"}]}
+{"group":"color","text":"reds yellow 60","expect":[{"op":"set","control":"selectiveRedsYellow","value":60}]}
+{"group":"color","text":"selective reds yellow down","expect":[{"op":"nudge","control":"selectiveRedsYellow","steps":-1}]}
+{"group":"color","text":"reds black -15","expect":[{"op":"set","control":"selectiveRedsBlack","value":-15}]}
+{"group":"color","text":"more red black","expect":[{"op":"nudge","control":"selectiveRedsBlack","steps":1}]}
+{"group":"color","text":"yellows cyan 20","expect":[{"op":"set","control":"selectiveYellowsCyan","value":20}]}
+{"group":"color","text":"reset yellows cyan","expect":[{"op":"reset","control":"selectiveYellowsCyan"}]}
+{"group":"color","text":"yellows magenta -40","expect":[{"op":"set","control":"selectiveYellowsMagenta","value":-40}]}
+{"group":"color","text":"selective yellows magenta down","expect":[{"op":"nudge","control":"selectiveYellowsMagenta","steps":-1}]}
+{"group":"color","text":"yellows yellow 60","expect":[{"op":"set","control":"selectiveYellowsYellow","value":60}]}
+{"group":"color","text":"more yellow yellow","expect":[{"op":"nudge","control":"selectiveYellowsYellow","steps":1}]}
+{"group":"color","text":"yellows black -15","expect":[{"op":"set","control":"selectiveYellowsBlack","value":-15}]}
+{"group":"color","text":"reset yellows black","expect":[{"op":"reset","control":"selectiveYellowsBlack"}]}
+{"group":"color","text":"greens cyan 20","expect":[{"op":"set","control":"selectiveGreensCyan","value":20}]}
+{"group":"color","text":"selective greens cyan down","expect":[{"op":"nudge","control":"selectiveGreensCyan","steps":-1}]}
+{"group":"color","text":"greens magenta -40","expect":[{"op":"set","control":"selectiveGreensMagenta","value":-40}]}
+{"group":"color","text":"more green magenta","expect":[{"op":"nudge","control":"selectiveGreensMagenta","steps":1}]}
+{"group":"color","text":"greens yellow 60","expect":[{"op":"set","control":"selectiveGreensYellow","value":60}]}
+{"group":"color","text":"reset greens yellow","expect":[{"op":"reset","control":"selectiveGreensYellow"}]}
+{"group":"color","text":"greens black -15","expect":[{"op":"set","control":"selectiveGreensBlack","value":-15}]}
+{"group":"color","text":"selective greens black down","expect":[{"op":"nudge","control":"selectiveGreensBlack","steps":-1}]}
+{"group":"color","text":"cyans cyan 20","expect":[{"op":"set","control":"selectiveCyansCyan","value":20}]}
+{"group":"color","text":"more cyan cyan","expect":[{"op":"nudge","control":"selectiveCyansCyan","steps":1}]}
+{"group":"color","text":"cyans magenta -40","expect":[{"op":"set","control":"selectiveCyansMagenta","value":-40}]}
+{"group":"color","text":"reset cyans magenta","expect":[{"op":"reset","control":"selectiveCyansMagenta"}]}
+{"group":"color","text":"cyans yellow 60","expect":[{"op":"set","control":"selectiveCyansYellow","value":60}]}
+{"group":"color","text":"selective cyans yellow down","expect":[{"op":"nudge","control":"selectiveCyansYellow","steps":-1}]}
+{"group":"color","text":"cyans black -15","expect":[{"op":"set","control":"selectiveCyansBlack","value":-15}]}
+{"group":"color","text":"more cyan black","expect":[{"op":"nudge","control":"selectiveCyansBlack","steps":1}]}
+{"group":"color","text":"blues cyan 20","expect":[{"op":"set","control":"selectiveBluesCyan","value":20}]}
+{"group":"color","text":"reset blues cyan","expect":[{"op":"reset","control":"selectiveBluesCyan"}]}
+{"group":"color","text":"blues magenta -40","expect":[{"op":"set","control":"selectiveBluesMagenta","value":-40}]}
+{"group":"color","text":"selective blues magenta down","expect":[{"op":"nudge","control":"selectiveBluesMagenta","steps":-1}]}
+{"group":"color","text":"blues yellow 60","expect":[{"op":"set","control":"selectiveBluesYellow","value":60}]}
+{"group":"color","text":"more blue yellow","expect":[{"op":"nudge","control":"selectiveBluesYellow","steps":1}]}
+{"group":"color","text":"blues black -15","expect":[{"op":"set","control":"selectiveBluesBlack","value":-15}]}
+{"group":"color","text":"reset blues black","expect":[{"op":"reset","control":"selectiveBluesBlack"}]}
+{"group":"color","text":"magentas cyan 20","expect":[{"op":"set","control":"selectiveMagentasCyan","value":20}]}
+{"group":"color","text":"selective magentas cyan down","expect":[{"op":"nudge","control":"selectiveMagentasCyan","steps":-1}]}
+{"group":"color","text":"magentas magenta -40","expect":[{"op":"set","control":"selectiveMagentasMagenta","value":-40}]}
+{"group":"color","text":"more magenta magenta","expect":[{"op":"nudge","control":"selectiveMagentasMagenta","steps":1}]}
+{"group":"color","text":"magentas yellow 60","expect":[{"op":"set","control":"selectiveMagentasYellow","value":60}]}
+{"group":"color","text":"reset magentas yellow","expect":[{"op":"reset","control":"selectiveMagentasYellow"}]}
+{"group":"color","text":"magentas black -15","expect":[{"op":"set","control":"selectiveMagentasBlack","value":-15}]}
+{"group":"color","text":"selective magentas black down","expect":[{"op":"nudge","control":"selectiveMagentasBlack","steps":-1}]}
+{"group":"color","text":"whites cyan 20","expect":[{"op":"set","control":"selectiveWhitesCyan","value":20}]}
+{"group":"color","text":"more white cyan","expect":[{"op":"nudge","control":"selectiveWhitesCyan","steps":1}]}
+{"group":"color","text":"whites magenta -40","expect":[{"op":"set","control":"selectiveWhitesMagenta","value":-40}]}
+{"group":"color","text":"reset whites magenta","expect":[{"op":"reset","control":"selectiveWhitesMagenta"}]}
+{"group":"color","text":"whites yellow 60","expect":[{"op":"set","control":"selectiveWhitesYellow","value":60}]}
+{"group":"color","text":"selective whites yellow down","expect":[{"op":"nudge","control":"selectiveWhitesYellow","steps":-1}]}
+{"group":"color","text":"whites black -15","expect":[{"op":"set","control":"selectiveWhitesBlack","value":-15}]}
+{"group":"color","text":"more white black","expect":[{"op":"nudge","control":"selectiveWhitesBlack","steps":1}]}
+{"group":"color","text":"neutrals cyan 20","expect":[{"op":"set","control":"selectiveNeutralsCyan","value":20}]}
+{"group":"color","text":"reset neutrals cyan","expect":[{"op":"reset","control":"selectiveNeutralsCyan"}]}
+{"group":"color","text":"neutrals magenta -40","expect":[{"op":"set","control":"selectiveNeutralsMagenta","value":-40}]}
+{"group":"color","text":"selective neutrals magenta down","expect":[{"op":"nudge","control":"selectiveNeutralsMagenta","steps":-1}]}
+{"group":"color","text":"neutrals yellow 60","expect":[{"op":"set","control":"selectiveNeutralsYellow","value":60}]}
+{"group":"color","text":"more neutral yellow","expect":[{"op":"nudge","control":"selectiveNeutralsYellow","steps":1}]}
+{"group":"color","text":"neutrals black -15","expect":[{"op":"set","control":"selectiveNeutralsBlack","value":-15}]}
+{"group":"color","text":"reset neutrals black","expect":[{"op":"reset","control":"selectiveNeutralsBlack"}]}
+{"group":"color","text":"blacks cyan 20","expect":[{"op":"set","control":"selectiveBlacksCyan","value":20}]}
+{"group":"color","text":"selective blacks cyan down","expect":[{"op":"nudge","control":"selectiveBlacksCyan","steps":-1}]}
+{"group":"color","text":"blacks magenta -40","expect":[{"op":"set","control":"selectiveBlacksMagenta","value":-40}]}
+{"group":"color","text":"more black magenta","expect":[{"op":"nudge","control":"selectiveBlacksMagenta","steps":1}]}
+{"group":"color","text":"blacks yellow 60","expect":[{"op":"set","control":"selectiveBlacksYellow","value":60}]}
+{"group":"color","text":"reset blacks yellow","expect":[{"op":"reset","control":"selectiveBlacksYellow"}]}
+{"group":"color","text":"blacks black -15","expect":[{"op":"set","control":"selectiveBlacksBlack","value":-15}]}
+{"group":"color","text":"selective blacks black down","expect":[{"op":"nudge","control":"selectiveBlacksBlack","steps":-1}]}

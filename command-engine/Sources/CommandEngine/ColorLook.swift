@@ -47,11 +47,16 @@ public enum ColorLook {
         ["Red", "Green", "Blue"].map { "channel" + out + "From" + $0 }
     }
 
+    /// Selective color: per colour family, how much cyan, magenta, yellow or black ink to add (%).
+    public static let selectiveFamilies = ["Reds", "Yellows", "Greens", "Cyans", "Blues", "Magentas", "Whites", "Neutrals", "Blacks"]
+    public static let selectiveInks = ["Cyan", "Magenta", "Yellow", "Black"]
+    public static let selectiveIDs: [String] = selectiveFamilies.flatMap { family in selectiveInks.map { "selective" + family + $0 } }
+
     public static let mixerIDs: [String] = mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
 
     /// Control ids that feed the cube, in the order the steps run.
     public static let controlIDs: [String] = [
-        calibrationIDs, mixerIDs, pointIDs, bwIDs, gradingIDs, channelIDs, ["toning", "toningAmount"],
+        calibrationIDs, mixerIDs, pointIDs, bwIDs, gradingIDs, selectiveIDs, channelIDs, ["toning", "toningAmount"],
     ].flatMap { $0 }
 
     /// Controls that only say how another control acts (which hue, how wide): on their own they
@@ -79,14 +84,36 @@ public enum ColorLook {
     /// The current values of the cube's controls.
     public struct Values {
         let values: [String: Double]
-        /// Worked out once per cube, not per colour.
+        // Worked out once per cube, not per colour (the cube has 36 000 colours).
         var calibration = ColorLook.identity3
+        /// Per mixer band: hue, saturation, luminance.
+        var mixer: [[Double]] = []
+        var bwMix: [Double] = []
+        /// Per grading zone: tint colour (already scaled by saturation) and luminance shift.
+        var grading: [(tint: RGB, lum: Double)] = []
+        /// Per selective family: cyan, magenta, yellow, black (already scaled); empty when all are 0.
+        var selective: [[Double]] = []
+        var channel: [[Double]] = []
 
         public init(_ value: (String) -> Double?) {
             var snapshot: [String: Double] = [:]
             for id in ColorLook.controlIDs { snapshot[id] = value(id) ?? ColorLook.neutral(id) }
             values = snapshot
             calibration = ColorLook.calibrationMatrix(self)
+            let v = self
+            mixer = ColorLook.mixerBands.map { band in ColorLook.mixerProperties.map { v[ColorLook.mixerID(band, $0)] } }
+            bwMix = ColorLook.bwIDs.dropFirst().map { v[$0] }
+            grading = ColorLook.gradingZones.map { zone in
+                (ColorLook.tintDirection(hue: v["grading" + zone + "Hue"]) * (v["grading" + zone + "Saturation"] / 100 * 0.25),
+                 v["grading" + zone + "Luminance"] / 100 * 0.15)
+            }
+            let families = ColorLook.selectiveFamilies.map { family in
+                ColorLook.selectiveInks.map { v["selective" + family + $0] / 100 * 0.5 }
+            }
+            selective = families.contains { $0.contains { $0 != 0 } } ? families : []
+            channel = ["Red", "Green", "Blue"].map { out in
+                ["Red", "Green", "Blue"].map { v["channel" + out + "From" + $0] / 100 }
+            }
         }
 
         subscript(_ id: String) -> Double { values[id] ?? ColorLook.neutral(id) }
@@ -119,6 +146,7 @@ public enum ColorLook {
         c = pointColor(c, v)
         c = blackAndWhite(c, v)
         c = grading(c, v)
+        c = selectiveColor(c, v)
         c = channelMixer(c, v)
         c = toning(c, v)
         return c
@@ -193,9 +221,9 @@ public enum ColorLook {
         var (h, s, l) = hsl(color)
         var dh = 0.0, ds = 0.0, dl = 0.0
         for (band, w) in bandWeights(hue: h) {
-            dh += w * v[mixerID(band, "Hue")] / 100 * 30
-            ds += w * v[mixerID(band, "Saturation")] / 100
-            dl += w * v[mixerID(band, "Luminance")] / 100
+            dh += w * v.mixer[band][0] / 100 * 30
+            ds += w * v.mixer[band][1] / 100
+            dl += w * v.mixer[band][2] / 100
         }
         if dh == 0 && ds == 0 && dl == 0 { return color }
         h += dh
@@ -206,18 +234,19 @@ public enum ColorLook {
         return rgb(hue: h, saturation: s, lightness: l)
     }
 
-    /// The two mixer bands a hue sits between and how much it belongs to each (they add up to 1).
-    static func bandWeights(hue: Double) -> [(String, Double)] {
+    /// The two mixer bands (as indexes into `mixerBands`) a hue sits between and how much it
+    /// belongs to each (they add up to 1).
+    static func bandWeights(hue: Double) -> [(Int, Double)] {
         let h = wrap(hue)
         for i in mixerHues.indices {
             let lo = mixerHues[i]
             let hi = i + 1 < mixerHues.count ? mixerHues[i + 1] : 360
             if h >= lo && h < hi {
                 let t = (h - lo) / (hi - lo)
-                return [(mixerBands[i], 1 - t), (mixerBands[(i + 1) % mixerBands.count], t)]
+                return [(i, 1 - t), ((i + 1) % mixerBands.count, t)]
             }
         }
-        return [(mixerBands[0], 1)]
+        return [(0, 1)]
     }
 
     // MARK: - Point color
@@ -276,7 +305,7 @@ public enum ColorLook {
         if chroma > 1e-6 {
             var stops = 0.0
             for (band, w) in bandWeights(hue: hsl(color).h) {
-                stops += w * v["bw" + band.prefix(1).uppercased() + band.dropFirst()] / 100
+                stops += w * v.bwMix[band] / 100
             }
             grey *= pow(2, stops * chroma * 1.5)
         }
@@ -295,14 +324,11 @@ public enum ColorLook {
         let e = pow(4, (50 - v["gradingBlending"]) / 50)
         let shadows = pow(Swift.min(Swift.max(1 - 2 * shifted, 0), 1), e)
         let highlights = pow(Swift.min(Swift.max(2 * shifted - 1, 0), 1), e)
-        let weights = ["Shadows": shadows, "Midtones": 1 - shadows - highlights, "Highlights": highlights, "Global": 1]
+        let weights = [shadows, 1 - shadows - highlights, highlights, 1]  // gradingZones order
         var out = color
-        for zone in gradingZones {
-            let w = weights[zone] ?? 0
-            let sat = v["grading" + zone + "Saturation"], lum = v["grading" + zone + "Luminance"]
-            guard w > 0, sat != 0 || lum != 0 else { continue }
-            out = out + tintDirection(hue: v["grading" + zone + "Hue"]) * (w * sat / 100 * 0.25)
-            out = out + RGB(1, 1, 1) * (w * lum / 100 * 0.15)
+        for (zone, w) in weights.enumerated() where w > 0 {
+            let (tint, lum) = v.grading[zone]
+            out = out + tint * w + RGB(1, 1, 1) * (w * lum)
         }
         return out
     }
@@ -313,16 +339,56 @@ public enum ColorLook {
         return c - RGB(1, 1, 1) * c.luma
     }
 
+    // MARK: - Selective color
+
+    /// Photoshop's Selective Color (absolute): each family's ink sliders add (+) or take away (−)
+    /// cyan, magenta, yellow (the opposites of red, green, blue) or black, up to half the level
+    /// range, in the pixels that belong to that family.
+    static func selectiveColor(_ color: RGB, _ v: Values) -> RGB {
+        guard !v.selective.isEmpty else { return color }
+        var dc = 0.0, dm = 0.0, dy = 0.0, dk = 0.0
+        for (i, family) in selectiveFamilies.enumerated() {
+            let amounts = v.selective[i]
+            guard amounts.contains(where: { $0 != 0 }) else { continue }
+            let w = selectiveWeight(color, family: family)
+            guard w > 0 else { continue }
+            dc += w * amounts[0]
+            dm += w * amounts[1]
+            dy += w * amounts[2]
+            dk += w * amounts[3]
+        }
+        if dc == 0 && dm == 0 && dy == 0 && dk == 0 { return color }
+        var out = RGB(color.r - dc, color.g - dm, color.b - dy)
+        out = dk > 0 ? out * (1 - Swift.min(dk, 1)) : out + (RGB(1, 1, 1) - out) * Swift.min(-dk, 1)
+        return out
+    }
+
+    /// How much a colour belongs to a Selective color family (0…1).
+    static func selectiveWeight(_ c: RGB, family: String) -> Double {
+        let chroma = c.max - c.min
+        let whites = Swift.min(Swift.max((c.min - 0.5) * 2, 0), 1)
+        let blacks = Swift.min(Swift.max((0.5 - c.max) * 2, 0), 1)
+        switch family {
+        case "Whites": return whites
+        case "Blacks": return blacks
+        case "Neutrals": return (1 - chroma) * Swift.max(0, 1 - whites - blacks)
+        default:
+            let centres = ["Reds": 0.0, "Yellows": 60, "Greens": 120, "Cyans": 180, "Blues": 240, "Magentas": 300]
+            guard let centre = centres[family], chroma > 1e-6 else { return 0 }
+            let distance = abs(hueDifference(hsl(c).h, centre))
+            return Swift.max(0, 1 - distance / 60) * chroma
+        }
+    }
+
     // MARK: - Channel mixer
 
     /// Rebuilds each channel from the three (on sRGB levels, like Photoshop): red = red-from-red %
     /// of red + red-from-green % of green + red-from-blue % of blue, and so on.
     static func channelMixer(_ color: RGB, _ v: Values) -> RGB {
-        func row(_ out: String) -> Double {
-            (v["channel" + out + "FromRed"] * color.r + v["channel" + out + "FromGreen"] * color.g
-                + v["channel" + out + "FromBlue"] * color.b) / 100
-        }
-        return RGB(row("Red"), row("Green"), row("Blue"))
+        let m = v.channel
+        return RGB(m[0][0] * color.r + m[0][1] * color.g + m[0][2] * color.b,
+                   m[1][0] * color.r + m[1][1] * color.g + m[1][2] * color.b,
+                   m[2][0] * color.r + m[2][1] * color.g + m[2][2] * color.b)
     }
 
     // MARK: - Toning

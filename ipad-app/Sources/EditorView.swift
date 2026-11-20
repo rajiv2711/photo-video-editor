@@ -205,12 +205,79 @@ private struct SectionBody: View {
     var body: some View {
         if controls.allSatisfy({ $0.kind == .curvePoint }) {
             CurveEditor(model: model, controls: controls)
+        } else if let tabs = TabbedSection.tabs[controls.first?.section ?? ""] {
+            TabbedSection(model: model, controls: controls, byFirstWord: tabs.byFirstWord, segmented: tabs.segmented)
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(controls) { control in
                     ControlRow(model: model, control: control)
                 }
             }
+        }
+    }
+}
+
+/// A section with many sliders, shown one group at a time: Color mixer by Hue / Saturation /
+/// Luminance, Channel mixer by output channel, Selective color by colour family. The group comes
+/// from the label's first or last word ("Reds Cyan" → Reds); naming a slider by voice opens its group.
+private struct TabbedSection: View {
+    @ObservedObject var model: EditorModel
+    let controls: [Control]
+    let byFirstWord: Bool
+    let segmented: Bool
+    @State private var tab = ""
+
+    /// Sections shown this way, and how their sliders are grouped.
+    static let tabs: [String: (byFirstWord: Bool, segmented: Bool)] = [
+        "Color mixer": (false, true),
+        "Channel mixer": (true, true),
+        "Selective color": (true, false),
+    ]
+
+    private func group(of control: Control) -> String {
+        let words = control.label.split(separator: " ")
+        return String((byFirstWord ? words.first : words.last) ?? "")
+    }
+
+    private var groups: [String] {
+        var out: [String] = []
+        for control in controls where !out.contains(group(of: control)) { out.append(group(of: control)) }
+        return out
+    }
+
+    private var current: String { tab.isEmpty ? (groups.first ?? "") : tab }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Picker("Group", selection: Binding(get: { current }, set: { tab = $0 })) {
+                ForEach(groups, id: \.self) { Text($0).tag($0) }
+            }
+            .modifier(PickerLook(segmented: segmented))
+            .padding(.horizontal, 10)
+            ForEach(controls.filter { group(of: $0) == current }) { control in
+                ControlRow(model: model, control: control)
+            }
+        }
+        .onAppear { follow(model.focusedControlID) }
+        .onChange(of: model.focusedControlID) { _, id in follow(id) }
+    }
+
+    /// "blues cyan 20" switches to the Blues group.
+    private func follow(_ id: String?) {
+        if let control = controls.first(where: { $0.id == id }) { tab = group(of: control) }
+    }
+}
+
+/// Segmented for a few groups, a menu for many.
+private struct PickerLook: ViewModifier {
+    let segmented: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if segmented {
+            content.pickerStyle(.segmented)
+        } else {
+            content.pickerStyle(.menu)
         }
     }
 }
