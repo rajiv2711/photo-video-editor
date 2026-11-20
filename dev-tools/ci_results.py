@@ -9,7 +9,8 @@ The cloud build (.github/workflows/build.yml) renders every case in test-data/ga
 iPad simulator and force-pushes the pictures to the `ci-renders` branch with sha.txt, status.json and
 build-errors.txt. This script fetches that branch into reports/ci/, measures each picture against its
 reference (the "base" case, or the case named in "vs"), checks the expectation (e.g. Highlights -100 ->
-p95 luma down) and writes "reports/Operation test report.html".
+p95 luma down) and writes "reports/Operation test report.html". An expectation with "region": [x0, y0, x1, y1]
+(fractions of the width and height, from the top-left) measures only that box of both pictures (masks).
 
 Exit code: 0 all passed · 1 a build step or a case failed · 3 no results for this commit yet.
 """
@@ -107,6 +108,18 @@ def detail_stats(a: np.ndarray, luma: np.ndarray) -> dict:
 
 def measure(path: Path) -> tuple[dict, np.ndarray]:
     a = np.asarray(Image.open(path).convert("RGB"), dtype=np.float64)
+    return stats_of(a), a
+
+
+def crop(a: np.ndarray, region: list) -> np.ndarray:
+    """The box [x0, y0, x1, y1] (fractions, from the top-left) of a picture, at least 1 pixel."""
+    h, w = a.shape[:2]
+    x0, x1 = int(region[0] * w), max(int(region[0] * w) + 1, int(round(region[2] * w)))
+    y0, y1 = int(region[1] * h), max(int(region[1] * h) + 1, int(round(region[3] * h)))
+    return a[y0:y1, x0:x1]
+
+
+def stats_of(a: np.ndarray) -> dict:
     luma = a @ np.array([0.2126, 0.7152, 0.0722])
     hi, lo = a.max(axis=2), a.min(axis=2)
     sat = np.where(hi > 0, (hi - lo) / np.maximum(hi, 1e-6), 0) * 100
@@ -115,9 +128,10 @@ def measure(path: Path) -> tuple[dict, np.ndarray]:
         "mean_luma": luma.mean(), "p5_luma": p5, "p25_luma": p25, "p50_luma": p50, "p75_luma": p75,
         "p95_luma": p95, "mean_sat": sat.mean(),
         "mean_r": a[..., 0].mean(), "mean_g": a[..., 1].mean(), "mean_b": a[..., 2].mean(),
-        **detail_stats(a, luma),
     }
-    return stats, a
+    if min(a.shape[:2]) >= 40:  # the detail measures need room for their blurs
+        stats.update(detail_stats(a, luma))
+    return stats
 
 
 def check(expect: dict, value: float, ref: float) -> tuple[bool, float]:
@@ -205,6 +219,14 @@ def main() -> int:
                 checks.append((f"{METRIC_NAMES.get(e['metric'], e['metric'])}: missing {ref_id}", False))
                 continue
             (stats, pixels), (ref_stats, ref_pixels) = measured[c["id"]], measured[ref_id]
+            region = e.get("region")
+            if region:
+                pixels, ref_pixels = crop(pixels, region), crop(ref_pixels, region)
+                stats, ref_stats = stats_of(pixels), stats_of(ref_pixels)
+            if e["metric"] != "diff" and e["metric"] not in stats:
+                ok_all = False
+                checks.append((f"{METRIC_NAMES.get(e['metric'], e['metric'])}: region too small to measure", False))
+                continue
             if e["metric"] == "diff":
                 value = float(np.abs(pixels - ref_pixels).mean()) if pixels.shape == ref_pixels.shape else 255.0
                 ref = 0.0
@@ -213,6 +235,8 @@ def main() -> int:
             ok, delta = check(e, value, ref)
             ok_all &= ok
             vs = "" if ref_id == "base" else f" vs {ref_id}"
+            if region:
+                vs += " in [" + ", ".join(f"{v:g}" for v in region) + "]"
             digits = 3 if e["metric"] == "peak" else 2 if e["metric"] in ("edge", "local_contrast", "fringe") else 1
             checks.append((f"{METRIC_NAMES.get(e['metric'], e['metric'])} {e['dir']}{vs}: "
                            f"{ref:.{digits}f} → {value:.{digits}f} ({delta:+.{digits}f})", ok))

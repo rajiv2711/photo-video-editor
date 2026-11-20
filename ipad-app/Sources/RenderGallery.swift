@@ -24,6 +24,8 @@ enum RenderGallery {
         let vs: String?
         /// Smallest change that counts; ci_results.py has a default per metric.
         let min: Double?
+        /// Measure only this box of the pictures: x0, y0, x1, y1 from the top-left, 0…1 (masks).
+        let region: [Double]?
     }
 
     struct Case: Codable {

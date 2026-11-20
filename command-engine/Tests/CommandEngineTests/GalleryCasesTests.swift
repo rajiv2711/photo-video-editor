@@ -10,6 +10,7 @@ final class GalleryCasesTests: XCTestCase {
         let metric: String
         let dir: String
         let vs: String?
+        let region: [Double]?
     }
 
     struct Case: Decodable {
@@ -67,6 +68,10 @@ final class GalleryCasesTests: XCTestCase {
                 XCTAssertTrue(Self.metrics.contains(e.metric), "\(c.id): unknown metric \(e.metric)")
                 XCTAssertTrue(Self.directions.contains(e.dir), "\(c.id): unknown direction \(e.dir)")
                 if let vs = e.vs { XCTAssertTrue(ids.contains(vs), "\(c.id): vs \(vs) is not a case") }
+                if let r = e.region {
+                    XCTAssertTrue(r.count == 4 && r.allSatisfy { (0...1).contains($0) } && r[0] < r[2] && r[1] < r[3],
+                                  "\(c.id): region is x0, y0, x1, y1 in 0…1 with x0 < x1, y0 < y1")
+                }
             }
         }
     }
