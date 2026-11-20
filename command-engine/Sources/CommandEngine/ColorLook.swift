@@ -27,18 +27,24 @@ public enum ColorLook {
     public static let pointIDs = ["pointHue", "pointHueShift", "pointSaturationShift", "pointLuminanceShift", "pointRange",
                                   "pointVariance"]
 
+    /// Color grading: a hue, saturation and luminance per tonal zone (and one for the whole photo).
+    public static let gradingZones = ["Shadows", "Midtones", "Highlights", "Global"]
+    public static let gradingIDs = gradingZones.flatMap { zone in mixerProperties.map { "grading" + zone + $0 } }
+        + ["gradingBlending", "gradingBalance"]
+
     /// Control ids that feed the cube.
     public static let controlIDs: [String] = mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
-        + pointIDs
+        + pointIDs + gradingIDs
 
     /// Controls that only say how another control acts (which hue, how wide): on their own they
     /// change nothing, so they don't count when deciding whether the cube is needed.
-    static let modifierIDs: Set = ["pointHue", "pointRange"]
+    static let modifierIDs = Set(["pointHue", "pointRange", "gradingBlending", "gradingBalance"]
+        + gradingZones.map { "grading" + $0 + "Hue" })
 
     /// The value of each control that leaves the picture untouched (or its default, for modifiers).
     public static func neutral(_ id: String) -> Double {
         switch id {
-        case "pointRange": return 50
+        case "pointRange", "gradingBlending": return 50
         default: return 0
         }
     }
@@ -85,6 +91,7 @@ public enum ColorLook {
     public static func transform(_ color: RGB, _ v: Values) -> RGB {
         var c = mixer(color, v)
         c = pointColor(c, v)
+        c = grading(c, v)
         return c
     }
 
@@ -169,6 +176,36 @@ public enum ColorLook {
     static func hueDifference(_ a: Double, _ b: Double) -> Double {
         let d = wrap(a - b)
         return d > 180 ? d - 360 : d
+    }
+
+    // MARK: - Color grading
+
+    /// Tints and brightens shadows, midtones and highlights (by the pixel's luma), plus the whole
+    /// photo. Saturation 100 adds a colour of that hue worth a quarter of the level range;
+    /// Luminance ±100 moves the zone's levels by ±0.15. Balance −100…100 hands more of the tones to
+    /// the shadows or the highlights; Blending 0…100 makes the zones overlap less or more.
+    static func grading(_ color: RGB, _ v: Values) -> RGB {
+        let y = color.luma
+        let shifted = Swift.min(Swift.max(y + 0.25 * v["gradingBalance"] / 100, 0), 1)
+        let e = pow(4, (50 - v["gradingBlending"]) / 50)
+        let shadows = pow(Swift.min(Swift.max(1 - 2 * shifted, 0), 1), e)
+        let highlights = pow(Swift.min(Swift.max(2 * shifted - 1, 0), 1), e)
+        let weights = ["Shadows": shadows, "Midtones": 1 - shadows - highlights, "Highlights": highlights, "Global": 1]
+        var out = color
+        for zone in gradingZones {
+            let w = weights[zone] ?? 0
+            let sat = v["grading" + zone + "Saturation"], lum = v["grading" + zone + "Luminance"]
+            guard w > 0, sat != 0 || lum != 0 else { continue }
+            out = out + tintDirection(hue: v["grading" + zone + "Hue"]) * (w * sat / 100 * 0.25)
+            out = out + RGB(1, 1, 1) * (w * lum / 100 * 0.15)
+        }
+        return out
+    }
+
+    /// The pure colour of a hue with its luma taken out: adding it tints without brightening.
+    static func tintDirection(hue: Double) -> RGB {
+        let c = rgb(hue: hue, saturation: 1, lightness: 0.5)
+        return c - RGB(1, 1, 1) * c.luma
     }
 
     // MARK: - Colour helpers

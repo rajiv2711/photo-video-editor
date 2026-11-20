@@ -230,4 +230,40 @@ final class ColorTests: XCTestCase {
         XCTAssertEqual(ColorLook.transform(red, look(["pointHue": 0, "pointVariance": -100])).r, red.r, accuracy: 1e-9,
                        "the target itself stays")
     }
+
+    // MARK: - Color grading
+
+    func testGradingNamesDontClashWithLight() {
+        XCTAssertEqual(parse("shadows 40"), [.set("shadows", 40)])
+        XCTAssertEqual(parse("shadows hue 220"), [.set("gradingShadowsHue", 220)])
+        XCTAssertEqual(parse("shadows saturation up"), [.nudge("gradingShadowsSaturation", 1)])
+        XCTAssertEqual(parse("highlights -30 highlights luminance 10"), [.set("highlights", -30), .set("gradingHighlightsLuminance", 10)])
+        XCTAssertEqual(parse("midtones hue 40"), [.set("gradingMidtonesHue", 40)])
+        XCTAssertEqual(parse("global saturation 20"), [.set("gradingGlobalSaturation", 20)])
+        XCTAssertEqual(parse("tone curve shadows 20"), [.set("curveShadows", 20)])
+        XCTAssertEqual(parse("balance 30"), [.set("gradingBalance", 30)])
+        XCTAssertEqual(parse("white balance shade"), [.set("whiteBalance", 4)])
+        XCTAssertEqual(parse("shadow up up up"), [.nudge("shadows", 3)])
+    }
+
+    func testGradingTintsOnlyItsZone() {
+        let v = look(["gradingShadowsSaturation": 100, "gradingShadowsHue": 240])
+        let dark = ColorLook.transform(RGB(0.1, 0.1, 0.1), v)
+        XCTAssertGreaterThan(dark.b, dark.r, "dark greys turn blue")
+        assertClose(dark.luma, 0.1, 1e-9, "tinting keeps luma")
+        XCTAssertEqual(ColorLook.transform(RGB(0.9, 0.9, 0.9), v), RGB(0.9, 0.9, 0.9), "highlights untouched")
+        let lit = ColorLook.transform(RGB(0.9, 0.9, 0.9), look(["gradingHighlightsLuminance": -100]))
+        assertClose(lit.r, 0.9 - 0.15 * 0.8, 1e-9)
+    }
+
+    func testGradingBalanceAndBlendingWidenTheShadows() {
+        let base = look(["gradingShadowsSaturation": 100])
+        let mid = RGB(0.35, 0.35, 0.35)
+        let plain = ColorLook.transform(mid, base).r
+        let balanced = ColorLook.transform(mid, look(["gradingShadowsSaturation": 100, "gradingBalance": -100])).r
+        let blended = ColorLook.transform(mid, look(["gradingShadowsSaturation": 100, "gradingBlending": 100])).r
+        XCTAssertGreaterThan(balanced, plain)
+        XCTAssertGreaterThan(blended, plain)
+        XCTAssertTrue(ColorLook.isIdentity { $0 == "gradingShadowsHue" ? 200 : $0 == "gradingBlending" ? 80 : nil })
+    }
 }

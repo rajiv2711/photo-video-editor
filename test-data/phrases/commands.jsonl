@@ -283,3 +283,34 @@
 {"group":"color","text":"variance -40","expect":[{"op":"set","control":"pointVariance","value":-40}]}
 {"group":"color","text":"less variance","expect":[{"op":"nudge","control":"pointVariance","steps":-1}]}
 {"group":"color","text":"point variance up by 20","expect":[{"op":"add","control":"pointVariance","value":20}]}
+{"group":"color","text":"shadows hue 200","expect":[{"op":"set","control":"gradingShadowsHue","value":200}]}
+{"group":"color","text":"more shadows hue","expect":[{"op":"nudge","control":"gradingShadowsHue","steps":1}]}
+{"group":"color","text":"shadows saturation 30","expect":[{"op":"set","control":"gradingShadowsSaturation","value":30}]}
+{"group":"color","text":"reset shadows saturation","expect":[{"op":"reset","control":"gradingShadowsSaturation"}]}
+{"group":"color","text":"shadows luminance -20","expect":[{"op":"set","control":"gradingShadowsLuminance","value":-20}]}
+{"group":"color","text":"grading shadows luminance down","expect":[{"op":"nudge","control":"gradingShadowsLuminance","steps":-1}]}
+{"group":"color","text":"midtones hue 40","expect":[{"op":"set","control":"gradingMidtonesHue","value":40}]}
+{"group":"color","text":"more midtones hue","expect":[{"op":"nudge","control":"gradingMidtonesHue","steps":1}]}
+{"group":"color","text":"midtones saturation 50","expect":[{"op":"set","control":"gradingMidtonesSaturation","value":50}]}
+{"group":"color","text":"reset midtones saturation","expect":[{"op":"reset","control":"gradingMidtonesSaturation"}]}
+{"group":"color","text":"midtones luminance 10","expect":[{"op":"set","control":"gradingMidtonesLuminance","value":10}]}
+{"group":"color","text":"grading midtones luminance down","expect":[{"op":"nudge","control":"gradingMidtonesLuminance","steps":-1}]}
+{"group":"color","text":"highlights hue 120","expect":[{"op":"set","control":"gradingHighlightsHue","value":120}]}
+{"group":"color","text":"more highlights hue","expect":[{"op":"nudge","control":"gradingHighlightsHue","steps":1}]}
+{"group":"color","text":"highlights saturation 20","expect":[{"op":"set","control":"gradingHighlightsSaturation","value":20}]}
+{"group":"color","text":"reset highlights saturation","expect":[{"op":"reset","control":"gradingHighlightsSaturation"}]}
+{"group":"color","text":"highlights luminance -30","expect":[{"op":"set","control":"gradingHighlightsLuminance","value":-30}]}
+{"group":"color","text":"grading highlights luminance down","expect":[{"op":"nudge","control":"gradingHighlightsLuminance","steps":-1}]}
+{"group":"color","text":"global hue 300","expect":[{"op":"set","control":"gradingGlobalHue","value":300}]}
+{"group":"color","text":"more global hue","expect":[{"op":"nudge","control":"gradingGlobalHue","steps":1}]}
+{"group":"color","text":"global saturation 15","expect":[{"op":"set","control":"gradingGlobalSaturation","value":15}]}
+{"group":"color","text":"reset global saturation","expect":[{"op":"reset","control":"gradingGlobalSaturation"}]}
+{"group":"color","text":"global luminance 25","expect":[{"op":"set","control":"gradingGlobalLuminance","value":25}]}
+{"group":"color","text":"grading global luminance down","expect":[{"op":"nudge","control":"gradingGlobalLuminance","steps":-1}]}
+{"group":"color","text":"blending 70","expect":[{"op":"set","control":"gradingBlending","value":70}]}
+{"group":"color","text":"blend less","expect":[{"op":"nudge","control":"gradingBlending","steps":-1}]}
+{"group":"color","text":"balance -30","expect":[{"op":"set","control":"gradingBalance","value":-30}]}
+{"group":"color","text":"grading balance up","expect":[{"op":"nudge","control":"gradingBalance","steps":1}]}
+{"group":"color","text":"shadows 20 shadows hue 220","expect":[{"op":"set","control":"shadows","value":20},{"op":"set","control":"gradingShadowsHue","value":220}]}
+{"group":"color","text":"highlights down highlights saturation 30","expect":[{"op":"nudge","control":"highlights","steps":-1},{"op":"set","control":"gradingHighlightsSaturation","value":30}]}
+{"group":"color","text":"shadow sat 40","expect":[{"op":"set","control":"gradingShadowsSaturation","value":40}]}
