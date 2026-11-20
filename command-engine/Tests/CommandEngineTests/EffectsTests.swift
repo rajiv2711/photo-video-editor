@@ -197,6 +197,12 @@ final class EffectsTests: XCTestCase {
         XCTAssertEqual(parse("halation 60"), [.set("halation", 60)])
     }
 
+    func testGlowStrength() {
+        XCTAssertEqual(Effects.glowStrength(0), 0)
+        XCTAssertEqual(Effects.glowStrength(1), 0.6, accuracy: 1e-12)
+        XCTAssertEqual(Effects.glowStrength(3), Effects.glowStrength(1))
+    }
+
     func testHalationComesFromTheBrightEndAndIsRed() {
         let table = Effects.halationSource()
         XCTAssertEqual(table[32], 0, "midtones send no light")

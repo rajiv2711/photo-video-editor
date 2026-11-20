@@ -60,13 +60,13 @@ final class EffectsRenderer {
             output = dehaze(output, extent: extent, strength: haze)
         }
 
-        // Glow: Core Image's soft bloom (2 % of the long side), in linear light like real light.
+        // Glow: a soft blurred copy (2 % of the long side) screened on (sRGB levels), so light spreads
+        // into the darker areas around it; screening never darkens, so no dark smear.
         let glow = v("glow") / 100
         if glow > 0 {
-            output = output.cropped(to: extent).clampedToExtent().applyingFilter("CIBloom", parameters: [
-                kCIInputRadiusKey: 0.02 * side,
-                kCIInputIntensityKey: glow,
-            ]).cropped(to: extent)
+            let encoded = Filters.encoded(output)
+            let soft = Filters.affine(Filters.blurred(encoded, radius: 0.02 * side, extent: extent), scale: Effects.glowStrength(glow))
+            output = Filters.linear(soft.applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: encoded]))
         }
 
         // Halation: film's red-orange halo around bright areas. The bright parts, blurred and tinted,

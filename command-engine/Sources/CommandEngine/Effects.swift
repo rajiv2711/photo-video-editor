@@ -106,6 +106,11 @@ public enum Effects {
 
     // MARK: - Glow
 
+    /// Glow (`amount` 0…1): how much of the blurred copy is screened on.
+    public static func glowStrength(_ amount: Double) -> Double {
+        0.6 * Swift.min(1, Swift.max(0, amount))
+    }
+
     /// Halation: how much light each brightness (sRGB luma) sends into the red halo; only the
     /// bright end does.
     public static func halationSource() -> [Double] {
