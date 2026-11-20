@@ -20,8 +20,9 @@ final class CommandInterpreterTests: XCTestCase {
         state.value(of: registry.control(id: id)!)
     }
 
-    func testBundledRegistryHasTheFirstThreeSliders() {
-        XCTAssertEqual(registry.controls.map(\.id), ["exposure", "contrast", "saturation"])
+    func testBundledRegistryStartsWithTheLightPanel() {
+        XCTAssertEqual(registry.controls.prefix(2).map(\.id), ["exposure", "contrast"])
+        XCTAssertEqual(registry.groups.first, "light")
     }
 
     func testRepeatedMoreStacksSteps() {

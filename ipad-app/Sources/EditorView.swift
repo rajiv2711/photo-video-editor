@@ -8,6 +8,8 @@ struct EditorView: View {
     @State private var command = ""
     @State private var showSettings = false
     @FocusState private var commandFocused: Bool
+    /// Open panels ("light") and sections ("light/Levels").
+    @State private var expanded: Set<String> = ["light", "color"]
 
     var body: some View {
         NavigationStack {
@@ -58,21 +60,12 @@ struct EditorView: View {
         }
     }
 
+    /// The control panels (Light, Color, …), grouped as in controls.json.
     private var panel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Adjust")
-                    .font(.headline)
-                ForEach(model.registry.controls) { control in
-                    SliderRow(
-                        control: control,
-                        value: Binding(
-                            get: { model.value(of: control) },
-                            set: { model.setFromSlider(control, to: $0) }
-                        ),
-                        isFocused: model.focusedControlID == control.id,
-                        onReset: { model.reset(control) }
-                    )
+                ForEach(model.registry.groups, id: \.self) { group in
+                    GroupPanel(model: model, group: group, expanded: $expanded)
                 }
                 Text("Double-tap a name to reset it.")
                     .font(.footnote)
@@ -82,6 +75,12 @@ struct EditorView: View {
         }
         .frame(width: 320)
         .background(.regularMaterial)
+        .onChange(of: model.focusedControlID) { _, id in
+            // Open the panel and section of a control named by voice or typing.
+            guard let id, let control = model.registry.control(id: id) else { return }
+            expanded.insert(control.group)
+            if let section = control.section { expanded.insert(control.group + "/" + section) }
+        }
     }
 
     private var commandBar: some View {
@@ -136,6 +135,106 @@ struct EditorView: View {
         model.run(command)
         command = ""
         commandFocused = true
+    }
+}
+
+/// One panel (Light, Color, …): its plain controls first, then each section as a fold-out.
+private struct GroupPanel: View {
+    @ObservedObject var model: EditorModel
+    let group: String
+    @Binding var expanded: Set<String>
+
+    var body: some View {
+        let controls = model.registry.controls(inGroup: group)
+        DisclosureGroup(isExpanded: isOpen(group)) {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(controls.filter { $0.section == nil }) { control in
+                    ControlRow(model: model, control: control)
+                }
+                ForEach(sections(of: controls), id: \.self) { section in
+                    DisclosureGroup(isExpanded: isOpen(group + "/" + section)) {
+                        SectionBody(model: model, controls: controls.filter { $0.section == section })
+                    } label: {
+                        Text(section).font(.subheadline.weight(.semibold))
+                    }
+                }
+            }
+            .padding(.top, 6)
+        } label: {
+            Text(group.prefix(1).uppercased() + group.dropFirst()).font(.headline)
+        }
+    }
+
+    private func isOpen(_ key: String) -> Binding<Bool> {
+        Binding(
+            get: { expanded.contains(key) },
+            set: { open in
+                if open { expanded.insert(key) } else { expanded.remove(key) }
+            }
+        )
+    }
+
+    private func sections(of controls: [Control]) -> [String] {
+        var out: [String] = []
+        for control in controls {
+            if let section = control.section, !out.contains(section) { out.append(section) }
+        }
+        return out
+    }
+}
+
+/// The controls of one section, e.g. "Levels".
+private struct SectionBody: View {
+    @ObservedObject var model: EditorModel
+    let controls: [Control]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(controls) { control in
+                ControlRow(model: model, control: control)
+            }
+        }
+    }
+}
+
+/// The simplest working control for each kind: slider, switch, picker or button.
+private struct ControlRow: View {
+    @ObservedObject var model: EditorModel
+    let control: Control
+
+    var body: some View {
+        switch control.kind {
+        case .toggle:
+            Toggle(control.label, isOn: Binding(
+                get: { model.value(of: control) != 0 },
+                set: { model.setFromSlider(control, to: $0 ? 1 : 0) }
+            ))
+            .padding(10)
+        case .action:
+            Button(control.label) { model.runAction(control) }
+                .buttonStyle(.bordered)
+                .padding(.horizontal, 10)
+        case .choice:
+            Picker(control.label, selection: Binding(
+                get: { Int(model.value(of: control)) },
+                set: { model.setFromSlider(control, to: Double($0)) }
+            )) {
+                ForEach(Array(control.options.enumerated()), id: \.offset) { item in
+                    Text(item.element.label).tag(item.offset)
+                }
+            }
+            .padding(.horizontal, 10)
+        case .slider, .curvePoint:
+            SliderRow(
+                control: control,
+                value: Binding(
+                    get: { model.value(of: control) },
+                    set: { model.setFromSlider(control, to: $0) }
+                ),
+                isFocused: model.focusedControlID == control.id,
+                onReset: { model.reset(control) }
+            )
+        }
     }
 }
 

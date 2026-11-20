@@ -1,0 +1,107 @@
+import Foundation
+
+/// Tone math for the Light panel, shared by the iPad renderer and the Linux tests.
+///
+/// The global tone controls (Highlights brightening so far; later Whites, Blacks, curves…) become one
+/// lookup table per colour channel, applied in a single Core Image pass (CIColorCurves). Inputs and
+/// outputs are sRGB-encoded levels (0 = black, 1 = SDR white), i.e. what the eye sees.
+///
+///     ToneCurve.table(value).red[i]   // output for input i / (size - 1) * maxInput
+///
+/// `value` returns a control's current value, or nil when the control isn't in controls.json
+/// (it then counts as untouched).
+public enum ToneCurve {
+    /// One lookup table per channel, sampled at `size` evenly spaced inputs over 0…maxInput.
+    public struct Table: Equatable {
+        public let maxInput: Double
+        public var red: [Double]
+        public var green: [Double]
+        public var blue: [Double]
+
+        /// Interleaved RGB floats, the layout CIColorCurves expects.
+        public var interleaved: [Float] {
+            var out: [Float] = []
+            out.reserveCapacity(red.count * 3)
+            for i in red.indices {
+                out += [Float(red[i]), Float(green[i]), Float(blue[i])]
+            }
+            return out
+        }
+
+        /// Output of one channel's table for an input level (linear interpolation between samples).
+        public func lookup(_ x: Double, channel: [Double]) -> Double {
+            let t = Swift.min(Swift.max(x / maxInput, 0), 1) * Double(channel.count - 1)
+            let i = Swift.min(Int(t), channel.count - 2)
+            return channel[i] + (channel[i + 1] - channel[i]) * (t - Double(i))
+        }
+    }
+
+    /// Control ids that feed the table; when all are at their default the table is skipped.
+    public static let controlIDs: [String] = ["highlights"]
+
+    /// The value of each tone control that leaves the picture untouched.
+    public static func neutral(_ id: String) -> Double {
+        0
+    }
+
+    /// Whether every tone control is at its neutral value, so the table can be skipped.
+    public static func isIdentity(_ value: (String) -> Double?) -> Bool {
+        controlIDs.allSatisfy { (value($0) ?? neutral($0)) == neutral($0) }
+    }
+
+    /// The tone lookup tables for the current control values. `maxInput` above 1 keeps HDR levels
+    /// brighter than white: above 1 the curve continues with slope 1.
+    public static func table(_ value: (String) -> Double?, size: Int = 1024, maxInput: Double = 1) -> Table {
+        var snapshot: [String: Double] = [:]
+        for id in controlIDs { snapshot[id] = value(id) ?? neutral(id) }
+        let v = Values(values: snapshot)
+        var red: [Double] = [], green: [Double] = [], blue: [Double] = []
+        let top = v.channels(1)
+        for i in 0..<size {
+            let x = Double(i) / Double(size - 1) * maxInput
+            let y: (Double, Double, Double)
+            if x <= 1 {
+                y = v.channels(x)
+            } else {
+                y = (top.0 + x - 1, top.1 + x - 1, top.2 + x - 1)
+            }
+            red.append(Swift.min(Swift.max(y.0, 0), maxInput))
+            green.append(Swift.min(Swift.max(y.1, 0), maxInput))
+            blue.append(Swift.min(Swift.max(y.2, 0), maxInput))
+        }
+        return Table(maxInput: maxInput, red: monotone(red), green: monotone(green), blue: monotone(blue))
+    }
+
+    /// The controls' values and the tone steps, in order.
+    private struct Values {
+        let values: [String: Double]
+
+        func value(_ id: String) -> Double {
+            values[id] ?? ToneCurve.neutral(id)
+        }
+
+        /// Output (red, green, blue) for one input level 0…1.
+        func channels(_ x: Double) -> (Double, Double, Double) {
+            let y = basic(x)
+            return (y, y, y)
+        }
+
+        /// Highlights (brightening only; darkening is CIHighlightShadowAdjust in the renderer).
+        func basic(_ x: Double) -> Double {
+            let highlights = Swift.max(value("highlights"), 0) / 100
+            var y = x
+            if highlights > 0 {
+                // Bump peaking at 3/4, zero at 0 and 1.
+                y += 0.1 * highlights * (256.0 / 27.0) * x * x * x * (1 - x)
+            }
+            return y
+        }
+    }
+
+    /// Never lets a table go down (keeps every curve monotone after clamping).
+    private static func monotone(_ values: [Double]) -> [Double] {
+        var out = values
+        for i in out.indices.dropFirst() where out[i] < out[i - 1] { out[i] = out[i - 1] }
+        return out
+    }
+}

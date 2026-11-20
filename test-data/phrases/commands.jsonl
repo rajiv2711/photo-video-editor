@@ -127,8 +127,13 @@
 {"group":"out-of-scope","text":"undo","expect":[{"op":"unknown","word":"undo"}]}
 {"group":"out-of-scope","text":"hello","expect":[{"op":"unknown","word":"hello"}]}
 {"group":"out-of-scope","text":"shadows more","expect":[{"op":"unknown","word":"shadows"}]}
-{"group":"out-of-scope","text":"highlights up","expect":[{"op":"unknown","word":"highlights"}]}
 {"group":"out-of-scope","text":"blur more","expect":[{"op":"unknown","word":"blur"}]}
 {"group":"out-of-scope","text":"temperature more","expect":[{"op":"unknown","word":"temperature"}]}
 {"group":"out-of-scope","text":"clarity up","expect":[{"op":"unknown","word":"clarity"}]}
 {"group":"out-of-scope","text":"noise reduction more","expect":[{"op":"unknown","word":"noise"},{"op":"unknown","word":"reduction"}]}
+{"group":"light","text":"highlights up","expect":[{"op":"nudge","control":"highlights","steps":1}]}
+{"group":"light","text":"highlights more","expect":[{"op":"nudge","control":"highlights","steps":1}]}
+{"group":"light","text":"highlights -40","expect":[{"op":"set","control":"highlights","value":-40}]}
+{"group":"light","text":"reset highlights","expect":[{"op":"reset","control":"highlights"}]}
+{"group":"light","text":"highlight down down","expect":[{"op":"nudge","control":"highlights","steps":-2}]}
+{"group":"light","text":"hilights less","expect":[{"op":"nudge","control":"highlights","steps":-1}]}

@@ -2,32 +2,26 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import UIKit
 
-/// Maps control values (as defined in controls.json) onto Core Image filters.
+/// Turns control values (see controls.json) into Core Image filters, one panel at a time in
+/// Lightroom's order: white balance → light (exposure, tone) → color → effects → detail → optics.
+/// Each panel has its own file in Rendering/ (LightRenderer.swift, ColorRenderer.swift, …).
 final class PhotoRenderer {
-    private let context = CIContext()
+    let context: CIContext
+    private let light: LightRenderer
 
-    func apply(to image: CIImage, value: (String) -> Double) -> CIImage {
+    init() {
+        let context = CIContext()
+        self.context = context
+        self.light = LightRenderer(context: context)
+    }
+
+    /// `value` gives a control's current value by id, or nil when controls.json has no such control.
+    func apply(to image: CIImage, value: (String) -> Double?) -> CIImage {
         var output = image
-
-        let exposure = value("exposure")  // EV, −3…3
-        if exposure != 0 {
-            let filter = CIFilter.exposureAdjust()
-            filter.inputImage = output
-            filter.ev = Float(exposure)
-            output = filter.outputImage ?? output
-        }
-
-        let contrast = value("contrast")      // −100…100 → Core Image 0.5…1.5
-        let saturation = value("saturation")  // −100…100 → Core Image 0…2
-        if contrast != 0 || saturation != 0 {
-            let filter = CIFilter.colorControls()
-            filter.inputImage = output
-            filter.brightness = 0
-            filter.contrast = Float(1 + contrast / 100 * 0.5)
-            filter.saturation = Float(1 + saturation / 100)
-            output = filter.outputImage ?? output
-        }
-
+        // (White balance goes first here once the Color panel has it.)
+        output = light.apply(output, value: value)
+        output = ColorRenderer.apply(output, value: value)
+        // (Effects, detail and optics follow here.)
         return output.cropped(to: image.extent)
     }
 

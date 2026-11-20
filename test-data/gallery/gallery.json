@@ -7,6 +7,8 @@
     {"id": "exposure-minus", "command": "exposure -1", "control": "exposure", "expect": [{"metric": "mean_luma", "dir": "down"}]},
     {"id": "contrast-plus", "command": "contrast 100", "control": "contrast", "expect": [{"metric": "p95_luma", "dir": "up"}, {"metric": "p5_luma", "dir": "down"}]},
     {"id": "contrast-minus", "command": "contrast -100", "control": "contrast", "expect": [{"metric": "p95_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]},
+    {"id": "highlights-minus", "command": "highlights -100", "control": "highlights", "expect": [{"metric": "p95_luma", "dir": "down"}]},
+    {"id": "highlights-plus", "command": "highlights 100", "control": "highlights", "expect": [{"metric": "p75_luma", "dir": "up"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

@@ -108,8 +108,35 @@ enum RenderGallery {
                 peak: model.renderer.peak(of: edited)
             ))
         }
+        writeFilterAttributes(to: folder)
         let size = small.extent.integral.size
         write(Manifest(photo: "test.jpg", width: Int(size.width), height: Int(size.height), cases: entries, error: nil), to: folder)
+    }
+
+    /// Core Image filters whose parameter ranges we rely on; their attributes on this iOS version
+    /// go to filters.txt (reports/ci/gallery/filters.txt on the laptop).
+    static let filtersToDescribe = ["CIHighlightShadowAdjust", "CIColorCurves", "CIAreaHistogram", "CIUnsharpMask"]
+
+    private static func writeFilterAttributes(to folder: URL) {
+        var text = ""
+        for name in filtersToDescribe {
+            guard let filter = CIFilter(name: name) else {
+                text += "\(name): not available\n\n"
+                continue
+            }
+            text += "\(name)\n"
+            for key in filter.inputKeys {
+                let attributes = (filter.attributes[key] as? [String: Any]) ?? [:]
+                let shown = attributes
+                    .filter { ["CIAttributeDefault", "CIAttributeMin", "CIAttributeMax", "CIAttributeSliderMin",
+                               "CIAttributeSliderMax", "CIAttributeIdentity"].contains($0.key) }
+                    .map { "\($0.key.replacingOccurrences(of: "CIAttribute", with: "")) \($0.value)" }
+                    .sorted()
+                text += "  \(key): \(shown.joined(separator: ", "))\n"
+            }
+            text += "\n"
+        }
+        try? Data(text.utf8).write(to: folder.appendingPathComponent("filters.txt"))
     }
 
     /// The manifest is written last (and atomically): the cloud build waits for it.

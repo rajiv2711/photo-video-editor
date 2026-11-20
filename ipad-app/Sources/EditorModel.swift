@@ -95,6 +95,14 @@ final class EditorModel: ObservableObject {
         focusedControlID = control.id
     }
 
+    /// A button for an action control (e.g. Auto) was tapped.
+    func runAction(_ control: Control) {
+        let outcomes = interpreter.apply([.run(control.id)], state: &state)
+        focusedControlID = interpreter.lastControlID
+        feedback = describe(outcomes)
+        render()
+    }
+
     func choose(_ control: Control) {
         focus(control)
         feedback = Feedback(text: "\(control.label) selected. Say “more” or “less”.")
@@ -186,10 +194,10 @@ final class EditorModel: ObservableObject {
         renderer.apply(to: previewSource, value: currentValue)
     }
 
-    /// Looks up a control's current value by id; unknown ids read as 0.
-    private var currentValue: (String) -> Double {
+    /// Looks up a control's current value by id; nil when controls.json has no such control.
+    private var currentValue: (String) -> Double? {
         { [state, registry] id in
-            registry.control(id: id).map { state.value(of: $0) } ?? 0
+            registry.control(id: id).map { state.value(of: $0) }
         }
     }
 
