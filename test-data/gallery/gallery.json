@@ -188,6 +188,9 @@
     {"id": "film-negative-scan", "command": "film negative on", "source": "negative", "control": "filmNegative", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "negative-cast"}, {"metric": "mean_sat", "dir": "down", "vs": "negative-cast"}, {"metric": "mean_sat", "dir": "same", "min": 2}]},
     {"id": "film-negative-photo", "command": "film negative", "control": "filmNegative", "expect": [{"metric": "mean_luma", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
-    {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
+    {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]},
+
+    {"id": "texture-plus", "command": "texture 100", "control": "texture", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_luma", "dir": "same"}]},
+    {"id": "texture-minus", "command": "texture -100", "control": "texture", "expect": [{"metric": "edge", "dir": "down"}, {"metric": "mean_luma", "dir": "same"}]}
   ]
 }

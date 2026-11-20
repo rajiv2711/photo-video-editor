@@ -485,3 +485,7 @@
 {"group":"color","text":"film negative off","expect":[{"op":"set","control":"filmNegative","value":0}]}
 {"group":"color","text":"turn on negative conversion","expect":[{"op":"set","control":"filmNegative","value":1}]}
 {"group":"color","text":"convert negative","expect":[{"op":"set","control":"filmNegative","value":1}]}
+{"group":"effects","text":"texture more","expect":[{"op":"nudge","control":"texture","steps":1}]}
+{"group":"effects","text":"texture -40","expect":[{"op":"set","control":"texture","value":-40}]}
+{"group":"effects","text":"reset texture","expect":[{"op":"reset","control":"texture"}]}
+{"group":"effects","text":"textures up by 20","expect":[{"op":"add","control":"texture","value":20}]}

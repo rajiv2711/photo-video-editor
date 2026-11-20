@@ -9,12 +9,14 @@ final class PhotoRenderer {
     let context: CIContext
     private let light: LightRenderer
     private let color: ColorRenderer
+    private let effects: EffectsRenderer
 
     init() {
         let context = CIContext()
         self.context = context
         self.light = LightRenderer(context: context)
         self.color = ColorRenderer(context: context)
+        self.effects = EffectsRenderer(context: context)
     }
 
     /// `value` gives a control's current value by id, or nil when controls.json has no such control.
@@ -25,7 +27,7 @@ final class PhotoRenderer {
         output = color.input(output, value: value)  // film negative, white balance
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: image.extent, value: value)
-        // (Effects, detail and optics follow here.)
+        output = effects.apply(output, extent: image.extent, value: value)
         if !hdr {
             output = output.applyingFilter("CIColorClamp")
         }

@@ -55,7 +55,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 ### Effects
 
-- [ ] 40. **Texture** — enhance or smooth medium-size detail
+- [x] 40. **Texture** — enhance or smooth medium-size detail
 - [ ] 41. **Clarity** — midtone local contrast
 - [ ] 42. **Dehaze** — remove or add haze
 - [ ] 43. **Vignette** — darken/lighten edges; midpoint, roundness, feather
