@@ -1,5 +1,5 @@
 {
-  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak. Directions: up, down, changed, same.",
+  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
   "cases": [
     {"id": "base", "command": "", "expect": []},
     {"id": "warm-cast", "command": "", "source": "warm", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},

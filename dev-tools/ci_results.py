@@ -33,13 +33,16 @@ OUT = REPORTS / "ci"
 CONTROLS = ROOT / "command-engine" / "Sources" / "CommandEngine" / "Resources" / "controls.json"
 BRANCH = "origin/ci-renders"
 
-# Smallest change that counts, per metric (luma and RGB on 0-255, saturation on 0-100, peak in linear light).
-THRESHOLDS = {"mean_sat": 0.5, "peak": 0.02}
+# Smallest change that counts, per metric (luma and RGB on 0-255, saturation on 0-100, peak in linear light;
+# edge, local_contrast and fringe are small averages on 0-255).
+THRESHOLDS = {"mean_sat": 0.5, "peak": 0.02, "edge": 0.3, "local_contrast": 0.3, "fringe": 0.5}
 DEFAULT_THRESHOLD = 1.0
 METRIC_NAMES = {
     "mean_luma": "mean luma", "p5_luma": "p5 luma", "p25_luma": "p25 luma", "p50_luma": "median luma",
     "p75_luma": "p75 luma", "p95_luma": "p95 luma", "mean_sat": "saturation", "mean_r": "mean red",
     "mean_g": "mean green", "mean_b": "mean blue", "diff": "pixel change", "peak": "peak (linear)",
+    "edge": "fine detail", "local_contrast": "local contrast", "fringe": "edge colour",
+    "corner_luma": "corner luma", "center_luma": "centre luma",
 }
 STEPS = [("linux_tests", "Linux tests"), ("generate", "Xcode project"), ("build", "Build"),
          ("install", "Install"), ("gallery", "Gallery"), ("screenshots", "Screenshots")]
@@ -66,6 +69,42 @@ def extract() -> None:
         tar.extractall(OUT, filter="data")
 
 
+def box(a: np.ndarray, r: int) -> np.ndarray:
+    """Mean over a (2r+1)-pixel square around each pixel (edges repeated)."""
+    p = np.pad(a, r, mode="edge")
+    c = np.pad(np.cumsum(np.cumsum(p, 0), 1), ((1, 0), (1, 0)))
+    n = 2 * r + 1
+    return (c[n:, n:] - c[:-n, n:] - c[n:, :-n] + c[:-n, :-n]) / (n * n)
+
+
+def detail_stats(a: np.ndarray, luma: np.ndarray) -> dict:
+    """Measures for the Effects, Detail and Optics panels (all on 0-255):
+    edge: fine detail, the mean absolute Laplacian of luma (sharpening, texture, noise, grain);
+    local_contrast: mean distance of luma from its blurred self, about 8 px (clarity, high pass);
+    fringe: mean colourfulness (brightest - darkest channel) within 3 px of strong edges (CA, defringe);
+    corner_luma / center_luma: mean luma of the four corners (15 % boxes) / the middle 30 % (vignettes)."""
+    L = luma
+    lap = np.abs(4 * L[1:-1, 1:-1] - L[:-2, 1:-1] - L[2:, 1:-1] - L[1:-1, :-2] - L[1:-1, 2:])
+    smooth = box(box(box(L, 6), 6), 6)
+    gy, gx = np.gradient(L)
+    strong = np.hypot(gx, gy) > 25
+    near = strong.copy()
+    for dy in range(-3, 4):
+        for dx in range(-3, 4):
+            near |= np.roll(np.roll(strong, dy, 0), dx, 1)
+    chroma = a.max(axis=2) - a.min(axis=2)
+    h, w = L.shape
+    ch, cw = max(1, int(h * 0.15)), max(1, int(w * 0.15))
+    corners = np.concatenate([L[:ch, :cw].ravel(), L[:ch, -cw:].ravel(), L[-ch:, :cw].ravel(), L[-ch:, -cw:].ravel()])
+    return {
+        "edge": lap[2:-2, 2:-2].mean(),
+        "local_contrast": np.abs(L - smooth)[8:-8, 8:-8].mean(),
+        "fringe": chroma[near].mean() if near.any() else 0.0,
+        "corner_luma": corners.mean(),
+        "center_luma": L[int(h * 0.35):int(h * 0.65), int(w * 0.35):int(w * 0.65)].mean(),
+    }
+
+
 def measure(path: Path) -> tuple[dict, np.ndarray]:
     a = np.asarray(Image.open(path).convert("RGB"), dtype=np.float64)
     luma = a @ np.array([0.2126, 0.7152, 0.0722])
@@ -76,6 +115,7 @@ def measure(path: Path) -> tuple[dict, np.ndarray]:
         "mean_luma": luma.mean(), "p5_luma": p5, "p25_luma": p25, "p50_luma": p50, "p75_luma": p75,
         "p95_luma": p95, "mean_sat": sat.mean(),
         "mean_r": a[..., 0].mean(), "mean_g": a[..., 1].mean(), "mean_b": a[..., 2].mean(),
+        **detail_stats(a, luma),
     }
     return stats, a
 
@@ -173,7 +213,7 @@ def main() -> int:
             ok, delta = check(e, value, ref)
             ok_all &= ok
             vs = "" if ref_id == "base" else f" vs {ref_id}"
-            digits = 3 if e["metric"] == "peak" else 1
+            digits = 3 if e["metric"] == "peak" else 2 if e["metric"] in ("edge", "local_contrast", "fringe") else 1
             checks.append((f"{METRIC_NAMES.get(e['metric'], e['metric'])} {e['dir']}{vs}: "
                            f"{ref:.{digits}f} → {value:.{digits}f} ({delta:+.{digits}f})", ok))
         failed += 0 if ok_all else 1
