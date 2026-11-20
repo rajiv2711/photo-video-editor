@@ -3,7 +3,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 
 /// The Color panel, in Lightroom's order. `input` runs before the Light panel (white balance);
-/// `apply` runs after it (vibrance, saturation, hue, the colour cube, match color, LUT).
+/// `apply` runs after it (vibrance, saturation, hue, the colour cube, match color, LUT, invert).
 /// The colour math lives in CommandEngine (WhiteBalance, ColorLook) so it is tested on Linux.
 final class ColorRenderer {
     let context: CIContext
@@ -60,6 +60,13 @@ final class ColorRenderer {
         output = colorCube(output, value: value)
         output = matchColor(output, extent: extent, value: value)
         output = lut(output, value: value)
+
+        // Invert: a photo negative of the levels the eye sees (sRGB), so mid-grey stays mid-grey.
+        if (value("invert") ?? 0) != 0 {
+            output = output.applyingFilter("CILinearToSRGBToneCurve")
+                .applyingFilter("CIColorInvert")
+                .applyingFilter("CISRGBToneCurveToLinear")
+        }
 
         return output
     }

@@ -50,7 +50,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 35. **LUT** — apply .cube / .3dl colour lookup tables
 - [x] 36. **Profiles** — base look (Standard, Vivid, Portrait, Landscape, Mono…) with Amount
 - [ ] 37. **Adaptive profile** — AI picks a base look for this scene **AI · later**
-- [ ] 38. **Invert** — photo negative
+- [x] 38. **Invert** — photo negative
 - [ ] 39. **Film negative conversion** — turn scanned film negatives into positives
 
 ### Effects

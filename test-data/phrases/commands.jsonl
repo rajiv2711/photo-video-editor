@@ -477,3 +477,7 @@
 {"group":"color","text":"profile standard","expect":[{"op":"set","control":"profile","value":0}]}
 {"group":"color","text":"profile amount 150","expect":[{"op":"set","control":"profileAmount","value":150}]}
 {"group":"color","text":"profile strength down","expect":[{"op":"nudge","control":"profileAmount","steps":-1}]}
+{"group":"color","text":"invert","expect":[{"op":"set","control":"invert","value":1}]}
+{"group":"color","text":"invert off","expect":[{"op":"set","control":"invert","value":0}]}
+{"group":"color","text":"turn on negative","expect":[{"op":"set","control":"invert","value":1}]}
+{"group":"color","text":"reset invert","expect":[{"op":"reset","control":"invert"}]}
