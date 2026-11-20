@@ -32,7 +32,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 17. **Temperature** — blue ↔ yellow
 - [x] 18. **Tint** — green ↔ magenta
 - [x] 19. **White balance picker** — tap something that should be neutral grey
-- [ ] 20. **Vibrance** — boost muted colours, protect skin
+- [x] 20. **Vibrance** — boost muted colours, protect skin
 - [x] 21. **Saturation** — intensity of all colours
 - [ ] 22. **Hue** — rotate all colours around the colour wheel
 - [ ] 23. **Color mixer (HSL)** — hue, saturation, luminance for 8 colour bands

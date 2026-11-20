@@ -1,7 +1,8 @@
 import Foundation
 
 /// Finds the control a spoken or typed word refers to, tolerating small mistakes
-/// ("contrst", "satur") and synonyms ("colour" → Saturation).
+/// ("contrst", "satur"), synonyms ("vividness" → Saturation) and plurals ("colours" → "colour").
+/// A word that fits several controls equally ("colour": Vibrance or Saturation) is ambiguous.
 public struct NameMatcher {
     public enum Match: Equatable {
         case found(Control)
@@ -42,7 +43,10 @@ public struct NameMatcher {
             }
         }
         switch best.count {
-        case 0: return .none
+        case 0:
+            // A plural of a near-name ("colours" → "colour") reads like the singular.
+            if phrase.count > 4, phrase.hasSuffix("s") { return match(String(phrase.dropLast())) }
+            return .none
         case 1: return .found(best[0].control)
         default: return .ambiguous(best.map(\.control))
         }

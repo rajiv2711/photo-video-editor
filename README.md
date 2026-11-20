@@ -73,7 +73,8 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `exposure 0.5` · `contrast up by 20` | Set to a value · change by an amount |
 | `saturation less exposure more` | Several controls at once |
 | `contrast reset` · `reset all` | Back to defaults |
-| `contrst more` · `colour down` | Typos and synonyms are matched |
+| `contrst more` · `vividness down` | Typos and synonyms are matched |
+| `colour more` | Fits Vibrance and Saturation: the app asks which |
 | `reset highlights` · `more contrast` | Verb first works too |
 | `tone curve shadows 20` · `curve 50 60` · `red curve 75 up` | Multi-word names; point curve: point 50 → output 60 |
 | `input black 20` · `gamma 1.5` | Levels |

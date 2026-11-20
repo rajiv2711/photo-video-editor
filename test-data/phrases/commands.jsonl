@@ -82,10 +82,10 @@
 {"group":"synonyms","text":"brightness more","expect":[{"op":"nudge","control":"brightness","steps":1}]}
 {"group":"synonyms","text":"bright up","expect":[{"op":"nudge","control":"brightness","steps":1}]}
 {"group":"synonyms","text":"light up","expect":[{"op":"nudge","control":"curveLights","steps":1}]}
-{"group":"synonyms","text":"colour less","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
-{"group":"synonyms","text":"color more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
-{"group":"synonyms","text":"colours up","expect":[{"op":"nudge","control":"saturation","steps":1}]}
-{"group":"synonyms","text":"colors more more","expect":[{"op":"nudge","control":"saturation","steps":2}]}
+{"group":"synonyms","text":"colour less","expect":[{"op":"ambiguous","word":"colour","candidates":["vibrance","saturation"]}]}
+{"group":"synonyms","text":"color more","expect":[{"op":"ambiguous","word":"color","candidates":["vibrance","saturation"]}]}
+{"group":"synonyms","text":"colours up","expect":[{"op":"ambiguous","word":"colours","candidates":["vibrance","saturation"]}]}
+{"group":"synonyms","text":"colors more more","expect":[{"op":"ambiguous","word":"colors","candidates":["vibrance","saturation"]}]}
 {"group":"synonyms","text":"vividness down","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
 {"group":"synonyms","text":"punch more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
 {"group":"synonyms","text":"brightness 20","expect":[{"op":"set","control":"brightness","value":20}]}
@@ -114,7 +114,7 @@
 {"group":"mishears","text":"exposer up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
 {"group":"mishears","text":"expo sure more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
 {"group":"near-names","text":"contrasts more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
-{"group":"near-names","text":"vibrance more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
+{"group":"near-names","text":"vibrance more","expect":[{"op":"nudge","control":"vibrance","steps":1}]}
 {"group":"near-names","text":"colorfulness up","expect":[{"op":"nudge","control":"saturation","steps":1}]}
 {"group":"near-names","text":"saturated more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
 {"group":"near-names","text":"lightness up","expect":[{"op":"nudge","control":"brightness","steps":1}]}
@@ -205,3 +205,8 @@
 {"group":"color","text":"white balance picker","expect":[{"op":"run","control":"wbPicker"}]}
 {"group":"color","text":"pick white","expect":[{"op":"run","control":"wbPicker"}]}
 {"group":"color","text":"eyedropper","expect":[{"op":"run","control":"wbPicker"}]}
+{"group":"color","text":"vibrance 40","expect":[{"op":"set","control":"vibrance","value":40}]}
+{"group":"color","text":"less vibrance","expect":[{"op":"nudge","control":"vibrance","steps":-1}]}
+{"group":"color","text":"reset vibrance","expect":[{"op":"reset","control":"vibrance"}]}
+{"group":"color","text":"vibrance up saturation down","expect":[{"op":"nudge","control":"vibrance","steps":1},{"op":"nudge","control":"saturation","steps":-1}]}
+{"group":"color","text":"colour saturation 30","expect":[{"op":"set","control":"saturation","value":30}]}

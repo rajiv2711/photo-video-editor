@@ -3,7 +3,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 
 /// The Color panel, in Lightroom's order. `input` runs before the Light panel (white balance);
-/// `apply` runs after it (saturation, …). The colour math lives in CommandEngine (WhiteBalance,
+/// `apply` runs after it (vibrance, saturation, …). The colour math lives in CommandEngine (WhiteBalance,
 /// …) so it is tested on Linux.
 struct ColorRenderer {
     let context: CIContext
@@ -16,6 +16,15 @@ struct ColorRenderer {
     /// Steps that come after the Light panel.
     func apply(_ image: CIImage, value: (String) -> Double?) -> CIImage {
         var output = image
+
+        // Vibrance: boosts muted colours more than strong ones, and spares skin tones.
+        let vibrance = value("vibrance") ?? 0  // −100…100 → Core Image −1…1
+        if vibrance != 0 {
+            let filter = CIFilter.vibrance()
+            filter.inputImage = output
+            filter.amount = Float(vibrance / 100)
+            output = filter.outputImage ?? output
+        }
 
         let saturation = value("saturation") ?? 0  // −100…100 → Core Image 0…2
         if saturation != 0 {

@@ -76,7 +76,10 @@ final class CommandInterpreterTests: XCTestCase {
     func testTyposPrefixesAndSynonyms() {
         XCTAssertEqual(run("contrst more"), [.changed(controlID: "contrast", from: 0, to: 5)])
         XCTAssertEqual(run("satur up"), [.changed(controlID: "saturation", from: 0, to: 5)])
-        XCTAssertEqual(run("colour down"), [.changed(controlID: "saturation", from: 5, to: 0)])
+        XCTAssertEqual(run("vividness down"), [.changed(controlID: "saturation", from: 5, to: 0)])
+        // "colour" fits Vibrance and Saturation alike: the user picks.
+        XCTAssertEqual(run("colour down"), [.ambiguous(word: "colour", candidateIDs: ["vibrance", "saturation"])])
+        XCTAssertEqual(run("colours up"), [.ambiguous(word: "colours", candidateIDs: ["vibrance", "saturation"])])
     }
 
     func testFillerWordsAreIgnored() {

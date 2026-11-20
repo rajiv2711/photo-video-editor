@@ -48,6 +48,8 @@
     {"id": "tint-plus", "command": "tint 80", "control": "tint", "expect": [{"metric": "mean_g", "dir": "down"}]},
     {"id": "tint-minus", "command": "tint -80", "control": "tint", "expect": [{"metric": "mean_g", "dir": "up"}, {"metric": "mean_r", "dir": "down"}]},
     {"id": "wb-picker", "command": "temperature 80 white balance picker", "tap": [0.85, 0.08], "control": "wbPicker", "expect": [{"metric": "mean_b", "dir": "up", "vs": "temperature-plus"}, {"metric": "diff", "dir": "same"}]},
+    {"id": "vibrance-plus", "command": "vibrance 100", "control": "vibrance", "expect": [{"metric": "mean_sat", "dir": "up"}]},
+    {"id": "vibrance-minus", "command": "vibrance -100", "source": "chart", "control": "vibrance", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]
