@@ -32,11 +32,11 @@ final class CommandParserTests: XCTestCase {
         XCTAssertEqual(parser.parse("more contrast"), [.nudge("contrast", 1)])
         XCTAssertEqual(parser.parse("raise exposure by 0.5"), [.add("exposure", 0.5)])
         XCTAssertEqual(parser.parse("more contrast saturation less"), [.nudge("contrast", 1), .nudge("saturation", -1)])
-        XCTAssertEqual(parser.parse("add a vignette"), [.unknown("vignette")])
+        XCTAssertEqual(parser.parse("add a wobble"), [.unknown("wobble")])
     }
 
     func testUnknownWordStopsLaterActions() {
-        XCTAssertEqual(parser.parse("vignette more"), [.unknown("vignette")])
+        XCTAssertEqual(parser.parse("wobble more"), [.unknown("wobble")])
     }
 
     func testJSONShapeIsCompactAndOmitsEmptyFields() {
@@ -56,8 +56,8 @@ final class CommandParserTests: XCTestCase {
         var state = EditState()
         var focus: String?
         XCTAssertEqual(
-            applier.apply([.set("contrast", 20), .nudge("contrast", 1), .nudge("vignette", 1)], state: &state, focus: &focus),
-            [.changed(controlID: "contrast", from: 0, to: 25), .unknown(word: "vignette")]
+            applier.apply([.set("contrast", 20), .nudge("contrast", 1), .nudge("wobble", 1)], state: &state, focus: &focus),
+            [.changed(controlID: "contrast", from: 0, to: 25), .unknown(word: "wobble")]
         )
         XCTAssertEqual(focus, "contrast")
     }

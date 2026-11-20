@@ -196,6 +196,13 @@
     {"id": "clarity-minus", "command": "clarity -100", "control": "clarity", "expect": [{"metric": "local_contrast", "dir": "down"}]},
     {"id": "haze-cast", "command": "", "source": "haze", "expect": [{"metric": "p5_luma", "dir": "up"}, {"metric": "local_contrast", "dir": "down"}]},
     {"id": "dehaze-plus", "command": "dehaze 100", "source": "haze", "control": "dehaze", "expect": [{"metric": "p5_luma", "dir": "down", "vs": "haze-cast"}, {"metric": "local_contrast", "dir": "up", "vs": "haze-cast"}, {"metric": "mean_sat", "dir": "up", "vs": "haze-cast"}]},
-    {"id": "dehaze-minus", "command": "dehaze -100", "control": "dehaze", "expect": [{"metric": "p5_luma", "dir": "up"}, {"metric": "local_contrast", "dir": "down"}]}
+    {"id": "dehaze-minus", "command": "dehaze -100", "control": "dehaze", "expect": [{"metric": "p5_luma", "dir": "up"}, {"metric": "local_contrast", "dir": "down"}]},
+    {"id": "vignette-minus", "command": "vignette -100", "control": "vignette", "expect": [{"metric": "corner_luma", "dir": "down"}, {"metric": "center_luma", "dir": "same"}]},
+    {"id": "vignette-plus", "command": "vignette 100", "control": "vignette", "expect": [{"metric": "corner_luma", "dir": "up"}, {"metric": "center_luma", "dir": "same"}]},
+    {"id": "vignette-midpoint", "command": "vignette -100 vignette midpoint 0", "control": "vignetteMidpoint", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "vignette-minus"}]},
+    {"id": "vignette-roundness", "command": "vignette -100 vignette roundness 100", "control": "vignetteRoundness", "expect": [{"metric": "diff", "dir": "changed", "vs": "vignette-minus"}]},
+    {"id": "vignette-rectangular", "command": "vignette -100 vignette roundness -100", "control": "vignetteRoundness", "expect": [{"metric": "diff", "dir": "changed", "vs": "vignette-minus"}]},
+    {"id": "vignette-feather", "command": "vignette -100 vignette feather 0", "control": "vignetteFeather", "expect": [{"metric": "diff", "dir": "changed", "vs": "vignette-minus"}]},
+    {"id": "vignette-highlights", "command": "vignette -100 vignette highlights 100", "control": "vignetteHighlights", "expect": [{"metric": "corner_luma", "dir": "up", "vs": "vignette-minus"}]}
   ]
 }

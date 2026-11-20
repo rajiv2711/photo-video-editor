@@ -16,7 +16,7 @@ final class EffectsTests: XCTestCase {
     }
 
     func testEffectsControlsAreInTheEffectsPanel() {
-        for id in ["texture", "clarity", "dehaze"] {
+        for id in ["texture", "clarity", "dehaze", "vignette", "vignetteMidpoint", "vignetteRoundness", "vignetteFeather", "vignetteHighlights"] {
             XCTAssertEqual(registry.control(id: id)?.group, "effects", id)
         }
     }
@@ -104,5 +104,64 @@ final class EffectsTests: XCTestCase {
         let hazy = Effects.dehaze(pixel, darkChannel: 0, airlight: air, strength: -1)
         XCTAssertGreaterThan(hazy.min, pixel.max, "lighter")
         XCTAssertLessThan(hazy.max - hazy.min, pixel.max - pixel.min, "flatter")
+    }
+
+    // MARK: - Vignette
+
+    func testVignetteNames() {
+        XCTAssertEqual(parse("vignette -60"), [.set("vignette", -60)])
+        XCTAssertEqual(parse("add a vignette"), [.nudge("vignette", 1)])
+        XCTAssertEqual(parse("vignette midpoint 30"), [.set("vignetteMidpoint", 30)])
+        XCTAssertEqual(parse("vignette roundness up"), [.nudge("vignetteRoundness", 1)])
+        XCTAssertEqual(parse("vignette feather 80"), [.set("vignetteFeather", 80)])
+        XCTAssertEqual(parse("vignette highlights 40"), [.set("vignetteHighlights", 40)])
+        XCTAssertEqual(parse("highlights 40"), [.set("highlights", 40)], "plain highlights stays the Light slider")
+    }
+
+    private func strength(_ u: Double, _ v: Double, aspect: Double = 1.5, midpoint: Double = 0.5,
+                          roundness: Double = 0, feather: Double = 0.5) -> Double {
+        Vignette.strength(u: u, v: v, aspect: aspect, midpoint: midpoint, roundness: roundness, feather: feather)
+    }
+
+    func testVignetteLeavesTheCentreAndDarkensTheCorners() {
+        XCTAssertEqual(strength(0, 0), 0)
+        XCTAssertEqual(strength(1, 1), 1)
+        XCTAssertEqual(strength(-1, 1), strength(1, -1), "symmetric")
+        XCTAssertLessThan(strength(0.5, 0), strength(0.9, 0))
+    }
+
+    func testMidpointMovesTheVignetteInwards() {
+        XCTAssertGreaterThan(strength(0.6, 0.3, midpoint: 0), strength(0.6, 0.3, midpoint: 0.5))
+        XCTAssertLessThan(strength(0.9, 0.9, midpoint: 1), strength(0.9, 0.9, midpoint: 0.5))
+    }
+
+    func testFeatherZeroIsAHardEdge() {
+        let values = stride(from: 0.0, through: 1.4, by: 0.01).map { strength($0, 0, feather: 0) }
+        XCTAssertEqual(values.filter { $0 > 0.01 && $0 < 0.99 }.count, 1, "one step, a cell wide")
+    }
+
+    func testRoundnessShapes() {
+        // A circle: same strength at the same distance in pixels, across or along a 3:2 frame.
+        let across = strength(0.5, 0, aspect: 1.5, midpoint: 0.2, roundness: 1)
+        let along = strength(0, 0.75, aspect: 1.5, midpoint: 0.2, roundness: 1)
+        XCTAssertEqual(across, along, accuracy: 1e-9)
+        // Rectangular: even along each edge; an ellipse grows towards the corners.
+        XCTAssertEqual(strength(0.8, 0, roundness: -1), strength(0.8, 0.5, roundness: -1), accuracy: 0.05)
+        XCTAssertGreaterThan(strength(0.8, 0.5, roundness: 0) - strength(0.8, 0, roundness: 0), 0.3)
+    }
+
+    func testVignetteGrid() {
+        XCTAssertEqual(Vignette.gridSize(width: 3000, height: 2000).width, 256)
+        XCTAssertEqual(Vignette.gridSize(width: 3000, height: 2000).height, 171)
+        let mask = Vignette.mask(width: 4, height: 2, midpoint: 0.5, roundness: 0, feather: 0.5)
+        XCTAssertEqual(mask.count, 8)
+        XCTAssertEqual(mask[0], mask[3])
+        XCTAssertGreaterThan(mask[0], mask[1])
+    }
+
+    func testVignetteHighlightsSpareBrightAreas() {
+        let table = Effects.vignetteHighlights(amount: 1)
+        XCTAssertEqual(table.first, 0)
+        XCTAssertEqual(table.last, 1)
     }
 }

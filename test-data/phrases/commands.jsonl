@@ -122,7 +122,7 @@
 {"group":"near-names","text":"punchiness more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
 {"group":"out-of-scope","text":"make it warmer","expect":[{"op":"unknown","word":"warmer"}]}
 {"group":"out-of-scope","text":"sharpen","expect":[{"op":"unknown","word":"sharpen"}]}
-{"group":"out-of-scope","text":"add a vignette","expect":[{"op":"unknown","word":"vignette"}]}
+{"group":"out-of-scope","text":"add a vignette","expect":[{"op":"nudge","control":"vignette","steps":1}]}
 {"group":"out-of-scope","text":"rotate left","expect":[{"op":"unknown","word":"rotate"},{"op":"unknown","word":"left"}]}
 {"group":"out-of-scope","text":"undo","expect":[{"op":"unknown","word":"undo"}]}
 {"group":"out-of-scope","text":"hello","expect":[{"op":"unknown","word":"hello"}]}
@@ -497,3 +497,12 @@
 {"group":"effects","text":"dehaze more more","expect":[{"op":"nudge","control":"dehaze","steps":2}]}
 {"group":"effects","text":"remove haze up","expect":[{"op":"nudge","control":"dehaze","steps":1}]}
 {"group":"effects","text":"de haze minus 30","expect":[{"op":"set","control":"dehaze","value":-30}]}
+{"group":"effects","text":"vignette -60","expect":[{"op":"set","control":"vignette","value":-60}]}
+{"group":"effects","text":"vignette less","expect":[{"op":"nudge","control":"vignette","steps":-1}]}
+{"group":"effects","text":"vignette midpoint 30","expect":[{"op":"set","control":"vignetteMidpoint","value":30}]}
+{"group":"effects","text":"vignette roundness up","expect":[{"op":"nudge","control":"vignetteRoundness","steps":1}]}
+{"group":"effects","text":"vignette feather 80","expect":[{"op":"set","control":"vignetteFeather","value":80}]}
+{"group":"effects","text":"vignette softness down","expect":[{"op":"nudge","control":"vignetteFeather","steps":-1}]}
+{"group":"effects","text":"vignette highlights 40","expect":[{"op":"set","control":"vignetteHighlights","value":40}]}
+{"group":"effects","text":"reset vignette highlights","expect":[{"op":"reset","control":"vignetteHighlights"}]}
+{"group":"effects","text":"vignette -50 vignette midpoint 20","expect":[{"op":"set","control":"vignette","value":-50},{"op":"set","control":"vignetteMidpoint","value":20}]}

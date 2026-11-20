@@ -88,6 +88,22 @@ enum Filters {
         return image.clampedToExtent().transformed(by: transform).cropped(to: extent)
     }
 
+    /// A grey picture made from mask values (0…1, `width` × `height` cells, row by row from the top),
+    /// stretched smoothly over `extent`.
+    static func mask(_ values: [Double], width: Int, height: Int, over extent: CGRect) -> CIImage {
+        var pixels = [Float](repeating: 1, count: width * height * 4)
+        for i in 0..<min(values.count, width * height) {
+            let m = Float(values[i])
+            pixels[4 * i] = m
+            pixels[4 * i + 1] = m
+            pixels[4 * i + 2] = m
+        }
+        let data = pixels.withUnsafeBufferPointer { Data(buffer: $0) }
+        let image = CIImage(bitmapData: data, bytesPerRow: width * 16, size: CGSize(width: width, height: height),
+                            format: .RGBAf, colorSpace: nil)
+        return resized(image, to: extent)
+    }
+
     /// Each pixel's levels looked up in `table` (output levels for evenly spaced inputs over 0…1,
     /// see Effects in CommandEngine), on the stored numbers with no colour conversion: for masks
     /// and for pictures already on sRGB levels.

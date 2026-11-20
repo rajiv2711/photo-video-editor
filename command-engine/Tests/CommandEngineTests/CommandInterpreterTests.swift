@@ -89,7 +89,7 @@ final class CommandInterpreterTests: XCTestCase {
 
     func testUnknownNameBlocksActionsInsteadOfHittingTheWrongSlider() {
         _ = run("contrast more")
-        XCTAssertEqual(run("vignette more"), [.unknown(word: "vignette")])
+        XCTAssertEqual(run("wobble more"), [.unknown(word: "wobble")])
         XCTAssertEqual(value("contrast"), 5)
     }
 

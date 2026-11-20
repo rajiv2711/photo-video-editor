@@ -643,6 +643,17 @@
     {"id": "clarity", "label": "Clarity", "group": "effects", "kind": "slider",
       "synonyms": ["clarity amount", "midtone contrast", "local contrast"], "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "dehaze", "label": "Dehaze", "group": "effects", "kind": "slider",
-      "synonyms": ["de haze", "de-haze", "dehazing", "haze removal", "remove haze", "dehaze amount"], "min": -100, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["de haze", "de-haze", "dehazing", "haze removal", "remove haze", "dehaze amount"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "vignette", "label": "Vignette", "group": "effects", "section": "Vignette", "kind": "slider",
+      "synonyms": ["vignette amount", "post crop vignette", "post-crop vignette", "post crop vignetting", "edge darkening"],
+      "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "vignetteMidpoint", "label": "Vignette Midpoint", "group": "effects", "section": "Vignette", "kind": "slider",
+      "synonyms": ["vignette mid point", "vignette middle", "vignette size"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "vignetteRoundness", "label": "Vignette Roundness", "group": "effects", "section": "Vignette", "kind": "slider",
+      "synonyms": ["vignette round", "vignette shape"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "vignetteFeather", "label": "Vignette Feather", "group": "effects", "section": "Vignette", "kind": "slider",
+      "synonyms": ["vignette softness", "vignette soft"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "vignetteHighlights", "label": "Vignette Highlights", "group": "effects", "section": "Vignette", "kind": "slider",
+      "synonyms": ["vignette highlight", "vignette highlight priority"], "min": 0, "max": 100, "default": 0, "step": 5}
   ]
 }

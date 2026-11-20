@@ -28,6 +28,7 @@ final class PhotoRenderer {
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: image.extent, value: value)
         output = effects.apply(output, extent: image.extent, value: value)
+        output = effects.finish(output, extent: image.extent, value: value)  // vignette, grain
         if !hdr {
             output = output.applyingFilter("CIColorClamp")
         }

@@ -75,4 +75,12 @@ public enum Effects {
     public static func hazeAdded(_ strength: Double) -> Double {
         0.6 * Swift.min(1, Swift.max(0, -strength))
     }
+
+    // MARK: - Vignette
+
+    /// Vignette Highlights: how much of the undarkened picture to bring back, by brightness
+    /// (sRGB luma): bright areas inside a dark vignette keep their sparkle. `amount` 0…1.
+    public static func vignetteHighlights(amount: Double) -> [Double] {
+        table(count: 64) { l in amount * smoothstep(0.5, 0.9, l) }
+    }
 }

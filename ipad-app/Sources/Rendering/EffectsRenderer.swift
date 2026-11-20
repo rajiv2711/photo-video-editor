@@ -2,10 +2,13 @@ import CommandEngine
 import CoreImage
 
 /// The Effects panel, after Color: texture → clarity → dehaze → glow → posterize, threshold, solarize.
+/// The vignette and grain are finishing touches (`finish`), after the Detail panel, as in Lightroom.
 /// Perceptual effects run on sRGB-encoded levels (Filters.encoded); sizes are a share of the photo's
 /// long side, so the preview and the saved photo look alike. (Tables: Effects in CommandEngine.)
 final class EffectsRenderer {
     let context: CIContext
+    /// The last vignette mask and the settings it was made for (grid size, midpoint, roundness, feather).
+    private var cachedVignette: (key: [Double], values: [Double])?
 
     init(context: CIContext) {
         self.context = context
@@ -56,6 +59,51 @@ final class EffectsRenderer {
         }
 
         return output
+    }
+
+    /// Finishing touches, after the Detail panel: the post-crop vignette, then grain.
+    func finish(_ image: CIImage, extent: CGRect, value: (String) -> Double?) -> CIImage {
+        func v(_ id: String) -> Double { value(id) ?? 0 }
+        var output = image
+
+        let amount = v("vignette") / 100
+        if amount != 0 {
+            output = vignette(output, extent: extent, amount: amount,
+                              midpoint: (value("vignetteMidpoint") ?? 50) / 100,
+                              roundness: v("vignetteRoundness") / 100,
+                              feather: (value("vignetteFeather") ?? 50) / 100,
+                              highlights: v("vignetteHighlights") / 100)
+        }
+        return output
+    }
+
+    /// Post-crop vignette on sRGB levels: the mask (Vignette in CommandEngine) darkens the edges by
+    /// multiplying (negative amount; Highlights bring bright areas back) or lightens them by screening
+    /// towards white (positive amount).
+    private func vignette(_ image: CIImage, extent: CGRect, amount: Double, midpoint: Double, roundness: Double,
+                          feather: Double, highlights: Double) -> CIImage {
+        let grid = Vignette.gridSize(width: Double(extent.width), height: Double(extent.height))
+        let key = [Double(grid.width), Double(grid.height), midpoint, roundness, feather]
+        let values: [Double]
+        if let cached = cachedVignette, cached.key == key {
+            values = cached.values
+        } else {
+            values = Vignette.mask(width: grid.width, height: grid.height, midpoint: midpoint, roundness: roundness, feather: feather)
+            cachedVignette = (key, values)
+        }
+        let mask = Filters.mask(values, width: grid.width, height: grid.height, over: extent)
+        let encoded = Filters.encoded(image)
+        if amount > 0 {
+            let light = Filters.affine(mask, scale: amount)
+            return Filters.linear(light.applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: encoded]))
+        }
+        let gain = Filters.affine(mask, scale: amount, bias: 1)
+        var dark = encoded.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: gain])
+        if highlights > 0 {
+            let keep = Filters.lookup(Filters.luma(encoded), table: Effects.vignetteHighlights(amount: highlights))
+            dark = Filters.blend(encoded, over: dark, mask: keep)
+        }
+        return Filters.linear(dark)
     }
 
     /// Dehaze with the dark channel prior (Effects.dehaze in CommandEngine shows the per-pixel math).
