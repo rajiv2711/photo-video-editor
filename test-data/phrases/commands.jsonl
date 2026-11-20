@@ -506,3 +506,10 @@
 {"group":"effects","text":"vignette highlights 40","expect":[{"op":"set","control":"vignetteHighlights","value":40}]}
 {"group":"effects","text":"reset vignette highlights","expect":[{"op":"reset","control":"vignetteHighlights"}]}
 {"group":"effects","text":"vignette -50 vignette midpoint 20","expect":[{"op":"set","control":"vignette","value":-50},{"op":"set","control":"vignetteMidpoint","value":20}]}
+{"group":"effects","text":"grain 30","expect":[{"op":"set","control":"grain","value":30}]}
+{"group":"effects","text":"film grain more","expect":[{"op":"nudge","control":"grain","steps":1}]}
+{"group":"effects","text":"grain size 60","expect":[{"op":"set","control":"grainSize","value":60}]}
+{"group":"effects","text":"grain size down","expect":[{"op":"nudge","control":"grainSize","steps":-1}]}
+{"group":"effects","text":"grain roughness 80","expect":[{"op":"set","control":"grainRoughness","value":80}]}
+{"group":"effects","text":"reset grain roughness","expect":[{"op":"reset","control":"grainRoughness"}]}
+{"group":"effects","text":"grains up","expect":[{"op":"nudge","control":"grain","steps":1}]}

@@ -74,7 +74,49 @@ final class EffectsRenderer {
                               feather: (value("vignetteFeather") ?? 50) / 100,
                               highlights: v("vignetteHighlights") / 100)
         }
+
+        let grainAmount = v("grain") / 100
+        if grainAmount > 0 {
+            output = grain(output, extent: extent, amount: grainAmount, size: (value("grainSize") ?? 25) / 100,
+                                roughness: (value("grainRoughness") ?? 50) / 100)
+        }
         return output
+    }
+
+    /// Film grain: a mid-grey noise layer overlaid on sRGB levels, so it shows most in the midtones.
+    /// Roughness mixes in a second, coarser noise for clumpier grain. The noise is Core Image's fixed
+    /// random pattern, so the same settings always give the same picture.
+    private func grain(_ image: CIImage, extent: CGRect, amount: Double, size: Double, roughness: Double) -> CIImage {
+        let cell = Effects.grainCell(size: size, longSide: Double(max(extent.width, extent.height)))
+        var noise = Self.noise(cell: cell, offset: 0, extent: extent)
+        if roughness > 0 {
+            noise = Filters.mix(noise, Self.noise(cell: cell * 2.5, offset: 300, extent: extent), 0.6 * roughness)
+        }
+        let k = Effects.grainContrast(amount: amount)
+        let layer = Filters.affine(noise, scale: k, bias: 0.5 * (1 - k))
+        let grained = layer.applyingFilter("CIOverlayBlendMode", parameters: [kCIInputBackgroundImageKey: Filters.encoded(image)])
+        return Filters.linear(grained)
+    }
+
+    /// Grey random noise (0…1) with cells of `cell` pixels over `extent`; `offset` picks another part of
+    /// the random pattern.
+    private static func noise(cell: Double, offset: CGFloat, extent: CGRect) -> CIImage {
+        guard let random = CIFilter(name: "CIRandomGenerator")?.outputImage else {
+            return CIImage(color: CIColor(red: 0.5, green: 0.5, blue: 0.5)).cropped(to: extent)
+        }
+        let size = CGFloat(cell)
+        let area = CGRect(x: offset, y: offset, width: extent.width / size + 2, height: extent.height / size + 2)
+        let grey = random.cropped(to: area).settingAlphaOne(in: area).applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: 1, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 1, y: 0, z: 0, w: 0),
+            "inputBVector": CIVector(x: 1, y: 0, z: 0, w: 0),
+            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+            "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+        ])
+        let transform = CGAffineTransform(translationX: extent.minX, y: extent.minY)
+            .scaledBy(x: size, y: size)
+            .translatedBy(x: -offset, y: -offset)
+        return grey.transformed(by: transform).cropped(to: extent)
     }
 
     /// Post-crop vignette on sRGB levels: the mask (Vignette in CommandEngine) darkens the edges by

@@ -16,7 +16,8 @@ final class EffectsTests: XCTestCase {
     }
 
     func testEffectsControlsAreInTheEffectsPanel() {
-        for id in ["texture", "clarity", "dehaze", "vignette", "vignetteMidpoint", "vignetteRoundness", "vignetteFeather", "vignetteHighlights"] {
+        for id in ["texture", "clarity", "dehaze", "vignette", "vignetteMidpoint", "vignetteRoundness", "vignetteFeather", "vignetteHighlights",
+                   "grain", "grainSize", "grainRoughness"] {
             XCTAssertEqual(registry.control(id: id)?.group, "effects", id)
         }
     }
@@ -163,5 +164,23 @@ final class EffectsTests: XCTestCase {
         let table = Effects.vignetteHighlights(amount: 1)
         XCTAssertEqual(table.first, 0)
         XCTAssertEqual(table.last, 1)
+    }
+
+    // MARK: - Grain
+
+    func testGrainNames() {
+        XCTAssertEqual(parse("grain 30"), [.set("grain", 30)])
+        XCTAssertEqual(parse("film grain more"), [.nudge("grain", 1)])
+        XCTAssertEqual(parse("grain size 60"), [.set("grainSize", 60)])
+        XCTAssertEqual(parse("grain roughness 80"), [.set("grainRoughness", 80)])
+    }
+
+    func testGrainScalesWithThePhoto() {
+        XCTAssertEqual(Effects.grainCell(size: 0, longSide: 2048), 1)
+        XCTAssertEqual(Effects.grainCell(size: 1, longSide: 2048), 4)
+        XCTAssertEqual(Effects.grainCell(size: 1, longSide: 4096), 8, "the saved photo matches the preview")
+        XCTAssertEqual(Effects.grainCell(size: 0, longSide: 800), 1, "never under a pixel")
+        XCTAssertEqual(Effects.grainContrast(amount: 0), 0)
+        XCTAssertEqual(Effects.grainContrast(amount: 2), Effects.grainContrast(amount: 1))
     }
 }

@@ -59,7 +59,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 41. **Clarity** — midtone local contrast
 - [x] 42. **Dehaze** — remove or add haze
 - [x] 43. **Vignette** — darken/lighten edges; midpoint, roundness, feather
-- [ ] 44. **Grain** — film grain: amount, size, roughness
+- [x] 44. **Grain** — film grain: amount, size, roughness
 - [ ] 45. **Glow / halation** — soft bloom and film halation around bright areas
 - [ ] 46. **Lens blur** — AI depth-based background blur, bokeh shapes, focus point **AI · later**
 - [ ] 47. **Posterize** — reduce to a few tone levels

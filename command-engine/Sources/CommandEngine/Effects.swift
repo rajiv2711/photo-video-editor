@@ -83,4 +83,18 @@ public enum Effects {
     public static func vignetteHighlights(amount: Double) -> [Double] {
         table(count: 64) { l in amount * smoothstep(0.5, 0.9, l) }
     }
+
+    // MARK: - Grain
+
+    /// Grain cell size in pixels: Size 0…1 gives 1…4 px on a 2048 px photo, in proportion on other
+    /// sizes (so the preview and the saved photo look alike), never under 1 px.
+    public static func grainCell(size: Double, longSide: Double) -> Double {
+        Swift.max(1, (1 + 3 * size) * longSide / 2048)
+    }
+
+    /// How far the grain layer swings around mid-grey for Amount 0…1 (it is overlaid on sRGB levels,
+    /// so midtones show it most and pure black and white not at all).
+    public static func grainContrast(amount: Double) -> Double {
+        0.6 * Swift.min(1, Swift.max(0, amount))
+    }
 }

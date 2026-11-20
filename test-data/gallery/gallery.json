@@ -203,6 +203,10 @@
     {"id": "vignette-roundness", "command": "vignette -100 vignette roundness 100", "control": "vignetteRoundness", "expect": [{"metric": "diff", "dir": "changed", "vs": "vignette-minus"}]},
     {"id": "vignette-rectangular", "command": "vignette -100 vignette roundness -100", "control": "vignetteRoundness", "expect": [{"metric": "diff", "dir": "changed", "vs": "vignette-minus"}]},
     {"id": "vignette-feather", "command": "vignette -100 vignette feather 0", "control": "vignetteFeather", "expect": [{"metric": "diff", "dir": "changed", "vs": "vignette-minus"}]},
-    {"id": "vignette-highlights", "command": "vignette -100 vignette highlights 100", "control": "vignetteHighlights", "expect": [{"metric": "corner_luma", "dir": "up", "vs": "vignette-minus"}]}
+    {"id": "vignette-highlights", "command": "vignette -100 vignette highlights 100", "control": "vignetteHighlights", "expect": [{"metric": "corner_luma", "dir": "up", "vs": "vignette-minus"}]},
+    {"id": "grain", "command": "grain 100", "control": "grain", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_luma", "dir": "same"}]},
+    {"id": "grain-repeat", "command": "grain 100", "control": "grain", "expect": [{"metric": "diff", "dir": "same", "vs": "grain", "min": 0.2}]},
+    {"id": "grain-size", "command": "grain 100 grain size 100", "control": "grainSize", "expect": [{"metric": "edge", "dir": "down", "vs": "grain"}]},
+    {"id": "grain-roughness", "command": "grain 100 grain roughness 100", "control": "grainRoughness", "expect": [{"metric": "diff", "dir": "changed", "vs": "grain"}]}
   ]
 }

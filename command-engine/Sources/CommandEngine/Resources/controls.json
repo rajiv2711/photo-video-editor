@@ -654,6 +654,12 @@
     {"id": "vignetteFeather", "label": "Vignette Feather", "group": "effects", "section": "Vignette", "kind": "slider",
       "synonyms": ["vignette softness", "vignette soft"], "min": 0, "max": 100, "default": 50, "step": 5},
     {"id": "vignetteHighlights", "label": "Vignette Highlights", "group": "effects", "section": "Vignette", "kind": "slider",
-      "synonyms": ["vignette highlight", "vignette highlight priority"], "min": 0, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["vignette highlight", "vignette highlight priority"], "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "grain", "label": "Grain", "group": "effects", "section": "Grain", "kind": "slider",
+      "synonyms": ["film grain", "grain amount", "graininess"], "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "grainSize", "label": "Grain Size", "group": "effects", "section": "Grain", "kind": "slider",
+      "synonyms": ["grain scale", "film grain size"], "min": 0, "max": 100, "default": 25, "step": 5},
+    {"id": "grainRoughness", "label": "Grain Roughness", "group": "effects", "section": "Grain", "kind": "slider",
+      "synonyms": ["grain rough", "film grain roughness"], "min": 0, "max": 100, "default": 50, "step": 5}
   ]
 }
