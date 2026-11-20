@@ -8,11 +8,13 @@ import UIKit
 final class PhotoRenderer {
     let context: CIContext
     private let light: LightRenderer
+    private let color: ColorRenderer
 
     init() {
         let context = CIContext()
         self.context = context
         self.light = LightRenderer(context: context)
+        self.color = ColorRenderer(context: context)
     }
 
     /// `value` gives a control's current value by id, or nil when controls.json has no such control.
@@ -20,9 +22,9 @@ final class PhotoRenderer {
     func apply(to image: CIImage, value: (String) -> Double?) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         var output = image
-        // (White balance goes first here once the Color panel has it.)
+        output = color.input(output, value: value)  // white balance
         output = light.apply(output, value: value, hdr: hdr)
-        output = ColorRenderer.apply(output, value: value)
+        output = color.apply(output, value: value)
         // (Effects, detail and optics follow here.)
         if !hdr {
             output = output.applyingFilter("CIColorClamp")

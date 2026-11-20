@@ -269,6 +269,23 @@
       "synonyms": ["high dynamic range", "hdr mode", "extended range"]
     },
     {
+      "id": "whiteBalance",
+      "label": "White Balance",
+      "group": "color",
+      "kind": "choice",
+      "synonyms": ["wb", "white balance preset", "white balance mode"],
+      "options": [
+        {"id": "asShot", "label": "As Shot", "synonyms": ["original", "camera", "as taken"]},
+        {"id": "auto", "label": "Auto", "synonyms": ["automatic"]},
+        {"id": "daylight", "label": "Daylight", "synonyms": ["day light", "sunny", "sun", "sunlight"]},
+        {"id": "cloudy", "label": "Cloudy", "synonyms": ["overcast", "cloud", "clouds"]},
+        {"id": "shade", "label": "Shade", "synonyms": ["shady", "shadow"]},
+        {"id": "tungsten", "label": "Tungsten", "synonyms": ["incandescent", "indoor", "light bulb"]},
+        {"id": "fluorescent", "label": "Fluorescent", "synonyms": ["florescent", "neon"]},
+        {"id": "flash", "label": "Flash", "synonyms": ["strobe"]}
+      ]
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

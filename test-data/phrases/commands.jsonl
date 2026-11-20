@@ -189,3 +189,8 @@
 {"group":"light","text":"HDR off","expect":[{"op":"set","control":"hdr","value":0}]}
 {"group":"light","text":"turn on hdr","expect":[{"op":"set","control":"hdr","value":1}]}
 {"group":"light","text":"high dynamic range","expect":[{"op":"set","control":"hdr","value":1}]}
+{"group":"color","text":"white balance tungsten","expect":[{"op":"set","control":"whiteBalance","value":5}]}
+{"group":"color","text":"white balance cloudy","expect":[{"op":"set","control":"whiteBalance","value":3}]}
+{"group":"color","text":"wb daylight","expect":[{"op":"set","control":"whiteBalance","value":2}]}
+{"group":"color","text":"white balance auto","expect":[{"op":"set","control":"whiteBalance","value":1}]}
+{"group":"color","text":"reset white balance","expect":[{"op":"reset","control":"whiteBalance"}]}
