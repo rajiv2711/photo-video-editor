@@ -910,7 +910,10 @@
         {"id": "liquify", "label": "Liquify", "synonyms": ["liquefy"]},
         {"id": "dodge", "label": "Dodge"},
         {"id": "burn", "label": "Burn"},
-        {"id": "sponge", "label": "Sponge"}
+        {"id": "sponge", "label": "Sponge"},
+        {"id": "blurBrush", "label": "Blur Brush"},
+        {"id": "sharpenBrush", "label": "Sharpen Brush"},
+        {"id": "smudge", "label": "Smudge"}
       ]},
     {"id": "removeBrush", "label": "Remove Brush", "group": "retouch", "kind": "action", "tool": "remove",
       "synonyms": ["remove tool", "content aware remove", "content-aware remove", "content aware fill", "content-aware fill",
@@ -969,7 +972,8 @@
       ]},
     {"id": "toolStrength", "label": "Tool Strength", "group": "retouch", "section": "Brush tools", "kind": "slider",
       "synonyms": ["strength", "liquify pressure", "liquify strength", "brush pressure", "pressure", "brush tool strength",
-                   "dodge exposure", "burn exposure", "dodge strength", "burn strength", "sponge flow", "sponge strength"],
+                   "dodge exposure", "burn exposure", "dodge strength", "burn strength", "sponge flow", "sponge strength",
+                   "smudge strength", "sharpen brush strength"],
       "min": 1, "max": 100, "default": 50, "step": 5},
     {"id": "dodge", "label": "Dodge", "group": "retouch", "kind": "action", "tool": "dodge",
       "synonyms": ["dodge tool", "dodge brush", "lighten brush"],
@@ -1003,6 +1007,12 @@
       "options": [
         {"id": "saturate", "label": "Saturate", "synonyms": ["saturation", "more colour", "more color"]},
         {"id": "desaturate", "label": "Desaturate", "synonyms": ["desat", "less colour", "less color", "grey", "gray"]}
-      ]}
+      ]},
+    {"id": "blurBrush", "label": "Blur Brush", "group": "retouch", "kind": "action", "tool": "blurBrush",
+      "synonyms": ["blur tool", "soften brush", "blur brush tool", "soften tool"]},
+    {"id": "sharpenBrush", "label": "Sharpen Brush", "group": "retouch", "kind": "action", "tool": "sharpenBrush",
+      "synonyms": ["sharpen tool", "sharpening brush", "sharpen brush tool"]},
+    {"id": "smudge", "label": "Smudge", "group": "retouch", "kind": "action", "tool": "smudge",
+      "synonyms": ["smudge tool", "smudge brush", "finger tool", "smear"]}
   ]
 }

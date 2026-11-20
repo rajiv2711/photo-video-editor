@@ -632,4 +632,45 @@ final class RetouchTests: XCTestCase {
         let c = sponged(1, strength: 100).color(30, 30)
         XCTAssertEqual(c.0, 0.2126 * 0.7 + 0.7152 * 0.3 + 0.0722 * 0.3, accuracy: 0.001, "its own brightness kept")
     }
+
+    // MARK: - Blur, sharpen and smudge brushes
+
+    func testBlurSharpenSmudgeNames() {
+        XCTAssertEqual(parse("blur brush"), [.run("blurBrush")])
+        XCTAssertEqual(parse("blur brush brush size 6"), [.run("blurBrush"), .set("brushSize", 6)])
+        XCTAssertEqual(parse("sharpen brush"), [.run("sharpenBrush")])
+        XCTAssertEqual(parse("sharpen more more"), [.nudge("sharpening", 2)], "“sharpen” alone is still Sharpening")
+        XCTAssertEqual(parse("smudge"), [.run("smudge")])
+        XCTAssertEqual(parse("smudge strength 70"), [.set("toolStrength", 70)])
+        XCTAssertEqual(parse("blur more"), [.unknown("blur")], "“blur” alone is kept for the blur filters")
+    }
+
+    func testBlurAndSharpenBrushesChangeDetailWherePainted() {
+        let size = (64, 64)
+        let picture = Self.picture(size.0, size.1, Self.stripes)
+        func painted(_ tool: String) -> RGBBuffer {
+            RetouchCanvas(base: picture).render([Retouch(tool: tool, points: [MaskPoint(0.1, 0.5), MaskPoint(0.9, 0.5)], size: 40, feather: 0,
+                                                         values: ["toolStrength": 100, "spotOpacity": 100])]).image
+        }
+        /// Brightness range down one column in the stroke's middle (rows 26…37).
+        func range(_ image: RGBBuffer) -> Float {
+            let values = (26..<38).map { image.color(32, $0).1 }
+            return values.max()! - values.min()!
+        }
+        XCTAssertLessThan(range(painted("blurBrush")), range(picture) - 0.1, "stripes softened")
+        XCTAssertGreaterThan(range(painted("sharpenBrush")), range(picture) + 0.05, "stripes crisper")
+        XCTAssertEqual(painted("blurBrush").color(32, 2).1, picture.color(32, 2).1, "outside the brush nothing changes")
+    }
+
+    func testSmudgeDragsColourAlongTheStroke() {
+        // Red on the left half, blue on the right; smudge from the red into the blue.
+        let size = (80, 40)
+        let picture = Self.picture(size.0, size.1) { x, _ in x < 40 ? (0.9, 0.1, 0.1) : (0.1, 0.1, 0.9) }
+        let stroke = Retouch(tool: "smudge", points: [MaskPoint(30.0 / 80, 0.5), MaskPoint(55.0 / 80, 0.5)], size: 20, feather: 30,
+                             values: ["toolStrength": 80, "spotOpacity": 100])
+        let smudged = RetouchCanvas(base: picture).render([stroke]).image
+        XCTAssertGreaterThan(smudged.color(46, 20).0, 0.3, "red carried into the blue")
+        XCTAssertEqual(smudged.color(46, 2).0, 0.1, "outside the brush nothing changes")
+        XCTAssertEqual(smudged.color(10, 20).0, 0.9, "behind the stroke's start nothing changes")
+    }
 }

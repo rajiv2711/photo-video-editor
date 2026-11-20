@@ -368,6 +368,10 @@
     {"id": "tone-range", "command": "burn brush size 10 tool strength 100 tone range shadows", "control": "toneRange", "strokes": [[[0.08, 0.3], [0.08, 0.5]]], "expect": [{"metric": "mean_luma", "dir": "same", "region": [0.05, 0.32, 0.11, 0.48]}, {"metric": "mean_luma", "dir": "up", "region": [0.05, 0.32, 0.11, 0.48], "vs": "burn", "min": 10}]},
 
     {"id": "sponge", "command": "sponge desaturate brush size 8 tool strength 100", "source": "chart", "control": "sponge", "strokes": [[[0.055, 0.05], [0.055, 0.7]]], "expect": [{"metric": "mean_sat", "dir": "down", "region": [0.02, 0.05, 0.09, 0.7], "vs": "chart", "min": 20}, {"metric": "diff", "dir": "same", "region": [0.3, 0.05, 0.5, 0.7], "vs": "chart"}]},
-    {"id": "sponge-mode", "command": "sponge brush size 8 tool strength 100 sponge mode saturate", "source": "chart", "control": "spongeMode", "strokes": [[[0.61, 0.3], [0.61, 0.45]]], "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.58, 0.3, 0.64, 0.45], "vs": "chart", "min": 5}]}
+    {"id": "sponge-mode", "command": "sponge brush size 8 tool strength 100 sponge mode saturate", "source": "chart", "control": "spongeMode", "strokes": [[[0.61, 0.3], [0.61, 0.45]]], "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.58, 0.3, 0.64, 0.45], "vs": "chart", "min": 5}]},
+
+    {"id": "blur-brush", "command": "blur brush brush size 6 tool strength 100", "control": "blurBrush", "strokes": [[[0.456, 0.5775], [0.65, 0.5775]]], "expect": [{"metric": "edge", "dir": "down", "region": [0.44, 0.55, 0.66, 0.605], "min": 10}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.2, 0.2]}]},
+    {"id": "sharpen-brush", "command": "sharpen brush brush size 6 tool strength 100", "control": "sharpenBrush", "strokes": [[[0.456, 0.5775], [0.65, 0.5775]]], "expect": [{"metric": "edge", "dir": "up", "region": [0.44, 0.55, 0.66, 0.605], "min": 10}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.2, 0.2]}]},
+    {"id": "smudge", "command": "smudge brush size 6 tool strength 100", "source": "grid", "control": "smudge", "strokes": [[[0.3, 0.5], [0.7, 0.5]]], "expect": [{"metric": "diff", "dir": "changed", "region": [0.35, 0.47, 0.65, 0.53], "vs": "grid", "min": 3}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.2, 0.2], "vs": "grid"}]}
   ]
 }

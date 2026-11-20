@@ -620,6 +620,9 @@ final class EditorModel: ObservableObject {
         "dodge": "paint to lighten (up to a stop at full Tool Strength), mostly in the Tone Range; press harder with the Pencil for more",
         "burn": "paint to darken (up to a stop at full Tool Strength), mostly in the Tone Range; press harder with the Pencil for more",
         "sponge": "paint to add colour or take it away (Sponge Mode), as much as Tool Strength and the Pencil's pressure say",
+        "blurBrush": "paint to soften detail (more with Tool Strength and Pencil pressure)",
+        "sharpenBrush": "paint to crispen detail (more with Tool Strength and Pencil pressure)",
+        "smudge": "drag to smear colours along the stroke, like a finger through wet paint",
     ]
 
     /// What to do on the photo after making a mask part.

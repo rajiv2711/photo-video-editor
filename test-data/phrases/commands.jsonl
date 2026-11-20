@@ -749,3 +749,10 @@
 {"group":"retouch","text":"sponge mode saturate","expect":[{"op":"set","control":"spongeMode","value":0}]}
 {"group":"retouch","text":"sponge mode desaturate","expect":[{"op":"set","control":"spongeMode","value":1}]}
 {"group":"retouch","text":"sponge flow 60","expect":[{"op":"set","control":"toolStrength","value":60}]}
+{"group":"retouch","text":"blur brush","expect":[{"op":"run","control":"blurBrush"}]}
+{"group":"retouch","text":"blur tool","expect":[{"op":"run","control":"blurBrush"}]}
+{"group":"retouch","text":"sharpen brush","expect":[{"op":"run","control":"sharpenBrush"}]}
+{"group":"retouch","text":"sharpen tool","expect":[{"op":"run","control":"sharpenBrush"}]}
+{"group":"retouch","text":"smudge","expect":[{"op":"run","control":"smudge"}]}
+{"group":"retouch","text":"smudge tool","expect":[{"op":"run","control":"smudge"}]}
+{"group":"retouch","text":"smudge strength 70","expect":[{"op":"set","control":"toolStrength","value":70}]}

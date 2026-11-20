@@ -263,8 +263,11 @@ public final class RetouchCanvas {
             let box = write.expanded(by: 2, width: width, height: height)
             guard let o = pixels(step.offset) else { return nil }
             return Plan(read: union(box, shifted(box, o, width: width, height: height)), write: box)
-        case "redEye", "petEye", "dodge", "burn", "sponge":
+        case "redEye", "petEye", "dodge", "burn", "sponge", "smudge":
             return Plan(read: write, write: write)
+        case "blurBrush", "sharpenBrush":
+            // The blur reaches three of its radii beyond the brush.
+            return Plan(read: write.expanded(by: 3 * blurRadius(step), width: width, height: height), write: write)
         case "move":
             // The area is filled from around it (as the Remove brush) and put down `offset` away.
             guard let o = pixels(step.offset), o.dx != 0 || o.dy != 0 else { return nil }
@@ -320,6 +323,27 @@ public final class RetouchCanvas {
             ToneBrushes.dodgeBurn(&box, cover: footprint(step, in: plan.write, pressured: true), strength: strength(step),
                                   range: Int(step.values["toneRange"] ?? 1), lighter: step.tool == "dodge")
             return box.pixels
+        case "blurBrush", "sharpenBrush":
+            // Blur: towards a blurred copy; sharpen: away from it (unsharp mask, up to twice the detail).
+            let read = image.crop(plan.read)
+            let soft = ToneBrushes.blurred(read, radius: blurRadius(step))
+            let cover = footprint(step, in: plan.read, pressured: true)
+            let amount = Float(step.tool == "blurBrush" ? 1 : -2 * strength(step))
+            var out = read
+            for i in 0..<(read.width * read.height) where cover[i] > 0 {
+                for c in 0..<3 {
+                    let v = read.pixels[3 * i + c]
+                    out.pixels[3 * i + c] = Swift.max(0, v + (soft.pixels[3 * i + c] - v) * amount * cover[i])
+                }
+            }
+            return out.crop(PixelBox(x0: plan.write.x0 - plan.read.x0, y0: plan.write.y0 - plan.read.y0,
+                                     x1: plan.write.x1 - plan.read.x0, y1: plan.write.y1 - plan.read.y0)).pixels
+        case "smudge":
+            var box = image.crop(plan.write)
+            let dabs = self.dabs(step)
+            ToneBrushes.smudge(&box, dabs: dabs.map { (x: $0.x - Double(plan.write.x0), y: $0.y - Double(plan.write.y0)) },
+                               pressure: dabPressures(step, dabs), radius: radius(step), feather: step.feather, strength: strength(step))
+            return box.pixels
         case "sponge":
             var box = image.crop(plan.write)
             ToneBrushes.sponge(&box, cover: footprint(step, in: plan.write, pressured: true), strength: strength(step),
@@ -343,6 +367,13 @@ public final class RetouchCanvas {
     }
 
     // MARK: - Brush geometry
+
+    /// The blur and sharpen brushes' blur in pixels: up to 0.4 % of the long side (blur, by Tool
+    /// Strength) or 0.1 % (sharpen), at least one pixel.
+    func blurRadius(_ step: Retouch) -> Int {
+        let share = step.tool == "blurBrush" ? 0.004 * strength(step) : 0.001
+        return Swift.max(1, Int((share * longSide).rounded()))
+    }
 
     /// Tool Strength, 0…1.
     func strength(_ step: Retouch) -> Double {
