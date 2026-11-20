@@ -17,6 +17,7 @@ final class GalleryCasesTests: XCTestCase {
         let command: String
         let control: String?
         let expect: [Expectation]
+        let source: String?
     }
 
     struct File: Decodable {
@@ -29,6 +30,8 @@ final class GalleryCasesTests: XCTestCase {
         "mean_sat", "mean_r", "mean_g", "mean_b", "diff", "peak",
     ]
     static let directions: Set = ["up", "down", "changed", "same"]
+    /// Generated starting pictures; must match RenderGallery.sourceImage in the app.
+    static let sources: Set = ["warm", "negative", "chart"]
 
     private var registry: ControlRegistry!
     private var cases: [Case] = []
@@ -54,6 +57,7 @@ final class GalleryCasesTests: XCTestCase {
         for c in cases {
             XCTAssertFalse(c.id.contains("/") || c.id.contains(" "), "\(c.id): use letters, digits and dashes")
             if c.id != "base" { XCTAssertFalse(c.expect.isEmpty, "\(c.id) has no expectation") }
+            if let source = c.source { XCTAssertTrue(Self.sources.contains(source), "\(c.id): unknown source \(source)") }
             for e in c.expect {
                 XCTAssertTrue(Self.metrics.contains(e.metric), "\(c.id): unknown metric \(e.metric)")
                 XCTAssertTrue(Self.directions.contains(e.dir), "\(c.id): unknown direction \(e.dir)")

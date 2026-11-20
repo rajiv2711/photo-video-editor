@@ -1,7 +1,10 @@
 {
-  "about": "Render test cases. The cloud build runs each command on the test photo (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak. Directions: up, down, changed, same.",
+  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak. Directions: up, down, changed, same.",
   "cases": [
     {"id": "base", "command": "", "expect": []},
+    {"id": "warm-cast", "command": "", "source": "warm", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
+    {"id": "negative-cast", "command": "", "source": "negative", "expect": [{"metric": "mean_luma", "dir": "down"}]},
+    {"id": "chart", "command": "", "source": "chart", "expect": [{"metric": "mean_sat", "dir": "up"}]},
 
     {"id": "exposure-plus", "command": "exposure 1", "control": "exposure", "expect": [{"metric": "mean_luma", "dir": "up"}, {"metric": "peak", "dir": "same"}]},
     {"id": "exposure-minus", "command": "exposure -1", "control": "exposure", "expect": [{"metric": "mean_luma", "dir": "down"}]},
