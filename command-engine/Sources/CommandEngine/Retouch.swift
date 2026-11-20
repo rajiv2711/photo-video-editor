@@ -14,7 +14,8 @@ import Foundation
 public struct Retouch: Hashable, Codable {
     /// The tool (an option id of the "retouchTool" choice): "remove", …
     public var tool: String
-    /// The stroke, from the top-left (0…1); one point for a tap.
+    /// The stroke, from the top-left (0…1); one point for a tap. Patch and Content-Aware Move: the
+    /// outline drawn around the area (closed back to the first point).
     public var points: [MaskPoint]
     /// Pen pressure at each point (0…1); empty = full pressure everywhere.
     public var pressure: [Double]
@@ -40,6 +41,20 @@ public struct Retouch: Hashable, Codable {
         self.values = values
     }
 
+    /// Whether a point is inside the outline (Patch, Content-Aware Move); where it crosses itself,
+    /// inside and outside alternate.
+    public func contains(_ p: MaskPoint) -> Bool {
+        guard points.count >= 3 else { return false }
+        var inside = false
+        var j = points.count - 1
+        for i in points.indices {
+            let a = points[i], b = points[j]
+            if (a.y > p.y) != (b.y > p.y), p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x { inside.toggle() }
+            j = i
+        }
+        return inside
+    }
+
     /// The middle of the stroke's points (a tap: the tap), from the top-left, 0…1.
     public var centre: MaskPoint {
         guard let first = points.first else { return MaskPoint(0.5, 0.5) }
@@ -57,10 +72,13 @@ public struct Retouch: Hashable, Codable {
 /// which per-step settings each keeps.
 public enum RetouchTools {
     /// Option ids of the "retouchTool" choice; must match controls.json (unit-tested).
-    public static let ids = ["none", "remove", "heal", "clone"]
+    public static let ids = ["none", "remove", "heal", "clone", "patch", "move"]
 
     /// Tools that copy from a source spot (its `offset`; "clone source" picks it by a tap).
-    public static let copying: Set<String> = ["heal", "clone"]
+    public static let copying: Set<String> = ["heal", "clone", "patch"]
+
+    /// Tools drawn as an outline around an area (then dragged), not painted with the brush.
+    public static let outlined: Set<String> = ["patch", "move"]
 
     /// The controls a new step of `tool` copies from the panel (and keeps as its own settings).
     public static func settings(for tool: String) -> [String] {

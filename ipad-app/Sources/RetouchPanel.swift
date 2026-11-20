@@ -132,10 +132,7 @@ struct RetouchCanvasView: View {
             ZStack {
                 outlines(geo.size)
                 Path { path in path.addLines(points) }
-                    .stroke(Color.white.opacity(0.45),
-                            style: StrokeStyle(lineWidth: brushWidth(model.registry.control(id: "brushSize").map { model.value(of: $0) } ?? 10,
-                                                                     geo.size),
-                                               lineCap: .round, lineJoin: .round))
+                    .stroke(Color.white.opacity(0.45), style: StrokeStyle(lineWidth: liveWidth(geo.size), lineCap: .round, lineJoin: .round))
                     .allowsHitTesting(false)
                 PencilTouches(
                     onMove: { points = $0 },
@@ -155,10 +152,12 @@ struct RetouchCanvasView: View {
         ZStack {
             ForEach(Array(model.state.retouches.enumerated()), id: \.offset) { item in
                 let selected = model.state.selectedRetouch == item.offset
-                outline(item.element.points, width: brushWidth(item.element.size, size), size: size, selected: selected, dashed: false)
+                let closed = RetouchTools.outlined.contains(item.element.tool)
+                outline(item.element.points, width: brushWidth(item.element.size, size), size: size, selected: selected, dashed: false,
+                        closed: closed)
                 if selected, let offset = item.element.offset {
                     let moved = item.element.points.map { MaskPoint($0.x + offset.x, $0.y + offset.y) }
-                    outline(moved, width: brushWidth(item.element.size, size), size: size, selected: true, dashed: true)
+                    outline(moved, width: brushWidth(item.element.size, size), size: size, selected: true, dashed: true, closed: closed)
                     Path { path in
                         let c = item.element.centre
                         path.move(to: CGPoint(x: CGFloat(c.x) * size.width, y: CGFloat(c.y) * size.height))
@@ -171,11 +170,17 @@ struct RetouchCanvasView: View {
         .allowsHitTesting(false)
     }
 
-    /// One spot's outline: a ring for a tap, a band for a stroke.
+    /// One spot's outline: a ring for a tap, a band for a stroke, the line around a Patch or Move area.
     @ViewBuilder
-    private func outline(_ points: [MaskPoint], width: CGFloat, size: CGSize, selected: Bool, dashed: Bool) -> some View {
+    private func outline(_ points: [MaskPoint], width: CGFloat, size: CGSize, selected: Bool, dashed: Bool, closed: Bool) -> some View {
         let line = points.map { CGPoint(x: CGFloat($0.x) * size.width, y: CGFloat($0.y) * size.height) }
-        if line.count == 1, let centre = line.first {
+        if closed {
+            Path { path in
+                path.addLines(line)
+                path.closeSubpath()
+            }
+            .stroke(Color.white.opacity(selected ? 0.95 : 0.5), style: StrokeStyle(lineWidth: selected ? 2 : 1, dash: dashed ? [5, 4] : []))
+        } else if line.count == 1, let centre = line.first {
             Circle()
                 .stroke(Color.white.opacity(selected ? 0.95 : 0.5),
                         style: StrokeStyle(lineWidth: selected ? 2 : 1, dash: dashed ? [5, 4] : []))
@@ -186,6 +191,12 @@ struct RetouchCanvasView: View {
                 .stroke(Color.white.opacity(dashed ? 0.6 : selected ? 0.35 : 0.15),
                         style: StrokeStyle(lineWidth: dashed ? 1.5 : width, lineCap: .round, lineJoin: .round, dash: dashed ? [5, 4] : []))
         }
+    }
+
+    /// The stroke being drawn: as wide as the brush, or a thin line for an outline.
+    private func liveWidth(_ size: CGSize) -> CGFloat {
+        if RetouchTools.outlined.contains(tool) { return 2 }
+        return brushWidth(model.registry.control(id: "brushSize").map { model.value(of: $0) } ?? 10, size)
     }
 
     /// A brush diameter (% of the photo's long side) on screen.

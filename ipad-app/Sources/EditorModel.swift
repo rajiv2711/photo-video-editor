@@ -127,6 +127,23 @@ final class EditorModel: ObservableObject {
         registry.controls.first { $0.kind == .action && $0.tool == tool }?.label ?? tool
     }
 
+    /// A stroke or tap with a retouch tool. Patch and Content-Aware Move: a stroke is the outline
+    /// around the area; a drag that starts inside the selected outline sets where its texture comes
+    /// from (Patch) or where the area goes (Move).
+    private func retouchStroke(_ tool: String, points: [MaskPoint], pressure: [Double]) {
+        if RetouchTools.outlined.contains(tool) {
+            if let s = state.selectedRetouch, state.retouches[s].tool == tool, points.count >= 2,
+               let start = points.first, let end = points.last, state.retouches[s].contains(start) {
+                state.retouches[s].offset = MaskPoint(end.x - start.x, end.y - start.y)
+                feedback = Feedback(text: "Spot \(s + 1): " + (tool == "move" ? "moved" : "source set"))
+                render()
+                return
+            }
+            guard points.count >= 3 else { return }
+        }
+        addRetouch(tool, points: points, pressure: pressure)
+    }
+
     /// A new retouch step from a stroke or tap with the tool in use, with the brush and the tool's
     /// settings as they are now.
     private func addRetouch(_ tool: String, points: [MaskPoint], pressure: [Double]) {
@@ -188,7 +205,7 @@ final class EditorModel: ObservableObject {
     /// resized. `finished` is false while a drag is still going (the canvas sends it as it moves).
     func draw(_ points: [MaskPoint], pressure: [Double] = [], finished: Bool = true) {
         if let tool = retouchTool {
-            if finished { addRetouch(tool, points: points, pressure: pressure) }
+            if finished { retouchStroke(tool, points: points, pressure: pressure) }
             return
         }
         let base = dragBase ?? selectedPart
@@ -584,6 +601,8 @@ final class EditorModel: ObservableObject {
         "remove": "paint over what to remove",
         "heal": "tap or paint over a spot; it takes texture from nearby, matched to the colours around it (“clone source”, then tap, to choose where from)",
         "clone": "tap or paint; it copies pixels exactly from nearby (“clone source”, then tap, to choose where from)",
+        "patch": "draw around the flaw, then drag from inside it to a clean area (without a drag it takes texture from nearby)",
+        "move": "draw around the object, then drag from inside it to where it should go; its old place is filled in",
     ]
 
     /// What to do on the photo after making a mask part.

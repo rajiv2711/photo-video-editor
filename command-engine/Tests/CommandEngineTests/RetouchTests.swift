@@ -328,4 +328,67 @@ final class RetouchTests: XCTestCase {
         XCTAssertEqual(Self.mean(result.image, PixelBox(x0: 70, y0: 20, x1: 80, y1: 30)), 0.5, accuracy: 0.01)
         XCTAssertNotNil(result.sources[0])
     }
+
+    // MARK: - Patch and Content-Aware Move
+
+    func testPatchAndMoveNames() {
+        XCTAssertEqual(parse("patch"), [.run("patchTool")])
+        XCTAssertEqual(parse("patch tool"), [.run("patchTool")])
+        XCTAssertEqual(parse("content aware move"), [.run("moveTool")])
+        XCTAssertEqual(parse("content-aware move"), [.run("moveTool")])
+        XCTAssertEqual(parse("move tool"), [.run("moveTool")])
+    }
+
+    func testOutlineContainsPoints() {
+        let square = Retouch(tool: "patch", points: [MaskPoint(0.2, 0.2), MaskPoint(0.6, 0.2), MaskPoint(0.6, 0.5), MaskPoint(0.2, 0.5)])
+        XCTAssertTrue(square.contains(MaskPoint(0.4, 0.3)))
+        XCTAssertFalse(square.contains(MaskPoint(0.7, 0.3)))
+        XCTAssertFalse(Retouch(tool: "patch", points: [MaskPoint(0.2, 0.2), MaskPoint(0.6, 0.2)]).contains(MaskPoint(0.4, 0.2)))
+        XCTAssertEqual(square.centre, MaskPoint(0.4, 0.35))
+    }
+
+    /// An outline (a square of side 2 × `half` px) around the pixel (x, y) of a `size` picture.
+    static func outline(_ tool: String, _ x: Double, _ y: Double, half: Double, of size: (Int, Int)) -> Retouch {
+        let w = Double(size.0), h = Double(size.1)
+        return Retouch(tool: tool, points: [MaskPoint((x - half) / w, (y - half) / h), MaskPoint((x + half) / w, (y - half) / h),
+                                            MaskPoint((x + half) / w, (y + half) / h), MaskPoint((x - half) / w, (y + half) / h)],
+                       feather: 30, values: ["spotOpacity": 100])
+    }
+
+    func testPatchHealsTheOutlineFromWhereItWasDragged() {
+        let size = (100, 60)
+        let clean = Self.picture(size.0, size.1) { x, y in
+            let v: Float = 0.5 + 0.2 * Float(y) / 60 + ((x + 2 * y) % 5 == 0 ? 0.05 : 0)
+            return (v, v, v)
+        }
+        var flawed = clean
+        for y in 25..<35 {
+            for x in 20..<30 { flawed.pixels.replaceSubrange((3 * (y * 100 + x))..<(3 * (y * 100 + x) + 3), with: [0.9, 0.1, 0.1]) }
+        }
+        let spot = PixelBox(x0: 20, y0: 25, x1: 30, y1: 35)
+        var patch = Self.outline("patch", 25, 30, half: 8, of: size)
+        patch.offset = MaskPoint(45.0 / 100, 0)  // dragged 45 px to the right, onto clean texture
+        let canvas = RetouchCanvas(base: flawed)
+        XCTAssertLessThan(Self.difference(canvas.render([patch]).image, clean, in: spot), 0.05)
+        // Not dragged: a source is picked nearby.
+        patch.offset = nil
+        let auto = canvas.render([patch])
+        XCTAssertNotNil(auto.sources[0])
+        XCTAssertLessThan(Self.difference(auto.image, clean, in: spot), 0.05)
+    }
+
+    func testContentAwareMoveFillsTheOldPlaceAndPutsTheAreaDown() {
+        let size = (120, 60)
+        let ground: Float = 0.7
+        let picture = Self.picture(size.0, size.1) { x, y in
+            abs(x - 30) < 6 && abs(y - 30) < 6 ? (0.1, 0.1, 0.1) : (ground, ground, ground)
+        }
+        var move = Self.outline("move", 30, 30, half: 9, of: size)
+        let canvas = RetouchCanvas(base: picture)
+        XCTAssertEqual(canvas.render([move]).image, picture, "not dragged yet: nothing moves")
+        move.offset = MaskPoint(55.0 / 120, 0)
+        let moved = canvas.render([move]).image
+        XCTAssertEqual(Self.mean(moved, PixelBox(x0: 26, y0: 26, x1: 34, y1: 34)), ground, accuracy: 0.03, "the old place is filled")
+        XCTAssertEqual(Self.mean(moved, PixelBox(x0: 81, y0: 26, x1: 89, y1: 34)), 0.1, accuracy: 0.01, "the object is 55 px to the right")
+    }
 }

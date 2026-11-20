@@ -708,3 +708,7 @@
 {"group":"retouch","text":"clone","expect":[{"op":"run","control":"cloneTool"}]}
 {"group":"retouch","text":"clone stamp","expect":[{"op":"run","control":"cloneTool"}]}
 {"group":"retouch","text":"clone brush size 4","expect":[{"op":"run","control":"cloneTool"},{"op":"set","control":"brushSize","value":4}]}
+{"group":"retouch","text":"patch","expect":[{"op":"run","control":"patchTool"}]}
+{"group":"retouch","text":"patch tool","expect":[{"op":"run","control":"patchTool"}]}
+{"group":"retouch","text":"content aware move","expect":[{"op":"run","control":"moveTool"}]}
+{"group":"retouch","text":"move object","expect":[{"op":"run","control":"moveTool"}]}

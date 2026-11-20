@@ -221,6 +221,17 @@ public final class RetouchCanvas {
         case "clone":
             guard let o = pixels(step.offset) else { return nil }
             return Plan(read: union(write, shifted(write, o, width: width, height: height)), write: write)
+        case "patch":
+            // As heal, with the outline instead of a brush stroke.
+            let box = write.expanded(by: 2, width: width, height: height)
+            guard let o = pixels(step.offset) else { return nil }
+            return Plan(read: union(box, shifted(box, o, width: width, height: height)), write: box)
+        case "move":
+            // The area is filled from around it (as the Remove brush) and put down `offset` away.
+            guard let o = pixels(step.offset), o.dx != 0 || o.dy != 0 else { return nil }
+            let both = union(write, shifted(write, o, width: width, height: height))
+            let margin = Swift.max(16, Int(0.5 * Double(Swift.max(write.width, write.height))))
+            return Plan(read: both.expanded(by: margin, width: width, height: height), write: both)
         default:
             return nil
         }
@@ -233,7 +244,8 @@ public final class RetouchCanvas {
         guard !box.isEmpty else { return step }
         let hole = footprint(step, in: box).map { $0 > 0.02 }
         var out = step
-        if let found = Healing.pickSource(hole: hole, box: box, image: image, diameter: 2 * radius(step), brightness: step.tool != "heal") {
+        let reach = RetouchTools.outlined.contains(step.tool) ? Double(Swift.min(box.width, box.height)) : 2 * radius(step)
+        if let found = Healing.pickSource(hole: hole, box: box, image: image, diameter: reach, brightness: step.tool == "clone") {
             out.offset = MaskPoint(Double(found.dx) / Double(image.width), Double(found.dy) / Double(image.height))
         }
         return out
@@ -260,8 +272,10 @@ public final class RetouchCanvas {
         switch step.tool {
         case "remove":
             return remove(step, plan: plan, image: image)
-        case "heal":
+        case "heal", "patch":
             return heal(step, plan: plan, image: image)
+        case "move":
+            return move(step, plan: plan, image: image)
         case "clone":
             // The source's pixels as they are, blended in by the brush's soft edge.
             guard let o = pixels(step.offset) else { return image.crop(plan.write).pixels }
@@ -285,8 +299,16 @@ public final class RetouchCanvas {
         return MaskRaster.resample(points, spacing: Swift.max(0.5, radius(step) / 4))
     }
 
-    /// The pixels the brush touches.
+    /// The pixels the brush (or the outline, with its soft edge) touches.
     func footprintBox(_ step: Retouch, width: Int, height: Int) -> PixelBox {
+        if RetouchTools.outlined.contains(step.tool) {
+            guard step.points.count >= 3 else { return PixelBox(x0: 0, y0: 0, x1: 0, y1: 0) }
+            let xs = step.points.map { $0.x * Double(base.width) }, ys = step.points.map { $0.y * Double(base.height) }
+            let soft = softEdge(step) + 1
+            return PixelBox(x0: Int((xs.min()! - soft).rounded(.down)), y0: Int((ys.min()! - soft).rounded(.down)),
+                            x1: Int((xs.max()! + soft).rounded(.up)) + 1, y1: Int((ys.max()! + soft).rounded(.up)) + 1)
+                .expanded(by: 0, width: width, height: height)
+        }
         let dabs = self.dabs(step)
         guard !dabs.isEmpty else { return PixelBox(x0: 0, y0: 0, x1: 0, y1: 0) }
         let r = radius(step)
@@ -295,8 +317,22 @@ public final class RetouchCanvas {
         return box.expanded(by: 0, width: width, height: height)
     }
 
-    /// How much the brush covers each pixel of `box` (0…1): round dabs with the step's soft edge.
+    /// An outline's soft edge in pixels: Brush Feather 100 % is 1 % of the photo's long side.
+    func softEdge(_ step: Retouch) -> Double {
+        Swift.max(1, step.feather / 100 * 0.01 * longSide)
+    }
+
+    /// How much the brush covers each pixel of `box` (0…1): round dabs with the step's soft edge, or
+    /// the inside of the outline, softened.
     func footprint(_ step: Retouch, in box: PixelBox) -> [Float] {
+        if RetouchTools.outlined.contains(step.tool) {
+            let path = step.points.map {
+                MaskPoint(($0.x * Double(base.width) - Double(box.x0)) / Double(box.width),
+                          ($0.y * Double(base.height) - Double(box.y0)) / Double(box.height))
+            }
+            let inside = MaskRaster.polygon(path, width: box.width, height: box.height)
+            return MaskRaster.blur(inside, width: box.width, height: box.height, radius: Swift.max(1, Int(softEdge(step) / 2)))
+        }
         var out = [Float](repeating: 0, count: box.width * box.height)
         let r = radius(step)
         let soft = Swift.max(step.feather / 100, 1.5 / r)
@@ -342,6 +378,46 @@ public final class RetouchCanvas {
         let correction = Healing.membrane(difference, hole: cover.map { $0 > 0.02 }, width: box.width, height: box.height)
         let healed = RGBBuffer(width: box.width, height: box.height, pixels: zip(source.pixels, correction).map { $0 + $1 })
         return blend(healed, over: here, cover: cover, from: box, to: box)
+    }
+
+    // MARK: - Content-Aware Move
+
+    /// The area filled from around it, then its old pixels put down `offset` away, matched to the
+    /// colours around their new place (the heal membrane) and blended in by the soft edge.
+    private func move(_ step: Retouch, plan: Plan, image: RGBBuffer) -> [Float] {
+        guard let o = pixels(step.offset) else { return image.crop(plan.write).pixels }
+        let read = plan.read
+        let crop = image.crop(read)
+        let cover = footprint(step, in: read)
+        let emptied = RGBBuffer(width: read.width, height: read.height,
+                                pixels: blend(Inpaint.fill(crop, hole: cover.map { $0 > 0.02 }), over: crop, cover: cover, from: read, to: read))
+        // In the write box: what is there now (emptied), the area's old pixels `offset` back, its cover.
+        let box = plan.write
+        let n = box.width * box.height
+        var under = [Float](repeating: 0, count: 3 * n), moved = under
+        var landing = [Float](repeating: 0, count: n)
+        for y in 0..<box.height {
+            for x in 0..<box.width {
+                let ix = box.x0 + x - read.x0, iy = box.y0 + y - read.y0, j = y * box.width + x
+                let sx = Swift.min(read.width - 1, Swift.max(0, ix - o.dx)), sy = Swift.min(read.height - 1, Swift.max(0, iy - o.dy))
+                let inside = ix - o.dx == sx && iy - o.dy == sy
+                landing[j] = inside ? cover[sy * read.width + sx] : 0
+                for c in 0..<3 {
+                    under[3 * j + c] = emptied.pixels[3 * (iy * read.width + ix) + c]
+                    moved[3 * j + c] = crop.pixels[3 * (sy * read.width + sx) + c]
+                }
+            }
+        }
+        let correction = Healing.membrane(zip(under, moved).map { $0 - $1 }, hole: landing.map { $0 > 0.02 },
+                                          width: box.width, height: box.height)
+        var out = under
+        for j in 0..<n where landing[j] > 0 {
+            for c in 0..<3 {
+                let placed = moved[3 * j + c] + correction[3 * j + c]
+                out[3 * j + c] = under[3 * j + c] + (placed - under[3 * j + c]) * landing[j]
+            }
+        }
+        return out
     }
 
     /// The pixels `offset` away from each pixel of `box` (the picture's edge repeated outside it).
