@@ -3,8 +3,8 @@ import CommandEngine
 import SwiftUI
 import UIKit
 
-/// Holds the photo, the slider values and the command interpreter. Sliders and typed commands
-/// both change the same `EditState`, so they always agree.
+/// Holds the photo, the slider values and the command interpreter. Sliders, typed commands and
+/// spoken commands all change the same `EditState`, so they always agree.
 @MainActor
 final class EditorModel: ObservableObject {
     struct Feedback: Equatable {
@@ -18,11 +18,17 @@ final class EditorModel: ObservableObject {
     @Published private(set) var preview: UIImage?
     @Published private(set) var feedback: Feedback?
     @Published private(set) var focusedControlID: String?
+    @Published private(set) var voiceState: VoiceState = .idle
+
+    enum VoiceState: Equatable {
+        case idle, listening, transcribing
+    }
 
     private var interpreter: CommandInterpreter
     private var original: CIImage
     private var previewSource: CIImage
     private let renderer = PhotoRenderer()
+    private let recorder = AudioRecorder()
 
     init() {
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
@@ -70,13 +76,64 @@ final class EditorModel: ObservableObject {
         feedback = Feedback(text: "\(control.label) selected. Say “more” or “less”.")
     }
 
-    func run(_ text: String) {
+    func run(_ text: String, heard: Bool = false) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let outcomes = interpreter.interpret(trimmed, state: &state)
         focusedControlID = interpreter.lastControlID
-        feedback = describe(outcomes)
+        var result = describe(outcomes)
+        if heard { result.text = "Heard “\(trimmed)” · " + result.text }
+        feedback = result
         render()
+    }
+
+    // MARK: - Voice (recorded on the iPad, transcribed by the laptop voice server)
+
+    func toggleListening() {
+        switch voiceState {
+        case .idle: Task { await startListening() }
+        case .listening: Task { await finishListening() }
+        case .transcribing: break
+        }
+    }
+
+    private func startListening() async {
+        guard VoiceServerClient.isConfigured else {
+            feedback = Feedback(text: VoiceServerClient.ClientError.notConfigured.localizedDescription, isProblem: true)
+            return
+        }
+        do {
+            try await recorder.start()
+            voiceState = .listening
+            feedback = Feedback(text: "Listening… tap the mic again when you're done.")
+        } catch {
+            feedback = Feedback(text: error.localizedDescription, isProblem: true)
+        }
+    }
+
+    private func finishListening() async {
+        let audio: Data
+        do {
+            audio = try recorder.stop()
+        } catch {
+            voiceState = .idle
+            feedback = Feedback(text: error.localizedDescription, isProblem: true)
+            return
+        }
+        voiceState = .transcribing
+        feedback = Feedback(text: "Transcribing…")
+        do {
+            let result = try await VoiceServerClient.transcribe(wav: audio)
+            voiceState = .idle
+            if result.text.isEmpty {
+                feedback = Feedback(text: "Didn't catch that. Try again.", isProblem: true)
+            } else {
+                run(result.text, heard: true)
+            }
+        } catch {
+            voiceState = .idle
+            feedback = Feedback(text: error.localizedDescription, isProblem: true)
+        }
     }
 
     func load(_ data: Data) {

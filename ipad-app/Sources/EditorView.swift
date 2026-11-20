@@ -6,6 +6,7 @@ struct EditorView: View {
     @StateObject private var model = EditorModel()
     @State private var pickerItem: PhotosPickerItem?
     @State private var command = ""
+    @State private var showSettings = false
     @FocusState private var commandFocused: Bool
 
     var body: some View {
@@ -24,12 +25,16 @@ struct EditorView: View {
                     }
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button { showSettings = true } label: {
+                        Label("Settings", systemImage: "gearshape")
+                    }
                     Button("Reset All") { model.run("reset all") }
                     Button { model.save() } label: {
                         Label("Save", systemImage: "square.and.arrow.down")
                     }
                 }
             }
+            .sheet(isPresented: $showSettings) { SettingsView() }
             .onChange(of: pickerItem) { _, item in
                 guard let item else { return }
                 Task { @MainActor in
@@ -94,9 +99,8 @@ struct EditorView: View {
                 .font(.callout)
             }
             HStack(spacing: 10) {
-                Image(systemName: "text.bubble")
-                    .foregroundStyle(.secondary)
-                TextField("Type a command: “contrast more more”, “exposure 0.5”, “reset all”", text: $command)
+                micButton
+                TextField("Tap the mic, or type: “contrast more more”, “exposure 0.5”, “reset all”", text: $command)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .submitLabel(.go)
@@ -110,6 +114,22 @@ struct EditorView: View {
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
         .padding()
+    }
+
+    private var micButton: some View {
+        let listening = model.voiceState == .listening
+        return Button { model.toggleListening() } label: {
+            if model.voiceState == .transcribing {
+                ProgressView().frame(width: 32, height: 32)
+            } else {
+                Image(systemName: listening ? "stop.circle.fill" : "mic.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(listening ? Color.red : Color.accentColor)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(model.voiceState == .transcribing)
+        .accessibilityLabel(listening ? "Stop listening" : "Speak a command")
     }
 
     private func submit() {

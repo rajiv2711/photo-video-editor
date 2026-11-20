@@ -16,9 +16,11 @@ Locked 2026-11-18.
 - Photo engine: Core Image (each filter lists its slider names and ranges).
 - Video: AVFoundation + VideoToolbox.
 - Pencil: PencilKit + Apple's touch APIs.
-- Voice: Apple on-device speech recognition → name matcher → `controls.json`; later a tiny model trained in Python.
+- Voice (development phase): iPad records a WAV clip → `voice-server/` on the laptop (Whisper large-v3-turbo, GPU) via ngrok → text → CommandEngine on the iPad. Plain HTTPS + bearer token, not MCP.
+- Voice (long term): fully offline on the iPad: Apple on-device speech or a small trained model.
+- Token for the voice server: entered once in the app's Settings (Keychain); never in the repo or the build.
 - Logic core (matcher, slider steps): Swift package `CommandEngine` in `command-engine/`, built and tested on Linux.
-- Python: prototyping and model training only.
+- Python: laptop tooling only (voice server, test harnesses, later model training).
 - FilmCraft / PhotoCraft (storytold): design references, not code dependencies.
 
 ## Build and install

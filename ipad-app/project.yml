@@ -34,3 +34,4 @@ targets:
           UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown
           UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: Save your edited photos to your library.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Hear spoken editing commands such as contrast more.

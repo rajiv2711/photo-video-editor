@@ -12,14 +12,17 @@ Decisions: [DECISIONS.md](DECISIONS.md) · License: [MIT](LICENSE)
 | [`ipad-app/`](ipad-app) | The iPad app (SwiftUI): photo canvas, sliders, command bar. `project.yml` is the recipe the cloud build turns into an Xcode project. |
 | [`command-engine/`](command-engine) | Turns words into slider changes: the control list (`controls.json`), parser, name matcher. Used by the app; also builds and tests on Linux. |
 | [`command-engine/Sources/command-scorer/`](command-engine/Sources/command-scorer) | Scores the parser against the test phrases. |
+| [`voice-server/`](voice-server) | Laptop server for development: the iPad sends a voice clip, Whisper returns the text. Reached through ngrok. |
 | [`test-data/photos/`](test-data/photos) | The test photo, used by the app as its default image and by the reports. |
 | [`test-data/phrases/`](test-data/phrases) | Test phrases with the commands each should produce (`commands.jsonl`). |
-| [`dev-tools/`](dev-tools) | Laptop scripts, e.g. `make_report.py` builds the HTML report. |
+| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report). |
 | [`.github/workflows/`](.github/workflows) | Cloud build: Linux tests → unsigned `.ipa` + iPad simulator screenshots. |
 | `reports/`, `research_notes/` | Local only, git-ignored. |
 
 ## How a command flows
 ```
+voice (iPad mic) → voice-server on the laptop (Whisper) → text   ┐
+typed text ──────────────────────────────────────────────────────┴→
 "contrast more more more"
    → parser (command-engine)  → {"op":"nudge","control":"contrast","steps":3}
    → applier (command-engine) → Contrast 0 → 15
@@ -35,6 +38,16 @@ docker run --rm -v "$PWD":/src -w /src swift:6.2 bash -c \
 # HTML report with before/after photos
 python3 dev-tools/make_report.py reports/parser/results.json
 ```
+
+## Voice server (laptop)
+```sh
+uv run --project voice-server voice-server/server.py      # first run creates the token in voice-server/.env
+ngrok http 8765 --url=<your ngrok domain>                 # in another terminal
+uv run --project voice-server pytest voice-server -q      # API tests
+uv run --project voice-server dev-tools/voice_test.py     # synthetic voices → "reports/Voice test report.html"
+uv run --project voice-server dev-tools/voice_test.py --record --mic plughw:2,0   # your own voice
+```
+On the iPad: Settings (gear) → paste the ngrok address and the token → Test connection.
 
 ## Install on the iPad (free Apple ID, no App Store)
 1. Push to GitHub. Open the latest **Build** run under Actions and download `PhotoVideoEditor-ipa`.

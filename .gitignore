@@ -11,3 +11,13 @@ DerivedData/
 .swiftpm/
 Payload/
 *.ipa
+
+# Voice server: local environment, secret token, and logged recordings stay on the laptop
+voice-server/.venv/
+voice-server/.env
+voice-server/recordings/
+voice-server/voices/
+
+# Python caches
+__pycache__/
+.pytest_cache/
