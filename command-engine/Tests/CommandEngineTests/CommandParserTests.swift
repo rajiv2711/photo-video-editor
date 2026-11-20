@@ -36,7 +36,7 @@ final class CommandParserTests: XCTestCase {
     }
 
     func testUnknownWordStopsLaterActions() {
-        XCTAssertEqual(parser.parse("shadows more"), [.unknown("shadows")])
+        XCTAssertEqual(parser.parse("vignette more"), [.unknown("vignette")])
     }
 
     func testJSONShapeIsCompactAndOmitsEmptyFields() {

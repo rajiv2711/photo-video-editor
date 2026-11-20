@@ -13,7 +13,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 1. **Exposure** — overall brightness, in stops
 - [x] 2. **Contrast** — spread between darks and lights
 - [x] 3. **Highlights** — recover or brighten the bright areas
-- [ ] 4. **Shadows** — lift or deepen the dark areas
+- [x] 4. **Shadows** — lift or deepen the dark areas
 - [ ] 5. **Whites** — set the brightest point
 - [ ] 6. **Blacks** — set the darkest point
 - [ ] 7. **Brightness** — midtone lightness without clipping the ends

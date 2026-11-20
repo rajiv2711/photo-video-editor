@@ -30,13 +30,15 @@ struct LightRenderer {
             output = filter.outputImage ?? output
         }
 
-        // Highlights below 0 recover bright areas with Core Image's local highlight/shadow filter
-        // (amount 1 = untouched … 0 = strongest). Highlights above 0 brighten through the tone curve.
+        // Core Image's local highlight/shadow filter. Highlights below 0 recover bright areas
+        // (amount 1 = untouched … 0 = strongest); above 0 they brighten through the tone curve.
+        // Shadows lift (up to 1) or deepen (down to −1) the dark areas.
         let highlightAmount = 1 + min(v("highlights"), 0) / 100
-        if highlightAmount != 1 {
+        let shadowAmount = v("shadows") / 100
+        if highlightAmount != 1 || shadowAmount != 0 {
             output = output.applyingFilter("CIHighlightShadowAdjust", parameters: [
                 "inputHighlightAmount": highlightAmount,
-                "inputShadowAmount": 0.0,
+                "inputShadowAmount": shadowAmount,
                 "inputRadius": Self.localRadius,
             ])
         }

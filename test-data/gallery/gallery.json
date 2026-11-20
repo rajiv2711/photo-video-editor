@@ -9,6 +9,8 @@
     {"id": "contrast-minus", "command": "contrast -100", "control": "contrast", "expect": [{"metric": "p95_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]},
     {"id": "highlights-minus", "command": "highlights -100", "control": "highlights", "expect": [{"metric": "p95_luma", "dir": "down"}]},
     {"id": "highlights-plus", "command": "highlights 100", "control": "highlights", "expect": [{"metric": "p75_luma", "dir": "up"}]},
+    {"id": "shadows-plus", "command": "shadows 100", "control": "shadows", "expect": [{"metric": "p5_luma", "dir": "up"}]},
+    {"id": "shadows-minus", "command": "shadows -100", "control": "shadows", "expect": [{"metric": "mean_luma", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]
