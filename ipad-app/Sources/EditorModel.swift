@@ -130,7 +130,10 @@ final class EditorModel: ObservableObject {
     /// A stroke or tap with a retouch tool. Patch and Content-Aware Move: a stroke is the outline
     /// around the area; a drag that starts inside the selected outline sets where its texture comes
     /// from (Patch) or where the area goes (Move).
-    private func retouchStroke(_ tool: String, points: [MaskPoint], pressure: [Double]) {
+    private func retouchStroke(_ tool: String, points drawn: [MaskPoint], pressure: [Double]) {
+        // After liquify strokes, other tools work on the picture as it was before liquify (it is
+        // liquified last): the points go back through the liquify field.
+        let points = tool != "liquify" && state.retouches.contains { $0.tool == "liquify" } ? renderer.retouch.unwarp(drawn) : drawn
         if RetouchTools.outlined.contains(tool) {
             if let s = state.selectedRetouch, state.retouches[s].tool == tool, points.count >= 2,
                let start = points.first, let end = points.last, state.retouches[s].contains(start) {
@@ -328,7 +331,9 @@ final class EditorModel: ObservableObject {
             // The selected spot copies from around the tapped point.
             if let s = state.selectedRetouch {
                 let centre = state.retouches[s].centre
-                state.retouches[s].offset = MaskPoint(x - centre.x, y - centre.y)
+                let tapped = state.retouches.contains { $0.tool == "liquify" }
+                    ? renderer.retouch.unwarp([MaskPoint(x, y)])[0] : MaskPoint(x, y)
+                state.retouches[s].offset = MaskPoint(tapped.x - centre.x, tapped.y - centre.y)
                 feedback = Feedback(text: "Spot \(s + 1): source set")
             }
         default:
@@ -611,6 +616,7 @@ final class EditorModel: ObservableObject {
         "move": "draw around the object, then drag from inside it to where it should go; its old place is filled in",
         "redEye": "tap the middle of a red eye with a brush about the eye's size, or draw around the eye",
         "petEye": "tap a glowing pet eye with a brush about the eye's size, or draw around the eye",
+        "liquify": "drag to push, or hold still (tap) to twirl, pucker, bloat or reconstruct; Liquify Mode and Tool Strength set how",
     ]
 
     /// What to do on the photo after making a mask part.

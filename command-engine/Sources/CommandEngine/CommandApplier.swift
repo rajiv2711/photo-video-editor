@@ -237,6 +237,10 @@ public struct CommandApplier {
             }
             state.setRetouchTool(tool)
             state.selectRetouch(nil)
+            // "liquify pucker": the action's option sets the tool's mode.
+            if let v = command.value, let id = RetouchTools.optionSetting[tool], let setting = registry.control(id: id) {
+                state.set(setting, to: v)
+            }
             return out
         }
 

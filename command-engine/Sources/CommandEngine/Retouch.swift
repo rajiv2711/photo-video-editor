@@ -72,7 +72,7 @@ public struct Retouch: Hashable, Codable {
 /// which per-step settings each keeps.
 public enum RetouchTools {
     /// Option ids of the "retouchTool" choice; must match controls.json (unit-tested).
-    public static let ids = ["none", "remove", "heal", "clone", "patch", "move", "redEye", "petEye"]
+    public static let ids = ["none", "remove", "heal", "clone", "patch", "move", "redEye", "petEye", "liquify"]
 
     /// Tools that copy from a source spot (its `offset`; "clone source" picks it by a tap).
     public static let copying: Set<String> = ["heal", "clone", "patch"]
@@ -83,11 +83,18 @@ public enum RetouchTools {
     /// Tools that fix one eye: a tap (a circle the brush's size) or a line around the eye.
     public static let eyes: Set<String> = ["redEye", "petEye"]
 
+    /// Spots shown as outlines on the photo (brush tools such as Liquify are not).
+    public static let spots: Set<String> = ["remove", "heal", "clone", "patch", "move", "redEye", "petEye"]
+
+    /// The choice a tool's action option sets ("liquify pucker" → Liquify Mode).
+    public static let optionSetting: [String: String] = ["liquify": "liquifyMode"]
+
     /// The controls a new step of `tool` copies from the panel (and keeps as its own settings).
     public static func settings(for tool: String) -> [String] {
         switch tool {
         case "redEye": return ["spotOpacity", "pupilSize", "pupilDarken"]
         case "petEye": return ["spotOpacity", "pupilSize", "pupilDarken", "catchlight"]
+        case "liquify": return ["spotOpacity", "liquifyMode", "toolStrength"]
         default: return ["spotOpacity"]
         }
     }

@@ -123,7 +123,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [ ] 91. **Blemish removal** — AI auto-detects and removes acne and spots **AI · later**
 - [ ] 92. **Skin smoothing** — soften skin, keep pores and freckles **AI · later**
 - [ ] 93. **Teeth whitening / eye brightening** — quick portrait fixes **AI · later**
-- [ ] 94. **Liquify** — push/pull pixels; face-aware reshaping
+- [x] 94. **Liquify** — push/pull pixels; face-aware reshaping
 - [ ] 95. **Dodge & burn** — brush to lighten or darken
 - [ ] 96. **Sponge** — brush to add or remove saturation
 - [ ] 97. **Blur / sharpen / smudge brushes** — local touch-up brushes

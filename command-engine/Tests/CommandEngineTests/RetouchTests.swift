@@ -479,4 +479,73 @@ final class RetouchTests: XCTestCase {
         XCTAssertEqual(run("catchlight off"), [.changed(controlID: "catchlight", from: 1, to: 0)], "a red eye has no catchlight: for new eyes")
         XCTAssertEqual(RetouchTools.settings(for: "petEye"), ["spotOpacity", "pupilSize", "pupilDarken", "catchlight"])
     }
+
+    // MARK: - Liquify
+
+    func testLiquifyNames() {
+        XCTAssertEqual(parse("liquify"), [.run("liquify")])
+        XCTAssertEqual(parse("liquify pucker"), [.run("liquify", value: 2)])
+        XCTAssertEqual(parse("liquefy bloat"), [.run("liquify", value: 3)])
+        XCTAssertEqual(parse("liquify forward warp"), [.run("liquify", value: 0)])
+        XCTAssertEqual(parse("liquify mode twirl"), [.set("liquifyMode", 1)])
+        XCTAssertEqual(parse("tool strength 80"), [.set("toolStrength", 80)])
+        XCTAssertEqual(parse("pressure less"), [.nudge("toolStrength", -1)])
+        XCTAssertEqual(run("liquify reconstruct"), [.ran(controlID: "liquify")])
+        XCTAssertEqual(state.retouchTool, "liquify")
+        XCTAssertEqual(state.value(of: control("liquifyMode")), 4, "the option sets Liquify Mode")
+        XCTAssertEqual(control("liquifyMode").options.map(\.id), LiquifyField.modes)
+        XCTAssertEqual(control("liquify").options.map(\.id), LiquifyField.modes)
+    }
+
+    /// Grey with dark vertical lines every 8 px (x = 4, 12, 20, …).
+    static func lines(_ x: Int, _ y: Int) -> (Float, Float, Float) {
+        x % 8 == 4 ? (0.1, 0.1, 0.1) : (0.8, 0.8, 0.8)
+    }
+
+    func testLiquifyPushMovesLinesAlongTheStroke() {
+        let size = (96, 64)
+        let picture = Self.picture(size.0, size.1, Self.lines)
+        let push = Retouch(tool: "liquify", points: [MaskPoint(40.0 / 96, 0.5), MaskPoint(52.0 / 96, 0.5)], size: 40,
+                           values: ["liquifyMode": 0, "toolStrength": 100, "spotOpacity": 100])
+        let canvas = RetouchCanvas(base: picture)
+        let pushed = canvas.render([push]).image
+        // Near the stroke's end the line from x = 44 is now about 12 px further right (strength 100 moves with the brush).
+        let row = 32
+        let darkest = (40..<64).min { pushed.color($0, row).0 < pushed.color($1, row).0 }!
+        XCTAssertNotEqual(darkest % 8, 4, "the lines moved")
+        XCTAssertGreaterThan(Self.difference(pushed, picture, in: PixelBox(x0: 36, y0: 26, x1: 60, y1: 38)), 0.1)
+        XCTAssertEqual(Self.difference(pushed, picture, in: PixelBox(x0: 0, y0: 0, x1: 96, y1: 6)), 0, "far away nothing moves")
+
+        // Reconstruct over it brings the lines back.
+        var restore = push
+        restore.points = [MaskPoint(46.0 / 96, 0.5)]
+        restore.size = 80
+        restore.values["liquifyMode"] = 4
+        let restored = canvas.render([push, restore]).image
+        XCTAssertLessThan(Self.difference(restored, picture, in: PixelBox(x0: 36, y0: 26, x1: 60, y1: 38)), 0.03)
+
+        // A spot made after liquifying is kept where its pixels were before liquify.
+        let moved = canvas.unwarp(MaskPoint(52.0 / 96, 0.5))
+        _ = canvas.render([push])
+        XCTAssertLessThan(canvas.unwarp(MaskPoint(52.0 / 96, 0.5)).x, 50.0 / 96, "the brush's end shows what was further left")
+        XCTAssertEqual(moved.y, 0.5, accuracy: 0.001)
+    }
+
+    func testTwirlPuckerAndBloat() {
+        let size = (64, 64)
+        let picture = Self.picture(size.0, size.1, Self.lines)
+        func tap(_ mode: Double) -> RGBBuffer {
+            RetouchCanvas(base: picture).render([Retouch(tool: "liquify", points: [MaskPoint(0.5, 0.5)], size: 50,
+                                                         values: ["liquifyMode": mode, "toolStrength": 100, "spotOpacity": 100])]).image
+        }
+        let middle = PixelBox(x0: 20, y0: 20, x1: 44, y1: 44)
+        // Twirl bends the vertical lines: a column that was all light now crosses dark.
+        let twirled = tap(1)
+        XCTAssertGreaterThan(Self.difference(twirled, picture, in: middle), 0.1)
+        // Pucker pulls the line 4 px right of the middle (x = 36) towards it, bloat pushes it away.
+        func line(_ image: RGBBuffer) -> Int { (33...42).min { image.color($0, 32).0 < image.color($1, 32).0 }! }
+        XCTAssertEqual(line(picture), 36)
+        XCTAssertLessThan(line(tap(2)), 36)
+        XCTAssertGreaterThan(line(tap(3)), 36)
+    }
 }

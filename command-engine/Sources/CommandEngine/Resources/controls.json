@@ -906,7 +906,8 @@
         {"id": "patch", "label": "Patch"},
         {"id": "move", "label": "Content Aware Move", "synonyms": ["content-aware move", "move"]},
         {"id": "redEye", "label": "Red Eye", "synonyms": ["red-eye"]},
-        {"id": "petEye", "label": "Pet Eye", "synonyms": ["pet-eye"]}
+        {"id": "petEye", "label": "Pet Eye", "synonyms": ["pet-eye"]},
+        {"id": "liquify", "label": "Liquify", "synonyms": ["liquefy"]}
       ]},
     {"id": "removeBrush", "label": "Remove Brush", "group": "retouch", "kind": "action", "tool": "remove",
       "synonyms": ["remove tool", "content aware remove", "content-aware remove", "content aware fill", "content-aware fill",
@@ -944,6 +945,27 @@
     {"id": "pupilDarken", "label": "Pupil Darken", "group": "retouch", "section": "Eye", "kind": "slider", "scope": "retouch",
       "synonyms": ["darken pupil", "darken", "pupil darkness", "darken eyes"], "min": 0, "max": 100, "default": 50, "step": 5},
     {"id": "catchlight", "label": "Catchlight", "group": "retouch", "section": "Eye", "kind": "toggle", "scope": "retouch",
-      "synonyms": ["catch light", "eye highlight", "eye sparkle"], "default": 1}
+      "synonyms": ["catch light", "eye highlight", "eye sparkle"], "default": 1},
+    {"id": "liquify", "label": "Liquify", "group": "retouch", "kind": "action", "tool": "liquify",
+      "synonyms": ["liquefy", "liquify tool", "liquify brush", "liquefy tool"],
+      "options": [
+        {"id": "push", "label": "Push", "synonyms": ["forward warp", "forward", "push pixels", "smear pixels"]},
+        {"id": "twirl", "label": "Twirl", "synonyms": ["twirl clockwise", "swirl", "twist"]},
+        {"id": "pucker", "label": "Pucker", "synonyms": ["shrink", "pinch"]},
+        {"id": "bloat", "label": "Bloat", "synonyms": ["grow", "inflate", "enlarge"]},
+        {"id": "reconstruct", "label": "Reconstruct", "synonyms": ["restore", "undo warp", "unwarp"]}
+      ]},
+    {"id": "liquifyMode", "label": "Liquify Mode", "group": "retouch", "section": "Liquify", "kind": "choice",
+      "synonyms": ["liquify brush mode", "liquefy mode"],
+      "options": [
+        {"id": "push", "label": "Push", "synonyms": ["forward warp", "forward", "push pixels", "smear pixels"]},
+        {"id": "twirl", "label": "Twirl", "synonyms": ["twirl clockwise", "swirl", "twist"]},
+        {"id": "pucker", "label": "Pucker", "synonyms": ["shrink", "pinch"]},
+        {"id": "bloat", "label": "Bloat", "synonyms": ["grow", "inflate", "enlarge"]},
+        {"id": "reconstruct", "label": "Reconstruct", "synonyms": ["restore", "undo warp", "unwarp"]}
+      ]},
+    {"id": "toolStrength", "label": "Tool Strength", "group": "retouch", "section": "Brush tools", "kind": "slider",
+      "synonyms": ["strength", "liquify pressure", "liquify strength", "brush pressure", "pressure", "brush tool strength"],
+      "min": 1, "max": 100, "default": 50, "step": 5}
   ]
 }

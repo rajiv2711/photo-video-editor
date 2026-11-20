@@ -122,7 +122,9 @@ public struct RetouchResult {
 /// Draws the retouch steps (see Retouch.swift) on a picture, in order, each on the result of the ones
 /// before. Every step works on the box it touches only; its result (at full opacity) is kept, keyed by
 /// the step and the pixels it read, so changing a step's opacity, adding a step or deleting one only
-/// works out what really changed. The iPad keeps one canvas per picture (preview or full size).
+/// works out what really changed. Liquify strokes are one displacement field, applied last (the app
+/// maps spots made after a liquify stroke back through it, so they stay on what they covered).
+/// The iPad keeps one canvas per picture (preview or full size).
 public final class RetouchCanvas {
     /// The picture before any retouching.
     public let base: RGBBuffer
@@ -131,6 +133,10 @@ public final class RetouchCanvas {
     /// Results of single steps: (step without opacity, checksum of what it read) → its pixels in its box.
     private var results: [StepKey: [Float]] = [:]
     private var cachedFloats = 0
+    /// The liquify field of the last render and its strokes.
+    private var liquify: (strokes: [Retouch], field: LiquifyField)?
+    /// The last liquified picture: the steps before liquify it started from, the strokes, the result.
+    private var lastWarp: (before: [Retouch], strokes: [Retouch], image: RGBBuffer)?
 
     struct StepKey: Hashable {
         let step: Retouch
@@ -144,25 +150,56 @@ public final class RetouchCanvas {
     /// The photo's long side in pixels (brush sizes are shares of it).
     var longSide: Double { Double(Swift.max(base.width, base.height)) }
 
-    /// The picture with `steps` drawn in order.
+    /// The picture with `steps` drawn in order (liquify strokes last, as one field).
     public func render(_ steps: [Retouch]) -> RetouchResult {
+        let indices = steps.indices.filter { steps[$0].tool != "liquify" }
+        let pixelSteps = indices.map { steps[$0] }
         var image = base
         var drawn: [Retouch] = []
         // Steps already drawn last time (the usual case: one more step at the end) are not drawn again.
-        if let last, last.given.count <= steps.count,
-           zip(last.given, steps).enumerated().allSatisfy({ $0.element.0 == $0.element.1 || last.drawn[$0.offset] == $0.element.1 }) {
+        if let last, last.given.count <= pixelSteps.count,
+           zip(last.given, pixelSteps).enumerated().allSatisfy({ $0.element.0 == $0.element.1 || last.drawn[$0.offset] == $0.element.1 }) {
             image = last.image
             drawn = last.drawn
         }
-        for step in steps.dropFirst(drawn.count) {
+        for step in pixelSteps.dropFirst(drawn.count) {
             drawn.append(draw(step, on: &image))
         }
-        last = (steps, drawn, image)
+        last = (pixelSteps, drawn, image)
         var sources: [Int: MaskPoint] = [:]
-        for (i, step) in steps.enumerated() where step.offset == nil {
-            if let offset = drawn[i].offset { sources[i] = offset }
+        for (k, i) in indices.enumerated() where steps[i].offset == nil {
+            if let offset = drawn[k].offset { sources[i] = offset }
         }
-        return RetouchResult(image: image, sources: sources)
+        let strokes = steps.filter { $0.tool == "liquify" }
+        guard !strokes.isEmpty else { return RetouchResult(image: image, sources: sources) }
+        if let lastWarp, lastWarp.before == drawn, lastWarp.strokes == strokes {
+            return RetouchResult(image: lastWarp.image, sources: sources)
+        }
+        let warped = field(for: strokes).warped(image)
+        lastWarp = (drawn, strokes, warped)
+        return RetouchResult(image: warped, sources: sources)
+    }
+
+    /// The liquify field of these strokes (strokes added at the end are added to the last field).
+    func field(for strokes: [Retouch]) -> LiquifyField {
+        var field: LiquifyField
+        var done = 0
+        if let liquify, liquify.strokes.count <= strokes.count, Array(strokes.prefix(liquify.strokes.count)) == liquify.strokes {
+            field = liquify.field
+            done = liquify.strokes.count
+        } else {
+            let grid = MaskRaster.gridSize(width: Double(base.width), height: Double(base.height))
+            field = LiquifyField(width: grid.width, height: grid.height)
+        }
+        for stroke in strokes.dropFirst(done) { field.apply(stroke) }
+        liquify = (strokes, field)
+        return field
+    }
+
+    /// Where a point on the retouched picture (from the top-left, 0…1) was before the liquify strokes
+    /// of the last render: a new spot made there is kept at that place, so it stays on what it covers.
+    public func unwarp(_ p: MaskPoint) -> MaskPoint {
+        liquify.map { $0.field.unwarp(p) } ?? p
     }
 
     /// Draws one step on `image`; returns the step as drawn (an automatic source filled in).

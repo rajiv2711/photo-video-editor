@@ -91,6 +91,15 @@ final class RetouchRenderer {
         return slot.finished?.image ?? image
     }
 
+    /// Where points on the preview were before its liquify strokes (spots made after liquifying are
+    /// kept there, so they stay on what they cover).
+    func unwarp(_ points: [MaskPoint]) -> [MaskPoint] {
+        guard let slot = slots.first else { return points }
+        var out = points
+        queue.sync { out = points.map { slot.canvas?.unwarp($0) ?? $0 } }
+        return out
+    }
+
     /// Steps with the picked sources filled in.
     static func pinned(_ steps: [Retouch], _ sources: [Int: MaskPoint]) -> [Retouch] {
         var out = steps

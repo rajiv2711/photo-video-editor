@@ -727,3 +727,11 @@
 {"group":"retouch","text":"darken more","expect":[{"op":"nudge","control":"pupilDarken","steps":1}]}
 {"group":"retouch","text":"catchlight off","expect":[{"op":"set","control":"catchlight","value":0}]}
 {"group":"retouch","text":"add catchlight","expect":[{"op":"nudge","control":"catchlight","steps":1}]}
+{"group":"retouch","text":"liquify","expect":[{"op":"run","control":"liquify"}]}
+{"group":"retouch","text":"liquify pucker","expect":[{"op":"run","control":"liquify","value":2}]}
+{"group":"retouch","text":"liquefy bloat","expect":[{"op":"run","control":"liquify","value":3}]}
+{"group":"retouch","text":"liquify forward warp","expect":[{"op":"run","control":"liquify","value":0}]}
+{"group":"retouch","text":"liquify mode twirl","expect":[{"op":"set","control":"liquifyMode","value":1}]}
+{"group":"retouch","text":"liquify mode reconstruct","expect":[{"op":"set","control":"liquifyMode","value":4}]}
+{"group":"retouch","text":"tool strength 80","expect":[{"op":"set","control":"toolStrength","value":80}]}
+{"group":"retouch","text":"strength up","expect":[{"op":"nudge","control":"toolStrength","steps":1}]}

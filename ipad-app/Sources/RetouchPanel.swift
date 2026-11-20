@@ -150,7 +150,7 @@ struct RetouchCanvasView: View {
     /// source (copying tools) dashed, with a line to it.
     private func outlines(_ size: CGSize) -> some View {
         ZStack {
-            ForEach(Array(model.state.retouches.enumerated()), id: \.offset) { item in
+            ForEach(Array(model.state.retouches.enumerated()).filter { RetouchTools.spots.contains($0.element.tool) }, id: \.offset) { item in
                 let selected = model.state.selectedRetouch == item.offset
                 let closed = RetouchTools.outlined.contains(item.element.tool)
                 outline(item.element.points, width: brushWidth(item.element.size, size), size: size, selected: selected, dashed: false,
