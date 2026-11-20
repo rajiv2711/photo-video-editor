@@ -1,5 +1,5 @@
 {
-  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart, haze, noise, moire, grid, lens) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
+  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart, haze, noise, moire, grid, lens, lateral-ca) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
   "cases": [
     {"id": "base", "command": "", "expect": []},
     {"id": "warm-cast", "command": "", "source": "warm", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
@@ -232,6 +232,10 @@
     {"id": "grid", "command": "", "source": "grid", "expect": [{"metric": "diff", "dir": "changed"}]},
     {"id": "lens-cast", "command": "", "source": "lens", "expect": [{"metric": "diff", "dir": "same", "vs": "grid"}]},
     {"id": "lens-profile", "command": "lens profile correction on", "source": "lens", "control": "lensProfile", "expect": [{"metric": "diff", "dir": "changed", "vs": "lens-cast"}, {"metric": "corner_luma", "dir": "up", "vs": "lens-cast"}, {"metric": "center_luma", "dir": "same", "vs": "lens-cast"}]},
-    {"id": "lens-profile-unknown", "command": "lens profile correction on", "control": "lensProfile", "expect": [{"metric": "diff", "dir": "same"}]}
+    {"id": "lens-profile-unknown", "command": "lens profile correction on", "control": "lensProfile", "expect": [{"metric": "diff", "dir": "same"}]},
+    {"id": "lateral-ca-cast", "command": "", "source": "lateral-ca", "expect": [{"metric": "fringe", "dir": "up", "vs": "grid"}]},
+    {"id": "remove-ca", "command": "remove chromatic aberration", "source": "lateral-ca", "control": "removeCA", "expect": [{"metric": "fringe", "dir": "down", "vs": "lateral-ca-cast"}, {"metric": "fringe", "dir": "same", "vs": "grid", "min": 2}]},
+    {"id": "ca-red-cyan", "command": "red cyan fringe 80", "source": "lateral-ca", "control": "caRedCyan", "expect": [{"metric": "fringe", "dir": "down", "vs": "lateral-ca-cast"}]},
+    {"id": "ca-blue-yellow", "command": "blue yellow fringe -80", "source": "lateral-ca", "control": "caBlueYellow", "expect": [{"metric": "fringe", "dir": "down", "vs": "lateral-ca-cast"}]}
   ]
 }

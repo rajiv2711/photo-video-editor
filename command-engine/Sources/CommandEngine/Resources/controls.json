@@ -698,6 +698,12 @@
       "synonyms": ["highpass radius", "high-pass radius"], "min": 1, "max": 20, "default": 3, "step": 0.5},
     {"id": "lensProfile", "label": "Lens Profile Correction", "group": "optics", "kind": "toggle",
       "synonyms": ["lens profile", "lens profiles", "lens correction", "lens corrections", "profile correction",
-                   "profile corrections", "lens profile corrections"]}
+                   "profile corrections", "lens profile corrections"]},
+    {"id": "removeCA", "label": "Remove Chromatic Aberration", "group": "optics", "section": "Chromatic aberration", "kind": "toggle",
+      "synonyms": ["chromatic aberration", "remove ca", "ca correction", "chromatic aberration correction", "remove chromatic aberrations"]},
+    {"id": "caRedCyan", "label": "Red/Cyan Fringe", "group": "optics", "section": "Chromatic aberration", "kind": "slider",
+      "synonyms": ["red cyan fringe", "red fringe", "red cyan aberration"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "caBlueYellow", "label": "Blue/Yellow Fringe", "group": "optics", "section": "Chromatic aberration", "kind": "slider",
+      "synonyms": ["blue yellow fringe", "blue fringe", "blue yellow aberration"], "min": -100, "max": 100, "default": 0, "step": 5}
   ]
 }

@@ -10,14 +10,19 @@ import Foundation
 public struct LensWarp: Equatable {
     /// Lens profile correction (distortion, colour fringing, vignetting), when on.
     public var profile: LensCorrection?
+    /// Chromatic aberration: red and blue are read this many times further out than green (1 = as shot).
+    public var redScale: Double
+    public var blueScale: Double
 
-    public init(profile: LensCorrection? = nil) {
+    public init(profile: LensCorrection? = nil, redScale: Double = 1, blueScale: Double = 1) {
         self.profile = profile
+        self.redScale = redScale
+        self.blueScale = blueScale
     }
 
     /// Nothing to do.
     public var isIdentity: Bool {
-        profile == nil
+        profile == nil && redScale == 1 && blueScale == 1
     }
 
     /// A position in pixels from the photo's centre.
@@ -47,7 +52,7 @@ public struct LensWarp: Equatable {
             red = lens.red.b * rg * rg + lens.red.c * rg + lens.red.v
             blue = lens.blue.b * rg * rg + lens.blue.c * rg + lens.blue.v
         }
-        return (q.scaled(red), q, q.scaled(blue))
+        return (q.scaled(red * redScale), q, q.scaled(blue * blueScale))
     }
 
     /// Brightness gain for a point of the photo as shot: the profile's vignetting, undone.

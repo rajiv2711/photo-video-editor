@@ -551,3 +551,8 @@
 {"group":"optics","text":"lens correction off","expect":[{"op":"set","control":"lensProfile","value":0}]}
 {"group":"optics","text":"enable profile corrections","expect":[{"op":"set","control":"lensProfile","value":1}]}
 {"group":"optics","text":"lens profile","expect":[{"op":"set","control":"lensProfile","value":1}]}
+{"group":"optics","text":"remove chromatic aberration","expect":[{"op":"set","control":"removeCA","value":1}]}
+{"group":"optics","text":"chromatic aberration off","expect":[{"op":"set","control":"removeCA","value":0}]}
+{"group":"optics","text":"red cyan fringe 40","expect":[{"op":"set","control":"caRedCyan","value":40}]}
+{"group":"optics","text":"blue fringe down","expect":[{"op":"nudge","control":"caBlueYellow","steps":-1}]}
+{"group":"optics","text":"blue yellow fringe -30","expect":[{"op":"set","control":"caBlueYellow","value":-30}]}

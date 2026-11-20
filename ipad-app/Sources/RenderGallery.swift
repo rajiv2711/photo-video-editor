@@ -1,3 +1,4 @@
+import CommandEngine
 import CoreImage
 import SwiftUI
 import UIKit
@@ -138,18 +139,27 @@ enum RenderGallery {
     /// - "haze": the test photo seen through a bluish-grey haze (dehaze).
     /// - "noise": the test photo with strong brightness and colour noise (noise reduction).
     /// - "moire": the test photo with fine magenta and green stripes over it (moiré removal).
-    /// - "grid": dark lines every 40 px on light grey (the optics tools bend and fringe them).
+    /// - "grid": soft dark lines every 40 px on light grey (the optics tools bend and fringe them).
     /// - "lens": the grid, with EXIF saying it was shot on a Canon EF-S 18-55mm at 18 mm, f/3.5
     ///   (a lens in the bundled profiles), for Lens Profile Correction.
+    /// - "lateral-ca": the grid with red spread 0.4 % wider than green and blue 0.4 % narrower
+    ///   (red/cyan and blue/yellow fringes towards the corners), for chromatic aberration.
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
-        case "grid", "lens":
+        case "grid", "lens", "lateral-ca":
             let size = photo.extent.integral.size
-            guard let grid = gridPicture(size: size) else { return photo }
-            guard source == "lens" else { return CIImage(cgImage: grid) }
-            let exif: [String: Any] = ["LensModel": "EF-S18-55mm f/3.5-5.6 IS STM", "FocalLength": 18, "FNumber": 3.5]
-            let tiff: [String: Any] = ["Make": "Canon", "Model": "Canon EOS 250D"]
-            return CIImage(cgImage: grid, options: [.properties: ["{Exif}": exif, "{TIFF}": tiff]])
+            guard let grid = softGrid(size: size) else { return photo }
+            switch source {
+            case "lens":
+                let exif: [String: Any] = ["LensModel": "EF-S18-55mm f/3.5-5.6 IS STM", "FocalLength": 18, "FNumber": 3.5]
+                let tiff: [String: Any] = ["Make": "Canon", "Model": "Canon EOS 250D"]
+                return CIImage(cgImage: grid, options: [.properties: ["{Exif}": exif, "{TIFF}": tiff]])
+            case "lateral-ca":
+                let fringes = LensWarp(redScale: 1 / 1.004, blueScale: 1 / 0.996)
+                return OpticsRenderer.remap(CIImage(cgImage: grid), fringes, context: context)
+            default:
+                return CIImage(cgImage: grid)
+            }
         case "moire":
             // White/black stripes turned into magenta/green levels around mid-grey, then overlaid.
             let stripes = CIFilter(name: "CIStripesGenerator", parameters: [
@@ -216,6 +226,17 @@ enum RenderGallery {
         default:
             return photo
         }
+    }
+
+    /// For making the generated pictures.
+    private static let context = CIContext()
+
+    /// The grid, softened a little (1 px) like the edges in a real photo.
+    static func softGrid(size: CGSize) -> CGImage? {
+        guard let sharp = gridPicture(size: size) else { return nil }
+        let image = CIImage(cgImage: sharp)
+        let soft = image.clampedToExtent().applyingGaussianBlur(sigma: 1).cropped(to: image.extent)
+        return context.createCGImage(soft, from: image.extent)
     }
 
     /// Light grey with dark 2 px lines every 40 px.

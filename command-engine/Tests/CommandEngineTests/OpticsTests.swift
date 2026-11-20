@@ -16,7 +16,7 @@ final class OpticsTests: XCTestCase {
     }
 
     func testOpticsControlsAreInTheOpticsPanel() {
-        for id in ["lensProfile"] {
+        for id in ["lensProfile", "removeCA", "caRedCyan", "caBlueYellow"] {
             XCTAssertEqual(registry.control(id: id)?.group, "optics", id)
         }
     }
@@ -109,5 +109,62 @@ final class OpticsTests: XCTestCase {
         let scale = warp.fillScale(width: Double(w), height: Double(h))
         let expected = warp.source(of: LensWarp.Point(x: 30 * scale, y: 0.5 * scale), width: Double(w), height: Double(h)).green.x
         XCTAssertEqual(Double(out[(30 * w + 80) * 4]), expected + Double(w) / 2 - 0.5, accuracy: 0.05)
+    }
+
+    // MARK: - Chromatic aberration
+
+    func testChromaticAberrationNames() {
+        XCTAssertEqual(parse("remove chromatic aberration"), [.set("removeCA", 1)])
+        XCTAssertEqual(parse("chromatic aberration off"), [.set("removeCA", 0)])
+        XCTAssertEqual(parse("red cyan fringe 40"), [.set("caRedCyan", 40)])
+        XCTAssertEqual(parse("red cyan 40"), [.set("selectiveRedsCyan", 40)], "Selective color keeps its name")
+        XCTAssertEqual(parse("blue fringe down"), [.nudge("caBlueYellow", -1)])
+    }
+
+    /// A grey grid of soft dark lines whose red is spread `red` times wider than green, and blue `blue` times.
+    private func fringedGrid(width: Int, height: Int, red: Double, blue: Double) -> [Float] {
+        func grid(_ p: LensWarp.Point) -> Float {
+            let x = p.x + Double(width) / 2, y = p.y + Double(height) / 2
+            func near(_ v: Double) -> Double {
+                let d = v.truncatingRemainder(dividingBy: 24) - 12
+                return exp(-d * d / 4.5)
+            }
+            return Float(0.8 - 0.75 * max(near(x), near(y)))
+        }
+        var out: [Float] = []
+        for y in 0..<height {
+            for x in 0..<width {
+                let p = LensWarp.Point(x: Double(x) + 0.5 - Double(width) / 2, y: Double(y) + 0.5 - Double(height) / 2)
+                out += [grid(p.scaled(1 / red)), grid(p), grid(p.scaled(1 / blue)), 1]
+            }
+        }
+        return out
+    }
+
+    func testEstimateFindsTheFringes() {
+        let pixels = fringedGrid(width: 240, height: 160, red: 1.004, blue: 0.996)
+        let found = ChromaticAberration.estimate(pixels, width: 240, height: 160)
+        XCTAssertEqual(found.red, 1.004, accuracy: 0.0006)
+        XCTAssertEqual(found.blue, 0.996, accuracy: 0.0006)
+        let clean = ChromaticAberration.estimate(fringedGrid(width: 240, height: 160, red: 1, blue: 1), width: 240, height: 160)
+        XCTAssertEqual(clean.red, 1, accuracy: 0.0002)
+        XCTAssertEqual(clean.blue, 1, accuracy: 0.0002)
+    }
+
+    func testFixingTheScalesLinesTheChannelsUp() {
+        let w = 240, h = 160
+        let pixels = fringedGrid(width: w, height: h, red: 1.004, blue: 0.996)
+        let fixed = LensWarp(redScale: 1.004, blueScale: 0.996).apply(pixels, width: w, height: h)
+        func fringe(_ p: [Float]) -> Float {
+            var sum: Float = 0
+            for i in stride(from: 0, to: p.count, by: 4) {
+                sum += abs(p[i] - p[i + 1])
+                sum += abs(p[i + 2] - p[i + 1])
+            }
+            return sum
+        }
+        XCTAssertLessThan(fringe(fixed), fringe(pixels) / 3)
+        XCTAssertEqual(ChromaticAberration.scale(slider: 80), 1.004, accuracy: 1e-12)
+        XCTAssertEqual(ChromaticAberration.scale(slider: 0), 1)
     }
 }
