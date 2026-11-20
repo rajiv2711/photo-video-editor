@@ -15,6 +15,8 @@
     {"id": "whites-minus", "command": "whites -100", "control": "whites", "expect": [{"metric": "p95_luma", "dir": "down"}]},
     {"id": "blacks-minus", "command": "blacks -100", "control": "blacks", "expect": [{"metric": "p5_luma", "dir": "down"}]},
     {"id": "blacks-plus", "command": "blacks 100", "control": "blacks", "expect": [{"metric": "p5_luma", "dir": "up"}]},
+    {"id": "brightness-plus", "command": "brightness 100", "control": "brightness", "expect": [{"metric": "p50_luma", "dir": "up"}]},
+    {"id": "brightness-minus", "command": "brightness -100", "control": "brightness", "expect": [{"metric": "p50_luma", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

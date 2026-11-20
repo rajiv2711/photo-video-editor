@@ -79,16 +79,16 @@
 {"group":"reset","text":"reset all please","expect":[{"op":"reset_all"}]}
 {"group":"reset","text":"reset","focus":"contrast","expect":[{"op":"reset"}]}
 {"group":"reset","text":"contrast to default","expect":[{"op":"reset","control":"contrast"}]}
-{"group":"synonyms","text":"brightness more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
-{"group":"synonyms","text":"bright up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
-{"group":"synonyms","text":"light up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"synonyms","text":"brightness more","expect":[{"op":"nudge","control":"brightness","steps":1}]}
+{"group":"synonyms","text":"bright up","expect":[{"op":"nudge","control":"brightness","steps":1}]}
+{"group":"synonyms","text":"light up","expect":[{"op":"nudge","control":"brightness","steps":1}]}
 {"group":"synonyms","text":"colour less","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
 {"group":"synonyms","text":"color more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
 {"group":"synonyms","text":"colours up","expect":[{"op":"nudge","control":"saturation","steps":1}]}
 {"group":"synonyms","text":"colors more more","expect":[{"op":"nudge","control":"saturation","steps":2}]}
 {"group":"synonyms","text":"vividness down","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
 {"group":"synonyms","text":"punch more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
-{"group":"synonyms","text":"brightness 0.5","expect":[{"op":"set","control":"exposure","value":0.5}]}
+{"group":"synonyms","text":"brightness 20","expect":[{"op":"set","control":"brightness","value":20}]}
 {"group":"typos","text":"contrst more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
 {"group":"typos","text":"contast up","expect":[{"op":"nudge","control":"contrast","steps":1}]}
 {"group":"typos","text":"conrtast less","expect":[{"op":"nudge","control":"contrast","steps":-1}]}
@@ -117,7 +117,7 @@
 {"group":"near-names","text":"vibrance more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
 {"group":"near-names","text":"colorfulness up","expect":[{"op":"nudge","control":"saturation","steps":1}]}
 {"group":"near-names","text":"saturated more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
-{"group":"near-names","text":"lightness up","expect":[{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"near-names","text":"lightness up","expect":[{"op":"nudge","control":"brightness","steps":1}]}
 {"group":"near-names","text":"exposition more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
 {"group":"near-names","text":"punchiness more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
 {"group":"out-of-scope","text":"make it warmer","expect":[{"op":"unknown","word":"warmer"}]}
@@ -149,3 +149,6 @@
 {"group":"light","text":"blacks -50","expect":[{"op":"set","control":"blacks","value":-50}]}
 {"group":"light","text":"reset blacks","expect":[{"op":"reset","control":"blacks"}]}
 {"group":"light","text":"black down whites up","expect":[{"op":"nudge","control":"blacks","steps":-1},{"op":"nudge","control":"whites","steps":1}]}
+{"group":"light","text":"brightness less less","expect":[{"op":"nudge","control":"brightness","steps":-2}]}
+{"group":"light","text":"reset brightness","expect":[{"op":"reset","control":"brightness"}]}
+{"group":"light","text":"brightnes 40","expect":[{"op":"set","control":"brightness","value":40}]}

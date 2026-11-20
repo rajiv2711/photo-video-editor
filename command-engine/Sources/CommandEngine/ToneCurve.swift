@@ -2,7 +2,7 @@ import Foundation
 
 /// Tone math for the Light panel, shared by the iPad renderer and the Linux tests.
 ///
-/// The global tone controls (Highlights brightening, Whites, Blacks; later curves, levels…) become one
+/// The global tone controls (Highlights brightening, Whites, Blacks, Brightness; later curves, levels…) become one
 /// lookup table per colour channel, applied in a single Core Image pass (CIColorCurves). Inputs and
 /// outputs are sRGB-encoded levels (0 = black, 1 = SDR white), i.e. what the eye sees.
 ///
@@ -37,7 +37,7 @@ public enum ToneCurve {
     }
 
     /// Control ids that feed the table; when all are at their default the table is skipped.
-    public static let controlIDs: [String] = ["highlights", "whites", "blacks"]
+    public static let controlIDs: [String] = ["highlights", "whites", "blacks", "brightness"]
 
     /// The value of each tone control that leaves the picture untouched.
     public static func neutral(_ id: String) -> Double {
@@ -86,7 +86,8 @@ public enum ToneCurve {
             return (y, y, y)
         }
 
-        /// Whites, Blacks and Highlights (brightening only; darkening is CIHighlightShadowAdjust in the renderer).
+        /// Whites, Blacks, Highlights (brightening only; darkening is CIHighlightShadowAdjust in the
+        /// renderer) and Brightness.
         func basic(_ x: Double) -> Double {
             let whites = value("whites") / 100, blacks = value("blacks") / 100
             let highlights = Swift.max(value("highlights"), 0) / 100
@@ -97,6 +98,11 @@ public enum ToneCurve {
             if highlights > 0 {
                 // Bump peaking at 3/4, zero at 0 and 1.
                 y += 0.1 * highlights * (256.0 / 27.0) * x * x * x * (1 - x)
+            }
+            // Brightness: a gamma curve, so midtones move while black and white stay put.
+            let brightness = value("brightness") / 100
+            if brightness != 0 && y > 0 && y < 1 {
+                y = pow(y, pow(2, -0.8 * brightness))
             }
             return y
         }
