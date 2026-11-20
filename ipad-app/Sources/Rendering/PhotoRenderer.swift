@@ -1,9 +1,11 @@
+import CommandEngine
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import UIKit
 
 /// Turns control values (see controls.json) into Core Image filters, one panel at a time in
-/// Lightroom's order: white balance → light (exposure, tone) → color → effects → detail → optics.
+/// Lightroom's processing order: optics (lens fixes, on the photo as shot) → film negative and white
+/// balance → light (exposure, tone) → color → effects → detail → vignette and grain last.
 /// Each panel has its own file in Rendering/ (LightRenderer.swift, ColorRenderer.swift, …).
 final class PhotoRenderer {
     let context: CIContext
@@ -11,6 +13,7 @@ final class PhotoRenderer {
     private let color: ColorRenderer
     private let effects: EffectsRenderer
     private let detail: DetailRenderer
+    private let optics: OpticsRenderer
 
     init() {
         let context = CIContext()
@@ -19,13 +22,25 @@ final class PhotoRenderer {
         self.color = ColorRenderer(context: context)
         self.effects = EffectsRenderer(context: context)
         self.detail = DetailRenderer(context: context)
+        self.optics = OpticsRenderer(context: context)
+    }
+
+    /// The photo's lens (EXIF), for Lens Profile Correction.
+    var lens: PhotoLens {
+        get { optics.lens }
+        set { optics.lens = newValue }
+    }
+
+    /// The bundled lens profile that fits the photo's lens, if any.
+    var lensProfileName: String? {
+        optics.profile?.profile.model
     }
 
     /// `value` gives a control's current value by id, or nil when controls.json has no such control.
     /// With HDR off the result is clipped to SDR white (1); with HDR on brighter levels survive.
     func apply(to image: CIImage, value: (String) -> Double?) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
-        var output = image
+        var output = optics.apply(image, value: value)  // lens corrections
         output = color.input(output, value: value)  // film negative, white balance
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: image.extent, value: value)
@@ -38,10 +53,10 @@ final class PhotoRenderer {
         return output.cropped(to: image.extent)
     }
 
-    /// The picture the white balance step works on (after film negative conversion): what the
-    /// picker tools sample.
+    /// The picture the white balance step works on (after lens corrections and film negative
+    /// conversion): what the picker tools sample.
     func whiteBalanceInput(_ image: CIImage, value: (String) -> Double?) -> CIImage {
-        color.filmNegative(image, value: value)
+        color.filmNegative(optics.apply(image, value: value), value: value)
     }
 
     /// Pixels for the screen. `hdr` keeps levels above white (half floats, extended Display P3),

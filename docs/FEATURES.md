@@ -79,7 +79,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 ### Optics
 
-- [ ] 58. **Lens profile correction** — auto-fix distortion and vignetting for the lens used
+- [x] 58. **Lens profile correction** — auto-fix distortion and vignetting for the lens used
 - [ ] 59. **Chromatic aberration** — remove coloured edges
 - [ ] 60. **Defringe** — remove purple/green fringes by hue range
 - [ ] 61. **Manual distortion** — barrel ↔ pincushion

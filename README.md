@@ -3,7 +3,8 @@
 A free iPad photo and video editor you can drive by name: type or say
 "contrast more, more, more" and the Contrast slider moves. Sliders stay for fine-tuning.
 
-License: [MIT](LICENSE)
+License: [MIT](LICENSE). The lens profiles in `command-engine/Sources/CommandEngine/Resources/lens-profiles.json`
+come from the [lensfun](https://github.com/lensfun/lensfun) database and keep its licence (CC BY-SA 3.0).
 
 ## What is where
 

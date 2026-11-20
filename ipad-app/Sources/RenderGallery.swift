@@ -138,8 +138,18 @@ enum RenderGallery {
     /// - "haze": the test photo seen through a bluish-grey haze (dehaze).
     /// - "noise": the test photo with strong brightness and colour noise (noise reduction).
     /// - "moire": the test photo with fine magenta and green stripes over it (moiré removal).
+    /// - "grid": dark lines every 40 px on light grey (the optics tools bend and fringe them).
+    /// - "lens": the grid, with EXIF saying it was shot on a Canon EF-S 18-55mm at 18 mm, f/3.5
+    ///   (a lens in the bundled profiles), for Lens Profile Correction.
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "grid", "lens":
+            let size = photo.extent.integral.size
+            guard let grid = gridPicture(size: size) else { return photo }
+            guard source == "lens" else { return CIImage(cgImage: grid) }
+            let exif: [String: Any] = ["LensModel": "EF-S18-55mm f/3.5-5.6 IS STM", "FocalLength": 18, "FNumber": 3.5]
+            let tiff: [String: Any] = ["Make": "Canon", "Model": "Canon EOS 250D"]
+            return CIImage(cgImage: grid, options: [.properties: ["{Exif}": exif, "{TIFF}": tiff]])
         case "moire":
             // White/black stripes turned into magenta/green levels around mid-grey, then overlaid.
             let stripes = CIFilter(name: "CIStripesGenerator", parameters: [
@@ -206,6 +216,28 @@ enum RenderGallery {
         default:
             return photo
         }
+    }
+
+    /// Light grey with dark 2 px lines every 40 px.
+    static func gridPicture(size: CGSize) -> CGImage? {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.preferredRange = .standard
+        return UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            UIColor(white: 0.8, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            UIColor(white: 0.15, alpha: 1).setFill()
+            var x: CGFloat = 20
+            while x < size.width {
+                ctx.fill(CGRect(x: x - 1, y: 0, width: 2, height: size.height))
+                x += 40
+            }
+            var y: CGFloat = 20
+            while y < size.height {
+                ctx.fill(CGRect(x: 0, y: y - 1, width: size.width, height: 2))
+                y += 40
+            }
+        }.cgImage
     }
 
     /// Hues of the chart's columns: red, orange, yellow, green, aqua, blue, purple, magenta.

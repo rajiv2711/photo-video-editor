@@ -1,5 +1,5 @@
 {
-  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart, haze, noise, moire) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
+  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart, haze, noise, moire, grid, lens) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
   "cases": [
     {"id": "base", "command": "", "expect": []},
     {"id": "warm-cast", "command": "", "source": "warm", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
@@ -227,6 +227,11 @@
     {"id": "moire-cast", "command": "", "source": "moire", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "moire", "command": "moire 100", "source": "moire", "control": "moire", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "moire-cast"}, {"metric": "mean_luma", "dir": "same", "vs": "moire-cast"}]},
     {"id": "high-pass", "command": "high pass 100", "control": "highPass", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_luma", "dir": "same"}]},
-    {"id": "high-pass-radius", "command": "high pass 100 high pass radius 15", "control": "highPassRadius", "expect": [{"metric": "local_contrast", "dir": "up", "vs": "high-pass"}]}
+    {"id": "high-pass-radius", "command": "high pass 100 high pass radius 15", "control": "highPassRadius", "expect": [{"metric": "local_contrast", "dir": "up", "vs": "high-pass"}]},
+
+    {"id": "grid", "command": "", "source": "grid", "expect": [{"metric": "diff", "dir": "changed"}]},
+    {"id": "lens-cast", "command": "", "source": "lens", "expect": [{"metric": "diff", "dir": "same", "vs": "grid"}]},
+    {"id": "lens-profile", "command": "lens profile correction on", "source": "lens", "control": "lensProfile", "expect": [{"metric": "diff", "dir": "changed", "vs": "lens-cast"}, {"metric": "corner_luma", "dir": "up", "vs": "lens-cast"}, {"metric": "center_luma", "dir": "same", "vs": "lens-cast"}]},
+    {"id": "lens-profile-unknown", "command": "lens profile correction on", "control": "lensProfile", "expect": [{"metric": "diff", "dir": "same"}]}
   ]
 }

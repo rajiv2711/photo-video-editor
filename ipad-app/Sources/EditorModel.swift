@@ -53,6 +53,7 @@ final class EditorModel: ObservableObject {
         self.original = start
         self.previewSide = previewSide
         self.previewSource = PhotoRenderer.downscaled(start, maxSide: previewSide)
+        renderer.lens = Self.lens(of: start)
         installActions()
         render()
 
@@ -258,6 +259,7 @@ final class EditorModel: ObservableObject {
         }
         original = image
         previewSource = PhotoRenderer.downscaled(image, maxSide: previewSide)
+        renderer.lens = Self.lens(of: image)
         installActions()
         render()
     }
@@ -301,6 +303,23 @@ final class EditorModel: ObservableObject {
         }
     }
 
+    /// The lens a photo was taken with, from its EXIF data (Lens Profile Correction).
+    static func lens(of image: CIImage) -> PhotoLens {
+        let exif = image.properties["{Exif}"] as? [String: Any]
+        let tiff = image.properties["{TIFF}"] as? [String: Any]
+        return PhotoLens(make: tiff?["Make"] as? String,
+                         lensModel: exif?["LensModel"] as? String,
+                         focal: (exif?["FocalLength"] as? NSNumber)?.doubleValue,
+                         aperture: (exif?["FNumber"] as? NSNumber)?.doubleValue)
+    }
+
+    /// Said after Lens Profile Correction is turned on: which profile, or why there is none.
+    private var lensNote: String {
+        if let name = renderer.lensProfileName { return "profile: \(name)" }
+        if let model = renderer.lens.lensModel { return "no profile for \(model)" }
+        return "no lens information in this photo"
+    }
+
     /// Whether the HDR toggle is on (preview and saving keep levels above SDR white).
     var isHDR: Bool {
         registry.control(id: "hdr").map { state.value(of: $0) != 0 } ?? false
@@ -330,7 +349,9 @@ final class EditorModel: ObservableObject {
             switch outcome {
             case .changed(let id, let from, let to):
                 let control = registry.control(id: id)
-                parts.append("\(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))")
+                var text = "\(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))"
+                if id == "lensProfile", to != 0 { text += " (\(lensNote))" }
+                parts.append(text)
             case .ran(let id):
                 parts.append(registry.control(id: id)?.label ?? id)
             case .unchanged(let id, let value):
