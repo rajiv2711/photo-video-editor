@@ -3,10 +3,16 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 
 /// The Color panel, in Lightroom's order. `input` runs before the Light panel (white balance);
-/// `apply` runs after it (vibrance, saturation, hue, …). The colour math lives in CommandEngine (WhiteBalance,
-/// …) so it is tested on Linux.
-struct ColorRenderer {
+/// `apply` runs after it (vibrance, saturation, hue, then the colour cube: color mixer, …).
+/// The colour math lives in CommandEngine (WhiteBalance, ColorLook) so it is tested on Linux.
+final class ColorRenderer {
     let context: CIContext
+    /// The last colour cube and the control values it was made for (sliders move one at a time).
+    private var cachedCube: (key: [Double], data: Data)?
+
+    init(context: CIContext) {
+        self.context = context
+    }
 
     /// Steps that come before the Light panel: white balance.
     func input(_ image: CIImage, value: (String) -> Double?) -> CIImage {
@@ -45,7 +51,31 @@ struct ColorRenderer {
             output = filter.outputImage ?? output
         }
 
+        output = colorCube(output, value: value)
+
         return output
+    }
+
+    /// Size of the colour cube per side (33³ entries, the usual LUT size).
+    static let cubeSize = 33
+
+    /// The per-colour tools (ColorLook) as one lookup-table pass on sRGB levels.
+    private func colorCube(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+        guard !ColorLook.isIdentity(value), let space = CGColorSpace(name: CGColorSpace.sRGB) else { return image }
+        let key = ColorLook.controlIDs.map { value($0) ?? ColorLook.neutral($0) }
+        let data: Data
+        if let cached = cachedCube, cached.key == key {
+            data = cached.data
+        } else {
+            let floats = ColorLook.cube(value, size: Self.cubeSize)
+            data = floats.withUnsafeBufferPointer { Data(buffer: $0) }
+            cachedCube = (key, data)
+        }
+        return image.applyingFilter("CIColorCubeWithColorSpace", parameters: [
+            "inputCubeDimension": Self.cubeSize,
+            "inputCubeData": data,
+            "inputColorSpace": space,
+        ])
     }
 
     /// White balance: the preset's light plus the Temperature and Tint sliders, as one multiplier

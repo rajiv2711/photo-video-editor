@@ -215,3 +215,56 @@
 {"group":"color","text":"hue more more","expect":[{"op":"nudge","control":"hue","steps":2}]}
 {"group":"color","text":"reset hue","expect":[{"op":"reset","control":"hue"}]}
 {"group":"color","text":"hue shift minus 45","expect":[{"op":"set","control":"hue","value":-45}]}
+{"group":"color","text":"red hue 20","expect":[{"op":"set","control":"mixerRedHue","value":20}]}
+{"group":"color","text":"more red hue","expect":[{"op":"nudge","control":"mixerRedHue","steps":1}]}
+{"group":"color","text":"red saturation -30","expect":[{"op":"set","control":"mixerRedSaturation","value":-30}]}
+{"group":"color","text":"reset red saturation","expect":[{"op":"reset","control":"mixerRedSaturation"}]}
+{"group":"color","text":"red luminance 40","expect":[{"op":"set","control":"mixerRedLuminance","value":40}]}
+{"group":"color","text":"reds luminance down down","expect":[{"op":"nudge","control":"mixerRedLuminance","steps":-2}]}
+{"group":"color","text":"orange hue -30","expect":[{"op":"set","control":"mixerOrangeHue","value":-30}]}
+{"group":"color","text":"orange hue up by 10","expect":[{"op":"add","control":"mixerOrangeHue","value":10}]}
+{"group":"color","text":"orange saturation 40","expect":[{"op":"set","control":"mixerOrangeSaturation","value":40}]}
+{"group":"color","text":"more orange saturation","expect":[{"op":"nudge","control":"mixerOrangeSaturation","steps":1}]}
+{"group":"color","text":"orange luminance -50","expect":[{"op":"set","control":"mixerOrangeLuminance","value":-50}]}
+{"group":"color","text":"reset orange luminance","expect":[{"op":"reset","control":"mixerOrangeLuminance"}]}
+{"group":"color","text":"yellow hue 40","expect":[{"op":"set","control":"mixerYellowHue","value":40}]}
+{"group":"color","text":"yellows hue down down","expect":[{"op":"nudge","control":"mixerYellowHue","steps":-2}]}
+{"group":"color","text":"yellow saturation -50","expect":[{"op":"set","control":"mixerYellowSaturation","value":-50}]}
+{"group":"color","text":"yellow saturation up by 10","expect":[{"op":"add","control":"mixerYellowSaturation","value":10}]}
+{"group":"color","text":"yellow luminance 60","expect":[{"op":"set","control":"mixerYellowLuminance","value":60}]}
+{"group":"color","text":"more yellow luminance","expect":[{"op":"nudge","control":"mixerYellowLuminance","steps":1}]}
+{"group":"color","text":"green hue -50","expect":[{"op":"set","control":"mixerGreenHue","value":-50}]}
+{"group":"color","text":"reset green hue","expect":[{"op":"reset","control":"mixerGreenHue"}]}
+{"group":"color","text":"green saturation 60","expect":[{"op":"set","control":"mixerGreenSaturation","value":60}]}
+{"group":"color","text":"greens saturation down down","expect":[{"op":"nudge","control":"mixerGreenSaturation","steps":-2}]}
+{"group":"color","text":"green luminance -70","expect":[{"op":"set","control":"mixerGreenLuminance","value":-70}]}
+{"group":"color","text":"green luminance up by 10","expect":[{"op":"add","control":"mixerGreenLuminance","value":10}]}
+{"group":"color","text":"aqua hue 60","expect":[{"op":"set","control":"mixerAquaHue","value":60}]}
+{"group":"color","text":"more aqua hue","expect":[{"op":"nudge","control":"mixerAquaHue","steps":1}]}
+{"group":"color","text":"aqua saturation -70","expect":[{"op":"set","control":"mixerAquaSaturation","value":-70}]}
+{"group":"color","text":"reset aqua saturation","expect":[{"op":"reset","control":"mixerAquaSaturation"}]}
+{"group":"color","text":"aqua luminance 80","expect":[{"op":"set","control":"mixerAquaLuminance","value":80}]}
+{"group":"color","text":"aquas luminance down down","expect":[{"op":"nudge","control":"mixerAquaLuminance","steps":-2}]}
+{"group":"color","text":"blue hue -70","expect":[{"op":"set","control":"mixerBlueHue","value":-70}]}
+{"group":"color","text":"blue hue up by 10","expect":[{"op":"add","control":"mixerBlueHue","value":10}]}
+{"group":"color","text":"blue saturation 80","expect":[{"op":"set","control":"mixerBlueSaturation","value":80}]}
+{"group":"color","text":"more blue saturation","expect":[{"op":"nudge","control":"mixerBlueSaturation","steps":1}]}
+{"group":"color","text":"blue luminance -25","expect":[{"op":"set","control":"mixerBlueLuminance","value":-25}]}
+{"group":"color","text":"reset blue luminance","expect":[{"op":"reset","control":"mixerBlueLuminance"}]}
+{"group":"color","text":"purple hue 80","expect":[{"op":"set","control":"mixerPurpleHue","value":80}]}
+{"group":"color","text":"purples hue down down","expect":[{"op":"nudge","control":"mixerPurpleHue","steps":-2}]}
+{"group":"color","text":"purple saturation -25","expect":[{"op":"set","control":"mixerPurpleSaturation","value":-25}]}
+{"group":"color","text":"purple saturation up by 10","expect":[{"op":"add","control":"mixerPurpleSaturation","value":10}]}
+{"group":"color","text":"purple luminance 20","expect":[{"op":"set","control":"mixerPurpleLuminance","value":20}]}
+{"group":"color","text":"more purple luminance","expect":[{"op":"nudge","control":"mixerPurpleLuminance","steps":1}]}
+{"group":"color","text":"magenta hue -25","expect":[{"op":"set","control":"mixerMagentaHue","value":-25}]}
+{"group":"color","text":"reset magenta hue","expect":[{"op":"reset","control":"mixerMagentaHue"}]}
+{"group":"color","text":"magenta saturation 20","expect":[{"op":"set","control":"mixerMagentaSaturation","value":20}]}
+{"group":"color","text":"magentas saturation down down","expect":[{"op":"nudge","control":"mixerMagentaSaturation","steps":-2}]}
+{"group":"color","text":"magenta luminance -30","expect":[{"op":"set","control":"mixerMagentaLuminance","value":-30}]}
+{"group":"color","text":"magenta luminance up by 10","expect":[{"op":"add","control":"mixerMagentaLuminance","value":10}]}
+{"group":"color","text":"red sat -100","expect":[{"op":"set","control":"mixerRedSaturation","value":-100}]}
+{"group":"color","text":"cyan hue 15","expect":[{"op":"set","control":"mixerAquaHue","value":15}]}
+{"group":"color","text":"blue luminance down orange saturation up","expect":[{"op":"nudge","control":"mixerBlueLuminance","steps":-1},{"op":"nudge","control":"mixerOrangeSaturation","steps":1}]}
+{"group":"color","text":"red curve 50 60 red hue 10","expect":[{"op":"set","control":"curveRed50","value":60},{"op":"set","control":"mixerRedHue","value":10}]}
+{"group":"color","text":"lumin more","expect":[{"op":"ambiguous","word":"lumin","candidates":["mixerRedLuminance","mixerOrangeLuminance","mixerYellowLuminance","mixerGreenLuminance","mixerAquaLuminance","mixerBlueLuminance","mixerPurpleLuminance","mixerMagentaLuminance"]}]}

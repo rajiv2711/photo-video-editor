@@ -193,7 +193,8 @@ enum RenderGallery {
 
     /// Core Image filters whose parameter ranges we rely on; their attributes on this iOS version
     /// go to filters.txt (reports/ci/gallery/filters.txt on the laptop).
-    static let filtersToDescribe = ["CIHighlightShadowAdjust", "CIColorCurves", "CIAreaHistogram", "CIUnsharpMask"]
+    static let filtersToDescribe = ["CIHighlightShadowAdjust", "CIColorCurves", "CIAreaHistogram", "CIUnsharpMask",
+                                    "CIVibrance", "CIHueAdjust", "CIColorCubeWithColorSpace"]
 
     private static func writeFilterAttributes(to folder: URL) {
         var text = ""

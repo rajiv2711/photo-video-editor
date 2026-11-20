@@ -99,4 +99,82 @@ final class ColorTests: XCTestCase {
         assertClose(grey.temperature, 0, 0.01)
         assertClose(grey.tint, 0, 0.01)
     }
+
+    // MARK: - Color mixer
+
+    /// A value lookup for ColorLook with only these controls changed.
+    private func look(_ changed: [String: Double]) -> ColorLook.Values {
+        ColorLook.Values { changed[$0] }
+    }
+
+    func testMixerControlsMatchColorLook() {
+        for id in ColorLook.controlIDs where id.hasPrefix("mixer") {
+            XCTAssertEqual(registry.control(id: id)?.section, "Color mixer", id)
+        }
+        XCTAssertEqual(registry.controls.filter { $0.section == "Color mixer" }.count, 24)
+    }
+
+    func testMixerTwoWordNames() {
+        XCTAssertEqual(parse("red saturation 40"), [.set("mixerRedSaturation", 40)])
+        XCTAssertEqual(parse("aqua hue -20"), [.set("mixerAquaHue", -20)])
+        XCTAssertEqual(parse("orange luminance up"), [.nudge("mixerOrangeLuminance", 1)])
+        XCTAssertEqual(parse("more blue saturation"), [.nudge("mixerBlueSaturation", 1)])
+        XCTAssertEqual(parse("saturation 20"), [.set("saturation", 20)], "one word is still the global slider")
+        XCTAssertEqual(parse("hue 20"), [.set("hue", 20)])
+        XCTAssertEqual(parse("satur up"), [.nudge("saturation", 1)], "prefixes still find Saturation")
+        XCTAssertEqual(parse("red curve 50 60"), [.set("curveRed50", 60)], "point curve names still win")
+    }
+
+    func testHSLRoundTrip() {
+        for c in [RGB(0.9, 0.2, 0.1), RGB(0.1, 0.8, 0.5), RGB(0.3, 0.3, 0.9), RGB(0.5, 0.5, 0.5), RGB(1, 1, 0)] {
+            let (h, s, l) = ColorLook.hsl(c)
+            let back = ColorLook.rgb(hue: h, saturation: s, lightness: l)
+            assertClose(back.r, c.r, 1e-9)
+            assertClose(back.g, c.g, 1e-9)
+            assertClose(back.b, c.b, 1e-9)
+        }
+        XCTAssertEqual(ColorLook.hsl(RGB(1, 0, 0)).h, 0)
+        XCTAssertEqual(ColorLook.hsl(RGB(0, 0, 1)).h, 240)
+    }
+
+    func testBandWeightsShareBetweenNeighbours() {
+        let red = ColorLook.bandWeights(hue: 0)
+        XCTAssertEqual(red.first?.0, "red")
+        XCTAssertEqual(red.first?.1, 1)
+        let between = ColorLook.bandWeights(hue: 90)  // halfway yellow → green
+        XCTAssertEqual(between.map(\.0), ["yellow", "green"])
+        assertClose(between[0].1, 0.5)
+        let wrap = ColorLook.bandWeights(hue: 330)  // halfway magenta → red
+        XCTAssertEqual(wrap.map(\.0), ["magenta", "red"])
+    }
+
+    func testMixerChangesOnlyItsBand() {
+        let red = RGB(0.8, 0.1, 0.1), blue = RGB(0.1, 0.2, 0.8), grey = RGB(0.5, 0.5, 0.5)
+        let v = look([ColorLook.mixerID("red", "Saturation"): -100])
+        let greyed = ColorLook.transform(red, v)
+        assertClose(greyed.r, greyed.b, 1e-9)
+        assertClose(greyed.r, greyed.g, 1e-9)
+        XCTAssertEqual(ColorLook.transform(blue, v), blue)
+        XCTAssertEqual(ColorLook.transform(grey, v), grey)
+    }
+
+    func testMixerHueAndLuminance() {
+        let red = RGB(0.8, 0.1, 0.1)
+        let towardOrange = ColorLook.transform(red, look([ColorLook.mixerID("red", "Hue"): 100]))
+        assertClose(ColorLook.hsl(towardOrange).h, 30, 1e-6)
+        let darker = ColorLook.transform(red, look([ColorLook.mixerID("red", "Luminance"): -100]))
+        XCTAssertLessThan(darker.luma, red.luma * 0.8)
+        let lighter = ColorLook.transform(red, look([ColorLook.mixerID("red", "Luminance"): 100]))
+        XCTAssertGreaterThan(lighter.luma, red.luma)
+    }
+
+    func testCubeIsIdentityWhenUntouched() {
+        XCTAssertTrue(ColorLook.isIdentity { _ in nil })
+        XCTAssertFalse(ColorLook.isIdentity { $0 == "mixerRedHue" ? 10 : nil })
+        let cube = ColorLook.cube({ _ in nil }, size: 5)
+        XCTAssertEqual(cube.count, 5 * 5 * 5 * 4)
+        // Entry for r = 1/4, g = 2/4, b = 3/4 sits at index (3 * 25 + 2 * 5 + 1) * 4.
+        let i = (3 * 25 + 2 * 5 + 1) * 4
+        XCTAssertEqual(Array(cube[i..<(i + 4)]), [0.25, 0.5, 0.75, 1])
+    }
 }
