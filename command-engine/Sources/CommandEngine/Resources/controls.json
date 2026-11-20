@@ -907,7 +907,9 @@
         {"id": "move", "label": "Content Aware Move", "synonyms": ["content-aware move", "move"]},
         {"id": "redEye", "label": "Red Eye", "synonyms": ["red-eye"]},
         {"id": "petEye", "label": "Pet Eye", "synonyms": ["pet-eye"]},
-        {"id": "liquify", "label": "Liquify", "synonyms": ["liquefy"]}
+        {"id": "liquify", "label": "Liquify", "synonyms": ["liquefy"]},
+        {"id": "dodge", "label": "Dodge"},
+        {"id": "burn", "label": "Burn"}
       ]},
     {"id": "removeBrush", "label": "Remove Brush", "group": "retouch", "kind": "action", "tool": "remove",
       "synonyms": ["remove tool", "content aware remove", "content-aware remove", "content aware fill", "content-aware fill",
@@ -965,7 +967,29 @@
         {"id": "reconstruct", "label": "Reconstruct", "synonyms": ["restore", "undo warp", "unwarp"]}
       ]},
     {"id": "toolStrength", "label": "Tool Strength", "group": "retouch", "section": "Brush tools", "kind": "slider",
-      "synonyms": ["strength", "liquify pressure", "liquify strength", "brush pressure", "pressure", "brush tool strength"],
-      "min": 1, "max": 100, "default": 50, "step": 5}
+      "synonyms": ["strength", "liquify pressure", "liquify strength", "brush pressure", "pressure", "brush tool strength",
+                   "dodge exposure", "burn exposure", "dodge strength", "burn strength"],
+      "min": 1, "max": 100, "default": 50, "step": 5},
+    {"id": "dodge", "label": "Dodge", "group": "retouch", "kind": "action", "tool": "dodge",
+      "synonyms": ["dodge tool", "dodge brush", "lighten brush"],
+      "options": [
+        {"id": "shadows", "label": "Shadows", "synonyms": ["shadow", "darks"]},
+        {"id": "midtones", "label": "Midtones", "synonyms": ["midtone", "mids", "mid tones"]},
+        {"id": "highlights", "label": "Highlights", "synonyms": ["highlight", "lights", "brights"]}
+      ]},
+    {"id": "burn", "label": "Burn", "group": "retouch", "kind": "action", "tool": "burn",
+      "synonyms": ["burn tool", "burn brush", "darken brush"],
+      "options": [
+        {"id": "shadows", "label": "Shadows", "synonyms": ["shadow", "darks"]},
+        {"id": "midtones", "label": "Midtones", "synonyms": ["midtone", "mids", "mid tones"]},
+        {"id": "highlights", "label": "Highlights", "synonyms": ["highlight", "lights", "brights"]}
+      ]},
+    {"id": "toneRange", "label": "Tone Range", "group": "retouch", "section": "Dodge and burn", "kind": "choice",
+      "synonyms": ["dodge range", "burn range", "dodge burn range", "dodge and burn range"], "default": 1,
+      "options": [
+        {"id": "shadows", "label": "Shadows", "synonyms": ["shadow", "darks"]},
+        {"id": "midtones", "label": "Midtones", "synonyms": ["midtone", "mids", "mid tones"]},
+        {"id": "highlights", "label": "Highlights", "synonyms": ["highlight", "lights", "brights"]}
+      ]}
   ]
 }

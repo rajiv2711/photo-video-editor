@@ -548,4 +548,61 @@ final class RetouchTests: XCTestCase {
         XCTAssertLessThan(line(tap(2)), 36)
         XCTAssertGreaterThan(line(tap(3)), 36)
     }
+
+    // MARK: - Dodge and burn
+
+    func testDodgeAndBurnNames() {
+        XCTAssertEqual(parse("dodge"), [.run("dodge")])
+        XCTAssertEqual(parse("dodge midtones"), [.run("dodge", value: 1)])
+        XCTAssertEqual(parse("burn highlights"), [.run("burn", value: 2)])
+        XCTAssertEqual(parse("tone range shadows"), [.set("toneRange", 0)])
+        XCTAssertEqual(parse("dodge exposure 30"), [.set("toolStrength", 30)])
+        XCTAssertEqual(parse("highlights 20"), [.set("highlights", 20)], "the Light slider keeps its name")
+        run("burn shadows")
+        XCTAssertEqual(state.retouchTool, "burn")
+        XCTAssertEqual(state.value(of: control("toneRange")), 0)
+        for tool in ["dodge", "burn"] { XCTAssertEqual(control(tool).options.map(\.id), control("toneRange").options.map(\.id)) }
+    }
+
+    func testToneRangesWeighTheirTones() {
+        XCTAssertEqual(ToneBrushes.rangeWeight(0.05, range: 0), 1)
+        XCTAssertEqual(ToneBrushes.rangeWeight(0.8, range: 0), 0)
+        XCTAssertEqual(ToneBrushes.rangeWeight(0.5, range: 1), 1)
+        XCTAssertEqual(ToneBrushes.rangeWeight(0, range: 1), 0)
+        XCTAssertEqual(ToneBrushes.rangeWeight(0.95, range: 2), 1)
+        XCTAssertEqual(ToneBrushes.rangeWeight(0.3, range: 2), 0)
+        XCTAssertEqual(ToneBrushes.encode(ToneBrushes.decode(0.42)), 0.42, accuracy: 1e-5)
+    }
+
+    func testDodgeLightensMidtonesAndBurnDarkensWherePainted() {
+        // A grey ramp from black (left) to white (right); a stroke across all of it.
+        let size = (100, 60)
+        let ramp = Self.picture(size.0, size.1) { x, _ in
+            let v = Float(x) / 99
+            return (v, v, v)
+        }
+        let stroke = [MaskPoint(0.01, 0.5), MaskPoint(0.99, 0.5)]
+        func painted(_ tool: String, range: Double) -> RGBBuffer {
+            RetouchCanvas(base: ramp).render([Retouch(tool: tool, points: stroke, size: 30, feather: 0,
+                                                      values: ["toneRange": range, "toolStrength": 100, "spotOpacity": 100])]).image
+        }
+        let dodged = painted("dodge", range: 1)
+        func at(_ image: RGBBuffer, _ x: Int) -> Float { image.color(x, 30).1 }
+        XCTAssertGreaterThan(at(dodged, 50), at(ramp, 50) + 0.15, "mid grey about a stop lighter")
+        XCTAssertLessThan(at(dodged, 5) - at(ramp, 5), 0.02, "black barely changes")
+        XCTAssertEqual(at(dodged, 50), ToneBrushes.encode(ToneBrushes.decode(at(ramp, 50)) * 2), accuracy: 0.01)
+        XCTAssertEqual(dodged.color(50, 5).1, ramp.color(50, 5).1, "outside the brush nothing changes")
+
+        let burned = painted("burn", range: 0)
+        XCTAssertLessThan(at(burned, 15), at(ramp, 15) - 0.03, "shadows darker")
+        XCTAssertEqual(at(burned, 85), at(ramp, 85), accuracy: 0.001, "lights untouched")
+
+        // Pressure: a light press does less.
+        var light = Retouch(tool: "dodge", points: stroke, pressure: [0.3, 0.3], size: 30, feather: 0,
+                            values: ["toneRange": 1, "toolStrength": 100, "spotOpacity": 100])
+        let soft = RetouchCanvas(base: ramp).render([light]).image
+        XCTAssertLessThan(at(soft, 50), at(dodged, 50) - 0.05)
+        light.pressure = []
+        XCTAssertEqual(RetouchCanvas(base: ramp).render([light]).image, dodged)
+    }
 }

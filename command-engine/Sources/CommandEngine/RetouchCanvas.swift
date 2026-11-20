@@ -263,7 +263,7 @@ public final class RetouchCanvas {
             let box = write.expanded(by: 2, width: width, height: height)
             guard let o = pixels(step.offset) else { return nil }
             return Plan(read: union(box, shifted(box, o, width: width, height: height)), write: box)
-        case "redEye", "petEye":
+        case "redEye", "petEye", "dodge", "burn":
             return Plan(read: write, write: write)
         case "move":
             // The area is filled from around it (as the Remove brush) and put down `offset` away.
@@ -315,6 +315,11 @@ public final class RetouchCanvas {
             return heal(step, plan: plan, image: image)
         case "move":
             return move(step, plan: plan, image: image)
+        case "dodge", "burn":
+            var box = image.crop(plan.write)
+            ToneBrushes.dodgeBurn(&box, cover: footprint(step, in: plan.write, pressured: true), strength: strength(step),
+                                  range: Int(step.values["toneRange"] ?? 1), lighter: step.tool == "dodge")
+            return box.pixels
         case "redEye", "petEye":
             var eye = image.crop(plan.write)
             let circle = eyeCircle(step)
@@ -333,6 +338,11 @@ public final class RetouchCanvas {
     }
 
     // MARK: - Brush geometry
+
+    /// Tool Strength, 0…1.
+    func strength(_ step: Retouch) -> Double {
+        Swift.min(1, Swift.max(0, (step.values["toolStrength"] ?? 50) / 100))
+    }
 
     /// Brush radius in pixels.
     func radius(_ step: Retouch) -> Double {
@@ -383,9 +393,21 @@ public final class RetouchCanvas {
         Swift.max(1, step.feather / 100 * 0.01 * longSide)
     }
 
+    /// The pen's pressure at each dab (the nearest stroke point's), or nil when there is none.
+    func dabPressures(_ step: Retouch, _ dabs: [(x: Double, y: Double)]) -> [Float]? {
+        guard !step.pressure.isEmpty, step.pressure.count == step.points.count else { return nil }
+        let points = step.points.map { (x: $0.x * Double(base.width), y: $0.y * Double(base.height)) }
+        return dabs.map { dab in
+            let nearest = points.indices.min { a, b in
+                hypot(points[a].x - dab.x, points[a].y - dab.y) < hypot(points[b].x - dab.x, points[b].y - dab.y)
+            }
+            return Float(nearest.map { step.pressure[$0] } ?? 1)
+        }
+    }
+
     /// How much the brush covers each pixel of `box` (0…1): round dabs with the step's soft edge, or
-    /// the inside of the outline, softened.
-    func footprint(_ step: Retouch, in box: PixelBox) -> [Float] {
+    /// the inside of the outline, softened. `pressured`: each dab as strong as the pen pressed.
+    func footprint(_ step: Retouch, in box: PixelBox, pressured: Bool = false) -> [Float] {
         if RetouchTools.outlined.contains(step.tool) {
             let path = step.points.map {
                 MaskPoint(($0.x * Double(base.width) - Double(box.x0)) / Double(box.width),
@@ -397,7 +419,10 @@ public final class RetouchCanvas {
         var out = [Float](repeating: 0, count: box.width * box.height)
         let r = radius(step)
         let soft = Swift.max(step.feather / 100, 1.5 / r)
-        for dab in dabs(step) {
+        let dabs = self.dabs(step)
+        let pressures = pressured ? dabPressures(step, dabs) : nil
+        for (n, dab) in dabs.enumerated() {
+            let pressure = pressures?[n] ?? 1
             let ya = Swift.max(box.y0, Int((dab.y - r).rounded(.down))), yb = Swift.min(box.y1 - 1, Int((dab.y + r).rounded(.up)))
             let xa = Swift.max(box.x0, Int((dab.x - r).rounded(.down))), xb = Swift.min(box.x1 - 1, Int((dab.x + r).rounded(.up)))
             guard ya <= yb, xa <= xb else { continue }
@@ -408,7 +433,7 @@ public final class RetouchCanvas {
                     let d = (dx * dx + dy * dy).squareRoot() / r
                     guard d < 1 else { continue }
                     let k = (y - box.y0) * box.width + (x - box.x0)
-                    out[k] = Swift.max(out[k], Float(1 - Effects.smoothstep(1 - soft, 1, d)))
+                    out[k] = Swift.max(out[k], pressure * Float(1 - Effects.smoothstep(1 - soft, 1, d)))
                 }
             }
         }

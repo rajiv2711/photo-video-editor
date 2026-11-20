@@ -124,7 +124,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [ ] 92. **Skin smoothing** — soften skin, keep pores and freckles **AI · later**
 - [ ] 93. **Teeth whitening / eye brightening** — quick portrait fixes **AI · later**
 - [x] 94. **Liquify** — push/pull pixels; face-aware reshaping
-- [ ] 95. **Dodge & burn** — brush to lighten or darken
+- [x] 95. **Dodge & burn** — brush to lighten or darken
 - [ ] 96. **Sponge** — brush to add or remove saturation
 - [ ] 97. **Blur / sharpen / smudge brushes** — local touch-up brushes
 - [ ] 98. **Remove background** — cut the subject out to transparency **AI · later**

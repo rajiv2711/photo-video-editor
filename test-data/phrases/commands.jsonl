@@ -735,3 +735,11 @@
 {"group":"retouch","text":"liquify mode reconstruct","expect":[{"op":"set","control":"liquifyMode","value":4}]}
 {"group":"retouch","text":"tool strength 80","expect":[{"op":"set","control":"toolStrength","value":80}]}
 {"group":"retouch","text":"strength up","expect":[{"op":"nudge","control":"toolStrength","steps":1}]}
+{"group":"retouch","text":"dodge","expect":[{"op":"run","control":"dodge"}]}
+{"group":"retouch","text":"dodge midtones","expect":[{"op":"run","control":"dodge","value":1}]}
+{"group":"retouch","text":"dodge tool shadows","expect":[{"op":"run","control":"dodge","value":0}]}
+{"group":"retouch","text":"burn","expect":[{"op":"run","control":"burn"}]}
+{"group":"retouch","text":"burn highlights","expect":[{"op":"run","control":"burn","value":2}]}
+{"group":"retouch","text":"tone range shadows","expect":[{"op":"set","control":"toneRange","value":0}]}
+{"group":"retouch","text":"dodge range highlights","expect":[{"op":"set","control":"toneRange","value":2}]}
+{"group":"retouch","text":"dodge exposure 30","expect":[{"op":"set","control":"toolStrength","value":30}]}

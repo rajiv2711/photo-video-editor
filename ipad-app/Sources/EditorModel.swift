@@ -617,6 +617,8 @@ final class EditorModel: ObservableObject {
         "redEye": "tap the middle of a red eye with a brush about the eye's size, or draw around the eye",
         "petEye": "tap a glowing pet eye with a brush about the eye's size, or draw around the eye",
         "liquify": "drag to push, or hold still (tap) to twirl, pucker, bloat or reconstruct; Liquify Mode and Tool Strength set how",
+        "dodge": "paint to lighten (up to a stop at full Tool Strength), mostly in the Tone Range; press harder with the Pencil for more",
+        "burn": "paint to darken (up to a stop at full Tool Strength), mostly in the Tone Range; press harder with the Pencil for more",
     ]
 
     /// What to do on the photo after making a mask part.
