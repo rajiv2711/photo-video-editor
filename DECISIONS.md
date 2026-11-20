@@ -41,3 +41,18 @@ Locked 2026-11-18 · updated 2026-11-20 (iloader only; voice server address buil
 - github.com/rajiv2711/photo-video-editor: public, for unlimited free cloud builds.
 - License: MIT.
 - Reports are HTML only, short, and git-ignored (`reports/`, `research_notes/`).
+
+## Way of working
+- Every iteration: one clear instruction → research and implementation structure → approval → implement → test on the laptop with visuals → commit, push and cloud build (only with approval).
+- Feature work on a branch; merged to `main` once it works on the iPad.
+
+## Decision log
+- 2026-11-18 · iPad-only, free, agent-native editor; native Swift app; cloud build on GitHub; free Apple ID; public repo, MIT.
+- 2026-11-18 · Commands name the control; lightweight models, start bigger and shrink later; reports are short HTML.
+- 2026-11-19 · Repo layout by purpose (`ipad-app/`, `command-engine/`, `voice-server/`, `test-data/`, `dev-tools/`).
+- 2026-11-19 · One JSON command format; parse (text → commands) and apply (commands → values) are separate; 134 test phrases, rule-parser baseline 81%.
+- 2026-11-19 · Voice in development: iPad → laptop Whisper server over ngrok (plain HTTPS, not MCP); voice test 80% vs 85% typed, ~100 ms.
+- 2026-11-20 · Signing uses a second free Apple ID, not the main one; iloader v2.4.2+ (Apple login change broke older versions).
+- 2026-11-20 · SideStore dropped; iloader only, over USB.
+- 2026-11-20 · ngrok address built into the app; voice-server token check off during development.
+- 2026-11-20 · Pipeline verified end-to-end on the iPad (sliders, typing, voice). `setup-swift-app` merged into `main`. Focus moves to features.
