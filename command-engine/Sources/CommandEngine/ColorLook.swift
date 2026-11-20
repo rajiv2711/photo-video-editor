@@ -24,7 +24,8 @@ public enum ColorLook {
     }
 
     /// Point color: the picked hue, the shifts for colours near it, and how near counts.
-    public static let pointIDs = ["pointHue", "pointHueShift", "pointSaturationShift", "pointLuminanceShift", "pointRange"]
+    public static let pointIDs = ["pointHue", "pointHueShift", "pointSaturationShift", "pointLuminanceShift", "pointRange",
+                                  "pointVariance"]
 
     /// Control ids that feed the cube.
     public static let controlIDs: [String] = mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
@@ -129,13 +130,17 @@ public enum ColorLook {
 
     /// Shifts the colours close to one picked hue. Point Range 0…100 sets how close: up to 10°…60°
     /// away (35° by default), fading out towards the edge; greys are never picked.
-    /// Shifts as in the Color mixer: hue up to 30°, saturation to grey or double, luminance halfway.
+    /// Variance first evens out (−100: every picked colour takes the target hue) or spreads (+100:
+    /// twice as far from it) the hues; then the shifts act as in the Color mixer: hue up to 30°,
+    /// saturation to grey or double, luminance halfway.
     static func pointColor(_ color: RGB, _ v: Values) -> RGB {
         let hueShift = v["pointHueShift"], satShift = v["pointSaturationShift"], lumShift = v["pointLuminanceShift"]
-        guard hueShift != 0 || satShift != 0 || lumShift != 0 else { return color }
+        let variance = v["pointVariance"]
+        guard hueShift != 0 || satShift != 0 || lumShift != 0 || variance != 0 else { return color }
         let w = pointWeight(color, v)
         guard w > 0 else { return color }
         var (h, s, l) = hsl(color)
+        h += hueDifference(h, v["pointHue"]) * w * variance / 100
         h += w * hueShift / 100 * 30
         s = Swift.min(Swift.max(s * (1 + w * satShift / 100), 0), 1)
         let dl = w * lumShift / 100 * 0.5

@@ -280,3 +280,6 @@
 {"group":"color","text":"less point luminance","expect":[{"op":"nudge","control":"pointLuminanceShift","steps":-1}]}
 {"group":"color","text":"point range 80","expect":[{"op":"set","control":"pointRange","value":80}]}
 {"group":"color","text":"range down","expect":[{"op":"nudge","control":"pointRange","steps":-1}]}
+{"group":"color","text":"variance -40","expect":[{"op":"set","control":"pointVariance","value":-40}]}
+{"group":"color","text":"less variance","expect":[{"op":"nudge","control":"pointVariance","steps":-1}]}
+{"group":"color","text":"point variance up by 20","expect":[{"op":"add","control":"pointVariance","value":20}]}

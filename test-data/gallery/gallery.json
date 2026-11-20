@@ -83,6 +83,7 @@
     {"id": "point-range-wide", "command": "point saturation -100 point range 100", "source": "chart", "control": "pointRange", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "point-sat"}]},
     {"id": "point-target-blue", "command": "target hue 240 point saturation -100", "source": "chart", "control": "pointHue", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}, {"metric": "diff", "dir": "changed", "vs": "point-sat"}]},
     {"id": "point-picker", "command": "target hue 240 point saturation -100 point color picker", "tap": [0.055, 0.12], "source": "chart", "control": "pointColorPicker", "expect": [{"metric": "diff", "dir": "same", "vs": "point-sat"}, {"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "point-variance", "command": "point range 100 variance -100", "source": "chart", "control": "pointVariance", "expect": [{"metric": "diff", "dir": "changed", "vs": "chart"}, {"metric": "mean_g", "dir": "down", "vs": "chart", "min": 0.5}]},
     {"id": "point-sat-photo", "command": "point saturation -100", "control": "pointSaturationShift", "expect": [{"metric": "mean_sat", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}

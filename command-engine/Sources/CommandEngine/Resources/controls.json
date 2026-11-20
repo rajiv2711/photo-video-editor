@@ -408,6 +408,8 @@
     {"id": "pointLuminanceShift", "label": "Point Luminance Shift", "group": "color", "section": "Point color", "kind": "slider",
       "synonyms": ["point luminance", "point lum"], "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "pointRange", "label": "Point Range", "group": "color", "section": "Point color", "kind": "slider",
-      "synonyms": ["point color range", "point colour range", "range"], "min": 0, "max": 100, "default": 50, "step": 5}
+      "synonyms": ["point color range", "point colour range", "range"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "pointVariance", "label": "Variance", "group": "color", "section": "Point color", "kind": "slider",
+      "synonyms": ["point variance", "variation", "point color variance"], "min": -100, "max": 100, "default": 0, "step": 5}
   ]
 }

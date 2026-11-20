@@ -217,4 +217,17 @@ final class ColorTests: XCTestCase {
         XCTAssertTrue(ColorLook.isIdentity { $0 == "pointHue" ? 120 : nil })
         XCTAssertFalse(ColorLook.isIdentity { $0 == "pointHueShift" ? 10 : nil })
     }
+
+    func testVarianceEvensOutHuesAroundTheTarget() {
+        let orange = RGB(0.9, 0.5, 0.1)  // 30° from red
+        let evened = ColorLook.transform(orange, look(["pointHue": 0, "pointRange": 100, "pointVariance": -100]))
+        let h = ColorLook.hsl(evened).h
+        XCTAssertLessThan(h, ColorLook.hsl(orange).h)
+        XCTAssertGreaterThan(h, 0, "only partly: orange is halfway out of the range")
+        let spread = ColorLook.transform(orange, look(["pointHue": 0, "pointRange": 100, "pointVariance": 100]))
+        XCTAssertGreaterThan(ColorLook.hsl(spread).h, ColorLook.hsl(orange).h)
+        let red = RGB(0.8, 0.1, 0.1)
+        XCTAssertEqual(ColorLook.transform(red, look(["pointHue": 0, "pointVariance": -100])).r, red.r, accuracy: 1e-9,
+                       "the target itself stays")
+    }
 }
