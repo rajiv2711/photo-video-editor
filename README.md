@@ -15,6 +15,7 @@ License: [MIT](LICENSE)
 | [`voice-server/`](voice-server) | Laptop server for development: the iPad sends a voice clip, Whisper returns the text. Reached through ngrok. |
 | [`test-data/photos/`](test-data/photos) | The test photo, used by the app as its default image and by the reports. |
 | [`test-data/phrases/`](test-data/phrases) | Test phrases with the commands each should produce (`commands.jsonl`). |
+| [`docs/FEATURES.md`](docs/FEATURES.md) | Feature checklist: every planned photo operation, ticked when built. |
 | [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report). |
 | [`.github/workflows/`](.github/workflows) | Cloud build: Linux tests → unsigned `.ipa` + iPad simulator screenshots. |
 | `reports/`, `research_notes/` | Local only, git-ignored. |

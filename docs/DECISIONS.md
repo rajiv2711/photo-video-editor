@@ -41,6 +41,7 @@ Locked 2026-11-18 · updated 2026-11-20 (iloader only; voice server address buil
 - github.com/rajiv2711/photo-video-editor: public, for unlimited free cloud builds.
 - License: MIT.
 - Reports are HTML only, short, and git-ignored (`reports/`, `research_notes/`).
+- `docs/` holds this file and `FEATURES.md`, the feature checklist (ticked as operations are built).
 
 ## Way of working
 - Every iteration: one clear instruction → research and implementation structure → approval → implement → test on the laptop with visuals → commit, push and cloud build (only with approval).
@@ -56,3 +57,4 @@ Locked 2026-11-18 · updated 2026-11-20 (iloader only; voice server address buil
 - 2026-11-20 · SideStore dropped; iloader only, over USB.
 - 2026-11-20 · ngrok address built into the app; voice-server token check off during development.
 - 2026-11-20 · Pipeline verified end-to-end on the iPad (sliders, typing, voice). `setup-swift-app` merged into `main`. Focus moves to features.
+- 2026-11-20 · Feature build-out: every non-AI operation in `docs/FEATURES.md`, top to bottom, one at a time (implement → test → commit) on `feature/photo-ops`. Generative AI features dropped (generative remove/fill/expand, open eyes, relight). AI-based operations deferred until their models are researched. Cloud test renders go to a throwaway `ci-renders` branch.
