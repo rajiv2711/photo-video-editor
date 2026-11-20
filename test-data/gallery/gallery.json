@@ -28,6 +28,11 @@
     {"id": "curve-point-black", "command": "curve 0 20", "control": "curveRgb0", "expect": [{"metric": "p5_luma", "dir": "up"}]},
     {"id": "curve-red", "command": "red curve 50 80", "control": "curveRed50", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_g", "dir": "same"}]},
     {"id": "curve-blue", "command": "blue curve 75 50", "control": "curveBlue75", "expect": [{"metric": "mean_b", "dir": "down"}]},
+    {"id": "levels-input-black", "command": "input black 60", "control": "levelsInBlack", "expect": [{"metric": "p25_luma", "dir": "down"}]},
+    {"id": "levels-input-white", "command": "input white 200", "control": "levelsInWhite", "expect": [{"metric": "p95_luma", "dir": "up"}]},
+    {"id": "levels-gamma", "command": "gamma 2", "control": "levelsGamma", "expect": [{"metric": "p25_luma", "dir": "up"}]},
+    {"id": "levels-output-black", "command": "output black 60", "control": "levelsOutBlack", "expect": [{"metric": "p5_luma", "dir": "up"}]},
+    {"id": "levels-output-white", "command": "output white 180", "control": "levelsOutWhite", "expect": [{"metric": "p95_luma", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

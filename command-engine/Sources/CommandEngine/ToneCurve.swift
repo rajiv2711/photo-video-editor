@@ -2,7 +2,7 @@ import Foundation
 
 /// Tone math for the Light panel, shared by the iPad renderer and the Linux tests.
 ///
-/// The global tone controls (Highlights brightening, Whites, Blacks, Brightness, tone curves, Fade) become one
+/// The global tone controls (Highlights brightening, Whites, Blacks, Brightness, tone curves, Levels, Fade) become one
 /// lookup table per colour channel, applied in a single Core Image pass (CIColorCurves). Inputs and
 /// outputs are sRGB-encoded levels (0 = black, 1 = SDR white), i.e. what the eye sees.
 ///
@@ -40,6 +40,7 @@ public enum ToneCurve {
     public static let controlIDs: [String] = [
         "highlights", "whites", "blacks", "brightness", "fade",
         "curveHighlights", "curveLights", "curveDarks", "curveShadows",
+        "levelsInBlack", "levelsInWhite", "levelsGamma", "levelsOutBlack", "levelsOutWhite",
     ] + curveChannels.flatMap { channel in curvePointXs.map { curvePointID(channel: channel, x: $0) } }
 
     /// Point curve: one curve per channel (rgb first, then red, green, blue), five points at fixed inputs.
@@ -53,7 +54,12 @@ public enum ToneCurve {
 
     /// The value of each tone control that leaves the picture untouched (a curve point sits on the diagonal).
     public static func neutral(_ id: String) -> Double {
-        neutralPoints[id] ?? 0
+        if let x = neutralPoints[id] { return x }
+        switch id {
+        case "levelsInWhite", "levelsOutWhite": return 255
+        case "levelsGamma": return 1
+        default: return 0
+        }
     }
 
     private static let neutralPoints: [String: Double] = {
@@ -141,7 +147,7 @@ public enum ToneCurve {
         /// Output (red, green, blue) for one input level 0…1.
         func channels(_ x: Double) -> (Double, Double, Double) {
             let y = point("rgb", parametric(basic(x)))
-            return (fade(point("red", y)), fade(point("green", y)), fade(point("blue", y)))
+            return (fade(levels(point("red", y))), fade(levels(point("green", y))), fade(levels(point("blue", y))))
         }
 
         /// Whites, Blacks, Highlights (brightening only; darkening is CIHighlightShadowAdjust in the
@@ -181,6 +187,18 @@ public enum ToneCurve {
             let ys = ToneCurve.curvePointXs.map { value(ToneCurve.curvePointID(channel: channel, x: $0)) / 100 }
             if xs == ys { return x }
             return ToneCurve.spline(xs: xs, ys: ys, at: x)
+        }
+
+        /// Photoshop-style Levels on 0…255: input black/white, gamma, output black/white.
+        func levels(_ x: Double) -> Double {
+            let inBlack = value("levelsInBlack"), outBlack = value("levelsOutBlack")
+            let inWhite = value("levelsInWhite"), outWhite = value("levelsOutWhite")
+            let gamma = Swift.max(value("levelsGamma"), 0.01)
+            if inBlack == 0 && inWhite == 255 && gamma == 1 && outBlack == 0 && outWhite == 255 { return x }
+            var t = (x * 255 - inBlack) / Swift.max(inWhite - inBlack, 1)
+            t = Swift.min(Swift.max(t, 0), 1)
+            t = pow(t, 1 / gamma)
+            return (outBlack + t * (outWhite - outBlack)) / 255
         }
 
         /// Fade: lifts black towards grey for a matte look (up to a quarter); white stays white.

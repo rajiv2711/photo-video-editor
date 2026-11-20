@@ -235,7 +235,8 @@ final class EditorModel: ObservableObject {
     }
 
     nonisolated static func format(_ value: Double, _ control: Control?) -> String {
-        let decimals = (control?.step ?? 1) < 1 ? 1 : 0
+        let step = control?.step ?? 1
+        let decimals = step < 0.1 ? 2 : step < 1 ? 1 : 0
         return String(format: "%.\(decimals)f", value)
     }
 }

@@ -117,6 +117,17 @@ final class ToneCurveTests: XCTestCase {
         }
     }
 
+    func testLevels() {
+        XCTAssertTrue(ToneCurve.isIdentity(values(["levelsInWhite": 255, "levelsGamma": 1, "levelsOutWhite": 255])))
+        XCTAssertEqual(out(["levelsInBlack": 51], 0.2), 0, accuracy: 0.002)
+        XCTAssertEqual(out(["levelsInBlack": 51], 0.6), 0.5, accuracy: 0.002)
+        XCTAssertEqual(out(["levelsInWhite": 204], 0.8), 1, accuracy: 0.002)
+        XCTAssertEqual(out(["levelsGamma": 2], 0.25), 0.5, accuracy: 0.002)
+        XCTAssertEqual(out(["levelsOutBlack": 51, "levelsOutWhite": 204], 0), 0.2, accuracy: 0.002)
+        XCTAssertEqual(out(["levelsOutBlack": 51, "levelsOutWhite": 204], 1), 0.8, accuracy: 0.002)
+        assertMonotone(["levelsInBlack": 100, "levelsInWhite": 100])
+    }
+
     func testHDRRangeContinuesAboveWhite() {
         XCTAssertEqual(out(["whites": 100], 1, maxInput: 4), 1.25, accuracy: 0.01, "HDR keeps whites above 1")
         XCTAssertEqual(out([:], 2.5, maxInput: 4), 2.5, accuracy: 0.01)

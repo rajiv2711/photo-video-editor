@@ -171,3 +171,9 @@
 {"group":"light","text":"point curve 25 down","expect":[{"op":"nudge","control":"curveRgb25","steps":-1}]}
 {"group":"light","text":"reset curve 50","expect":[{"op":"reset","control":"curveRgb50"}]}
 {"group":"light","text":"blue curve 0 to 10","expect":[{"op":"set","control":"curveBlue0","value":10}]}
+{"group":"light","text":"input black 20","expect":[{"op":"set","control":"levelsInBlack","value":20}]}
+{"group":"light","text":"output white down","expect":[{"op":"nudge","control":"levelsOutWhite","steps":-1}]}
+{"group":"light","text":"gamma 1.5","expect":[{"op":"set","control":"levelsGamma","value":1.5}]}
+{"group":"light","text":"levels gamma up","expect":[{"op":"nudge","control":"levelsGamma","steps":1}]}
+{"group":"light","text":"reset input white","expect":[{"op":"reset","control":"levelsInWhite"}]}
+{"group":"light","text":"output black 30 input white 230","expect":[{"op":"set","control":"levelsOutBlack","value":30},{"op":"set","control":"levelsInWhite","value":230}]}
