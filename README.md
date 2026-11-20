@@ -3,7 +3,7 @@
 A free iPad photo and video editor you can drive by name: type or say
 "contrast more, more, more" and the Contrast slider moves. Sliders stay for fine-tuning.
 
-Decisions: [DECISIONS.md](DECISIONS.md) · License: [MIT](LICENSE)
+License: [MIT](LICENSE)
 
 ## What is where
 
