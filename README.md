@@ -50,11 +50,11 @@ uv run --project voice-server dev-tools/voice_test.py --record --mic plughw:2,0 
 On the iPad: Settings (gear) → paste the ngrok address and the token → Test connection.
 
 ## Install on the iPad (free Apple ID, no App Store)
-1. Push to GitHub. Open the latest **Build** run under Actions and download `PhotoVideoEditor-ipa`.
-2. Turn on Developer Mode on the iPad: Settings › Privacy & Security › Developer Mode.
-3. Install [iloader](https://github.com/nab138/iloader) on Linux, connect the iPad by USB and install SideStore with your Apple ID.
-4. Unzip the artifact and install `PhotoVideoEditor.ipa` with iloader, or open it in SideStore.
-5. SideStore re-signs the app every 7 days over Wi-Fi.
+1. Push to GitHub. Open the latest **Build** run under Actions and download `PhotoVideoEditor-ipa`; unzip it.
+2. Connect the iPad by USB and open [iloader](https://github.com/nab138/iloader) on Linux (signed in with the free Apple ID).
+3. iloader → **Import IPA** → `PhotoVideoEditor.ipa`.
+4. First time only: on the iPad, trust the Apple ID (Settings › General › VPN & Device Management) and turn on Developer Mode (Settings › Privacy & Security).
+5. The app expires after 7 days: re-import it with iloader once a week.
 
 ## Commands
 | Say or type | Result |
