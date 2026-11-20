@@ -79,4 +79,4 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `tone curve shadows 20` · `curve 50 60` · `red curve 75 up` | Multi-word names; point curve: point 50 → output 60 |
 | `input black 20` · `gamma 1.5` | Levels |
 | `hdr on` · `turn off equalize` | Toggles |
-| `auto` | Runs an action (Auto sets the light sliders) |
+| `auto` | Runs an action (Auto sets the light sliders, Temperature, Tint and Vibrance) |

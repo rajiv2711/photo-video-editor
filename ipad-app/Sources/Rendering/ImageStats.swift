@@ -16,6 +16,15 @@ enum ImageStats {
         return RGB(Double(pixel[0]), Double(pixel[1]), Double(pixel[2]))
     }
 
+    /// Average of (brightest − darkest channel) per pixel on sRGB levels: 0 for a grey picture.
+    static func meanChroma(of image: CIImage, context: CIContext) -> Double {
+        let encoded = image.applyingFilter("CILinearToSRGBToneCurve")
+        let chroma = encoded.applyingFilter("CIMinimumComponent").applyingFilter("CISubtractBlendMode", parameters: [
+            kCIInputBackgroundImageKey: encoded.applyingFilter("CIMaximumComponent"),
+        ])
+        return averageColor(of: chroma, in: image.extent, context: context).r
+    }
+
     /// Share of pixels per brightness bin (Rec. 709 luma of sRGB-encoded levels), darkest first.
     static func lumaHistogram(of image: CIImage, extent: CGRect, context: CIContext, bins: Int = 256) -> [Double] {
         let encoded = image.applyingFilter("CILinearToSRGBToneCurve")

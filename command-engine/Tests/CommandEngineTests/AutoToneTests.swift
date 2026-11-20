@@ -1,7 +1,8 @@
 import XCTest
 @testable import CommandEngine
 
-/// Auto (one tap): from a brightness histogram to `set` commands for the light sliders.
+/// Auto (one tap): from a brightness histogram and the photo's colour to `set` commands for the
+/// light sliders, white balance and vibrance.
 final class AutoToneTests: XCTestCase {
     /// A histogram with every pixel spread evenly between two levels (0…1).
     private func histogram(from lo: Double, to hi: Double) -> [Double] {
@@ -44,6 +45,25 @@ final class AutoToneTests: XCTestCase {
         XCTAssertLessThan(v["exposure"]!, 0)
         XCTAssertLessThan(v["blacks"]!, 0)
         XCTAssertGreaterThan(v["contrast"]!, 0)
+    }
+
+    func testColourCastIsMostlyTakenOut() {
+        // A warm cast: red high, blue low. Auto cools it, but not all the way.
+        let warm = RGB(0.5, 0.4, 0.25)
+        let v = values(AutoTone.commands(lumaHistogram: histogram(from: 0, to: 1), averageColor: warm, meanChroma: 0.3))
+        let full = WhiteBalance.neutralize(warm)
+        XCTAssertLessThan(v["temperature"]!, 0)
+        XCTAssertGreaterThan(v["temperature"]!, full.temperature)
+        XCTAssertEqual(v["vibrance"], 0, "colourful photo: no vibrance")
+        let grey = values(AutoTone.commands(lumaHistogram: histogram(from: 0, to: 1), averageColor: RGB(0.3, 0.3, 0.3)))
+        XCTAssertEqual(grey["temperature"], 0)
+        XCTAssertEqual(grey["tint"], 0)
+    }
+
+    func testMutedPhotoGetsVibrance() {
+        let v = values(AutoTone.commands(lumaHistogram: histogram(from: 0, to: 1), meanChroma: 0.03))
+        XCTAssertGreaterThan(v["vibrance"]!, 0)
+        XCTAssertEqual(v["temperature"], 0, "no colour given: white balance untouched")
     }
 
     func testEmptyHistogramDoesNothing() {

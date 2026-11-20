@@ -1,16 +1,22 @@
 import Foundation
 
-/// One-tap Auto for the Light panel. Reads the photo's brightness histogram and returns `set`
-/// commands for Exposure, Contrast, Highlights, Shadows, Whites and Blacks, so the result shows on
-/// the sliders and stays editable. (Colour: add Temperature/Tint/Vibrance here once they exist.)
+/// One-tap Auto. Reads the photo's brightness histogram and colour and returns `set` commands for
+/// Exposure, Contrast, Highlights, Shadows, Whites and Blacks, then Temperature, Tint and Vibrance,
+/// so the result shows on the sliders and stays editable.
 ///
-///     AutoTone.commands(lumaHistogram: bins) → [{"op":"set","control":"exposure","value":-0.4}, …]
+///     AutoTone.commands(lumaHistogram: bins, averageColor: avg, meanChroma: 0.05)
+///         → [{"op":"set","control":"exposure","value":-0.4}, …, {"op":"set","control":"vibrance","value":20}]
 public enum AutoTone {
     /// The controls Auto sets, every time (so pressing Auto twice gives the same result).
-    public static let controlIDs = ["exposure", "contrast", "highlights", "shadows", "whites", "blacks"]
+    public static let controlIDs = ["exposure", "contrast", "highlights", "shadows", "whites", "blacks",
+                                    "temperature", "tint", "vibrance"]
 
     /// `lumaHistogram`: share of pixels per brightness bin (sRGB-encoded luma), darkest first.
-    public static func commands(lumaHistogram: [Double]) -> [Command] {
+    /// `averageColor`: the photo's average colour in linear light; a cast is taken out at 60 %
+    /// strength (a sunset should stay warm). `meanChroma`: average of max − min channel per pixel on
+    /// sRGB levels (0 grey … 1 pure colours); muted photos get some Vibrance.
+    /// Without them, Temperature, Tint and Vibrance are set to 0.
+    public static func commands(lumaHistogram: [Double], averageColor: RGB? = nil, meanChroma: Double? = nil) -> [Command] {
         let total = lumaHistogram.reduce(0, +)
         guard total > 0, lumaHistogram.count > 1 else { return [] }
         let bins = lumaHistogram.map { $0 / total }
@@ -49,6 +55,17 @@ public enum AutoTone {
         let spread = percentile(0.95) - percentile(0.05)
         let contrast = Swift.min(Swift.max((0.7 - spread) * 60, 0), 25)
 
+        // Colour: take out most of a colour cast (grey-world guess), add vibrance to muted photos.
+        var temperature = 0.0, tint = 0.0, vibrance = 0.0
+        if let averageColor {
+            let neutral = WhiteBalance.neutralize(averageColor)
+            temperature = Swift.min(Swift.max(0.6 * neutral.temperature, -60), 60)
+            tint = Swift.min(Swift.max(0.6 * neutral.tint, -40), 40)
+        }
+        if let meanChroma {
+            vibrance = Swift.min(Swift.max((0.2 - meanChroma) / 0.2 * 25, 0), 25)
+        }
+
         return [
             .set("exposure", round(ev, to: 0.05)),
             .set("contrast", round(contrast, to: 5)),
@@ -56,6 +73,9 @@ public enum AutoTone {
             .set("shadows", round(shadows, to: 5)),
             .set("whites", round(whites, to: 5)),
             .set("blacks", round(blacks, to: 5)),
+            .set("temperature", round(temperature, to: 1)),
+            .set("tint", round(tint, to: 1)),
+            .set("vibrance", round(vibrance, to: 5)),
         ]
     }
 

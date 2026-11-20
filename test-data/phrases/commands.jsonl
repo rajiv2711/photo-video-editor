@@ -210,3 +210,4 @@
 {"group":"color","text":"reset vibrance","expect":[{"op":"reset","control":"vibrance"}]}
 {"group":"color","text":"vibrance up saturation down","expect":[{"op":"nudge","control":"vibrance","steps":1},{"op":"nudge","control":"saturation","steps":-1}]}
 {"group":"color","text":"colour saturation 30","expect":[{"op":"set","control":"saturation","value":30}]}
+{"group":"color","text":"auto colour","expect":[{"op":"run","control":"auto"}]}

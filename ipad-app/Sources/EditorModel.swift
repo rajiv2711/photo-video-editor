@@ -101,15 +101,18 @@ final class EditorModel: ObservableObject {
         focusedControlID = control.id
     }
 
-    /// Action controls look at the photo: Auto reads the unedited preview's brightness histogram
-    /// and sets the light sliders (AutoTone in CommandEngine), so its result stays editable.
+    /// Action controls look at the photo: Auto reads the unedited preview's brightness histogram and
+    /// colour and sets the light sliders, Temperature, Tint and Vibrance (AutoTone in CommandEngine),
+    /// so its result stays editable.
     private func installActions() {
         let source = previewSource
         let context = renderer.context
         interpreter.actionHandler = { id in
             guard id == "auto" else { return [] }
             let histogram = ImageStats.lumaHistogram(of: source, extent: source.extent, context: context)
-            return AutoTone.commands(lumaHistogram: histogram)
+            return AutoTone.commands(lumaHistogram: histogram,
+                                     averageColor: ImageStats.averageColor(of: source, context: context),
+                                     meanChroma: ImageStats.meanChroma(of: source, context: context))
         }
     }
 

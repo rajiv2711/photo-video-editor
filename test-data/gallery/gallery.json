@@ -38,6 +38,7 @@
     {"id": "levels-output-white", "command": "output white 180", "control": "levelsOutWhite", "expect": [{"metric": "p95_luma", "dir": "down"}]},
     {"id": "equalize-on", "command": "equalize on", "control": "equalize", "expect": [{"metric": "diff", "dir": "changed"}, {"metric": "p50_luma", "dir": "down"}]},
     {"id": "auto", "command": "auto", "control": "auto", "expect": [{"metric": "diff", "dir": "changed"}]},
+    {"id": "auto-warm", "command": "auto", "source": "warm", "control": "auto", "expect": [{"metric": "mean_b", "dir": "up", "vs": "warm-cast"}]},
     {"id": "hdr-exposure", "command": "hdr on exposure 1", "control": "hdr", "expect": [{"metric": "peak", "dir": "up", "vs": "exposure-plus"}]},
     {"id": "hdr-whites", "command": "hdr on whites 100", "control": "hdr", "expect": [{"metric": "peak", "dir": "up", "vs": "whites-plus"}]},
     {"id": "wb-tungsten", "command": "white balance tungsten", "control": "whiteBalance", "expect": [{"metric": "mean_b", "dir": "up"}, {"metric": "mean_r", "dir": "down"}]},
