@@ -121,7 +121,7 @@
 {"group":"near-names","text":"exposition more","expect":[{"op":"nudge","control":"exposure","steps":1}]}
 {"group":"near-names","text":"punchiness more","expect":[{"op":"nudge","control":"contrast","steps":1}]}
 {"group":"out-of-scope","text":"make it warmer","expect":[{"op":"unknown","word":"warmer"}]}
-{"group":"out-of-scope","text":"sharpen","expect":[{"op":"unknown","word":"sharpen"}]}
+{"group":"out-of-scope","text":"sharpen","expect":[{"op":"select","control":"sharpening"}]}
 {"group":"out-of-scope","text":"add a vignette","expect":[{"op":"nudge","control":"vignette","steps":1}]}
 {"group":"out-of-scope","text":"rotate left","expect":[{"op":"unknown","word":"rotate"},{"op":"unknown","word":"left"}]}
 {"group":"out-of-scope","text":"undo","expect":[{"op":"unknown","word":"undo"}]}
@@ -528,3 +528,10 @@
 {"group":"effects","text":"solarize 50","expect":[{"op":"set","control":"solarize","value":50}]}
 {"group":"effects","text":"solarise more","expect":[{"op":"nudge","control":"solarize","steps":1}]}
 {"group":"effects","text":"reset solarization","expect":[{"op":"reset","control":"solarize"}]}
+{"group":"detail","text":"sharpening 60","expect":[{"op":"set","control":"sharpening","value":60}]}
+{"group":"detail","text":"sharpen more more","expect":[{"op":"nudge","control":"sharpening","steps":2}]}
+{"group":"detail","text":"sharpening radius 1.5","expect":[{"op":"set","control":"sharpeningRadius","value":1.5}]}
+{"group":"detail","text":"sharpening detail up","expect":[{"op":"nudge","control":"sharpeningDetail","steps":1}]}
+{"group":"detail","text":"sharpening masking 70","expect":[{"op":"set","control":"sharpeningMasking","value":70}]}
+{"group":"detail","text":"reset sharpening radius","expect":[{"op":"reset","control":"sharpeningRadius"}]}
+{"group":"detail","text":"sharpness max","expect":[{"op":"max","control":"sharpening"}]}

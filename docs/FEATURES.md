@@ -68,7 +68,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 ### Detail
 
-- [ ] 50. **Sharpening** — amount, radius, detail, masking
+- [x] 50. **Sharpening** — amount, radius, detail, masking
 - [ ] 51. **Noise reduction** — luminance and colour noise sliders
 - [ ] 52. **AI denoise** — ML noise removal, mainly for raw **AI · later**
 - [ ] 53. **Raw details** — better raw demosaicing for fine detail **AI · later**

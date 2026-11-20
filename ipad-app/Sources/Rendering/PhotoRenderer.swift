@@ -10,6 +10,7 @@ final class PhotoRenderer {
     private let light: LightRenderer
     private let color: ColorRenderer
     private let effects: EffectsRenderer
+    private let detail: DetailRenderer
 
     init() {
         let context = CIContext()
@@ -17,6 +18,7 @@ final class PhotoRenderer {
         self.light = LightRenderer(context: context)
         self.color = ColorRenderer(context: context)
         self.effects = EffectsRenderer(context: context)
+        self.detail = DetailRenderer(context: context)
     }
 
     /// `value` gives a control's current value by id, or nil when controls.json has no such control.
@@ -28,6 +30,7 @@ final class PhotoRenderer {
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: image.extent, value: value)
         output = effects.apply(output, extent: image.extent, value: value)
+        output = detail.apply(output, extent: image.extent, value: value)
         output = effects.finish(output, extent: image.extent, value: value)  // vignette, grain
         if !hdr {
             output = output.applyingFilter("CIColorClamp")

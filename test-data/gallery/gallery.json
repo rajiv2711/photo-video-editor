@@ -215,6 +215,11 @@
     {"id": "threshold", "command": "threshold on", "control": "threshold", "expect": [{"metric": "p5_luma", "dir": "down"}, {"metric": "p95_luma", "dir": "up"}, {"metric": "mean_sat", "dir": "same", "vs": "saturation-minus"}]},
     {"id": "threshold-level", "command": "threshold on threshold level 230", "control": "thresholdLevel", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "threshold"}]},
     {"id": "solarize-half", "command": "solarize 50", "control": "solarize", "expect": [{"metric": "p95_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "same"}]},
-    {"id": "solarize-full", "command": "solarize 100", "control": "solarize", "expect": [{"metric": "mean_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]}
+    {"id": "solarize-full", "command": "solarize 100", "control": "solarize", "expect": [{"metric": "mean_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]},
+
+    {"id": "sharpening", "command": "sharpening 150", "control": "sharpening", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_luma", "dir": "same"}]},
+    {"id": "sharpening-radius", "command": "sharpening 150 sharpening radius 3", "control": "sharpeningRadius", "expect": [{"metric": "local_contrast", "dir": "up", "vs": "sharpening"}]},
+    {"id": "sharpening-detail", "command": "sharpening 150 sharpening detail 100", "control": "sharpeningDetail", "expect": [{"metric": "edge", "dir": "up", "vs": "sharpening"}]},
+    {"id": "sharpening-masking", "command": "sharpening 150 sharpening masking 100", "control": "sharpeningMasking", "expect": [{"metric": "edge", "dir": "down", "vs": "sharpening"}]}
   ]
 }
