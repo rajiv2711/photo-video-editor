@@ -20,10 +20,16 @@ public enum Effects {
     }
 
     /// Negative Texture: how much of a blurred copy to use, by the local brightness range around a
-    /// pixel (brightest − darkest nearby, sRGB levels). Fine detail is smoothed by `amount` (0…1);
-    /// strong edges (range above 0.3) stay sharp.
+    /// pixel (brightest − darkest within the blur's reach, sRGB levels). Fine detail is smoothed by
+    /// `amount` (0…1); edges and lettering (range above 0.18) stay sharp, without halos.
     public static func textureSmoothing(amount: Double) -> [Double] {
-        table(count: 64) { range in amount * 0.85 * (1 - smoothstep(0.12, 0.3, range)) }
+        table(count: 64) { range in amount * 0.7 * (1 - smoothstep(0.06, 0.18, range)) }
+    }
+
+    /// Positive Texture: how much of the added detail to keep, by the same local range. Strong edges
+    /// (range above 0.5) get none, so they don't grow bright or dark halos.
+    public static func textureBoost() -> [Double] {
+        table(count: 64) { range in 1 - smoothstep(0.25, 0.5, range) }
     }
 
     /// Clarity: how much of the change to keep at each brightness (sRGB luma): all of it in the

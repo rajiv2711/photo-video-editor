@@ -20,17 +20,19 @@ final class EffectsRenderer {
         let side = Double(max(extent.width, extent.height))
         var output = image
 
-        // Texture: medium-size detail (about 0.5 % of the long side). Positive adds it with an
-        // unsharp mask; negative mixes in a blurred copy where detail is fine, keeping strong edges.
+        // Texture: medium-size detail (about 0.3 % of the long side). Positive adds it with an
+        // unsharp mask; negative mixes in a blurred copy. Both leave strong edges alone (by the local
+        // brightness range within the blur's reach), so edges keep their shape and get no halos.
         let texture = v("texture") / 100
         if texture != 0 {
             let encoded = Filters.encoded(output)
-            let radius = 0.005 * side
+            let radius = 0.003 * side
+            let range = Filters.localRange(encoded, extent: extent, radius: 2 * radius)
             let changed: CIImage
             if texture > 0 {
-                changed = Filters.unsharp(encoded, radius: radius, intensity: 1.2 * texture, extent: extent)
+                let boosted = Filters.unsharp(encoded, radius: radius, intensity: texture, extent: extent)
+                changed = Filters.blend(boosted, over: encoded, mask: Filters.lookup(range, table: Effects.textureBoost()))
             } else {
-                let range = Filters.localRange(encoded, extent: extent, radius: 0.0015 * side)
                 let weight = Filters.lookup(range, table: Effects.textureSmoothing(amount: -texture))
                 changed = Filters.blend(Filters.blurred(encoded, radius: radius, extent: extent), over: encoded, mask: weight)
             }

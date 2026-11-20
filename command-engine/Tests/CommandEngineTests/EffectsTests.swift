@@ -42,10 +42,14 @@ final class EffectsTests: XCTestCase {
     func testTextureSmoothsFineDetailButNotStrongEdges() {
         let table = Effects.textureSmoothing(amount: 1)
         XCTAssertEqual(table.count, 64)
-        XCTAssertEqual(table[0], 0.85, accuracy: 1e-12, "flat areas: mostly the blurred copy")
+        XCTAssertEqual(table[0], 0.7, accuracy: 1e-12, "flat areas: mostly the blurred copy")
         XCTAssertEqual(table[63], 0, "strong edges: untouched")
+        XCTAssertEqual(table[Int(0.2 * 63)], 0, "lettering: untouched")
         XCTAssertEqual(Effects.textureSmoothing(amount: 0).max(), 0)
         for i in 1..<table.count { XCTAssertLessThanOrEqual(table[i], table[i - 1]) }
+        let boost = Effects.textureBoost()
+        XCTAssertEqual(boost.first, 1, "fine detail gets it all")
+        XCTAssertEqual(boost.last, 0, "strong edges get no halo")
     }
 
     // MARK: - Clarity
