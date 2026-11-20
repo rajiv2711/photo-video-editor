@@ -20,6 +20,10 @@
     {"id": "brilliance-plus", "command": "brilliance 100", "control": "brilliance", "expect": [{"metric": "p5_luma", "dir": "up"}]},
     {"id": "brilliance-minus", "command": "brilliance -100", "control": "brilliance", "expect": [{"metric": "mean_luma", "dir": "down"}]},
     {"id": "fade-max", "command": "fade 100", "control": "fade", "expect": [{"metric": "p5_luma", "dir": "up"}]},
+    {"id": "curve-highlights", "command": "curve highlights 100", "control": "curveHighlights", "expect": [{"metric": "p95_luma", "dir": "up"}]},
+    {"id": "curve-lights", "command": "lights 100", "control": "curveLights", "expect": [{"metric": "p50_luma", "dir": "up"}]},
+    {"id": "curve-darks", "command": "darks 100", "control": "curveDarks", "expect": [{"metric": "p25_luma", "dir": "up"}]},
+    {"id": "curve-shadows", "command": "curve shadows -100", "control": "curveShadows", "expect": [{"metric": "p5_luma", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

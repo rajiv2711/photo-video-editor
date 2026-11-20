@@ -81,7 +81,7 @@
 {"group":"reset","text":"contrast to default","expect":[{"op":"reset","control":"contrast"}]}
 {"group":"synonyms","text":"brightness more","expect":[{"op":"nudge","control":"brightness","steps":1}]}
 {"group":"synonyms","text":"bright up","expect":[{"op":"nudge","control":"brightness","steps":1}]}
-{"group":"synonyms","text":"light up","expect":[{"op":"nudge","control":"brightness","steps":1}]}
+{"group":"synonyms","text":"light up","expect":[{"op":"nudge","control":"curveLights","steps":1}]}
 {"group":"synonyms","text":"colour less","expect":[{"op":"nudge","control":"saturation","steps":-1}]}
 {"group":"synonyms","text":"color more","expect":[{"op":"nudge","control":"saturation","steps":1}]}
 {"group":"synonyms","text":"colours up","expect":[{"op":"nudge","control":"saturation","steps":1}]}
@@ -135,7 +135,7 @@
 {"group":"light","text":"highlights -40","expect":[{"op":"set","control":"highlights","value":-40}]}
 {"group":"light","text":"reset highlights","expect":[{"op":"reset","control":"highlights"}]}
 {"group":"light","text":"highlight down down","expect":[{"op":"nudge","control":"highlights","steps":-2}]}
-{"group":"light","text":"hilights less","expect":[{"op":"nudge","control":"highlights","steps":-1}]}
+{"group":"light","text":"hilights less","expect":[{"op":"ambiguous","word":"hilights","candidates":["highlights","curveLights"]}]}
 {"group":"light","text":"shadows more","expect":[{"op":"nudge","control":"shadows","steps":1}]}
 {"group":"light","text":"shadows 40","expect":[{"op":"set","control":"shadows","value":40}]}
 {"group":"light","text":"reset shadows","expect":[{"op":"reset","control":"shadows"}]}
@@ -160,3 +160,9 @@
 {"group":"light","text":"fade more more","expect":[{"op":"nudge","control":"fade","steps":2}]}
 {"group":"light","text":"reset fade","expect":[{"op":"reset","control":"fade"}]}
 {"group":"light","text":"matte up","expect":[{"op":"nudge","control":"fade","steps":1}]}
+{"group":"light","text":"lights up","expect":[{"op":"nudge","control":"curveLights","steps":1}]}
+{"group":"light","text":"darks -30","expect":[{"op":"set","control":"curveDarks","value":-30}]}
+{"group":"light","text":"curve highlights more","expect":[{"op":"nudge","control":"curveHighlights","steps":1}]}
+{"group":"light","text":"tone curve shadows 20","expect":[{"op":"set","control":"curveShadows","value":20}]}
+{"group":"light","text":"reset curve shadows","expect":[{"op":"reset","control":"curveShadows"}]}
+{"group":"light","text":"highlights down curve highlights up","expect":[{"op":"nudge","control":"highlights","steps":-1},{"op":"nudge","control":"curveHighlights","steps":1}]}

@@ -73,6 +73,31 @@ final class ToneCurveTests: XCTestCase {
         assertMonotone(["fade": 100, "blacks": -100])
     }
 
+    func testSplinePassesThroughItsPointsWithoutOvershoot() {
+        let xs = [0, 0.25, 0.5, 0.75, 1.0], ys = [0, 0.1, 0.9, 0.95, 1.0]
+        for (x, y) in zip(xs, ys) { XCTAssertEqual(ToneCurve.spline(xs: xs, ys: ys, at: x), y, accuracy: 1e-9) }
+        var last = -1.0
+        for x in stride(from: 0.0, through: 1.0, by: 0.01) {
+            let y = ToneCurve.spline(xs: xs, ys: ys, at: x)
+            XCTAssertGreaterThanOrEqual(y, last - 1e-12)
+            XCTAssertLessThanOrEqual(y, 1 + 1e-12)
+            last = y
+        }
+    }
+
+    func testToneCurveRegionsMoveTheirQuarter() {
+        XCTAssertEqual(out(["curveShadows": 100], 0.125), 0.245, accuracy: 0.002)
+        XCTAssertEqual(out(["curveDarks": 100], 0.375), 0.495, accuracy: 0.002)
+        XCTAssertEqual(out(["curveLights": -100], 0.625), 0.505, accuracy: 0.002)
+        XCTAssertEqual(out(["curveHighlights": 100], 0.875), 0.995, accuracy: 0.002)
+        XCTAssertEqual(out(["curveDarks": 100], 0.9), 0.9, accuracy: 0.02, "far regions barely move")
+        for v in [["curveShadows": 100.0, "curveDarks": -100.0], ["curveShadows": -100, "curveDarks": 100, "curveLights": -100, "curveHighlights": 100]] {
+            XCTAssertEqual(out(v, 0), 0, accuracy: 1e-6)
+            XCTAssertEqual(out(v, 1), 1, accuracy: 1e-6)
+            assertMonotone(v)
+        }
+    }
+
     func testHDRRangeContinuesAboveWhite() {
         XCTAssertEqual(out(["whites": 100], 1, maxInput: 4), 1.25, accuracy: 0.01, "HDR keeps whites above 1")
         XCTAssertEqual(out([:], 2.5, maxInput: 4), 2.5, accuracy: 0.01)

@@ -100,6 +100,54 @@
       "step": 5
     },
     {
+      "id": "curveHighlights",
+      "label": "Curve Highlights",
+      "group": "light",
+      "section": "Tone curve",
+      "kind": "slider",
+      "synonyms": ["tone curve highlights", "highlights curve"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
+      "id": "curveLights",
+      "label": "Lights",
+      "group": "light",
+      "section": "Tone curve",
+      "kind": "slider",
+      "synonyms": ["curve lights", "tone curve lights"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
+      "id": "curveDarks",
+      "label": "Darks",
+      "group": "light",
+      "section": "Tone curve",
+      "kind": "slider",
+      "synonyms": ["curve darks", "tone curve darks"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
+      "id": "curveShadows",
+      "label": "Curve Shadows",
+      "group": "light",
+      "section": "Tone curve",
+      "kind": "slider",
+      "synonyms": ["tone curve shadows", "shadows curve"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

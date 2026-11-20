@@ -19,7 +19,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 7. **Brightness** — midtone lightness without clipping the ends
 - [x] 8. **Brilliance** — lift shadows, tame highlights, add local contrast
 - [x] 9. **Fade** — lift the blacks for a matte look
-- [ ] 10. **Tone curve (parametric)** — highlights / lights / darks / shadows region sliders
+- [x] 10. **Tone curve (parametric)** — highlights / lights / darks / shadows region sliders
 - [ ] 11. **Tone curve (point)** — drag points on a curve, per RGB channel
 - [ ] 12. **Levels** — input/output black, white and gamma
 - [ ] 13. **Equalize** — spread brightness evenly over the histogram
