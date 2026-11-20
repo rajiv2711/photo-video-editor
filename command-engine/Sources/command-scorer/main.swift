@@ -85,6 +85,9 @@ func describe(_ outcome: CommandOutcome) -> String {
     case .changedInMask(let mask, let id, let from, let to): return "mask \(mask) \(id) \(from) → \(to)"
     case .masked(let mask, let event): return "mask \(mask): \(event)"
     case .needsMask(let id): return "\(id) needs a mask"
+    case .changedInSpot(let spot, let id, let from, let to): return "spot \(spot) \(id) \(from) → \(to)"
+    case .retouched(let spot, let event): return "spot \(spot): \(event)"
+    case .needsSpot(let id): return "\(id) needs a spot"
     }
 }
 

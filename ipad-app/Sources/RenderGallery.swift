@@ -111,6 +111,7 @@ enum RenderGallery {
             let key = source ?? "photo"
             if let existing = models[key] { return existing }
             let made = EditorModel(image: sourceImage(source, photo: small), previewSide: longSide)
+            made.waitsForRetouch = true
             models[key] = made
             return made
         }
@@ -169,8 +170,12 @@ enum RenderGallery {
     /// - "fringe": bright lines on dark (the grid inverted) with red and blue more blurred than green:
     ///   purple fringes outside the lines, green inside (defringe).
     /// - "fisheye": the grid as a 120° fisheye lens would show it (fisheye correction).
+    /// - "dust": the test photo with five dark dust spots on the background (radius 7 px, at
+    ///   `dustSpots`) and a thin dark wire across the top (retouching).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "dust":
+            return dusty(photo)
         case "fringe":
             // High contrast, as where real fringes show: the sharp grid inverted (bright lines on dark).
             guard let grid = gridPicture(size: photo.extent.integral.size) else { return photo }
@@ -272,6 +277,38 @@ enum RenderGallery {
 
     /// For making the generated pictures.
     private static let context = CIContext()
+
+    /// Where the "dust" picture's spots are (x, y from the top-left, 0…1).
+    static let dustSpots: [(x: CGFloat, y: CGFloat)] = [(0.12, 0.10), (0.85, 0.12), (0.88, 0.55), (0.10, 0.70), (0.75, 0.90)]
+
+    /// The photo with dark, soft dust spots and a wire from (0.03, 0.045) to (0.97, 0.075).
+    static func dusty(_ photo: CIImage) -> CIImage {
+        let size = photo.extent.integral.size
+        guard let cg = context.createCGImage(photo, from: photo.extent) else { return photo }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.preferredRange = .standard
+        let picture = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            UIImage(cgImage: cg).draw(in: CGRect(origin: .zero, size: size))
+            let space = CGColorSpaceCreateDeviceRGB()
+            let dark = { (alpha: CGFloat) in UIColor(red: 0.05, green: 0.05, blue: 0.05, alpha: alpha).cgColor }
+            let colors = [dark(0.6), dark(0.6), dark(0)] as CFArray
+            if let gradient = CGGradient(colorsSpace: space, colors: colors, locations: [0, 0.55, 1]) {
+                for spot in dustSpots {
+                    let centre = CGPoint(x: spot.x * size.width, y: spot.y * size.height)
+                    ctx.cgContext.drawRadialGradient(gradient, startCenter: centre, startRadius: 0, endCenter: centre, endRadius: 7,
+                                                     options: [])
+                }
+            }
+            ctx.cgContext.setStrokeColor(UIColor(white: 0.2, alpha: 1).cgColor)
+            ctx.cgContext.setLineWidth(2)
+            ctx.cgContext.move(to: CGPoint(x: 0.03 * size.width, y: 0.045 * size.height))
+            ctx.cgContext.addLine(to: CGPoint(x: 0.97 * size.width, y: 0.075 * size.height))
+            ctx.cgContext.strokePath()
+        }
+        guard let out = picture.cgImage else { return photo }
+        return CIImage(cgImage: out)
+    }
 
     /// The grid, softened a little (1 px) like the edges in a real photo.
     static func softGrid(size: CGSize) -> CGImage? {

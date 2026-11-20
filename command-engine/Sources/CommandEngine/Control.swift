@@ -21,6 +21,10 @@ import Foundation
 ///   No scope: one value for the whole photo, as before.
 /// - `component`: the kind of mask part a control makes (actions such as "linearGradient") or
 ///   belongs to (a "component" control such as "radialSize").
+///
+/// Retouching adds `tool`: the retouch tool an action picks ("remove" for Remove Brush), and the
+/// scope "retouch": a setting of the selected retouch step (its opacity), or the one new steps get
+/// when none is selected.
 public struct Control: Codable, Equatable, Identifiable {
     public enum Kind: String, Codable {
         case slider, toggle, choice, action
@@ -72,16 +76,18 @@ public struct Control: Codable, Equatable, Identifiable {
     public let scope: String?
     /// The mask part kind this control makes or belongs to ("brush", "linear", "radial", …).
     public let component: String?
+    /// The retouch tool this action picks ("remove", "heal", …).
+    public let tool: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, label, synonyms, group, section, kind, min, max, step, options, channel, x, local, scope, component
+        case id, label, synonyms, group, section, kind, min, max, step, options, channel, x, local, scope, component, tool
         case defaultValue = "default"
     }
 
     public init(id: String, label: String, synonyms: [String] = [], group: String = "other", section: String? = nil,
                 kind: Kind = .slider, min: Double, max: Double, defaultValue: Double, step: Double,
                 options: [Option] = [], channel: String? = nil, x: Double? = nil,
-                local: Bool = false, scope: String? = nil, component: String? = nil) {
+                local: Bool = false, scope: String? = nil, component: String? = nil, tool: String? = nil) {
         self.id = id
         self.label = label
         self.synonyms = synonyms
@@ -98,6 +104,7 @@ public struct Control: Codable, Equatable, Identifiable {
         self.local = local
         self.scope = scope
         self.component = component
+        self.tool = tool
     }
 
     /// Older entries without group/kind still load (as sliders in "other"). Toggles, choices and
@@ -116,6 +123,7 @@ public struct Control: Codable, Equatable, Identifiable {
         local = try c.decodeIfPresent(Bool.self, forKey: .local) ?? false
         scope = try c.decodeIfPresent(String.self, forKey: .scope)
         component = try c.decodeIfPresent(String.self, forKey: .component)
+        tool = try c.decodeIfPresent(String.self, forKey: .tool)
         let top: Double
         switch kind {
         case .toggle: top = 1

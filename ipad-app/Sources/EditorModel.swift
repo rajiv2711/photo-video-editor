@@ -32,6 +32,8 @@ final class EditorModel: ObservableObject {
     private var previewSource: CIImage
     private let previewSide: CGFloat
     let renderer = PhotoRenderer()
+    /// Work out retouch steps before showing the preview (the render gallery), instead of in the background.
+    var waitsForRetouch = false
     private let recorder = AudioRecorder()
 
     /// `image` replaces the bundled test photo (the render gallery passes a small copy);
@@ -55,6 +57,10 @@ final class EditorModel: ObservableObject {
         self.previewSource = PhotoRenderer.downscaled(start, maxSide: previewSide)
         renderer.lens = Self.lens(of: start)
         installActions()
+        // Retouch steps are worked out in the background: show them when they are ready.
+        renderer.retouch.onFinish = { [weak self] in
+            Task { @MainActor in self?.render() }
+        }
         render()
 
         // Launch argument used by the cloud build to screenshot a command's effect.
@@ -105,7 +111,35 @@ final class EditorModel: ObservableObject {
             for (id, value) in mask.adjustments { out["mask\(i + 1).\(id)"] = value }
             out["mask\(i + 1).parts"] = Double(mask.components.count)
         }
+        if !state.retouches.isEmpty { out["retouch.steps"] = Double(state.retouches.count) }
         return out
+    }
+
+    // MARK: - Retouch
+
+    /// The retouch tool touches on the photo use ("remove", …), or nil.
+    var retouchTool: String? {
+        armedPicker == nil ? state.retouchTool : nil
+    }
+
+    /// The label of the action that picks a retouch tool ("Remove Brush" for "remove").
+    func label(ofTool tool: String) -> String {
+        registry.controls.first { $0.kind == .action && $0.tool == tool }?.label ?? tool
+    }
+
+    /// A new retouch step from a stroke or tap with the tool in use, with the brush and the tool's
+    /// settings as they are now.
+    private func addRetouch(_ tool: String, points: [MaskPoint], pressure: [Double]) {
+        guard !points.isEmpty else { return }
+        func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+        var values: [String: Double] = [:]
+        for id in RetouchTools.settings(for: tool) { values[id] = v(id) }
+        // Pressure is kept only when the Pencil was used (fingers press fully).
+        let pressed = pressure.count == points.count && pressure.contains { $0 < 0.999 } ? pressure : []
+        state.addRetouch(Retouch(tool: tool, points: points, pressure: pressed, size: v("brushSize"), feather: v("brushFeather"),
+                                 values: values))
+        feedback = Feedback(text: "Spot \(state.retouches.count): \(label(ofTool: tool))")
+        render()
     }
 
     // MARK: - Masks
@@ -152,7 +186,11 @@ final class EditorModel: ObservableObject {
     /// part: a brush stroke with the current brush settings, a linear gradient drawn from where the
     /// effect is full (first point) to where it ends (last point), a radial gradient moved or
     /// resized. `finished` is false while a drag is still going (the canvas sends it as it moves).
-    func draw(_ points: [MaskPoint], finished: Bool = true) {
+    func draw(_ points: [MaskPoint], pressure: [Double] = [], finished: Bool = true) {
+        if let tool = retouchTool {
+            if finished { addRetouch(tool, points: points, pressure: pressure) }
+            return
+        }
         let base = dragBase ?? selectedPart
         dragBase = finished ? nil : base
         guard let tool = canvasTool, let start = points.first, let end = points.last else { return }
@@ -363,7 +401,7 @@ final class EditorModel: ObservableObject {
     /// Renders the full-resolution photo and saves it to the photo library.
     /// With HDR on it saves a 10-bit HEIF that keeps the brighter-than-white levels.
     func save() {
-        let edited = renderer.apply(to: original, value: currentValue, masks: state.masks)
+        let edited = renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches)
         if isHDR {
             saveHDR(edited)
             return
@@ -423,7 +461,8 @@ final class EditorModel: ObservableObject {
 
     /// The preview photo with the current edits (not yet turned into pixels).
     func editedPreview() -> CIImage {
-        renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask)
+        renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask,
+                       retouches: state.retouches, waitForRetouch: waitsForRetouch)
     }
 
     /// The mask shown as a red tint: the selected one, while Mask Overlay is on.
@@ -467,6 +506,22 @@ final class EditorModel: ObservableObject {
                 problem = true
             case .ran(let id) where registry.control(id: id)?.group == "masks":
                 break  // described by its .masked outcome
+            case .ran(let id) where registry.control(id: id)?.group == "retouch":
+                // A tool: what to do with it; other actions are described by their .retouched outcome.
+                if let tool = registry.control(id: id)?.tool {
+                    parts.append(label(ofTool: tool) + (Self.toolHints[tool].map { ": " + $0 } ?? ""))
+                }
+            case .changedInSpot(let spot, let id, let from, let to):
+                let control = registry.control(id: id)
+                parts.append("Spot \(spot) · \(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))")
+            case .retouched(let spot, let event):
+                switch event {
+                case .deleted: parts.append("Spot \(spot) deleted")
+                case .allDeleted: parts.append("Spots deleted")
+                }
+            case .needsSpot:
+                parts.append(state.retouches.isEmpty ? "No spots yet" : "Select a spot first, e.g. “spot 1”")
+                problem = true
             case .changed(let id, let from, let to):
                 let control = registry.control(id: id)
                 var text = "\(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))"
@@ -505,6 +560,11 @@ final class EditorModel: ObservableObject {
         case .allDeleted: return "Masks deleted"
         }
     }
+
+    /// What to do on the photo with a retouch tool.
+    static let toolHints: [String: String] = [
+        "remove": "paint over what to remove",
+    ]
 
     /// What to do on the photo after making a mask part.
     static let hints: [String: String] = [

@@ -687,3 +687,16 @@
 {"group":"masks","text":"tolerance more","expect":[{"op":"nudge","control":"wandTolerance","steps":1}]}
 {"group":"masks","text":"quick select","expect":[{"op":"run","control":"quickSelect"}]}
 {"group":"masks","text":"quick selection","expect":[{"op":"run","control":"quickSelect"}]}
+{"group":"retouch","text":"remove brush","expect":[{"op":"run","control":"removeBrush"}]}
+{"group":"retouch","text":"content aware fill","expect":[{"op":"run","control":"removeBrush"}]}
+{"group":"retouch","text":"remove brush brush size 5","expect":[{"op":"run","control":"removeBrush"},{"op":"set","control":"brushSize","value":5}]}
+{"group":"retouch","text":"retouch tool off","expect":[{"op":"set","control":"retouchTool","value":0}]}
+{"group":"retouch","text":"tool remove brush","expect":[{"op":"set","control":"retouchTool","value":1}]}
+{"group":"retouch","text":"spot 2","expect":[{"op":"set","control":"spot","value":2}]}
+{"group":"retouch","text":"select spot 3","expect":[{"op":"set","control":"spot","value":3}]}
+{"group":"retouch","text":"spot opacity 50","expect":[{"op":"set","control":"spotOpacity","value":50}]}
+{"group":"retouch","text":"opacity down","expect":[{"op":"nudge","control":"spotOpacity","steps":-1}]}
+{"group":"retouch","text":"delete spot","expect":[{"op":"run","control":"deleteSpot"}]}
+{"group":"retouch","text":"delete spot 2","expect":[{"op":"run","control":"deleteSpot","value":2}]}
+{"group":"retouch","text":"undo last spot","expect":[{"op":"run","control":"undoSpot"}]}
+{"group":"retouch","text":"remove last spot","expect":[{"op":"run","control":"undoSpot"}]}

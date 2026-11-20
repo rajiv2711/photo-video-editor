@@ -19,6 +19,12 @@ public enum CommandOutcome: Equatable {
     case needsControl
     /// The control acts on a selected mask (or on one kind of mask part) and there is none.
     case needsMask(controlID: String)
+    /// A setting of a retouch step changed (its opacity, …); `spot` is the step's number (1 = the first).
+    case changedInSpot(spot: Int, controlID: String, from: Double, to: Double)
+    /// Something happened to a retouch step (deleted, …); `spot` is its number, 0 = all.
+    case retouched(spot: Int, event: RetouchEvent)
+    /// The control acts on a selected retouch step (of a kind that has it) and there is none.
+    case needsSpot(controlID: String)
 }
 
 /// Applies commands to slider values: [Command] → new EditState + outcomes.
@@ -50,6 +56,8 @@ public struct CommandApplier {
                     outcomes.append(.changed(controlID: r.control.id, from: r.start, to: end))
                 case .mask(let m), .component(let m, _):
                     outcomes.append(.changedInMask(mask: m + 1, controlID: r.control.id, from: r.start, to: end))
+                case .retouch(let s):
+                    outcomes.append(.changedInSpot(spot: s + 1, controlID: r.control.id, from: r.start, to: end))
                 }
             }
             run = nil
@@ -67,6 +75,10 @@ public struct CommandApplier {
                 if !state.masks.isEmpty {
                     state.masks = []
                     outcomes.append(.masked(mask: 0, event: .allDeleted))
+                }
+                if !state.retouches.isEmpty {
+                    state.retouches = []
+                    outcomes.append(.retouched(spot: 0, event: .allDeleted))
                 }
                 continue
             case .ambiguous:
@@ -94,6 +106,10 @@ public struct CommandApplier {
             if control.kind == .action {
                 flush()
                 if let done = maskAction(control, command, state: &state) {
+                    outcomes += done
+                    continue
+                }
+                if let done = retouchAction(control, command, state: &state) {
                     outcomes += done
                     continue
                 }
@@ -131,6 +147,10 @@ public struct CommandApplier {
                 // "mask exposure more": a bare "mask" picks the newest mask when none is selected.
                 if control.id == EditState.maskSelectorID, state.selectedMask == nil, !state.masks.isEmpty {
                     state.selectMask(state.masks.count - 1)
+                }
+                // "spot opacity 50" after a bare "spot": the newest step.
+                if control.id == EditState.spotSelectorID, state.selectedRetouch == nil, !state.retouches.isEmpty {
+                    state.selectRetouch(state.retouches.count - 1)
                 }
             case .run, .resetAll, .ambiguous, .unknown: break
             }
@@ -185,7 +205,9 @@ public struct CommandApplier {
             state.selectMask(state.masks.count - 1)
             return [.ran(controlID: control.id), .masked(mask: state.masks.count, event: .duplicated(from: m + 1))]
         case "maskDone":
+            // Also puts the retouch tool away: touches on the photo do nothing until a tool or mask is picked.
             state.selectMask(nil)
+            state.setRetouchTool(nil)
             return [.ran(controlID: control.id), .masked(mask: 0, event: .deselected)]
         case "deleteComponent":
             guard let s = state.selectedComponent else { return [.needsMask(controlID: control.id)] }
@@ -197,6 +219,47 @@ public struct CommandApplier {
             }
             state.masks[s.mask].selectedComponent = min(s.component, state.masks[s.mask].components.count - 1)
             return [.ran(controlID: control.id), .masked(mask: s.mask + 1, event: .partDeleted)]
+        default:
+            return nil
+        }
+    }
+
+    // MARK: - Retouch panel actions
+
+    /// Runs a Retouch-panel action (pick a tool, delete or undo a step); nil for other actions.
+    private func retouchAction(_ control: Control, _ command: Command, state: inout EditState) -> [CommandOutcome]? {
+        if let tool = control.tool {
+            // Picking a tool leaves the masks (touches on the photo now retouch) and starts a new step.
+            var out: [CommandOutcome] = [.ran(controlID: control.id)]
+            if state.selectedMask != nil {
+                state.selectMask(nil)
+                out.append(.masked(mask: 0, event: .deselected))
+            }
+            state.setRetouchTool(tool)
+            state.selectRetouch(nil)
+            return out
+        }
+
+        /// "delete spot 2" names a step; otherwise the selected one.
+        func named() -> Int? {
+            if let v = command.value {
+                let i = Int(v) - 1
+                return state.retouches.indices.contains(i) ? i : nil
+            }
+            return state.selectedRetouch
+        }
+
+        switch control.id {
+        case "deleteSpot":
+            guard let s = named() else { return [.needsSpot(controlID: control.id)] }
+            state.retouches.remove(at: s)
+            state.selectRetouch(nil)
+            return [.ran(controlID: control.id), .retouched(spot: s + 1, event: .deleted)]
+        case "undoSpot":
+            guard !state.retouches.isEmpty else { return [.needsSpot(controlID: control.id)] }
+            state.retouches.removeLast()
+            state.selectRetouch(nil)
+            return [.ran(controlID: control.id), .retouched(spot: state.retouches.count + 1, event: .deleted)]
         default:
             return nil
         }

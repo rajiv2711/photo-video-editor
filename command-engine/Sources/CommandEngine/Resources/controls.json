@@ -895,6 +895,23 @@
       "scope": "component", "component": "magicWand",
       "synonyms": ["magic wand tolerance", "tolerance", "wand range"], "min": 0, "max": 100, "default": 32, "step": 4},
     {"id": "quickSelect", "label": "Quick Select", "group": "masks", "kind": "action", "component": "quickSelect",
-      "synonyms": ["quick selection", "quick select tool", "quick selection tool", "smart select", "quick select mask"]}
+      "synonyms": ["quick selection", "quick select tool", "quick selection tool", "smart select", "quick select mask"]},
+    {"id": "retouchTool", "label": "Retouch Tool", "group": "retouch", "kind": "choice",
+      "synonyms": ["retouching tool", "tool"],
+      "options": [
+        {"id": "none", "label": "None", "synonyms": ["off", "no tool"]},
+        {"id": "remove", "label": "Remove Brush", "synonyms": ["remove"]}
+      ]},
+    {"id": "removeBrush", "label": "Remove Brush", "group": "retouch", "kind": "action", "tool": "remove",
+      "synonyms": ["remove tool", "content aware remove", "content-aware remove", "content aware fill", "content-aware fill",
+                   "object removal", "remove object", "remove objects", "remove distraction"]},
+    {"id": "spot", "label": "Spot", "group": "retouch", "kind": "slider",
+      "synonyms": ["select spot", "selected spot", "spot number", "retouch spot", "retouch step"], "min": 0, "max": 200, "default": 0, "step": 1},
+    {"id": "spotOpacity", "label": "Spot Opacity", "group": "retouch", "section": "Spot", "kind": "slider", "scope": "retouch",
+      "synonyms": ["opacity", "retouch opacity", "spot strength", "stroke opacity"], "min": 0, "max": 100, "default": 100, "step": 10},
+    {"id": "deleteSpot", "label": "Delete Spot", "group": "retouch", "kind": "action",
+      "synonyms": ["spot delete", "delete this spot", "delete retouch", "delete stroke"]},
+    {"id": "undoSpot", "label": "Undo Last Spot", "group": "retouch", "kind": "action",
+      "synonyms": ["undo spot", "undo last stroke", "undo stroke", "undo last retouch", "undo retouch", "remove last spot", "delete last spot"]}
   ]
 }

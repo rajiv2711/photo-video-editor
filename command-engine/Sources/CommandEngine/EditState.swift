@@ -1,11 +1,13 @@
 import Foundation
 
-/// The current value of every control, and the masks (local adjustments, see Masks.swift).
-/// Missing entries are at their default.
+/// The current value of every control, the masks (local adjustments, see Masks.swift) and the
+/// retouch steps (spots and strokes, see Retouch.swift). Missing entries are at their default.
 public struct EditState: Equatable {
     public internal(set) var values: [String: Double] = [:]
     /// Masks in the order they were made ("mask 2" is the second).
     public var masks: [Mask] = []
+    /// Retouch steps in the order they were made ("spot 2" is the second).
+    public var retouches: [Retouch] = []
 
     public init() {}
 

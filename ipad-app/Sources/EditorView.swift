@@ -67,6 +67,9 @@ struct EditorView: View {
                                     }
                             }
                             .border(Color.accentColor, width: 2)
+                        } else if let tool = model.retouchTool {
+                            // The retouch tool in use paints or taps on the photo.
+                            RetouchCanvasView(model: model, tool: tool)
                         } else if let tool = model.canvasTool {
                             // The selected mask part is drawn on the photo (brush strokes, shapes, taps).
                             MaskCanvas(model: model, tool: tool)
@@ -84,6 +87,8 @@ struct EditorView: View {
                 ForEach(model.registry.groups, id: \.self) { group in
                     if group == "masks" {
                         MasksPanel(model: model, expanded: $expanded)
+                    } else if group == "retouch", model.state.selectedMask == nil {
+                        RetouchPanel(model: model, expanded: $expanded)
                     } else if model.state.selectedMask == nil {
                         // While a mask is selected only the Masks panel shows: its sliders are local.
                         GroupPanel(model: model, group: group, expanded: $expanded)
@@ -105,6 +110,9 @@ struct EditorView: View {
         }
         .onChange(of: model.state.selectedMask) { _, mask in
             if mask != nil { expanded.insert("masks") }
+        }
+        .onChange(of: model.state.retouchTool) { _, tool in
+            if tool != nil { expanded.insert("retouch") }
         }
     }
 

@@ -110,7 +110,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 ### Retouch & remove
 
-- [ ] 81. **Remove brush** — paint over a distraction; content-aware fill
+- [x] 81. **Remove brush** — paint over a distraction; content-aware fill
 - [ ] 82. **Heal** — fix a spot by blending texture from nearby
 - [ ] 83. **Clone** — copy pixels exactly from a source spot
 - [ ] 84. **Patch / content-aware move** — move an object and fill the hole

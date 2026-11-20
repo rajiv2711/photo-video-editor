@@ -4,9 +4,10 @@ import CoreImage.CIFilterBuiltins
 import UIKit
 
 /// Turns control values (see controls.json) into Core Image filters, one panel at a time in
-/// Lightroom's processing order: optics (lens fixes, on the photo as shot) → film negative and white
-/// balance → light (exposure, tone) → color → effects → detail → masks (local adjustments) →
-/// vignette and grain last. Each panel has its own file in Rendering/ (LightRenderer.swift, …).
+/// Lightroom's processing order: optics (lens fixes, on the photo as shot) → film negative →
+/// retouching (spots and brush strokes, early as Lightroom's spot removal) → white balance → light
+/// (exposure, tone) → color → effects → detail → masks (local adjustments) → vignette and grain last.
+/// Each panel has its own file in Rendering/ (LightRenderer.swift, …).
 final class PhotoRenderer {
     let context: CIContext
     private let light: LightRenderer
@@ -15,6 +16,7 @@ final class PhotoRenderer {
     private let detail: DetailRenderer
     private let optics: OpticsRenderer
     private let masks: MaskRenderer
+    let retouch: RetouchRenderer
     /// Every control by id (a mask's local pass leaves all but its own sliders at their defaults).
     private let controls: [String: Control]
 
@@ -27,6 +29,7 @@ final class PhotoRenderer {
         self.detail = DetailRenderer(context: context)
         self.optics = OpticsRenderer(context: context)
         self.masks = MaskRenderer(context: context)
+        self.retouch = RetouchRenderer(context: context)
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
         self.controls = Dictionary(registry.controls.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     }
@@ -45,14 +48,17 @@ final class PhotoRenderer {
     /// `value` gives a control's current value by id, or nil when controls.json has no such control.
     /// With HDR off the result is clipped to SDR white (1); with HDR on brighter levels survive.
     /// `masks`: local adjustments, each blended in through its mask; `overlay`: a mask to show
-    /// as a red tint (preview only).
-    func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil) -> CIImage {
+    /// as a red tint (preview only). `retouches`: spots and brush strokes; with `waitForRetouch` false
+    /// new ones may show a moment later (worked out in the background, see RetouchRenderer).
+    func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil,
+               retouches: [Retouch] = [], waitForRetouch: Bool = true) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         let extent = image.extent
         // Lens corrections, then film negative conversion: the picture range masks and pickers look at.
         let lensFixed = color.filmNegative(optics.apply(image, value: value), value: value)
         let lensKey = Self.opticsIDs.map { value($0) ?? 0 }
-        var output = color.whiteBalance(lensFixed, value: value)
+        let retouched = retouch.apply(lensFixed, steps: retouches, source: image, key: lensKey, wait: waitForRetouch)
+        var output = color.whiteBalance(retouched, value: value)
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: extent, value: value)
         output = effects.apply(output, extent: extent, value: value)

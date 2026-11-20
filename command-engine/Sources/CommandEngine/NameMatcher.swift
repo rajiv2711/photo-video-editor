@@ -3,9 +3,9 @@ import Foundation
 /// Finds the control a spoken or typed word refers to, tolerating small mistakes
 /// ("contrst", "satur"), synonyms ("vividness" → Saturation) and plurals ("colours" → "colour").
 /// A word that fits several controls equally ("colour": Vibrance or Saturation) is ambiguous.
-/// Masks-panel names are only tried when no other control is close: they reuse words of the other
-/// panels ("color range", "luminance range"), and a near-miss should keep meaning what it meant.
-/// Masks-panel actions need their exact name: a misheard word must never make or delete a mask
+/// Masks- and Retouch-panel names are only tried when no other control is close: they reuse words of
+/// the other panels ("color range", "sharpen brush"), and a near-miss should keep meaning what it meant.
+/// Their actions need their exact name: a misheard word must never make or delete a mask or a spot
 /// ("one" is not "done").
 public struct NameMatcher {
     public enum Match: Equatable {
@@ -15,6 +15,9 @@ public struct NameMatcher {
     }
 
     public let registry: ControlRegistry
+
+    /// Panels whose names are matched only when nothing else is close, and whose actions only by exact name.
+    static let toolGroups: Set<String> = ["masks", "retouch"]
 
     public init(registry: ControlRegistry) {
         self.registry = registry
@@ -37,8 +40,10 @@ public struct NameMatcher {
         if exact.count > 1 { return .ambiguous(exact) }
 
         // Otherwise score every control by its closest name; lower is better.
-        var best = closest(phrase, among: registry.controls.filter { $0.group != "masks" })
-        if best.isEmpty { best = closest(phrase, among: registry.controls.filter { $0.group == "masks" && $0.kind != .action }) }
+        var best = closest(phrase, among: registry.controls.filter { !Self.toolGroups.contains($0.group) })
+        if best.isEmpty {
+            best = closest(phrase, among: registry.controls.filter { Self.toolGroups.contains($0.group) && $0.kind != .action })
+        }
         switch best.count {
         case 0: return .none
         case 1: return .found(best[0])
