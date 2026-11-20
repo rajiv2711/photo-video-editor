@@ -185,3 +185,7 @@
 {"group":"light","text":"auto","expect":[{"op":"run","control":"auto"}]}
 {"group":"light","text":"auto tone please","expect":[{"op":"run","control":"auto"}]}
 {"group":"light","text":"auto then contrast more","expect":[{"op":"run","control":"auto"},{"op":"nudge","control":"contrast","steps":1}]}
+{"group":"light","text":"hdr on","expect":[{"op":"set","control":"hdr","value":1}]}
+{"group":"light","text":"HDR off","expect":[{"op":"set","control":"hdr","value":0}]}
+{"group":"light","text":"turn on hdr","expect":[{"op":"set","control":"hdr","value":1}]}
+{"group":"light","text":"high dynamic range","expect":[{"op":"set","control":"hdr","value":1}]}

@@ -8,7 +8,8 @@ import CoreImage.CIFilterBuiltins
 struct LightRenderer {
     let context: CIContext
 
-    func apply(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+    /// `hdr`: keep levels above white (the tone curve then runs up to 4× SDR white).
+    func apply(_ image: CIImage, value: (String) -> Double?, hdr: Bool) -> CIImage {
         func v(_ id: String) -> Double { value(id) ?? 0 }
         var output = image
 
@@ -55,7 +56,7 @@ struct LightRenderer {
             output = filter.outputImage ?? output
         }
 
-        output = toneCurve(output, value: value)
+        output = toneCurve(output, value: value, maxInput: hdr ? 4 : 1)
 
         // Equalize: spread the brightness levels evenly, from this picture's own histogram.
         if v("equalize") != 0 {
@@ -70,9 +71,9 @@ struct LightRenderer {
     static let localRadius = 5.0
 
     /// One lookup-table pass for every global tone control (see ToneCurve).
-    private func toneCurve(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+    private func toneCurve(_ image: CIImage, value: (String) -> Double?, maxInput: Double) -> CIImage {
         guard !ToneCurve.isIdentity(value) else { return image }
-        let table = ToneCurve.table(value)
+        let table = ToneCurve.table(value, maxInput: maxInput)
         return Self.curves(image, table: table.interleaved, maxInput: table.maxInput)
     }
 

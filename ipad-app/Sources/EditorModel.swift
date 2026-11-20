@@ -1,5 +1,6 @@
 import CoreImage
 import CommandEngine
+import Photos
 import SwiftUI
 import UIKit
 
@@ -194,14 +195,47 @@ final class EditorModel: ObservableObject {
     }
 
     /// Renders the full-resolution photo and saves it to the photo library.
+    /// With HDR on it saves a 10-bit HEIF that keeps the brighter-than-white levels.
     func save() {
         let edited = renderer.apply(to: original, value: currentValue)
+        if isHDR {
+            saveHDR(edited)
+            return
+        }
         guard let image = renderer.uiImage(edited) else {
             feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
             return
         }
         UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
         feedback = Feedback(text: "Saved to Photos.")
+    }
+
+    private func saveHDR(_ edited: CIImage) {
+        guard let data = renderer.hdrHEIF(edited) else {
+            feedback = Feedback(text: "Couldn't render the HDR photo.", isProblem: true)
+            return
+        }
+        // The model lives as long as the app, so these closures may hold it.
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            guard status == .authorized || status == .limited else {
+                Task { @MainActor in
+                    self.feedback = Feedback(text: "Photo library access is off.", isProblem: true)
+                }
+                return
+            }
+            PHPhotoLibrary.shared().performChanges({
+                PHAssetCreationRequest.forAsset().addResource(with: .photo, data: data, options: nil)
+            }, completionHandler: { ok, _ in
+                Task { @MainActor in
+                    self.feedback = Feedback(text: ok ? "Saved HDR photo to Photos." : "Couldn't save to Photos.", isProblem: !ok)
+                }
+            })
+        }
+    }
+
+    /// Whether the HDR toggle is on (preview and saving keep levels above SDR white).
+    var isHDR: Bool {
+        registry.control(id: "hdr").map { state.value(of: $0) != 0 } ?? false
     }
 
     /// The preview photo with the current edits (not yet turned into pixels).
@@ -217,7 +251,7 @@ final class EditorModel: ObservableObject {
     }
 
     private func render() {
-        preview = renderer.uiImage(editedPreview())
+        preview = renderer.uiImage(editedPreview(), hdr: isHDR)
     }
 
     private func describe(_ outcomes: [CommandInterpreter.Outcome]) -> Feedback {

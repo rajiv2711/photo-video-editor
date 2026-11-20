@@ -262,6 +262,13 @@
       "synonyms": ["auto tone", "auto adjust", "auto light", "automatic", "auto fix"]
     },
     {
+      "id": "hdr",
+      "label": "HDR",
+      "group": "light",
+      "kind": "toggle",
+      "synonyms": ["high dynamic range", "hdr mode", "extended range"]
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

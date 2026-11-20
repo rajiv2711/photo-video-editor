@@ -54,6 +54,7 @@ struct EditorView: View {
             if let image = model.preview {
                 Image(uiImage: image)
                     .resizable()
+                    .allowedDynamicRange(model.isHDR ? Image.DynamicRange.high : Image.DynamicRange.standard)
                     .scaledToFit()
                     .padding(24)
             }

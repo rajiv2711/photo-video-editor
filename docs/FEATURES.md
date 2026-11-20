@@ -24,7 +24,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 12. **Levels** — input/output black, white and gamma
 - [x] 13. **Equalize** — spread brightness evenly over the histogram
 - [x] 14. **Auto** — one-tap automatic light and colour
-- [ ] 15. **HDR editing** — edit and export with extended brightness (iPad XDR screen)
+- [x] 15. **HDR editing** — edit and export with extended brightness (iPad XDR screen)
 
 ### Color
 

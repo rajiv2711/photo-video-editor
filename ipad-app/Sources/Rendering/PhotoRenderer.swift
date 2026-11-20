@@ -16,18 +16,36 @@ final class PhotoRenderer {
     }
 
     /// `value` gives a control's current value by id, or nil when controls.json has no such control.
+    /// With HDR off the result is clipped to SDR white (1); with HDR on brighter levels survive.
     func apply(to image: CIImage, value: (String) -> Double?) -> CIImage {
+        let hdr = (value("hdr") ?? 0) != 0
         var output = image
         // (White balance goes first here once the Color panel has it.)
-        output = light.apply(output, value: value)
+        output = light.apply(output, value: value, hdr: hdr)
         output = ColorRenderer.apply(output, value: value)
         // (Effects, detail and optics follow here.)
+        if !hdr {
+            output = output.applyingFilter("CIColorClamp")
+        }
         return output.cropped(to: image.extent)
     }
 
-    func uiImage(_ image: CIImage) -> UIImage? {
-        guard let cg = context.createCGImage(image, from: image.extent) else { return nil }
-        return UIImage(cgImage: cg)
+    /// Pixels for the screen. `hdr` keeps levels above white (half floats, extended Display P3),
+    /// so an XDR display can show them brighter than SDR white.
+    func uiImage(_ image: CIImage, hdr: Bool = false) -> UIImage? {
+        let cg: CGImage?
+        if hdr, let space = CGColorSpace(name: CGColorSpace.extendedLinearDisplayP3) {
+            cg = context.createCGImage(image, from: image.extent, format: .RGBAh, colorSpace: space)
+        } else {
+            cg = context.createCGImage(image, from: image.extent)
+        }
+        return cg.map { UIImage(cgImage: $0) }
+    }
+
+    /// 10-bit HEIF with the PQ (HDR10) curve, for saving HDR edits.
+    func hdrHEIF(_ image: CIImage) -> Data? {
+        guard let space = CGColorSpace(name: CGColorSpace.displayP3_PQ) else { return nil }
+        return try? context.heif10Representation(of: image, colorSpace: space, options: [:])
     }
 
     /// JPEG bytes (sRGB), as the render gallery saves them.

@@ -3,7 +3,7 @@
   "cases": [
     {"id": "base", "command": "", "expect": []},
 
-    {"id": "exposure-plus", "command": "exposure 1", "control": "exposure", "expect": [{"metric": "mean_luma", "dir": "up"}]},
+    {"id": "exposure-plus", "command": "exposure 1", "control": "exposure", "expect": [{"metric": "mean_luma", "dir": "up"}, {"metric": "peak", "dir": "same"}]},
     {"id": "exposure-minus", "command": "exposure -1", "control": "exposure", "expect": [{"metric": "mean_luma", "dir": "down"}]},
     {"id": "contrast-plus", "command": "contrast 100", "control": "contrast", "expect": [{"metric": "p95_luma", "dir": "up"}, {"metric": "p5_luma", "dir": "down"}]},
     {"id": "contrast-minus", "command": "contrast -100", "control": "contrast", "expect": [{"metric": "p95_luma", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]},
@@ -35,6 +35,8 @@
     {"id": "levels-output-white", "command": "output white 180", "control": "levelsOutWhite", "expect": [{"metric": "p95_luma", "dir": "down"}]},
     {"id": "equalize-on", "command": "equalize on", "control": "equalize", "expect": [{"metric": "diff", "dir": "changed"}, {"metric": "p50_luma", "dir": "down"}]},
     {"id": "auto", "command": "auto", "control": "auto", "expect": [{"metric": "diff", "dir": "changed"}]},
+    {"id": "hdr-exposure", "command": "hdr on exposure 1", "control": "hdr", "expect": [{"metric": "peak", "dir": "up", "vs": "exposure-plus"}]},
+    {"id": "hdr-whites", "command": "hdr on whites 100", "control": "hdr", "expect": [{"metric": "peak", "dir": "up", "vs": "whites-plus"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]
