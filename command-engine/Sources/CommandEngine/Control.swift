@@ -13,6 +13,14 @@ import Foundation
 ///
 /// `group` is the panel (light, color, effects, detail, optics…); `section` an optional sub-panel
 /// inside it ("Tone curve", "Levels").
+///
+/// Masks (local adjustments) add three optional fields:
+/// - `local`: a global slider that a selected mask can also hold ("exposure" inside Mask 1).
+/// - `scope`: where a Masks-panel value lives: "mask" (a setting of the selected mask, e.g. its
+///   feather) or "component" (of the mask's selected part, e.g. a radial gradient's size).
+///   No scope: one value for the whole photo, as before.
+/// - `component`: the kind of mask part a control makes (actions such as "linearGradient") or
+///   belongs to (a "component" control such as "radialSize").
 public struct Control: Codable, Equatable, Identifiable {
     public enum Kind: String, Codable {
         case slider, toggle, choice, action
@@ -58,15 +66,22 @@ public struct Control: Codable, Equatable, Identifiable {
     public let channel: String?
     /// curve_point only: the input level (0…100) the point sits at.
     public let x: Double?
+    /// A selected mask can hold its own value of this control (a local adjustment).
+    public let local: Bool
+    /// "mask" or "component" for Masks-panel values stored on a mask; nil for photo-wide values.
+    public let scope: String?
+    /// The mask part kind this control makes or belongs to ("brush", "linear", "radial", …).
+    public let component: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, label, synonyms, group, section, kind, min, max, step, options, channel, x
+        case id, label, synonyms, group, section, kind, min, max, step, options, channel, x, local, scope, component
         case defaultValue = "default"
     }
 
     public init(id: String, label: String, synonyms: [String] = [], group: String = "other", section: String? = nil,
                 kind: Kind = .slider, min: Double, max: Double, defaultValue: Double, step: Double,
-                options: [Option] = [], channel: String? = nil, x: Double? = nil) {
+                options: [Option] = [], channel: String? = nil, x: Double? = nil,
+                local: Bool = false, scope: String? = nil, component: String? = nil) {
         self.id = id
         self.label = label
         self.synonyms = synonyms
@@ -80,6 +95,9 @@ public struct Control: Codable, Equatable, Identifiable {
         self.options = options
         self.channel = channel
         self.x = x
+        self.local = local
+        self.scope = scope
+        self.component = component
     }
 
     /// Older entries without group/kind still load (as sliders in "other"). Toggles, choices and
@@ -95,6 +113,9 @@ public struct Control: Codable, Equatable, Identifiable {
         options = try c.decodeIfPresent([Option].self, forKey: .options) ?? []
         channel = try c.decodeIfPresent(String.self, forKey: .channel)
         x = try c.decodeIfPresent(Double.self, forKey: .x)
+        local = try c.decodeIfPresent(Bool.self, forKey: .local) ?? false
+        scope = try c.decodeIfPresent(String.self, forKey: .scope)
+        component = try c.decodeIfPresent(String.self, forKey: .component)
         let top: Double
         switch kind {
         case .toggle: top = 1

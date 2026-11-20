@@ -67,6 +67,9 @@ struct EditorView: View {
                                     }
                             }
                             .border(Color.accentColor, width: 2)
+                        } else if let tool = model.canvasTool {
+                            // The selected mask part is drawn on the photo (brush strokes, shapes, taps).
+                            MaskCanvas(model: model, tool: tool)
                         }
                     }
                     .padding(24)
@@ -79,7 +82,12 @@ struct EditorView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(model.registry.groups, id: \.self) { group in
-                    GroupPanel(model: model, group: group, expanded: $expanded)
+                    if group == "masks" {
+                        MasksPanel(model: model, expanded: $expanded)
+                    } else if model.state.selectedMask == nil {
+                        // While a mask is selected only the Masks panel shows: its sliders are local.
+                        GroupPanel(model: model, group: group, expanded: $expanded)
+                    }
                 }
                 Text("Double-tap a name to reset it.")
                     .font(.footnote)
@@ -94,6 +102,9 @@ struct EditorView: View {
             guard let id, let control = model.registry.control(id: id) else { return }
             expanded.insert(control.group)
             if let section = control.section { expanded.insert(control.group + "/" + section) }
+        }
+        .onChange(of: model.state.selectedMask) { _, mask in
+            if mask != nil { expanded.insert("masks") }
         }
     }
 
@@ -392,7 +403,7 @@ private struct CurveEditor: View {
 }
 
 /// The simplest working control for each kind: slider, switch, picker or button.
-private struct ControlRow: View {
+struct ControlRow: View {
     @ObservedObject var model: EditorModel
     let control: Control
 
@@ -432,7 +443,7 @@ private struct ControlRow: View {
     }
 }
 
-private struct SliderRow: View {
+struct SliderRow: View {
     let control: Control
     @Binding var value: Double
     let isFocused: Bool

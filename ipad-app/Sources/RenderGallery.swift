@@ -7,8 +7,8 @@ import UIKit
 ///
 /// For every case in `gallery.json` (test-data/gallery/) it starts from the untouched test photo
 /// (about 800 px), or a picture generated from it (`source`), runs the case's command through the
-/// same interpreter and renderer as the editor, and writes `Documents/gallery/<id>.jpg` plus
-/// `manifest.json`. Then the app quits.
+/// same interpreter and renderer as the editor, draws its strokes and taps the photo if it has
+/// them, and writes `Documents/gallery/<id>.jpg` plus `manifest.json`. Then the app quits.
 /// `dev-tools/ci_results.py` on the laptop measures the pictures and checks each expectation.
 @MainActor
 enum RenderGallery {
@@ -36,6 +36,18 @@ enum RenderGallery {
         /// A generated picture to start from instead of the test photo (see `sourceImage`).
         let source: String?
         /// A tap on the photo after the command (picker tools): x, y from the top-left, 0…1.
+        let tap: [Double]?
+        /// Lines drawn on the photo after the command (brush strokes, lasso outlines, gradient drags):
+        /// each a list of x, y points from the top-left, 0…1.
+        let strokes: [[[Double]]]?
+        /// More commands, strokes and taps, in order, after the strokes ("eraser", then a stroke).
+        let steps: [Step]?
+    }
+
+    /// One step: a command, a stroke or a tap.
+    struct Step: Codable {
+        let command: String?
+        let stroke: [[Double]]?
         let tap: [Double]?
     }
 
@@ -108,6 +120,14 @@ enum RenderGallery {
             model.startOver()
             if !item.command.isEmpty {
                 model.run(item.command)
+            }
+            for stroke in item.strokes ?? [] {
+                model.draw(stroke.filter { $0.count == 2 }.map { MaskPoint($0[0], $0[1]) })
+            }
+            for step in item.steps ?? [] {
+                if let command = step.command { model.run(command) }
+                if let stroke = step.stroke { model.draw(stroke.filter { $0.count == 2 }.map { MaskPoint($0[0], $0[1]) }) }
+                if let tap = step.tap, tap.count == 2 { model.tap(atX: tap[0], y: tap[1]) }
             }
             if let tap = item.tap, tap.count == 2 {
                 model.tap(atX: tap[0], y: tap[1])

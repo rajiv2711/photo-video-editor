@@ -8,6 +8,9 @@ import Foundation
 /// first name belong to it. With no name at all they act on the focused control (`control: nil`).
 /// Names may be several words ("tone curve highlights", "red curve 50"); the longest one wins.
 /// Toggles take "on"/"off", choices take an option name, actions run when named.
+/// Masks: an action may take an option or a number ("linear gradient from top", "delete mask 2"),
+/// and "new", "add", "subtract" or "intersect" before a mask part says how it joins the selected
+/// mask ("subtract luminance range").
 public struct CommandParser {
     public let registry: ControlRegistry
     private let matcher: NameMatcher
@@ -32,7 +35,7 @@ public struct CommandParser {
             clause = nil
         }
 
-        func begin(_ control: Control) {
+        func begin(_ control: Control, mode: String? = nil) {
             // Verb first: actions said before the very first name belong to it.
             var carried: [Clause.Action] = []
             if let c = clause, !c.named, commands.isEmpty {
@@ -42,7 +45,7 @@ public struct CommandParser {
             if control.kind == .toggle, let on = pendingSwitch { carried.append(.set(on ? 1 : 0)) }
             pendingSwitch = nil
             finish()
-            clause = Clause(control: control.id, kind: control.kind, named: true, actions: carried)
+            clause = Clause(control: control.id, kind: control.kind, named: true, actions: carried, mode: mode)
             blocked = false
         }
 
@@ -71,10 +74,24 @@ public struct CommandParser {
             if Self.fillers.contains(token) { continue }
 
             // A choice's option ("white balance cloudy") comes before every other reading:
-            // option names may also be words like "auto".
+            // option names may also be words like "auto". Actions may have options too
+            // ("radial gradient center").
             if let control = named(), control.kind == .choice, let picked = option(of: control, token, tokens) {
                 tokens.removeFirst(picked.extra)
                 act(.set(Double(picked.index)))
+                continue
+            }
+            if let control = named(), control.kind == .action, !control.options.isEmpty, clause?.hasOption == false,
+               let picked = option(of: control, token, tokens) {
+                tokens.removeFirst(picked.extra)
+                act(.option(picked.index))
+                continue
+            }
+
+            // "subtract luminance range": how a new mask part joins the selected mask.
+            if let mode = Self.maskMode(token), let found = maskPart(after: tokens) {
+                tokens.removeFirst(found.used)
+                begin(found.control, mode: mode)
                 continue
             }
 
@@ -156,6 +173,39 @@ public struct CommandParser {
         return nil
     }
 
+    /// A mask part's name right after a mode word, skipping "a", "an", "the" ("add a radial gradient"):
+    /// the control and how many tokens it used.
+    private func maskPart(after rest: ArraySlice<String>) -> (control: Control, used: Int)? {
+        var skipped = 0
+        var words = rest
+        while let w = words.first, Self.fillers.contains(w) {
+            words.removeFirst()
+            skipped += 1
+        }
+        guard let first = words.popFirst() else { return nil }
+        let found: (control: Control, extra: Int)?
+        if let long = longestName(first, words) {
+            found = long
+        } else if case .found(let control) = matcher.match(first) {
+            found = (control, 0)
+        } else {
+            found = nil
+        }
+        guard let found, found.control.kind == .action, found.control.component != nil else { return nil }
+        return (found.control, skipped + 1 + found.extra)
+    }
+
+    /// "new", "add", "subtract", "intersect" before a mask part.
+    static func maskMode(_ token: String) -> String? {
+        switch token {
+        case "new", "create": return "new"
+        case "add", "plus": return "add"
+        case "subtract": return "subtract"
+        case "intersect", "intersection": return "intersect"
+        default: return nil
+        }
+    }
+
     /// The option of a choice control named by `first` (plus up to two more words), as its index
     /// and the number of extra words used. Near-miss single words count when only one option is close.
     private func option(of control: Control, _ first: String, _ rest: ArraySlice<String>) -> (index: Int, extra: Int)? {
@@ -175,14 +225,14 @@ public struct CommandParser {
     static let fillers: Set<String> = [
         "a", "an", "the", "it", "its", "bit", "little", "some", "please", "and", "then",
         "make", "set", "to", "by", "of", "much", "lot", "slightly", "again", "now", "go",
-        "turn", "switch",
+        "turn", "switch", "from",
     ]
 
     /// true for "on", false for "off", nil for any other word.
     static func switchWord(_ token: String) -> Bool? {
         switch token {
-        case "on", "enable", "enabled": return true
-        case "off", "disable", "disabled": return false
+        case "on", "enable", "enabled", "show": return true
+        case "off", "disable", "disabled", "hide": return false
         default: return nil
         }
     }
@@ -219,18 +269,31 @@ private struct Clause {
         case reset
         case toMax
         case toMin
+        /// An action's option, by index ("linear gradient from top").
+        case option(Int)
     }
 
     let control: String?
     let kind: Control.Kind
     let named: Bool
     var actions: [Action] = []
+    /// Mask parts: "new", "add", "subtract" or "intersect".
+    var mode: String?
+
+    /// Whether an option was already said (an action takes one).
+    var hasOption: Bool {
+        actions.contains { if case .option = $0 { return true } else { return false } }
+    }
 
     /// Consecutive nudges merge into one ("more more less" → steps 1).
-    /// A named action always just runs; a bare toggle name turns it on; a bare name selects.
+    /// A named action always just runs, with its option or a number if one was said;
+    /// a bare toggle name turns it on; a bare name selects.
     func commands() -> [Command] {
         if kind == .action, let control {
-            return [.run(control)]
+            var value: Double?
+            for case .option(let i) in actions where value == nil { value = Double(i) }
+            for case .set(let v) in actions where value == nil { value = v }
+            return [value == nil && mode == nil ? .run(control) : .run(control, value: value, mode: mode)]
         }
         if actions.isEmpty {
             guard named, let control else { return [] }
@@ -250,6 +313,7 @@ private struct Clause {
             case .reset: flush(); out.append(.reset(control))
             case .toMax: flush(); out.append(.max(control))
             case .toMin: flush(); out.append(.min(control))
+            case .option: break
             }
         }
         flush()

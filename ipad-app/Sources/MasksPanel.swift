@@ -1,0 +1,153 @@
+import CommandEngine
+import SwiftUI
+
+/// The Masks panel: a menu to make a mask, the list of masks, and for the selected mask its parts,
+/// their settings, the mask's settings and its local sliders. While a mask is selected the other
+/// panels are hidden (as in Lightroom): sliders change the mask. "Done" goes back to them.
+struct MasksPanel: View {
+    @ObservedObject var model: EditorModel
+    @Binding var expanded: Set<String>
+
+    private var controls: [Control] { model.registry.controls(inGroup: "masks") }
+
+    /// Actions that make a mask part: Brush, Linear Gradient, …
+    private var makers: [Control] { controls.filter { $0.kind == .action && $0.component != nil } }
+
+    var body: some View {
+        DisclosureGroup(isExpanded: isOpen("masks")) {
+            VStack(alignment: .leading, spacing: 10) {
+                Menu {
+                    ForEach(makers) { maker in
+                        Button(maker.label) { model.apply([.run(maker.id)]) }
+                    }
+                } label: {
+                    Label("New mask", systemImage: "plus.circle")
+                }
+                .padding(.horizontal, 10)
+
+                ForEach(Array(model.state.masks.enumerated()), id: \.offset) { item in
+                    maskRow(item.offset, item.element)
+                }
+
+                if let m = model.state.selectedMask, model.state.masks.indices.contains(m) {
+                    selected(model.state.masks[m])
+                }
+            }
+            .padding(.top, 6)
+        } label: {
+            Text("Masks").font(.headline)
+        }
+    }
+
+    /// One mask in the list: tap selects it (again: back to the global sliders).
+    private func maskRow(_ index: Int, _ mask: Mask) -> some View {
+        let isSelected = model.state.selectedMask == index
+        return HStack {
+            Button {
+                model.selectMask(isSelected ? nil : index)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Mask \(index + 1)").fontWeight(isSelected ? .semibold : .regular)
+                    Text(mask.components.map { model.label(ofPart: $0.kind) }.joined(separator: ", "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+            Spacer()
+            Button(role: .destructive) {
+                model.apply([.run("deleteMask", value: Double(index + 1))])
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(10)
+        .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// The selected mask: its part's settings, the brush, the mask's settings and the local sliders.
+    @ViewBuilder
+    private func selected(_ mask: Mask) -> some View {
+        if let part = mask.component {
+            if let hint = EditorModel.hints[part.kind] {
+                Text(hint.prefix(1).uppercased() + hint.dropFirst() + ".")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 10)
+            }
+            let partRows = controls.filter { $0.scope == "component" && ($0.component == part.kind || $0.component == nil) }
+            ForEach(partRows) { ControlRow(model: model, control: $0) }
+            if ["brush", "quickSelect"].contains(part.kind) {
+                section("Brush", rows: controls.filter { $0.section == "Brush" })
+            }
+        }
+        let maskRows = controls.filter { $0.scope == "mask" && $0.kind != .action }
+        if !maskRows.isEmpty {
+            section("Mask", rows: maskRows)
+        }
+        Text("Local adjustments").font(.subheadline.weight(.semibold))
+        ForEach(model.registry.controls.filter(\.local)) { ControlRow(model: model, control: $0) }
+        Button("Done") { model.apply([.run("maskDone")]) }
+            .buttonStyle(.borderedProminent)
+            .padding(.horizontal, 10)
+    }
+
+    private func section(_ title: String, rows: [Control]) -> some View {
+        DisclosureGroup(isExpanded: isOpen("masks/" + title)) {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(rows) { ControlRow(model: model, control: $0) }
+            }
+        } label: {
+            Text(title).font(.subheadline.weight(.semibold))
+        }
+    }
+
+    private func isOpen(_ key: String) -> Binding<Bool> {
+        Binding(
+            get: { expanded.contains(key) },
+            set: { open in
+                if open { expanded.insert(key) } else { expanded.remove(key) }
+            }
+        )
+    }
+}
+
+/// Touches on the photo for the selected mask part: brush strokes (finger or Pencil), drawn as a
+/// line while painting and handed to the mask when the stroke ends.
+struct MaskCanvas: View {
+    @ObservedObject var model: EditorModel
+    let tool: String
+    @State private var points: [CGPoint] = []
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                Color.clear.contentShape(Rectangle())
+                Path { path in
+                    path.addLines(points)
+                }
+                .stroke(Color.red.opacity(0.5), style: StrokeStyle(lineWidth: brushWidth(geo.size), lineCap: .round, lineJoin: .round))
+            }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { drag in points.append(drag.location) }
+                    .onEnded { _ in
+                        model.draw(points.map { Self.unit($0, in: geo.size) })
+                        points = []
+                    }
+            )
+        }
+    }
+
+    /// The brush's width on screen (Brush Size is a share of the photo's long side).
+    private func brushWidth(_ size: CGSize) -> CGFloat {
+        let percent = model.registry.control(id: "brushSize").map { model.value(of: $0) } ?? 10
+        return max(2, CGFloat(percent / 100) * max(size.width, size.height))
+    }
+
+    /// A point on the photo as x, y from the top-left, 0…1.
+    static func unit(_ p: CGPoint, in size: CGSize) -> MaskPoint {
+        MaskPoint(Double(min(max(p.x / max(size.width, 1), 0), 1)), Double(min(max(p.y / max(size.height, 1), 0), 1)))
+    }
+}

@@ -82,6 +82,9 @@ func describe(_ outcome: CommandOutcome) -> String {
     case .ambiguous(let word, let ids): return "“\(word)” could be \(ids.joined(separator: "/"))"
     case .unknown(let word): return "unknown “\(word)”"
     case .needsControl: return "needs a control"
+    case .changedInMask(let mask, let id, let from, let to): return "mask \(mask) \(id) \(from) → \(to)"
+    case .masked(let mask, let event): return "mask \(mask): \(event)"
+    case .needsMask(let id): return "\(id) needs a mask"
     }
 }
 

@@ -91,9 +91,13 @@ enum Filters {
     /// A grey picture made from mask values (0…1, `width` × `height` cells, row by row from the top),
     /// stretched smoothly over `extent`.
     static func mask(_ values: [Double], width: Int, height: Int, over extent: CGRect) -> CIImage {
+        mask(values.map { Float($0) }, width: width, height: height, over: extent)
+    }
+
+    static func mask(_ values: [Float], width: Int, height: Int, over extent: CGRect) -> CIImage {
         var pixels = [Float](repeating: 1, count: width * height * 4)
         for i in 0..<min(values.count, width * height) {
-            let m = Float(values[i])
+            let m = values[i]
             pixels[4 * i] = m
             pixels[4 * i + 1] = m
             pixels[4 * i + 2] = m

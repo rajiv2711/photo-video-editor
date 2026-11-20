@@ -1,11 +1,15 @@
 import Foundation
 
-/// The current value of every control. Missing entries are at their default.
+/// The current value of every control, and the masks (local adjustments, see Masks.swift).
+/// Missing entries are at their default.
 public struct EditState: Equatable {
-    public private(set) var values: [String: Double] = [:]
+    public internal(set) var values: [String: Double] = [:]
+    /// Masks in the order they were made ("mask 2" is the second).
+    public var masks: [Mask] = []
 
     public init() {}
 
+    /// The photo-wide value (see `current` for the value a slider shows while a mask is selected).
     public func value(of control: Control) -> Double {
         values[control.id] ?? control.defaultValue
     }

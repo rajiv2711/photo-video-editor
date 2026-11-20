@@ -63,12 +63,17 @@ final class EditorModel: ObservableObject {
         }
     }
 
+    /// The value a slider shows: while a mask is selected, its own value for local sliders.
     func value(of control: Control) -> Double {
-        state.value(of: control)
+        state.current(control)
     }
 
     func setFromSlider(_ control: Control, to value: Double) {
-        state.set(control, to: value)
+        guard let target = state.target(for: control) else {
+            feedback = describe([.needsMask(controlID: control.id)])
+            return
+        }
+        state.set(control, to: value, at: target)
         focus(control)
         render()
     }
@@ -88,13 +93,62 @@ final class EditorModel: ObservableObject {
         render()
     }
 
-    /// Controls that are not at their default, by id (for the render gallery's manifest).
+    /// Controls that are not at their default, by id (for the render gallery's manifest); a mask's
+    /// local sliders as "mask1.exposure".
     func changedValues() -> [String: Double] {
         var out: [String: Double] = [:]
         for control in registry.controls where !state.isDefault(control) {
             out[control.id] = state.value(of: control)
         }
+        for (i, mask) in state.masks.enumerated() {
+            for (id, value) in mask.adjustments { out["mask\(i + 1).\(id)"] = value }
+            out["mask\(i + 1).parts"] = Double(mask.components.count)
+        }
         return out
+    }
+
+    // MARK: - Masks
+
+    /// The selected mask's selected part, when it is drawn on the photo (brush strokes, shapes,
+    /// taps); nil when touches on the photo do nothing.
+    var canvasTool: String? {
+        guard armedPicker == nil, let s = state.selectedComponent else { return nil }
+        return state.masks[s.mask].components[s.component].kind
+    }
+
+    /// The label of the action that makes a mask part ("Brush Mask" for "brush").
+    func label(ofPart kind: String) -> String {
+        registry.controls.first { $0.kind == .action && $0.component == kind }?.label ?? kind
+    }
+
+    /// Selects a mask by its index (nil = back to the global sliders), as "mask 2" would.
+    func selectMask(_ index: Int?) {
+        guard let mask = registry.control(id: EditState.maskSelectorID) else { return }
+        apply([.set(mask.id, Double(index.map { $0 + 1 } ?? 0))])
+    }
+
+    /// Runs commands that came from a button (a mask action, "done", …), with feedback.
+    func apply(_ commands: [Command]) {
+        let outcomes = interpreter.apply(commands, state: &state)
+        focusedControlID = interpreter.lastControlID
+        feedback = describe(outcomes)
+        armPickers(outcomes)
+        render()
+    }
+
+    /// A finger or Pencil drew on the photo (points from the top-left, 0…1): a brush stroke with
+    /// the current brush settings.
+    func draw(_ points: [MaskPoint]) {
+        guard let tool = canvasTool, !points.isEmpty else { return }
+        switch tool {
+        case "brush":
+            func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+            state.addStroke(MaskStroke(points: points, size: v("brushSize"), feather: v("brushFeather"), flow: v("brushFlow"),
+                                       density: v("brushDensity"), erase: v("brushErase") != 0, autoMask: v("brushAutoMask") != 0))
+        default:
+            return
+        }
+        render()
     }
 
     func focus(_ control: Control) {
@@ -267,7 +321,7 @@ final class EditorModel: ObservableObject {
     /// Renders the full-resolution photo and saves it to the photo library.
     /// With HDR on it saves a 10-bit HEIF that keeps the brighter-than-white levels.
     func save() {
-        let edited = renderer.apply(to: original, value: currentValue)
+        let edited = renderer.apply(to: original, value: currentValue, masks: state.masks)
         if isHDR {
             saveHDR(edited)
             return
@@ -327,7 +381,14 @@ final class EditorModel: ObservableObject {
 
     /// The preview photo with the current edits (not yet turned into pixels).
     func editedPreview() -> CIImage {
-        renderer.apply(to: previewSource, value: currentValue)
+        renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask)
+    }
+
+    /// The mask shown as a red tint: the selected one, while Mask Overlay is on.
+    private var overlayMask: Mask? {
+        guard let overlay = registry.control(id: "maskOverlay"), state.value(of: overlay) != 0,
+              let m = state.selectedMask else { return nil }
+        return state.masks[m]
     }
 
     /// Looks up a control's current value by id; nil when controls.json has no such control.
@@ -347,6 +408,23 @@ final class EditorModel: ObservableObject {
         var problem = false
         for outcome in outcomes {
             switch outcome {
+            case .changed(EditState.maskSelectorID, _, let to):
+                parts.append(to == 0 ? "Global sliders" : "Mask \(Int(to)) selected: local sliders")
+            case .changedInMask(let mask, let id, let from, let to):
+                let control = registry.control(id: id)
+                parts.append("Mask \(mask) · \(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))")
+            case .masked(let mask, let event):
+                parts.append(describe(event, mask: mask))
+            case .needsMask(let id):
+                let control = registry.control(id: id)
+                if control?.scope == "component", let kind = control?.component {
+                    parts.append("No \(label(ofPart: kind)) in the selected mask")
+                } else {
+                    parts.append("Select a mask first, e.g. “mask 1”")
+                }
+                problem = true
+            case .ran(let id) where registry.control(id: id)?.group == "masks":
+                break  // described by its .masked outcome
             case .changed(let id, let from, let to):
                 let control = registry.control(id: id)
                 var text = "\(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))"
@@ -371,6 +449,25 @@ final class EditorModel: ObservableObject {
         if parts.isEmpty { parts = ["Nothing to do"] }
         return Feedback(text: parts.joined(separator: " · "), choices: choices, isProblem: problem)
     }
+
+    private func describe(_ event: MaskEvent, mask: Int) -> String {
+        switch event {
+        case .created(let kind):
+            return "Mask \(mask): new \(label(ofPart: kind))" + (Self.hints[kind].map { " · " + $0 } ?? "")
+        case .added(let kind, let mode):
+            return "Mask \(mask): \(mode.rawValue) \(label(ofPart: kind))" + (Self.hints[kind].map { " · " + $0 } ?? "")
+        case .deleted: return "Mask \(mask) deleted"
+        case .duplicated(let from): return "Mask \(mask): copy of Mask \(from)"
+        case .partDeleted: return "Mask \(mask): part deleted"
+        case .deselected: return "Global sliders"
+        case .allDeleted: return "Masks deleted"
+        }
+    }
+
+    /// What to do on the photo after making a mask part.
+    static let hints: [String: String] = [
+        "brush": "paint on the photo",
+    ]
 
     nonisolated static func format(_ value: Double, _ control: Control?) -> String {
         let step = control?.step ?? 1

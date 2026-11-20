@@ -573,3 +573,30 @@
 {"group":"optics","text":"fish eye more","expect":[{"op":"nudge","control":"fisheye","steps":1}]}
 {"group":"optics","text":"wide angle correction up","expect":[{"op":"nudge","control":"fisheye","steps":1}]}
 {"group":"optics","text":"defish 100","expect":[{"op":"set","control":"fisheye","value":100}]}
+{"group":"masks","text":"brush mask","expect":[{"op":"run","control":"brushMask"}]}
+{"group":"masks","text":"new brush mask","expect":[{"op":"run","control":"brushMask","mode":"new"}]}
+{"group":"masks","text":"paint mask","expect":[{"op":"run","control":"brushMask"}]}
+{"group":"masks","text":"brush mask exposure -1","expect":[{"op":"run","control":"brushMask"},{"op":"set","control":"exposure","value":-1}]}
+{"group":"masks","text":"mask 2","expect":[{"op":"set","control":"mask","value":2}]}
+{"group":"masks","text":"mask 1 contrast 30","expect":[{"op":"set","control":"mask","value":1},{"op":"set","control":"contrast","value":30}]}
+{"group":"masks","text":"mask exposure more","expect":[{"op":"select","control":"mask"},{"op":"nudge","control":"exposure","steps":1}]}
+{"group":"masks","text":"mask more","expect":[{"op":"nudge","control":"mask","steps":1}]}
+{"group":"masks","text":"done","expect":[{"op":"run","control":"maskDone"}]}
+{"group":"masks","text":"back to global","expect":[{"op":"run","control":"maskDone"}]}
+{"group":"masks","text":"mask off","expect":[{"op":"run","control":"maskDone"}]}
+{"group":"masks","text":"delete mask","expect":[{"op":"run","control":"deleteMask"}]}
+{"group":"masks","text":"delete mask 2","expect":[{"op":"run","control":"deleteMask","value":2}]}
+{"group":"masks","text":"remove mask","expect":[{"op":"run","control":"deleteMask"}]}
+{"group":"masks","text":"brush size 30","expect":[{"op":"set","control":"brushSize","value":30}]}
+{"group":"masks","text":"brush size more","expect":[{"op":"nudge","control":"brushSize","steps":1}]}
+{"group":"masks","text":"brush feather 80","expect":[{"op":"set","control":"brushFeather","value":80}]}
+{"group":"masks","text":"brush softness down","expect":[{"op":"nudge","control":"brushFeather","steps":-1}]}
+{"group":"masks","text":"brush flow 50","expect":[{"op":"set","control":"brushFlow","value":50}]}
+{"group":"masks","text":"flow less","expect":[{"op":"nudge","control":"brushFlow","steps":-1}]}
+{"group":"masks","text":"brush density 60","expect":[{"op":"set","control":"brushDensity","value":60}]}
+{"group":"masks","text":"brush opacity 40","expect":[{"op":"set","control":"brushDensity","value":40}]}
+{"group":"masks","text":"auto mask on","expect":[{"op":"set","control":"brushAutoMask","value":1}]}
+{"group":"masks","text":"auto edge off","expect":[{"op":"set","control":"brushAutoMask","value":0}]}
+{"group":"masks","text":"eraser","expect":[{"op":"set","control":"brushErase","value":1}]}
+{"group":"masks","text":"erase off","expect":[{"op":"set","control":"brushErase","value":0}]}
+{"group":"masks","text":"eraser mode on","expect":[{"op":"set","control":"brushErase","value":1}]}

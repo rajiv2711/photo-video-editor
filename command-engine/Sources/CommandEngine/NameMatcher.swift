@@ -3,6 +3,8 @@ import Foundation
 /// Finds the control a spoken or typed word refers to, tolerating small mistakes
 /// ("contrst", "satur"), synonyms ("vividness" → Saturation) and plurals ("colours" → "colour").
 /// A word that fits several controls equally ("colour": Vibrance or Saturation) is ambiguous.
+/// Masks-panel names are only tried when no other control is close: they reuse words of the other
+/// panels ("color range", "luminance range"), and a near-miss should keep meaning what it meant.
 public struct NameMatcher {
     public enum Match: Equatable {
         case found(Control)
@@ -33,8 +35,28 @@ public struct NameMatcher {
         if exact.count > 1 { return .ambiguous(exact) }
 
         // Otherwise score every control by its closest name; lower is better.
+        var best = closest(phrase, among: registry.controls.filter { $0.group != "masks" })
+        if best.isEmpty { best = closest(phrase, among: registry.controls.filter { $0.group == "masks" }) }
+        switch best.count {
+        case 0: return .none
+        case 1: return .found(best[0])
+        default: return .ambiguous(best)
+        }
+    }
+
+    /// The controls whose closest name is nearest to the phrase (several when they tie). A plural of
+    /// a near-name ("colours" → "colour") reads like the singular.
+    private func closest(_ phrase: String, among controls: [Control]) -> [Control] {
+        let found = scored(phrase, among: controls)
+        if found.isEmpty, phrase.count > 4, phrase.hasSuffix("s") {
+            return scored(String(phrase.dropLast()), among: controls)
+        }
+        return found
+    }
+
+    private func scored(_ phrase: String, among controls: [Control]) -> [Control] {
         var best: [(control: Control, score: Int)] = []
-        for control in registry.controls {
+        for control in controls {
             guard let score = control.names.compactMap({ Self.score(phrase, against: $0) }).min() else { continue }
             if let current = best.first?.score {
                 if score < current { best = [(control, score)] } else if score == current { best.append((control, score)) }
@@ -42,14 +64,7 @@ public struct NameMatcher {
                 best = [(control, score)]
             }
         }
-        switch best.count {
-        case 0:
-            // A plural of a near-name ("colours" → "colour") reads like the singular.
-            if phrase.count > 4, phrase.hasSuffix("s") { return match(String(phrase.dropLast())) }
-            return .none
-        case 1: return .found(best[0].control)
-        default: return .ambiguous(best.map(\.control))
-        }
+        return best.map(\.control)
     }
 
     /// Edit distance between a phrase and a name, or nil when they are too far apart to be a

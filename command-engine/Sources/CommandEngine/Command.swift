@@ -10,6 +10,12 @@ import Foundation
 ///     {"op":"set","control":"hdr","value":1}          "hdr on" (toggles are 0/1)
 ///     {"op":"run","control":"auto"}                   "auto"  (an action control)
 ///     {"op":"unknown","word":"vignette"}              anything that isn't a control
+///
+/// Masks: an action may carry the index of one of its options in `value`, and a mask part may
+/// carry how it joins the selected mask in `mode` ("new", "add", "subtract", "intersect"):
+///
+///     {"op":"run","control":"linearGradient","value":0}              "linear gradient from top"
+///     {"op":"run","control":"luminanceRange","mode":"subtract"}      "subtract luminance range"
 public struct Command: Codable, Equatable, CustomStringConvertible {
     public enum Op: String, Codable {
         case nudge, add, set, reset, max, min, select, run
@@ -24,14 +30,18 @@ public struct Command: Codable, Equatable, CustomStringConvertible {
     public var value: Double?
     public var word: String?
     public var candidates: [String]?
+    /// Mask parts only: "new", "add", "subtract" or "intersect" (nil = a new mask).
+    public var mode: String?
 
-    public init(op: Op, control: String? = nil, steps: Int? = nil, value: Double? = nil, word: String? = nil, candidates: [String]? = nil) {
+    public init(op: Op, control: String? = nil, steps: Int? = nil, value: Double? = nil, word: String? = nil,
+                candidates: [String]? = nil, mode: String? = nil) {
         self.op = op
         self.control = control
         self.steps = steps
         self.value = value
         self.word = word
         self.candidates = candidates
+        self.mode = mode
     }
 
     public static func nudge(_ control: String?, _ steps: Int) -> Command { Command(op: .nudge, control: control, steps: steps) }
@@ -42,6 +52,10 @@ public struct Command: Codable, Equatable, CustomStringConvertible {
     public static func min(_ control: String?) -> Command { Command(op: .min, control: control) }
     public static func select(_ control: String) -> Command { Command(op: .select, control: control) }
     public static func run(_ control: String) -> Command { Command(op: .run, control: control) }
+    /// An action with an option index or number ("delete mask 2") and, for mask parts, a mode.
+    public static func run(_ control: String, value: Double?, mode: String? = nil) -> Command {
+        Command(op: .run, control: control, value: value, mode: mode)
+    }
     public static let resetAll = Command(op: .resetAll)
     public static func ambiguous(_ word: String, _ candidates: [String]) -> Command { Command(op: .ambiguous, word: word, candidates: candidates) }
     public static func unknown(_ word: String) -> Command { Command(op: .unknown, word: word) }

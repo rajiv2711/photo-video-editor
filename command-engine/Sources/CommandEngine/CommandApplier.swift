@@ -3,8 +3,13 @@ import Foundation
 /// What happened when commands were applied; the UI turns these into feedback.
 public enum CommandOutcome: Equatable {
     case changed(controlID: String, from: Double, to: Double)
+    /// A value stored on a mask changed: a local slider, a mask setting or a part's setting.
+    /// `mask` is the mask's number (1 = the first).
+    case changedInMask(mask: Int, controlID: String, from: Double, to: Double)
     /// An action control ran ("auto"); the changes it made follow as `.changed` outcomes.
     case ran(controlID: String)
+    /// Something happened to a mask (made, a part added, deleted…); `mask` is its number, 0 = none.
+    case masked(mask: Int, event: MaskEvent)
     /// The control was named or nudged but its value did not move (e.g. already at max).
     case unchanged(controlID: String, value: Double)
     /// A word matched several controls equally well; the UI should offer them as choices.
@@ -12,10 +17,13 @@ public enum CommandOutcome: Equatable {
     case unknown(word: String)
     /// "more" or "less" with no control named or focused.
     case needsControl
+    /// The control acts on a selected mask (or on one kind of mask part) and there is none.
+    case needsMask(controlID: String)
 }
 
 /// Applies commands to slider values: [Command] → new EditState + outcomes.
 /// Consecutive commands on the same control report as one change ("contrast 20 more" → 0 → 25).
+/// While a mask is selected, local-capable sliders change that mask (see Masks.swift).
 public struct CommandApplier {
     public let registry: ControlRegistry
     /// Runs an action control ("auto") and returns the commands it stands for, e.g. a `set` per
@@ -29,14 +37,21 @@ public struct CommandApplier {
 
     public func apply(_ commands: [Command], state: inout EditState, focus: inout String?) -> [CommandOutcome] {
         var outcomes: [CommandOutcome] = []
-        var run: (control: Control, start: Double)?
+        var run: (control: Control, target: EditState.Target, start: Double)?
 
         func flush() {
             guard let r = run else { return }
-            let end = state.value(of: r.control)
-            outcomes.append(end == r.start
-                ? .unchanged(controlID: r.control.id, value: end)
-                : .changed(controlID: r.control.id, from: r.start, to: end))
+            let end = state.value(of: r.control, at: r.target)
+            if end == r.start {
+                outcomes.append(.unchanged(controlID: r.control.id, value: end))
+            } else {
+                switch r.target {
+                case .global:
+                    outcomes.append(.changed(controlID: r.control.id, from: r.start, to: end))
+                case .mask(let m), .component(let m, _):
+                    outcomes.append(.changedInMask(mask: m + 1, controlID: r.control.id, from: r.start, to: end))
+                }
+            }
             run = nil
         }
 
@@ -48,6 +63,10 @@ public struct CommandApplier {
                     let from = state.value(of: control)
                     let to = state.set(control, to: control.defaultValue)
                     outcomes.append(.changed(controlID: control.id, from: from, to: to))
+                }
+                if !state.masks.isEmpty {
+                    state.masks = []
+                    outcomes.append(.masked(mask: 0, event: .allDeleted))
                 }
                 continue
             case .ambiguous:
@@ -73,8 +92,12 @@ public struct CommandApplier {
                 continue
             }
             if control.kind == .action {
-                // Any command on an action runs it; its own commands are applied right here, in order.
                 flush()
+                if let done = maskAction(control, command, state: &state) {
+                    outcomes += done
+                    continue
+                }
+                // Any command on an action runs it; its own commands are applied right here, in order.
                 outcomes.append(.ran(controlID: control.id))
                 let produced = (actionHandler?(control.id) ?? []).filter { $0.op != .run }
                 var inner = self
@@ -85,24 +108,97 @@ public struct CommandApplier {
                 }
                 continue
             }
-            if run?.control.id != control.id {
+            guard let target = state.target(for: control) else {
                 flush()
-                run = (control, state.value(of: control))
+                outcomes.append(.needsMask(controlID: control.id))
+                continue
+            }
+            if run?.control.id != control.id || run?.target != target {
+                flush()
+                run = (control, target, state.value(of: control, at: target))
             }
             focus = control.id
 
-            let current = state.value(of: control)
+            let current = state.value(of: control, at: target)
             switch command.op {
-            case .nudge: state.set(control, to: current + Double(command.steps ?? 0) * control.step)
-            case .add: state.set(control, to: current + (command.value ?? 0))
-            case .set: state.set(control, to: command.value ?? current)
-            case .reset: state.set(control, to: control.defaultValue)
-            case .max: state.set(control, to: control.max)
-            case .min: state.set(control, to: control.min)
-            case .select, .run, .resetAll, .ambiguous, .unknown: break
+            case .nudge: state.set(control, to: current + Double(command.steps ?? 0) * control.step, at: target)
+            case .add: state.set(control, to: current + (command.value ?? 0), at: target)
+            case .set: state.set(control, to: command.value ?? current, at: target)
+            case .reset: state.set(control, to: control.defaultValue, at: target)
+            case .max: state.set(control, to: control.max, at: target)
+            case .min: state.set(control, to: control.min, at: target)
+            case .select:
+                // "mask exposure more": a bare "mask" picks the newest mask when none is selected.
+                if control.id == EditState.maskSelectorID, state.selectedMask == nil, !state.masks.isEmpty {
+                    state.selectMask(state.masks.count - 1)
+                }
+            case .run, .resetAll, .ambiguous, .unknown: break
             }
         }
         flush()
         return outcomes
+    }
+
+    // MARK: - Masks panel actions
+
+    /// Runs a Masks-panel action (make a mask part, delete, duplicate, done); nil for other actions.
+    private func maskAction(_ control: Control, _ command: Command, state: inout EditState) -> [CommandOutcome]? {
+        if let kind = control.component {
+            let option = command.value.flatMap { v -> String? in
+                let i = Int(v)
+                return control.options.indices.contains(i) ? control.options[i].id : nil
+            }
+            let mode = command.mode.flatMap { MaskComponent.Mode(rawValue: $0) }
+            if let mode, let m = state.selectedMask {
+                // "subtract luminance range": a new part of the selected mask.
+                state.masks[m].components.append(MaskPresets.component(kind: kind, mode: mode, option: option, registry: registry))
+                state.masks[m].selectedComponent = state.masks[m].components.count - 1
+                return [.ran(controlID: control.id), .masked(mask: m + 1, event: .added(kind, mode))]
+            }
+            if let mode, mode != .add {
+                return [.needsMask(controlID: control.id)]
+            }
+            // A new mask (also "add …" with no mask selected).
+            state.masks.append(Mask(components: [MaskPresets.component(kind: kind, mode: .add, option: option, registry: registry)]))
+            state.selectMask(state.masks.count - 1)
+            return [.ran(controlID: control.id), .masked(mask: state.masks.count, event: .created(kind))]
+        }
+
+        /// "delete mask 2" names a mask; otherwise the selected one.
+        func named() -> Int? {
+            if let v = command.value {
+                let i = Int(v) - 1
+                return state.masks.indices.contains(i) ? i : nil
+            }
+            return state.selectedMask
+        }
+
+        switch control.id {
+        case "deleteMask":
+            guard let m = named() else { return [.needsMask(controlID: control.id)] }
+            state.masks.remove(at: m)
+            state.selectMask(nil)
+            return [.ran(controlID: control.id), .masked(mask: m + 1, event: .deleted)]
+        case "duplicateMask":
+            guard let m = named() else { return [.needsMask(controlID: control.id)] }
+            state.masks.append(state.masks[m])
+            state.selectMask(state.masks.count - 1)
+            return [.ran(controlID: control.id), .masked(mask: state.masks.count, event: .duplicated(from: m + 1))]
+        case "maskDone":
+            state.selectMask(nil)
+            return [.ran(controlID: control.id), .masked(mask: 0, event: .deselected)]
+        case "deleteComponent":
+            guard let s = state.selectedComponent else { return [.needsMask(controlID: control.id)] }
+            state.masks[s.mask].components.remove(at: s.component)
+            if state.masks[s.mask].components.isEmpty {
+                state.masks.remove(at: s.mask)
+                state.selectMask(nil)
+                return [.ran(controlID: control.id), .masked(mask: s.mask + 1, event: .deleted)]
+            }
+            state.masks[s.mask].selectedComponent = min(s.component, state.masks[s.mask].components.count - 1)
+            return [.ran(controlID: control.id), .masked(mask: s.mask + 1, event: .partDeleted)]
+        default:
+            return nil
+        }
     }
 }

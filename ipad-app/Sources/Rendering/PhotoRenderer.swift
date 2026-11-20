@@ -5,8 +5,8 @@ import UIKit
 
 /// Turns control values (see controls.json) into Core Image filters, one panel at a time in
 /// Lightroom's processing order: optics (lens fixes, on the photo as shot) → film negative and white
-/// balance → light (exposure, tone) → color → effects → detail → vignette and grain last.
-/// Each panel has its own file in Rendering/ (LightRenderer.swift, ColorRenderer.swift, …).
+/// balance → light (exposure, tone) → color → effects → detail → masks (local adjustments) →
+/// vignette and grain last. Each panel has its own file in Rendering/ (LightRenderer.swift, …).
 final class PhotoRenderer {
     let context: CIContext
     private let light: LightRenderer
@@ -14,6 +14,9 @@ final class PhotoRenderer {
     private let effects: EffectsRenderer
     private let detail: DetailRenderer
     private let optics: OpticsRenderer
+    private let masks: MaskRenderer
+    /// Every control's default (a mask's local pass leaves all but its own sliders there).
+    private let defaults: [String: Double]
 
     init() {
         let context = CIContext()
@@ -23,6 +26,9 @@ final class PhotoRenderer {
         self.effects = EffectsRenderer(context: context)
         self.detail = DetailRenderer(context: context)
         self.optics = OpticsRenderer(context: context)
+        self.masks = MaskRenderer(context: context)
+        let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
+        self.defaults = Dictionary(registry.controls.map { ($0.id, $0.defaultValue) }, uniquingKeysWith: { a, _ in a })
     }
 
     /// The photo's lens (EXIF), for Lens Profile Correction.
@@ -38,20 +44,50 @@ final class PhotoRenderer {
 
     /// `value` gives a control's current value by id, or nil when controls.json has no such control.
     /// With HDR off the result is clipped to SDR white (1); with HDR on brighter levels survive.
-    func apply(to image: CIImage, value: (String) -> Double?) -> CIImage {
+    /// `masks`: local adjustments, each blended in through its mask; `overlay`: a mask to show
+    /// as a red tint (preview only).
+    func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
-        var output = optics.apply(image, value: value)  // lens corrections
-        output = color.input(output, value: value)  // film negative, white balance
+        let extent = image.extent
+        let lensFixed = optics.apply(image, value: value)  // lens corrections
+        let lensKey = Self.opticsIDs.map { value($0) ?? 0 }
+        var output = color.input(lensFixed, value: value)  // film negative, white balance
         output = light.apply(output, value: value, hdr: hdr)
-        output = color.apply(output, extent: image.extent, value: value)
-        output = effects.apply(output, extent: image.extent, value: value)
-        output = detail.apply(output, extent: image.extent, value: value)
-        output = effects.finish(output, extent: image.extent, value: value)  // vignette, grain
+        output = color.apply(output, extent: extent, value: value)
+        output = effects.apply(output, extent: extent, value: value)
+        output = detail.apply(output, extent: extent, value: value)
+        for mask in masks where !mask.components.isEmpty && mask.adjustments.contains(where: { defaults[$0.key] != $0.value }) {
+            let shape = self.masks.image(of: mask, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
+            output = Filters.blend(local(output, mask: mask, extent: extent, hdr: hdr), over: output, mask: shape)
+        }
+        output = effects.finish(output, extent: extent, value: value)  // vignette, grain
         if !hdr {
             output = output.applyingFilter("CIColorClamp")
         }
-        return output.cropped(to: image.extent)
+        if let overlay, !overlay.components.isEmpty {
+            let shape = self.masks.image(of: overlay, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
+            output = MaskRenderer.overlay(output, mask: shape, extent: extent)
+        }
+        return output.cropped(to: extent)
     }
+
+    /// A mask's local adjustments on the globally edited picture: the same panels in the same order,
+    /// with every slider at its default except the mask's own (exposure −1 inside the mask is one
+    /// stop darker than the global result there).
+    private func local(_ image: CIImage, mask: Mask, extent: CGRect, hdr: Bool) -> CIImage {
+        let defaults = self.defaults
+        let value: (String) -> Double? = { id in mask.adjustments[id] ?? defaults[id] }
+        var output = color.input(image, value: value)  // temperature, tint
+        output = light.apply(output, value: value, hdr: hdr)
+        output = color.apply(output, extent: extent, value: value)
+        output = effects.apply(output, extent: extent, value: value)
+        return detail.apply(output, extent: extent, value: value)
+    }
+
+    /// The lens settings: when they change, the picture masks look at changes too.
+    static let opticsIDs = ["lensProfile", "removeCA", "caRedCyan", "caBlueYellow", "defringePurple", "defringePurpleHue",
+                            "defringeGreen", "defringeGreenHue", "distortion", "lensVignetting", "lensVignettingMidpoint",
+                            "fisheye"]
 
     /// The picture the white balance step works on (after lens corrections and film negative
     /// conversion): what the picker tools sample.
