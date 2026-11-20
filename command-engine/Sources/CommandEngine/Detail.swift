@@ -31,7 +31,7 @@ public enum Detail {
     /// stay. Higher amounts also smooth stronger texture.
     public static func noiseSmoothing(amount: Double) -> [Double] {
         let a = Swift.min(1, Swift.max(0, amount))
-        return Effects.table(count: 64) { range in a * (1 - Effects.smoothstep(0.04 + 0.12 * a, 0.1 + 0.25 * a, range)) }
+        return Effects.table(count: 64) { range in a * (1 - Effects.smoothstep(0.1 + 0.15 * a, 0.2 + 0.2 * a, range)) }
     }
 
     /// Blur radius (pixels of a 2048 px photo) for luminance and colour noise reduction (`amount` 0…1).

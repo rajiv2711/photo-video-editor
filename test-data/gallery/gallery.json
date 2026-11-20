@@ -223,6 +223,7 @@
     {"id": "sharpening-masking", "command": "sharpening 150 sharpening masking 100", "control": "sharpeningMasking", "expect": [{"metric": "edge", "dir": "down", "vs": "sharpening"}]},
     {"id": "noise-cast", "command": "", "source": "noise", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_sat", "dir": "up"}]},
     {"id": "noise-reduction", "command": "noise reduction 100", "source": "noise", "control": "noiseReduction", "expect": [{"metric": "edge", "dir": "down", "vs": "noise-cast"}, {"metric": "mean_luma", "dir": "same", "vs": "noise-cast"}]},
+    {"id": "noise-reduction-photo", "command": "noise reduction 100", "control": "noiseReduction", "expect": [{"metric": "edge", "dir": "down"}, {"metric": "mean_luma", "dir": "same"}]},
     {"id": "chroma-noise-reduction", "command": "chroma noise reduction 100", "source": "noise", "control": "chromaNoiseReduction", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "noise-cast"}, {"metric": "mean_luma", "dir": "same", "vs": "noise-cast"}]},
     {"id": "moire-cast", "command": "", "source": "moire", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "moire", "command": "moire 100", "source": "moire", "control": "moire", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "moire-cast"}, {"metric": "mean_luma", "dir": "same", "vs": "moire-cast"}]},
