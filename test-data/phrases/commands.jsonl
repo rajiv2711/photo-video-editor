@@ -198,3 +198,7 @@
 {"group":"color","text":"temp down down","expect":[{"op":"nudge","control":"temperature","steps":-2}]}
 {"group":"color","text":"reset temperature","expect":[{"op":"reset","control":"temperature"}]}
 {"group":"color","text":"white balance tungsten temperature up by 10","expect":[{"op":"set","control":"whiteBalance","value":5},{"op":"add","control":"temperature","value":10}]}
+{"group":"color","text":"tint more","expect":[{"op":"nudge","control":"tint","steps":1}]}
+{"group":"color","text":"tint -20","expect":[{"op":"set","control":"tint","value":-20}]}
+{"group":"color","text":"reset tint","expect":[{"op":"reset","control":"tint"}]}
+{"group":"color","text":"temperature 20 tint 10","expect":[{"op":"set","control":"temperature","value":20},{"op":"set","control":"tint","value":10}]}

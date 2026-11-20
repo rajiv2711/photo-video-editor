@@ -297,6 +297,17 @@
       "step": 5
     },
     {
+      "id": "tint",
+      "label": "Tint",
+      "group": "color",
+      "kind": "slider",
+      "synonyms": ["tints", "white balance tint", "wb tint"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

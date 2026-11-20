@@ -45,6 +45,8 @@
     {"id": "wb-auto", "command": "white balance auto", "source": "warm", "control": "whiteBalance", "expect": [{"metric": "mean_b", "dir": "up", "vs": "warm-cast"}, {"metric": "mean_sat", "dir": "down", "vs": "warm-cast"}]},
     {"id": "temperature-plus", "command": "temperature 80", "control": "temperature", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
     {"id": "temperature-minus", "command": "temperature -80", "control": "temperature", "expect": [{"metric": "mean_b", "dir": "up"}, {"metric": "mean_r", "dir": "down"}]},
+    {"id": "tint-plus", "command": "tint 80", "control": "tint", "expect": [{"metric": "mean_g", "dir": "down"}]},
+    {"id": "tint-minus", "command": "tint -80", "control": "tint", "expect": [{"metric": "mean_g", "dir": "up"}, {"metric": "mean_r", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]
