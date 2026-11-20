@@ -36,15 +36,18 @@ public enum ColorLook {
     public static let calibrationIDs = ["calibrationShadowsTint"]
         + ["Red", "Green", "Blue"].flatMap { ["calibration" + $0 + "Hue", "calibration" + $0 + "Saturation"] }
 
+    /// Black & white: on/off and how bright each colour band turns.
+    public static let bwIDs = ["bw"] + mixerBands.map { "bw" + $0.prefix(1).uppercased() + $0.dropFirst() }
+
     /// Control ids that feed the cube.
     public static let controlIDs: [String] = calibrationIDs
         + mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
-        + pointIDs + gradingIDs
+        + pointIDs + bwIDs + gradingIDs
 
     /// Controls that only say how another control acts (which hue, how wide): on their own they
     /// change nothing, so they don't count when deciding whether the cube is needed.
     static let modifierIDs = Set(["pointHue", "pointRange", "gradingBlending", "gradingBalance"]
-        + gradingZones.map { "grading" + $0 + "Hue" })
+        + gradingZones.map { "grading" + $0 + "Hue" } + bwIDs.dropFirst())
 
     /// The value of each control that leaves the picture untouched (or its default, for modifiers).
     public static func neutral(_ id: String) -> Double {
@@ -100,6 +103,7 @@ public enum ColorLook {
         var c = calibration(color, v)
         c = mixer(c, v)
         c = pointColor(c, v)
+        c = blackAndWhite(c, v)
         c = grading(c, v)
         return c
     }
@@ -243,6 +247,24 @@ public enum ColorLook {
     static func hueDifference(_ a: Double, _ b: Double) -> Double {
         let d = wrap(a - b)
         return d > 180 ? d - 360 : d
+    }
+
+    // MARK: - Black & white
+
+    /// Grey from the colour's luma; each band's slider (±100) brightens or darkens the grey of
+    /// colours in that band by up to about a stop, more for stronger colours.
+    static func blackAndWhite(_ color: RGB, _ v: Values) -> RGB {
+        guard v["bw"] != 0 else { return color }
+        var grey = color.luma
+        let chroma = color.max - color.min
+        if chroma > 1e-6 {
+            var stops = 0.0
+            for (band, w) in bandWeights(hue: hsl(color).h) {
+                stops += w * v["bw" + band.prefix(1).uppercased() + band.dropFirst()] / 100
+            }
+            grey *= pow(2, stops * chroma * 1.5)
+        }
+        return RGB(grey, grey, grey)
     }
 
     // MARK: - Color grading

@@ -106,6 +106,16 @@
     {"id": "calibration-green-sat", "command": "green primary saturation -100", "source": "chart", "control": "calibrationGreenSaturation", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
     {"id": "calibration-blue-hue", "command": "blue primary hue 100", "source": "chart", "control": "calibrationBlueHue", "expect": [{"metric": "diff", "dir": "changed", "vs": "chart"}]},
     {"id": "calibration-blue-sat", "command": "blue primary saturation -100", "source": "chart", "control": "calibrationBlueSaturation", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "bw-on", "command": "black and white", "control": "bw", "expect": [{"metric": "mean_sat", "dir": "down"}]},
+    {"id": "bw-chart", "command": "bw on", "source": "chart", "control": "bw", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
+    {"id": "bw-red", "command": "bw on bw red 100", "source": "chart", "control": "bwRed", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
+    {"id": "bw-orange", "command": "bw on bw orange 100", "source": "chart", "control": "bwOrange", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
+    {"id": "bw-yellow", "command": "bw on bw yellow 100", "source": "chart", "control": "bwYellow", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
+    {"id": "bw-green", "command": "bw on bw green 100", "source": "chart", "control": "bwGreen", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
+    {"id": "bw-aqua", "command": "bw on bw aqua 100", "source": "chart", "control": "bwAqua", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
+    {"id": "bw-blue", "command": "bw on bw blue 100", "source": "chart", "control": "bwBlue", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
+    {"id": "bw-purple", "command": "bw on bw purple 100", "source": "chart", "control": "bwPurple", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
+    {"id": "bw-magenta", "command": "bw on bw magenta 100", "source": "chart", "control": "bwMagenta", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

@@ -452,6 +452,24 @@
     {"id": "calibrationBlueHue", "label": "Blue Primary Hue", "group": "color", "section": "Calibration", "kind": "slider",
       "synonyms": ["calibration blue hue", "blue primary"], "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "calibrationBlueSaturation", "label": "Blue Primary Saturation", "group": "color", "section": "Calibration", "kind": "slider",
-      "synonyms": ["calibration blue saturation", "blue primary sat"], "min": -100, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["calibration blue saturation", "blue primary sat"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "bw", "label": "Black & White", "group": "color", "section": "Black & white", "kind": "toggle",
+      "synonyms": ["black and white", "b&w", "bw", "monochrome", "mono", "grayscale", "greyscale"]},
+    {"id": "bwRed", "label": "B&W Red", "group": "color", "section": "Black & white", "kind": "slider",
+      "synonyms": ["black and white red", "bw red", "mono red", "gray red", "grey red"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "bwOrange", "label": "B&W Orange", "group": "color", "section": "Black & white", "kind": "slider",
+      "synonyms": ["black and white orange", "bw orange", "mono orange", "gray orange", "grey orange"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "bwYellow", "label": "B&W Yellow", "group": "color", "section": "Black & white", "kind": "slider",
+      "synonyms": ["black and white yellow", "bw yellow", "mono yellow", "gray yellow", "grey yellow"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "bwGreen", "label": "B&W Green", "group": "color", "section": "Black & white", "kind": "slider",
+      "synonyms": ["black and white green", "bw green", "mono green", "gray green", "grey green"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "bwAqua", "label": "B&W Aqua", "group": "color", "section": "Black & white", "kind": "slider",
+      "synonyms": ["black and white aqua", "bw aqua", "mono aqua", "gray aqua", "grey aqua"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "bwBlue", "label": "B&W Blue", "group": "color", "section": "Black & white", "kind": "slider",
+      "synonyms": ["black and white blue", "bw blue", "mono blue", "gray blue", "grey blue"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "bwPurple", "label": "B&W Purple", "group": "color", "section": "Black & white", "kind": "slider",
+      "synonyms": ["black and white purple", "bw purple", "mono purple", "gray purple", "grey purple"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "bwMagenta", "label": "B&W Magenta", "group": "color", "section": "Black & white", "kind": "slider",
+      "synonyms": ["black and white magenta", "bw magenta", "mono magenta", "gray magenta", "grey magenta"], "min": -100, "max": 100, "default": 0, "step": 5}
   ]
 }

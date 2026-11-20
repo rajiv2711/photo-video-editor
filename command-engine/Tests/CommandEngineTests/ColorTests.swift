@@ -296,4 +296,33 @@ final class ColorTests: XCTestCase {
         XCTAssertEqual(parse("shadows tint 30"), [.set("calibrationShadowsTint", 30)])
         XCTAssertEqual(parse("tint 30"), [.set("tint", 30)])
     }
+
+    // MARK: - Black & white
+
+    func testBlackAndWhiteNames() {
+        XCTAssertEqual(parse("black and white"), [.set("bw", 1)])
+        XCTAssertEqual(parse("b&w off"), [.set("bw", 0)])
+        XCTAssertEqual(parse("bw red 30"), [.set("bwRed", 30)])
+        XCTAssertEqual(parse("black and white blue -20"), [.set("bwBlue", -20)])
+        XCTAssertEqual(parse("black down whites up"), [.nudge("blacks", -1), .nudge("whites", 1)])
+        XCTAssertEqual(parse("blacks -20"), [.set("blacks", -20)])
+    }
+
+    func testBlackAndWhiteMix() {
+        let red = RGB(0.8, 0.1, 0.1)
+        let plain = ColorLook.transform(red, look(["bw": 1]))
+        XCTAssertEqual(plain, RGB(red.luma, red.luma, red.luma))
+        let brighter = ColorLook.transform(red, look(["bw": 1, "bwRed": 100]))
+        XCTAssertGreaterThan(brighter.r, plain.r * 1.5)
+        XCTAssertEqual(brighter.r, brighter.b)
+        let blueUntouched = ColorLook.transform(RGB(0.1, 0.1, 0.8), look(["bw": 1, "bwRed": 100]))
+        assertClose(blueUntouched.r, RGB(0.1, 0.1, 0.8).luma, 1e-9)
+        XCTAssertTrue(ColorLook.isIdentity { $0 == "bwRed" ? 50 : nil }, "the mix alone does nothing")
+    }
+
+    func testGradingTintsBlackAndWhite() {
+        let v = look(["bw": 1, "gradingShadowsSaturation": 100, "gradingShadowsHue": 30])
+        let c = ColorLook.transform(RGB(0.15, 0.1, 0.3), v)
+        XCTAssertGreaterThan(c.r, c.b, "split-toned shadows")
+    }
 }

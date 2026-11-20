@@ -329,3 +329,24 @@
 {"group":"color","text":"calibration blue hue less","expect":[{"op":"nudge","control":"calibrationBlueHue","steps":-1}]}
 {"group":"color","text":"blue primary saturation 50","expect":[{"op":"set","control":"calibrationBlueSaturation","value":50}]}
 {"group":"color","text":"reset blue primary saturation","expect":[{"op":"reset","control":"calibrationBlueSaturation"}]}
+{"group":"color","text":"black and white","expect":[{"op":"set","control":"bw","value":1}]}
+{"group":"color","text":"b&w off","expect":[{"op":"set","control":"bw","value":0}]}
+{"group":"color","text":"turn on monochrome","expect":[{"op":"set","control":"bw","value":1}]}
+{"group":"color","text":"greyscale","expect":[{"op":"set","control":"bw","value":1}]}
+{"group":"color","text":"bw red 30","expect":[{"op":"set","control":"bwRed","value":30}]}
+{"group":"color","text":"black and white red up","expect":[{"op":"nudge","control":"bwRed","steps":1}]}
+{"group":"color","text":"bw orange -20","expect":[{"op":"set","control":"bwOrange","value":-20}]}
+{"group":"color","text":"reset gray orange","expect":[{"op":"reset","control":"bwOrange"}]}
+{"group":"color","text":"bw yellow 40","expect":[{"op":"set","control":"bwYellow","value":40}]}
+{"group":"color","text":"b&w yellow down down","expect":[{"op":"nudge","control":"bwYellow","steps":-2}]}
+{"group":"color","text":"bw green -50","expect":[{"op":"set","control":"bwGreen","value":-50}]}
+{"group":"color","text":"black and white green up","expect":[{"op":"nudge","control":"bwGreen","steps":1}]}
+{"group":"color","text":"bw aqua 25","expect":[{"op":"set","control":"bwAqua","value":25}]}
+{"group":"color","text":"reset gray aqua","expect":[{"op":"reset","control":"bwAqua"}]}
+{"group":"color","text":"bw blue -35","expect":[{"op":"set","control":"bwBlue","value":-35}]}
+{"group":"color","text":"b&w blue down down","expect":[{"op":"nudge","control":"bwBlue","steps":-2}]}
+{"group":"color","text":"bw purple 60","expect":[{"op":"set","control":"bwPurple","value":60}]}
+{"group":"color","text":"black and white purple up","expect":[{"op":"nudge","control":"bwPurple","steps":1}]}
+{"group":"color","text":"bw magenta -15","expect":[{"op":"set","control":"bwMagenta","value":-15}]}
+{"group":"color","text":"reset gray magenta","expect":[{"op":"reset","control":"bwMagenta"}]}
+{"group":"color","text":"bw on bw red 40","expect":[{"op":"set","control":"bw","value":1},{"op":"set","control":"bwRed","value":40}]}
