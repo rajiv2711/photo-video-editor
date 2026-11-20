@@ -120,6 +120,15 @@
     {"id": "toning-duotone", "command": "toning duotone", "control": "toning", "expect": [{"metric": "mean_b", "dir": "up"}, {"metric": "mean_r", "dir": "down"}]},
     {"id": "toning-tritone", "command": "toning tritone", "control": "toning", "expect": [{"metric": "diff", "dir": "changed"}, {"metric": "mean_sat", "dir": "up"}]},
     {"id": "toning-amount", "command": "toning sepia toning amount 40", "control": "toningAmount", "expect": [{"metric": "mean_b", "dir": "up", "vs": "toning-sepia"}]},
+    {"id": "channel-red-from-red", "command": "red from red 50", "control": "channelRedFromRed", "expect": [{"metric": "mean_r", "dir": "down"}]},
+    {"id": "channel-red-from-green", "command": "red from green 50", "control": "channelRedFromGreen", "expect": [{"metric": "mean_r", "dir": "up"}]},
+    {"id": "channel-red-from-blue", "command": "red from blue 50", "control": "channelRedFromBlue", "expect": [{"metric": "mean_r", "dir": "up"}]},
+    {"id": "channel-green-from-red", "command": "green from red 50", "control": "channelGreenFromRed", "expect": [{"metric": "mean_g", "dir": "up"}]},
+    {"id": "channel-green-from-green", "command": "green from green 50", "control": "channelGreenFromGreen", "expect": [{"metric": "mean_g", "dir": "down"}]},
+    {"id": "channel-green-from-blue", "command": "green from blue 50", "control": "channelGreenFromBlue", "expect": [{"metric": "mean_g", "dir": "up"}]},
+    {"id": "channel-blue-from-red", "command": "blue from red 50", "control": "channelBlueFromRed", "expect": [{"metric": "mean_b", "dir": "up"}]},
+    {"id": "channel-blue-from-green", "command": "blue from green 50", "control": "channelBlueFromGreen", "expect": [{"metric": "mean_b", "dir": "up"}]},
+    {"id": "channel-blue-from-blue", "command": "blue from blue 50", "control": "channelBlueFromBlue", "expect": [{"metric": "mean_b", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

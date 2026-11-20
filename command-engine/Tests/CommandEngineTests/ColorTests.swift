@@ -351,4 +351,23 @@ final class ColorTests: XCTestCase {
         assertClose(half.r, (sepia.r + 0.5) / 2, 1e-9)
         XCTAssertTrue(ColorLook.isIdentity { $0 == "toningAmount" ? 30 : nil })
     }
+
+    // MARK: - Channel mixer
+
+    func testChannelMixerNamesAndDefaults() {
+        XCTAssertEqual(parse("red from green 30"), [.set("channelRedFromGreen", 30)])
+        XCTAssertEqual(parse("blue channel blue down"), [.nudge("channelBlueFromBlue", -1)])
+        XCTAssertEqual(registry.control(id: "channelGreenFromGreen")?.defaultValue, 100)
+        XCTAssertTrue(ColorLook.isIdentity { _ in nil }, "default mixer is the identity")
+    }
+
+    func testChannelMixerRebuildsChannels() {
+        let c = RGB(0.2, 0.5, 0.8)
+        XCTAssertEqual(ColorLook.channelMixer(c, look([:])), c)
+        let swapped = ColorLook.channelMixer(c, look(["channelRedFromRed": 0, "channelRedFromBlue": 100]))
+        assertClose(swapped.r, 0.8)
+        assertClose(swapped.g, 0.5)
+        let mono = ColorLook.channelMixer(c, look(["channelGreenFromRed": 50, "channelGreenFromGreen": 50]))
+        assertClose(mono.g, 0.35)
+    }
 }

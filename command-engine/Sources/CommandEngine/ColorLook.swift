@@ -42,21 +42,31 @@ public enum ColorLook {
     /// Toning: option ids of the Toning choice, in controls.json order, and its palettes.
     public static let toningOptions = ["none", "sepia", "duotone", "tritone"]
 
-    /// Control ids that feed the cube.
-    public static let controlIDs: [String] = calibrationIDs
-        + mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
-        + pointIDs + bwIDs + gradingIDs + ["toning", "toningAmount"]
+    /// Channel mixer: "channelRedFromGreen" is how much of the green channel goes into red (%).
+    public static let channelIDs: [String] = ["Red", "Green", "Blue"].flatMap { out in
+        ["Red", "Green", "Blue"].map { "channel" + out + "From" + $0 }
+    }
+
+    public static let mixerIDs: [String] = mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
+
+    /// Control ids that feed the cube, in the order the steps run.
+    public static let controlIDs: [String] = [
+        calibrationIDs, mixerIDs, pointIDs, bwIDs, gradingIDs, channelIDs, ["toning", "toningAmount"],
+    ].flatMap { $0 }
 
     /// Controls that only say how another control acts (which hue, how wide): on their own they
     /// change nothing, so they don't count when deciding whether the cube is needed.
-    static let modifierIDs = Set(["pointHue", "pointRange", "gradingBlending", "gradingBalance", "toningAmount"]
-        + gradingZones.map { "grading" + $0 + "Hue" } + bwIDs.dropFirst())
+    static let modifierIDs: Set<String> = Set([
+        ["pointHue", "pointRange", "gradingBlending", "gradingBalance", "toningAmount"],
+        gradingZones.map { "grading" + $0 + "Hue" },
+        Array(bwIDs.dropFirst()),
+    ].flatMap { $0 })
 
     /// The value of each control that leaves the picture untouched (or its default, for modifiers).
     public static func neutral(_ id: String) -> Double {
         switch id {
         case "pointRange", "gradingBlending": return 50
-        case "toningAmount": return 100
+        case "toningAmount", "channelRedFromRed", "channelGreenFromGreen", "channelBlueFromBlue": return 100
         default: return 0
         }
     }
@@ -109,6 +119,7 @@ public enum ColorLook {
         c = pointColor(c, v)
         c = blackAndWhite(c, v)
         c = grading(c, v)
+        c = channelMixer(c, v)
         c = toning(c, v)
         return c
     }
@@ -300,6 +311,18 @@ public enum ColorLook {
     static func tintDirection(hue: Double) -> RGB {
         let c = rgb(hue: hue, saturation: 1, lightness: 0.5)
         return c - RGB(1, 1, 1) * c.luma
+    }
+
+    // MARK: - Channel mixer
+
+    /// Rebuilds each channel from the three (on sRGB levels, like Photoshop): red = red-from-red %
+    /// of red + red-from-green % of green + red-from-blue % of blue, and so on.
+    static func channelMixer(_ color: RGB, _ v: Values) -> RGB {
+        func row(_ out: String) -> Double {
+            (v["channel" + out + "FromRed"] * color.r + v["channel" + out + "FromGreen"] * color.g
+                + v["channel" + out + "FromBlue"] * color.b) / 100
+        }
+        return RGB(row("Red"), row("Green"), row("Blue"))
     }
 
     // MARK: - Toning

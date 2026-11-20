@@ -357,3 +357,21 @@
 {"group":"color","text":"toning amount 60","expect":[{"op":"set","control":"toningAmount","value":60}]}
 {"group":"color","text":"less toning amount","expect":[{"op":"nudge","control":"toningAmount","steps":-1}]}
 {"group":"color","text":"reset toning strength","expect":[{"op":"reset","control":"toningAmount"}]}
+{"group":"color","text":"red from red 40","expect":[{"op":"set","control":"channelRedFromRed","value":40}]}
+{"group":"color","text":"red channel red up","expect":[{"op":"nudge","control":"channelRedFromRed","steps":1}]}
+{"group":"color","text":"red from green -30","expect":[{"op":"set","control":"channelRedFromGreen","value":-30}]}
+{"group":"color","text":"reset red from green","expect":[{"op":"reset","control":"channelRedFromGreen"}]}
+{"group":"color","text":"red from blue 120","expect":[{"op":"set","control":"channelRedFromBlue","value":120}]}
+{"group":"color","text":"channel mixer red blue down","expect":[{"op":"nudge","control":"channelRedFromBlue","steps":-1}]}
+{"group":"color","text":"green from red 20","expect":[{"op":"set","control":"channelGreenFromRed","value":20}]}
+{"group":"color","text":"green channel red up","expect":[{"op":"nudge","control":"channelGreenFromRed","steps":1}]}
+{"group":"color","text":"green from green -60","expect":[{"op":"set","control":"channelGreenFromGreen","value":-60}]}
+{"group":"color","text":"reset green from green","expect":[{"op":"reset","control":"channelGreenFromGreen"}]}
+{"group":"color","text":"green from blue 80","expect":[{"op":"set","control":"channelGreenFromBlue","value":80}]}
+{"group":"color","text":"channel mixer green blue down","expect":[{"op":"nudge","control":"channelGreenFromBlue","steps":-1}]}
+{"group":"color","text":"blue from red 10","expect":[{"op":"set","control":"channelBlueFromRed","value":10}]}
+{"group":"color","text":"blue channel red up","expect":[{"op":"nudge","control":"channelBlueFromRed","steps":1}]}
+{"group":"color","text":"blue from green -20","expect":[{"op":"set","control":"channelBlueFromGreen","value":-20}]}
+{"group":"color","text":"reset blue from green","expect":[{"op":"reset","control":"channelBlueFromGreen"}]}
+{"group":"color","text":"blue from blue 150","expect":[{"op":"set","control":"channelBlueFromBlue","value":150}]}
+{"group":"color","text":"channel mixer blue blue down","expect":[{"op":"nudge","control":"channelBlueFromBlue","steps":-1}]}
