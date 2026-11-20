@@ -179,6 +179,11 @@
     {"id": "lut-warm-film", "command": "lut warm film", "control": "lut", "expect": [{"metric": "mean_b", "dir": "down"}, {"metric": "p5_luma", "dir": "up"}]},
     {"id": "lut-bleach-bypass", "command": "lut bleach bypass", "source": "chart", "control": "lut", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "chart"}]},
     {"id": "lut-amount", "command": "lut warm film lut amount 30", "control": "lutAmount", "expect": [{"metric": "mean_b", "dir": "up", "vs": "lut-warm-film"}]},
+    {"id": "profile-vivid", "command": "profile vivid", "source": "chart", "control": "profile", "expect": [{"metric": "mean_sat", "dir": "up", "vs": "chart"}]},
+    {"id": "profile-landscape", "command": "profile landscape", "source": "chart", "control": "profile", "expect": [{"metric": "mean_sat", "dir": "up", "vs": "chart"}]},
+    {"id": "profile-monochrome", "command": "profile monochrome", "control": "profile", "expect": [{"metric": "mean_sat", "dir": "down"}]},
+    {"id": "profile-vintage", "command": "profile vintage", "control": "profile", "expect": [{"metric": "p5_luma", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
+    {"id": "profile-amount", "command": "profile vivid profile amount 200", "source": "chart", "control": "profileAmount", "expect": [{"metric": "mean_sat", "dir": "up", "vs": "profile-vivid"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

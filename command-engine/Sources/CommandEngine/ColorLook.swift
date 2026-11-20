@@ -56,7 +56,7 @@ public enum ColorLook {
 
     /// Control ids that feed the cube, in the order the steps run.
     public static let controlIDs: [String] = [
-        calibrationIDs, mixerIDs, pointIDs, bwIDs, gradingIDs, selectiveIDs, channelIDs, ["toning", "toningAmount"],
+        ["profile", "profileAmount"], calibrationIDs, mixerIDs, pointIDs, bwIDs, gradingIDs, selectiveIDs, channelIDs, ["toning", "toningAmount"],
         ["photoFilter", "photoFilterDensity", "gradientMap", "gradientMapAmount"],
     ].flatMap { $0 }
 
@@ -64,7 +64,7 @@ public enum ColorLook {
     /// change nothing, so they don't count when deciding whether the cube is needed.
     static let modifierIDs: Set<String> = Set([
         ["pointHue", "pointRange", "gradingBlending", "gradingBalance", "toningAmount", "photoFilterDensity",
-         "gradientMapAmount"],
+         "gradientMapAmount", "profileAmount"],
         gradingZones.map { "grading" + $0 + "Hue" },
         Array(bwIDs.dropFirst()),
     ].flatMap { $0 })
@@ -74,7 +74,7 @@ public enum ColorLook {
         switch id {
         case "pointRange", "gradingBlending": return 50
         case "photoFilterDensity": return 25
-        case "toningAmount", "gradientMapAmount", "channelRedFromRed", "channelGreenFromGreen", "channelBlueFromBlue": return 100
+        case "toningAmount", "gradientMapAmount", "profileAmount", "channelRedFromRed", "channelGreenFromGreen", "channelBlueFromBlue": return 100
         default: return 0
         }
     }
@@ -144,7 +144,8 @@ public enum ColorLook {
 
     /// Every cube step, in order, for one colour (sRGB levels).
     public static func transform(_ color: RGB, _ v: Values) -> RGB {
-        var c = calibration(color, v)
+        var c = profile(color, v)
+        c = calibration(c, v)
         c = mixer(c, v)
         c = pointColor(c, v)
         c = blackAndWhite(c, v)
@@ -155,6 +156,56 @@ public enum ColorLook {
         c = photoFilter(c, v)
         c = gradientMap(c, v)
         return c
+    }
+
+    // MARK: - Profile
+
+    /// Option ids of the Profile choice, in controls.json order.
+    public static let profileOptions = ["standard", "vivid", "portrait", "landscape", "neutral", "monochrome", "vintage"]
+
+    /// The base look, first in the chain: Standard changes nothing; the others are fixed recipes of
+    /// contrast, saturation and tint. Profile Amount 0…200 scales the look (100 = as designed).
+    static func profile(_ color: RGB, _ v: Values) -> RGB {
+        let index = Int(v["profile"])
+        guard index > 0, profileOptions.indices.contains(index) else { return color }
+        let looked = profileLook(profileOptions[index], color)
+        return (color + (looked - color) * (v["profileAmount"] / 100)).clamped()
+    }
+
+    /// One profile's recipe on sRGB levels.
+    static func profileLook(_ name: String, _ c: RGB) -> RGB {
+        func saturate(_ c: RGB, _ k: Double) -> RGB { RGB(1, 1, 1) * c.luma + (c - RGB(1, 1, 1) * c.luma) * k }
+        func contrast(_ c: RGB, _ k: Double) -> RGB { RGB(sCurve(c.r, k), sCurve(c.g, k), sCurve(c.b, k)) }
+        switch name {
+        case "vivid":
+            return contrast(saturate(c, 1.3), 0.15)
+        case "portrait":
+            // Softer contrast, a touch warmer, calmer colour (kind to skin).
+            return contrast(saturate(c * RGB(1.03, 1, 0.96), 0.92), -0.08)
+        case "landscape":
+            // Greens and blues richer, a little more contrast.
+            var k = 1.1
+            if c.max - c.min > 1e-6 {
+                for (band, w) in bandWeights(hue: hsl(c).h) where (3...5).contains(band) { k += 0.25 * w }
+            }
+            return contrast(saturate(c, k), 0.1)
+        case "neutral":
+            return contrast(saturate(c, 0.9), -0.15)
+        case "monochrome":
+            let y = sCurve(c.luma, 0.1)
+            return RGB(y, y, y)
+        case "vintage":
+            let faded = saturate(c, 0.8) * RGB(1.04, 1, 0.9)
+            return RGB(0.06 + 0.9 * faded.r, 0.06 + 0.9 * faded.g, 0.06 + 0.9 * faded.b)
+        default:
+            return c
+        }
+    }
+
+    /// Contrast around mid-grey that keeps black, grey and white in place (k −1…1).
+    static func sCurve(_ x: Double, _ k: Double) -> Double {
+        let c = Swift.min(Swift.max(x, 0), 1)
+        return c + k * (c - 0.5) * 4 * c * (1 - c)
     }
 
     // MARK: - Calibration

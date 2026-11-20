@@ -504,4 +504,28 @@ final class ColorTests: XCTestCase {
         let bleach = try CubeLUT.bundled("bleachBypass").lookup(RGB(0.8, 0.2, 0.2))
         XCTAssertLessThan(bleach.max - bleach.min, 0.6 * 0.6)
     }
+
+    // MARK: - Profile
+
+    func testProfileOptionsMatchControlsJSON() {
+        XCTAssertEqual(options("profile"), ColorLook.profileOptions)
+        XCTAssertEqual(parse("profile monochrome"), [.set("profile", 5)])
+        XCTAssertEqual(parse("profile amount 150"), [.set("profileAmount", 150)])
+        XCTAssertEqual(parse("monochrome"), [.set("bw", 1)], "the bare word is still the Black & White switch")
+    }
+
+    func testProfiles() {
+        let red = RGB(0.7, 0.3, 0.2)
+        let vivid = ColorLook.transform(red, look(["profile": 1]))
+        XCTAssertGreaterThan(vivid.max - vivid.min, red.max - red.min)
+        let mono = ColorLook.transform(red, look(["profile": 5]))
+        XCTAssertEqual(mono.r, mono.b)
+        let vintage = ColorLook.transform(RGB(0, 0, 0), look(["profile": 6]))
+        XCTAssertGreaterThan(vintage.r, 0.05, "faded blacks")
+        XCTAssertEqual(ColorLook.transform(red, look(["profile": 0])), red, "Standard changes nothing")
+        let none = ColorLook.transform(red, look(["profile": 1, "profileAmount": 0]))
+        assertClose(none.r, red.r, 1e-9)
+        let double = ColorLook.transform(red, look(["profile": 1, "profileAmount": 200]))
+        XCTAssertGreaterThan(double.max - double.min, vivid.max - vivid.min)
+    }
 }

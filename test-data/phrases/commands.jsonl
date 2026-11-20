@@ -471,3 +471,9 @@
 {"group":"color","text":"lut off","expect":[{"op":"set","control":"lut","value":0}]}
 {"group":"color","text":"lut amount 70","expect":[{"op":"set","control":"lutAmount","value":70}]}
 {"group":"color","text":"lut strength down","expect":[{"op":"nudge","control":"lutAmount","steps":-1}]}
+{"group":"color","text":"profile vivid","expect":[{"op":"set","control":"profile","value":1}]}
+{"group":"color","text":"profile monochrome","expect":[{"op":"set","control":"profile","value":5}]}
+{"group":"color","text":"base look vintage","expect":[{"op":"set","control":"profile","value":6}]}
+{"group":"color","text":"profile standard","expect":[{"op":"set","control":"profile","value":0}]}
+{"group":"color","text":"profile amount 150","expect":[{"op":"set","control":"profileAmount","value":150}]}
+{"group":"color","text":"profile strength down","expect":[{"op":"nudge","control":"profileAmount","steps":-1}]}
