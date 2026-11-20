@@ -152,3 +152,7 @@
 {"group":"light","text":"brightness less less","expect":[{"op":"nudge","control":"brightness","steps":-2}]}
 {"group":"light","text":"reset brightness","expect":[{"op":"reset","control":"brightness"}]}
 {"group":"light","text":"brightnes 40","expect":[{"op":"set","control":"brightness","value":40}]}
+{"group":"light","text":"brilliance more","expect":[{"op":"nudge","control":"brilliance","steps":1}]}
+{"group":"light","text":"brilliance 60","expect":[{"op":"set","control":"brilliance","value":60}]}
+{"group":"light","text":"reset brilliance","expect":[{"op":"reset","control":"brilliance"}]}
+{"group":"light","text":"briliance down","expect":[{"op":"nudge","control":"brilliance","steps":-1}]}

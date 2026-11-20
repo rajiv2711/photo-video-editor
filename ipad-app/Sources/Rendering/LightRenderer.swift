@@ -2,8 +2,8 @@ import CommandEngine
 import CoreImage
 import CoreImage.CIFilterBuiltins
 
-/// The Light panel, in Lightroom's order: exposure → contrast → highlights and shadows → one
-/// tone-curve pass for the global tone controls (the math is ToneCurve in CommandEngine, so it is
+/// The Light panel, in Lightroom's order: exposure → contrast → highlights and shadows (with
+/// brilliance) → brilliance's local contrast → one tone-curve pass for the global tone controls (the math is ToneCurve in CommandEngine, so it is
 /// tested on Linux).
 struct LightRenderer {
     let context: CIContext
@@ -33,14 +33,26 @@ struct LightRenderer {
         // Core Image's local highlight/shadow filter. Highlights below 0 recover bright areas
         // (amount 1 = untouched … 0 = strongest); above 0 they brighten through the tone curve.
         // Shadows lift (up to 1) or deepen (down to −1) the dark areas.
-        let highlightAmount = 1 + min(v("highlights"), 0) / 100
-        let shadowAmount = v("shadows") / 100
+        // Brilliance (Apple Photos) adds a shadow lift and highlight recovery of its own (+), or
+        // deepens shadows (−), plus local contrast below.
+        let brilliance = v("brilliance") / 100
+        let highlightAmount = max(0, 1 + min(v("highlights"), 0) / 100 - 0.4 * max(brilliance, 0))
+        let shadowAmount = min(1, max(-1, v("shadows") / 100 + 0.5 * brilliance))
         if highlightAmount != 1 || shadowAmount != 0 {
             output = output.applyingFilter("CIHighlightShadowAdjust", parameters: [
                 "inputHighlightAmount": highlightAmount,
                 "inputShadowAmount": shadowAmount,
                 "inputRadius": Self.localRadius,
             ])
+        }
+
+        // Brilliance's local contrast: a wide unsharp mask (negative softens it).
+        if brilliance != 0 {
+            let filter = CIFilter.unsharpMask()
+            filter.inputImage = output
+            filter.radius = Float(0.02 * max(image.extent.width, image.extent.height))
+            filter.intensity = Float(0.4 * brilliance)
+            output = filter.outputImage ?? output
         }
 
         output = toneCurve(output, value: value)
