@@ -17,6 +17,29 @@ final class DetailRenderer {
         let side = Double(max(extent.width, extent.height))
         var output = image
 
+        // Luminance noise reduction: a median and blur, used where the picture is flat or lightly
+        // textured (by the local brightness range) and only for brightness, so colours stay put.
+        let luminanceNR = v("noiseReduction") / 100
+        if luminanceNR > 0 {
+            let encoded = Filters.encoded(output)
+            let radius = Detail.pixels(Detail.noiseRadius(amount: luminanceNR, color: false), longSide: side)
+            let soft = Filters.blurred(encoded.applyingFilter("CIMedianFilter"), radius: radius, extent: extent)
+            let range = Filters.localRange(encoded, extent: extent, radius: Detail.pixels(1.5, longSide: side))
+            let smoothed = Filters.blend(soft, over: encoded, mask: Filters.lookup(range, table: Detail.noiseSmoothing(amount: luminanceNR)))
+            let brightnessOnly = smoothed.applyingFilter("CILuminosityBlendMode", parameters: [kCIInputBackgroundImageKey: encoded])
+            output = Filters.linear(brightnessOnly.cropped(to: extent))
+        }
+
+        // Colour noise reduction: the colour of a blurred copy on the brightness of the picture.
+        let chromaNR = v("chromaNoiseReduction") / 100
+        if chromaNR > 0 {
+            let encoded = Filters.encoded(output)
+            let radius = Detail.pixels(Detail.noiseRadius(amount: chromaNR, color: true), longSide: side)
+            let colour = Filters.blurred(encoded, radius: radius, extent: extent)
+                .applyingFilter("CIColorBlendMode", parameters: [kCIInputBackgroundImageKey: encoded])
+            output = Filters.linear(Filters.mix(encoded, colour.cropped(to: extent), min(1, 2 * chromaNR)))
+        }
+
         // Sharpening: an unsharp mask at Radius, plus a finer pass that Detail turns up; Masking
         // keeps flat areas out (by the local brightness range around each pixel).
         let amount = v("sharpening") / 100

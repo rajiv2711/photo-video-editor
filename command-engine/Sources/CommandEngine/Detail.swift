@@ -23,4 +23,19 @@ public enum Detail {
         let edge = 0.2 * Swift.min(1, Swift.max(0, masking))
         return Effects.table(count: 64) { range in edge == 0 ? 1 : Effects.smoothstep(0.5 * edge, 1.5 * edge, range) }
     }
+
+    // MARK: - Noise reduction
+
+    /// Luminance noise reduction (`amount` 0…1): how much of a smoothed copy to use, by the local
+    /// brightness range around a pixel. Flat and lightly textured areas are smoothed; strong edges
+    /// stay. Higher amounts also smooth stronger texture.
+    public static func noiseSmoothing(amount: Double) -> [Double] {
+        let a = Swift.min(1, Swift.max(0, amount))
+        return Effects.table(count: 64) { range in a * (1 - Effects.smoothstep(0.04 + 0.12 * a, 0.1 + 0.25 * a, range)) }
+    }
+
+    /// Blur radius (pixels of a 2048 px photo) for luminance and colour noise reduction (`amount` 0…1).
+    public static func noiseRadius(amount: Double, color: Bool) -> Double {
+        color ? 2 + 6 * amount : 0.8 + 1.5 * amount
+    }
 }

@@ -16,7 +16,8 @@ final class DetailTests: XCTestCase {
     }
 
     func testDetailControlsAreInTheDetailPanel() {
-        for id in ["sharpening", "sharpeningRadius", "sharpeningDetail", "sharpeningMasking"] {
+        for id in ["sharpening", "sharpeningRadius", "sharpeningDetail", "sharpeningMasking", "noiseReduction",
+                   "chromaNoiseReduction"] {
             XCTAssertEqual(registry.control(id: id)?.group, "detail", id)
         }
     }
@@ -50,5 +51,27 @@ final class DetailTests: XCTestCase {
         let masked = Detail.sharpeningMask(masking: 1)
         XCTAssertEqual(masked.first, 0, "flat areas")
         XCTAssertEqual(masked.last, 1, "strong edges")
+    }
+
+    // MARK: - Noise reduction
+
+    func testNoiseReductionNames() {
+        XCTAssertEqual(parse("noise reduction 40"), [.set("noiseReduction", 40)])
+        XCTAssertEqual(parse("denoise up"), [.nudge("noiseReduction", 1)])
+        XCTAssertEqual(parse("chroma noise 50"), [.set("chromaNoiseReduction", 50)])
+        XCTAssertEqual(parse("noise reduction color more"), [.nudge("chromaNoiseReduction", 1)])
+        XCTAssertEqual(parse("noise more"), [.ambiguous("noise", ["noiseReduction", "chromaNoiseReduction"])])
+        XCTAssertEqual(parse("colour less"), [.ambiguous("colour", ["vibrance", "saturation"])], "colour still means two controls")
+        XCTAssertEqual(parse("grain 20"), [.set("grain", 20)], "grain is not noise reduction")
+    }
+
+    func testNoiseSmoothingKeepsEdgesAndGrowsWithAmount() {
+        let light = Detail.noiseSmoothing(amount: 0.3), strong = Detail.noiseSmoothing(amount: 1)
+        XCTAssertEqual(light.last, 0)
+        XCTAssertEqual(strong.last, 0)
+        XCTAssertEqual(strong.first, 1)
+        XCTAssertGreaterThan(strong[10], light[10])
+        XCTAssertEqual(Detail.noiseSmoothing(amount: 0).max(), 0)
+        XCTAssertGreaterThan(Detail.noiseRadius(amount: 1, color: true), Detail.noiseRadius(amount: 1, color: false))
     }
 }

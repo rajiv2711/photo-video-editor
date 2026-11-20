@@ -682,6 +682,12 @@
     {"id": "sharpeningDetail", "label": "Sharpening Detail", "group": "detail", "section": "Sharpening", "kind": "slider",
       "synonyms": ["sharpen detail", "sharpness detail"], "min": 0, "max": 100, "default": 25, "step": 5},
     {"id": "sharpeningMasking", "label": "Sharpening Masking", "group": "detail", "section": "Sharpening", "kind": "slider",
-      "synonyms": ["sharpen masking", "sharpening mask", "sharpness masking"], "min": 0, "max": 100, "default": 0, "step": 5}
+      "synonyms": ["sharpen masking", "sharpening mask", "sharpness masking"], "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "noiseReduction", "label": "Noise Reduction", "group": "detail", "section": "Noise reduction", "kind": "slider",
+      "synonyms": ["noise reduction luminance", "luma noise", "luma noise reduction", "denoise"],
+      "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "chromaNoiseReduction", "label": "Chroma Noise Reduction", "group": "detail", "section": "Noise reduction", "kind": "slider",
+      "synonyms": ["chroma noise", "chrominance noise", "noise reduction color", "noise reduction colour"],
+      "min": 0, "max": 100, "default": 0, "step": 5}
   ]
 }

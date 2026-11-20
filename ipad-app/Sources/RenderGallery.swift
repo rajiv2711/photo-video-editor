@@ -136,8 +136,24 @@ enum RenderGallery {
     /// - "negative": an orange-masked colour negative of the test photo (film negative conversion).
     /// - "chart": colour patches (8 hues × 3 shades, then neutrals), for the colour-band tools.
     /// - "haze": the test photo seen through a bluish-grey haze (dehaze).
+    /// - "noise": the test photo with strong brightness and colour noise (noise reduction).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "noise":
+            // Independent random levels per channel, ±17 % around mid-grey, overlaid on sRGB levels.
+            guard let random = CIFilter(name: "CIRandomGenerator")?.outputImage else { return photo }
+            let area = photo.extent
+            let layer = random.cropped(to: area).settingAlphaOne(in: area).applyingFilter("CIColorMatrix", parameters: [
+                "inputRVector": CIVector(x: 0.35, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: 0, y: 0.35, z: 0, w: 0),
+                "inputBVector": CIVector(x: 0, y: 0, z: 0.35, w: 0),
+                "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+                "inputBiasVector": CIVector(x: 0.325, y: 0.325, z: 0.325, w: 0),
+            ])
+            let noisy = layer.applyingFilter("CIOverlayBlendMode", parameters: [
+                kCIInputBackgroundImageKey: photo.applyingFilter("CILinearToSRGBToneCurve"),
+            ])
+            return noisy.applyingFilter("CISRGBToneCurveToLinear").cropped(to: area)
         case "haze":
             // On sRGB levels: 55 % of the photo + 45 % haze colour.
             let encoded = photo.applyingFilter("CILinearToSRGBToneCurve")
@@ -206,7 +222,8 @@ enum RenderGallery {
     /// go to filters.txt (reports/ci/gallery/filters.txt on the laptop).
     static let filtersToDescribe = ["CIHighlightShadowAdjust", "CIColorCurves", "CIAreaHistogram", "CIUnsharpMask",
                                     "CIVibrance", "CIHueAdjust", "CIColorCubeWithColorSpace", "CIMorphologyGradient",
-                                    "CIMorphologyMinimum", "CIDissolveTransition", "CIBlendWithMask"]
+                                    "CIMorphologyMinimum", "CIDissolveTransition", "CIBlendWithMask", "CIBloom",
+                                    "CIMedianFilter", "CIRandomGenerator"]
 
     private static func writeFilterAttributes(to folder: URL) {
         var text = ""

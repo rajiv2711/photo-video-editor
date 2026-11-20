@@ -1,5 +1,5 @@
 {
-  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart, haze) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
+  "about": "Render test cases. The cloud build runs each command on the test photo, or a picture generated from it (source: warm, negative, chart, haze, noise) (iPad simulator, -renderGallery) and dev-tools/ci_results.py checks the picture against the base case (or the case named in vs). Metrics: mean_luma, p5_luma, p25_luma, p50_luma, p75_luma, p95_luma, mean_sat, mean_r, mean_g, mean_b, diff, peak, edge (fine detail), local_contrast, fringe (colour at edges), corner_luma, center_luma. Directions: up, down, changed, same. \"min\" overrides the smallest change that counts.",
   "cases": [
     {"id": "base", "command": "", "expect": []},
     {"id": "warm-cast", "command": "", "source": "warm", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
@@ -220,6 +220,9 @@
     {"id": "sharpening", "command": "sharpening 150", "control": "sharpening", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_luma", "dir": "same"}]},
     {"id": "sharpening-radius", "command": "sharpening 150 sharpening radius 3", "control": "sharpeningRadius", "expect": [{"metric": "local_contrast", "dir": "up", "vs": "sharpening"}]},
     {"id": "sharpening-detail", "command": "sharpening 150 sharpening detail 100", "control": "sharpeningDetail", "expect": [{"metric": "edge", "dir": "up", "vs": "sharpening"}]},
-    {"id": "sharpening-masking", "command": "sharpening 150 sharpening masking 100", "control": "sharpeningMasking", "expect": [{"metric": "edge", "dir": "down", "vs": "sharpening"}]}
+    {"id": "sharpening-masking", "command": "sharpening 150 sharpening masking 100", "control": "sharpeningMasking", "expect": [{"metric": "edge", "dir": "down", "vs": "sharpening"}]},
+    {"id": "noise-cast", "command": "", "source": "noise", "expect": [{"metric": "edge", "dir": "up"}, {"metric": "mean_sat", "dir": "up"}]},
+    {"id": "noise-reduction", "command": "noise reduction 100", "source": "noise", "control": "noiseReduction", "expect": [{"metric": "edge", "dir": "down", "vs": "noise-cast"}, {"metric": "mean_luma", "dir": "same", "vs": "noise-cast"}]},
+    {"id": "chroma-noise-reduction", "command": "chroma noise reduction 100", "source": "noise", "control": "chromaNoiseReduction", "expect": [{"metric": "mean_sat", "dir": "down", "vs": "noise-cast"}, {"metric": "mean_luma", "dir": "same", "vs": "noise-cast"}]}
   ]
 }
