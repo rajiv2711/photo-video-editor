@@ -53,4 +53,19 @@ public enum Detail {
     public static func moireRadius(amount: Double) -> Double {
         4 + 8 * amount
     }
+
+    // MARK: - High pass
+
+    /// High pass (`amount` 0…1): how far the edge-detail layer (picture − blurred picture, around
+    /// mid-grey) is stretched before it is overlaid on the picture. 0.5 is the usual 100 % overlay.
+    public static func highPassContrast(amount: Double) -> Double {
+        2 * Swift.min(1, Swift.max(0, amount))
+    }
+
+    /// What overlaying the layer does to one level `x` (sRGB) with edge detail `d` (picture − blurred):
+    /// x + 2·min(x, 1 − x)·k·d, so black and white can't clip.
+    public static func highPass(_ x: Double, detail d: Double, amount: Double) -> Double {
+        let layer = 0.5 + highPassContrast(amount: amount) * d
+        return x < 0.5 ? 2 * x * layer : 1 - 2 * (1 - x) * (1 - layer)
+    }
 }

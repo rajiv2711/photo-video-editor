@@ -543,3 +543,7 @@
 {"group":"detail","text":"moire 60","expect":[{"op":"set","control":"moire","value":60}]}
 {"group":"detail","text":"moiré removal more","expect":[{"op":"nudge","control":"moire","steps":1}]}
 {"group":"detail","text":"remove moire max","expect":[{"op":"max","control":"moire"}]}
+{"group":"detail","text":"high pass 50","expect":[{"op":"set","control":"highPass","value":50}]}
+{"group":"detail","text":"highpass more","expect":[{"op":"nudge","control":"highPass","steps":1}]}
+{"group":"detail","text":"high pass radius 6","expect":[{"op":"set","control":"highPassRadius","value":6}]}
+{"group":"detail","text":"reset high pass radius","expect":[{"op":"reset","control":"highPassRadius"}]}

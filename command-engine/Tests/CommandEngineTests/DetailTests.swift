@@ -17,7 +17,7 @@ final class DetailTests: XCTestCase {
 
     func testDetailControlsAreInTheDetailPanel() {
         for id in ["sharpening", "sharpeningRadius", "sharpeningDetail", "sharpeningMasking", "noiseReduction",
-                   "chromaNoiseReduction", "moire"] {
+                   "chromaNoiseReduction", "moire", "highPass", "highPassRadius"] {
             XCTAssertEqual(registry.control(id: id)?.group, "detail", id)
         }
     }
@@ -89,5 +89,22 @@ final class DetailTests: XCTestCase {
         XCTAssertEqual(mask.last, 1)
         XCTAssertEqual(Detail.moireMask(amount: 0).max(), 0)
         XCTAssertGreaterThan(Detail.moireRadius(amount: 1), Detail.moireRadius(amount: 0))
+    }
+
+    // MARK: - High pass
+
+    func testHighPassNames() {
+        XCTAssertEqual(parse("high pass 50"), [.set("highPass", 50)])
+        XCTAssertEqual(parse("highpass more"), [.nudge("highPass", 1)])
+        XCTAssertEqual(parse("high pass radius 6"), [.set("highPassRadius", 6)])
+        XCTAssertEqual(parse("highlights 10"), [.set("highlights", 10)])
+    }
+
+    func testHighPassOverlaySharpensWithoutClipping() {
+        XCTAssertEqual(Detail.highPass(0.4, detail: 0, amount: 1), 0.4, accuracy: 1e-12, "flat areas stay")
+        XCTAssertGreaterThan(Detail.highPass(0.4, detail: 0.05, amount: 0.5), 0.4)
+        XCTAssertLessThan(Detail.highPass(0.4, detail: -0.05, amount: 0.5), 0.4)
+        XCTAssertEqual(Detail.highPass(1, detail: 0.2, amount: 1), 1, "white can't go above white")
+        XCTAssertEqual(Detail.highPass(0, detail: -0.2, amount: 1), 0, "black can't go below black")
     }
 }

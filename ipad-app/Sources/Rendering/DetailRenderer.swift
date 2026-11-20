@@ -74,6 +74,19 @@ final class DetailRenderer {
             output = Filters.linear(sharpened)
         }
 
+        // High pass: the edge-detail layer (picture − blurred picture, around mid-grey), stretched by
+        // the amount and overlaid on the picture (Detail.highPass shows the per-level math).
+        let highPass = v("highPass") / 100
+        if highPass > 0 {
+            let encoded = Filters.encoded(output)
+            let radius = Detail.pixels(value("highPassRadius") ?? 3, longSide: side)
+            let layer = Filters.blurred(encoded, radius: radius, extent: extent)
+                .applyingFilter("CISubtractBlendMode", parameters: [kCIInputBackgroundImageKey: Filters.affine(encoded, scale: 1, bias: 0.5)])
+            let k = Detail.highPassContrast(amount: highPass)
+            let stretched = Filters.affine(layer, scale: k, bias: 0.5 * (1 - k))
+            output = Filters.linear(stretched.applyingFilter("CIOverlayBlendMode", parameters: [kCIInputBackgroundImageKey: encoded]))
+        }
+
         return output
     }
 }

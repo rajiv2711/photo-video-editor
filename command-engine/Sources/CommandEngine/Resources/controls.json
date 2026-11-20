@@ -691,6 +691,10 @@
       "min": 0, "max": 100, "default": 0, "step": 5},
     {"id": "moire", "label": "Moiré", "group": "detail", "kind": "slider",
       "synonyms": ["moire", "moire removal", "moiré removal", "remove moire", "moire reduction", "moiré reduction"],
-      "min": 0, "max": 100, "default": 0, "step": 5}
+      "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "highPass", "label": "High Pass", "group": "detail", "section": "High pass", "kind": "slider",
+      "synonyms": ["highpass", "high-pass", "high pass sharpening", "high pass amount"], "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "highPassRadius", "label": "High Pass Radius", "group": "detail", "section": "High pass", "kind": "slider",
+      "synonyms": ["highpass radius", "high-pass radius"], "min": 1, "max": 20, "default": 3, "step": 0.5}
   ]
 }
