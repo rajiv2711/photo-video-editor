@@ -40,6 +40,13 @@ final class ColorTests: XCTestCase {
         XCTAssertEqual(parse("whites 20 white balance shade"), [.set("whites", 20), .set("whiteBalance", 4)])
     }
 
+    func testWhiteBalancePickerIsAnActionThatRunsByName() {
+        XCTAssertEqual(registry.control(id: "wbPicker")?.kind, .action)
+        XCTAssertEqual(parse("white balance picker"), [.run("wbPicker")])
+        XCTAssertEqual(parse("pick white"), [.run("wbPicker")])
+        XCTAssertEqual(parse("white balance cloudy"), [.set("whiteBalance", 3)], "the picker's name doesn't swallow presets")
+    }
+
     func testAsShotAndDaylightLeaveTheColoursAlone() {
         for preset in ["asShot", "auto", "daylight"] {
             let offset = WhiteBalance.offset(preset: preset)

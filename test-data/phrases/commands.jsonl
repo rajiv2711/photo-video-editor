@@ -202,3 +202,6 @@
 {"group":"color","text":"tint -20","expect":[{"op":"set","control":"tint","value":-20}]}
 {"group":"color","text":"reset tint","expect":[{"op":"reset","control":"tint"}]}
 {"group":"color","text":"temperature 20 tint 10","expect":[{"op":"set","control":"temperature","value":20},{"op":"set","control":"tint","value":10}]}
+{"group":"color","text":"white balance picker","expect":[{"op":"run","control":"wbPicker"}]}
+{"group":"color","text":"pick white","expect":[{"op":"run","control":"wbPicker"}]}
+{"group":"color","text":"eyedropper","expect":[{"op":"run","control":"wbPicker"}]}

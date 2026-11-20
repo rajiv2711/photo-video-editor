@@ -308,6 +308,14 @@
       "step": 5
     },
     {
+      "id": "wbPicker",
+      "label": "White Balance Picker",
+      "group": "color",
+      "kind": "action",
+      "synonyms": ["wb picker", "white picker", "pick white", "pick white balance", "neutral picker", "pick neutral",
+                   "eyedropper", "eye dropper"]
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

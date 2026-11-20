@@ -31,7 +31,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 16. **White balance presets** — As Shot, Auto, Daylight, Cloudy, Shade, Tungsten, Fluorescent, Flash
 - [x] 17. **Temperature** — blue ↔ yellow
 - [x] 18. **Tint** — green ↔ magenta
-- [ ] 19. **White balance picker** — tap something that should be neutral grey
+- [x] 19. **White balance picker** — tap something that should be neutral grey
 - [ ] 20. **Vibrance** — boost muted colours, protect skin
 - [x] 21. **Saturation** — intensity of all colours
 - [ ] 22. **Hue** — rotate all colours around the colour wheel

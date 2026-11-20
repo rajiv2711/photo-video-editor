@@ -56,6 +56,19 @@ struct EditorView: View {
                     .resizable()
                     .allowedDynamicRange(model.isHDR ? Image.DynamicRange.high : Image.DynamicRange.standard)
                     .scaledToFit()
+                    .overlay {
+                        // A picker tool (e.g. white balance) waits for a tap on the photo.
+                        if model.armedPicker != nil {
+                            GeometryReader { geo in
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { location in
+                                        model.tap(atX: location.x / geo.size.width, y: location.y / geo.size.height)
+                                    }
+                            }
+                            .border(Color.accentColor, width: 2)
+                        }
+                    }
                     .padding(24)
             }
         }

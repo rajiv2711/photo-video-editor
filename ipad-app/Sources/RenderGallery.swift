@@ -32,6 +32,8 @@ enum RenderGallery {
         let expect: [Expectation]
         /// A generated picture to start from instead of the test photo (see `sourceImage`).
         let source: String?
+        /// A tap on the photo after the command (picker tools): x, y from the top-left, 0…1.
+        let tap: [Double]?
     }
 
     struct CaseFile: Codable {
@@ -103,6 +105,9 @@ enum RenderGallery {
             model.startOver()
             if !item.command.isEmpty {
                 model.run(item.command)
+            }
+            if let tap = item.tap, tap.count == 2 {
+                model.tap(atX: tap[0], y: tap[1])
             }
             let edited = model.editedPreview()
             let file = "\(item.id).jpg"

@@ -20,6 +20,8 @@ final class EditorModel: ObservableObject {
     @Published private(set) var feedback: Feedback?
     @Published private(set) var focusedControlID: String?
     @Published private(set) var voiceState: VoiceState = .idle
+    /// A picker tool waiting for a tap on the photo (its control id, e.g. "wbPicker").
+    @Published private(set) var armedPicker: String?
 
     enum VoiceState: Equatable {
         case idle, listening, transcribing
@@ -81,6 +83,7 @@ final class EditorModel: ObservableObject {
         installActions()
         focusedControlID = nil
         feedback = nil
+        armedPicker = nil
         render()
     }
 
@@ -115,7 +118,56 @@ final class EditorModel: ObservableObject {
         let outcomes = interpreter.apply([.run(control.id)], state: &state)
         focusedControlID = interpreter.lastControlID
         feedback = describe(outcomes)
+        armPickers(outcomes)
         render()
+    }
+
+    // MARK: - Pickers (tap the photo)
+
+    /// Picker tools and what they ask the user to tap.
+    static let pickers: [String: String] = [
+        "wbPicker": "Tap something on the photo that should be neutral grey.",
+    ]
+
+    /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
+    private func armPickers(_ outcomes: [CommandInterpreter.Outcome]) {
+        for case .ran(let id) in outcomes {
+            if let hint = Self.pickers[id] {
+                armedPicker = id
+                feedback = Feedback(text: hint)
+            }
+        }
+    }
+
+    /// The photo was tapped while a picker waited: `x`, `y` from the top-left corner, 0…1.
+    func tap(atX x: Double, y: Double) {
+        guard let picker = armedPicker else { return }
+        armedPicker = nil
+        switch picker {
+        case "wbPicker":
+            // The colour the white balance step sees there (a small square), made neutral.
+            let image = renderer.whiteBalanceInput(previewSource, value: currentValue)
+            let color = ImageStats.averageColor(of: image, in: Self.spot(x, y, in: image.extent), context: renderer.context)
+            let found = WhiteBalance.neutralize(color)
+            let outcomes = interpreter.apply([
+                .set("whiteBalance", 0),
+                .set("temperature", found.temperature.rounded()),
+                .set("tint", found.tint.rounded()),
+            ], state: &state)
+            focusedControlID = interpreter.lastControlID
+            feedback = describe(outcomes)
+        default:
+            break
+        }
+        render()
+    }
+
+    /// A small square (1 % of the long side) around a point given from the top-left, 0…1.
+    private static func spot(_ x: Double, _ y: Double, in extent: CGRect) -> CGRect {
+        let side = max(3, 0.01 * max(extent.width, extent.height))
+        let cx = extent.minX + CGFloat(min(max(x, 0), 1)) * extent.width
+        let cy = extent.minY + CGFloat(1 - min(max(y, 0), 1)) * extent.height
+        return CGRect(x: cx - side / 2, y: cy - side / 2, width: side, height: side).intersection(extent)
     }
 
     func choose(_ control: Control) {
@@ -131,6 +183,7 @@ final class EditorModel: ObservableObject {
         var result = describe(outcomes)
         if heard { result.text = "Heard “\(trimmed)” · " + result.text }
         feedback = result
+        armPickers(outcomes)
         render()
     }
 

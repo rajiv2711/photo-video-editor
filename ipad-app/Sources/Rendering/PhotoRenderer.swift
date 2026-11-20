@@ -32,6 +32,11 @@ final class PhotoRenderer {
         return output.cropped(to: image.extent)
     }
 
+    /// The picture the white balance step works on (what the white balance picker samples).
+    func whiteBalanceInput(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+        image
+    }
+
     /// Pixels for the screen. `hdr` keeps levels above white (half floats, extended Display P3),
     /// so an XDR display can show them brighter than SDR white.
     func uiImage(_ image: CIImage, hdr: Bool = false) -> UIImage? {
