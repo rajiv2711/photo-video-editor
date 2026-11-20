@@ -3,8 +3,8 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 
 /// The Light panel, in Lightroom's order: exposure → contrast → highlights and shadows (with
-/// brilliance) → brilliance's local contrast → one tone-curve pass for the global tone controls (the math is ToneCurve in CommandEngine, so it is
-/// tested on Linux).
+/// brilliance) → brilliance's local contrast → one tone-curve pass for the global tone controls →
+/// equalize. (The curve math is ToneCurve in CommandEngine, so it is tested on Linux.)
 struct LightRenderer {
     let context: CIContext
 
@@ -56,6 +56,13 @@ struct LightRenderer {
         }
 
         output = toneCurve(output, value: value)
+
+        // Equalize: spread the brightness levels evenly, from this picture's own histogram.
+        if v("equalize") != 0 {
+            let histogram = ImageStats.lumaHistogram(of: output, extent: image.extent, context: context)
+            let table = ToneCurve.equalize(histogram: histogram)
+            output = Self.curves(output, table: table.flatMap { [Float($0), Float($0), Float($0)] }, maxInput: 1)
+        }
         return output
     }
 

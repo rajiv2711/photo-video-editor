@@ -22,7 +22,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 10. **Tone curve (parametric)** — highlights / lights / darks / shadows region sliders
 - [x] 11. **Tone curve (point)** — drag points on a curve, per RGB channel
 - [x] 12. **Levels** — input/output black, white and gamma
-- [ ] 13. **Equalize** — spread brightness evenly over the histogram
+- [x] 13. **Equalize** — spread brightness evenly over the histogram
 - [ ] 14. **Auto** — one-tap automatic light and colour
 - [ ] 15. **HDR editing** — edit and export with extended brightness (iPad XDR screen)
 

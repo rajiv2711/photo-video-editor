@@ -136,6 +136,27 @@ public enum ToneCurve {
             + (-2 * t3 + 3 * t2) * ys[k + 1] + (t3 - t2) * h * m[k + 1]
     }
 
+    /// Histogram equalization: a table (same for every channel) that spreads the levels evenly.
+    /// `histogram` holds the share of pixels per brightness bin, darkest first.
+    public static func equalize(histogram: [Double], size: Int = 256) -> [Double] {
+        let total = histogram.reduce(0, +)
+        guard total > 0, histogram.count > 1 else { return (0..<size).map { Double($0) / Double(size - 1) } }
+        var cumulative: [Double] = []
+        var sum = 0.0
+        for share in histogram {
+            sum += share / total
+            cumulative.append(sum)
+        }
+        let first = cumulative.first { $0 > 0 } ?? 0
+        let bins = histogram.count
+        return (0..<size).map { i in
+            let x = Double(i) / Double(size - 1) * Double(bins - 1)
+            let j = Swift.min(Int(x), bins - 2)
+            let c = cumulative[j] + (cumulative[j + 1] - cumulative[j]) * (x - Double(j))
+            return first >= 1 ? Double(i) / Double(size - 1) : Swift.min(Swift.max((c - first) / (1 - first), 0), 1)
+        }
+    }
+
     /// The controls' values and the tone steps, in order.
     private struct Values {
         let values: [String: Double]

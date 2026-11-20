@@ -177,3 +177,8 @@
 {"group":"light","text":"levels gamma up","expect":[{"op":"nudge","control":"levelsGamma","steps":1}]}
 {"group":"light","text":"reset input white","expect":[{"op":"reset","control":"levelsInWhite"}]}
 {"group":"light","text":"output black 30 input white 230","expect":[{"op":"set","control":"levelsOutBlack","value":30},{"op":"set","control":"levelsInWhite","value":230}]}
+{"group":"light","text":"equalize on","expect":[{"op":"set","control":"equalize","value":1}]}
+{"group":"light","text":"equalize off","expect":[{"op":"set","control":"equalize","value":0}]}
+{"group":"light","text":"equalize","expect":[{"op":"set","control":"equalize","value":1}]}
+{"group":"light","text":"turn off equalise","expect":[{"op":"set","control":"equalize","value":0}]}
+{"group":"light","text":"reset equalize","expect":[{"op":"reset","control":"equalize"}]}

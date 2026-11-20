@@ -128,6 +128,20 @@ final class ToneCurveTests: XCTestCase {
         assertMonotone(["levelsInBlack": 100, "levelsInWhite": 100])
     }
 
+    func testEqualizeSpreadsANarrowHistogram() {
+        let flat = [Double](repeating: 1, count: 256)
+        let identity = ToneCurve.equalize(histogram: flat, size: 11)
+        for (i, y) in identity.enumerated() { XCTAssertEqual(y, Double(i) / 10, accuracy: 0.01) }
+
+        var narrow = [Double](repeating: 0, count: 256)
+        for i in 102...153 { narrow[i] = 1 }  // levels 0.4…0.6 only
+        let table = ToneCurve.equalize(histogram: narrow, size: 256)
+        XCTAssertEqual(table[102], 0, accuracy: 0.03)
+        XCTAssertEqual(table[128], 0.5, accuracy: 0.03)
+        XCTAssertEqual(table[153], 1, accuracy: 0.03)
+        for i in table.indices.dropFirst() { XCTAssertGreaterThanOrEqual(table[i], table[i - 1]) }
+    }
+
     func testHDRRangeContinuesAboveWhite() {
         XCTAssertEqual(out(["whites": 100], 1, maxInput: 4), 1.25, accuracy: 0.01, "HDR keeps whites above 1")
         XCTAssertEqual(out([:], 2.5, maxInput: 4), 2.5, accuracy: 0.01)

@@ -33,6 +33,7 @@
     {"id": "levels-gamma", "command": "gamma 2", "control": "levelsGamma", "expect": [{"metric": "p25_luma", "dir": "up"}]},
     {"id": "levels-output-black", "command": "output black 60", "control": "levelsOutBlack", "expect": [{"metric": "p5_luma", "dir": "up"}]},
     {"id": "levels-output-white", "command": "output white 180", "control": "levelsOutWhite", "expect": [{"metric": "p95_luma", "dir": "down"}]},
+    {"id": "equalize-on", "command": "equalize on", "control": "equalize", "expect": [{"metric": "diff", "dir": "changed"}, {"metric": "p50_luma", "dir": "down"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

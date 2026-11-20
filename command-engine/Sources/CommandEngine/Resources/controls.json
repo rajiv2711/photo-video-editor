@@ -248,6 +248,13 @@
       "step": 5
     },
     {
+      "id": "equalize",
+      "label": "Equalize",
+      "group": "light",
+      "kind": "toggle",
+      "synonyms": ["equalise", "equalization", "equalisation", "histogram equalize"]
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",
