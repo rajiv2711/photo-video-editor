@@ -700,3 +700,8 @@
 {"group":"retouch","text":"delete spot 2","expect":[{"op":"run","control":"deleteSpot","value":2}]}
 {"group":"retouch","text":"undo last spot","expect":[{"op":"run","control":"undoSpot"}]}
 {"group":"retouch","text":"remove last spot","expect":[{"op":"run","control":"undoSpot"}]}
+{"group":"retouch","text":"heal","expect":[{"op":"run","control":"healTool"}]}
+{"group":"retouch","text":"healing brush","expect":[{"op":"run","control":"healTool"}]}
+{"group":"retouch","text":"heal brush size 3","expect":[{"op":"run","control":"healTool"},{"op":"set","control":"brushSize","value":3}]}
+{"group":"retouch","text":"clone source","expect":[{"op":"run","control":"spotSource"}]}
+{"group":"retouch","text":"pick source","expect":[{"op":"run","control":"spotSource"}]}

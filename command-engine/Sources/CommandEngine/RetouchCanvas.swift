@@ -158,7 +158,11 @@ public final class RetouchCanvas {
             drawn.append(draw(step, on: &image))
         }
         last = (steps, drawn, image)
-        return RetouchResult(image: image, sources: [:])
+        var sources: [Int: MaskPoint] = [:]
+        for (i, step) in steps.enumerated() where step.offset == nil {
+            if let offset = drawn[i].offset { sources[i] = offset }
+        }
+        return RetouchResult(image: image, sources: sources)
     }
 
     /// Draws one step on `image`; returns the step as drawn (an automatic source filled in).
@@ -209,14 +213,43 @@ public final class RetouchCanvas {
             let r = radius(step)
             let margin = Swift.max(16, Int(2 * r), Int(0.3 * Double(Swift.max(write.width, write.height))))
             return Plan(read: write.expanded(by: margin, width: width, height: height), write: write)
+        case "heal":
+            // A pixel more on each side for the edge the colours are matched on; the source box too.
+            let box = write.expanded(by: 2, width: width, height: height)
+            guard let o = pixels(step.offset) else { return nil }
+            return Plan(read: union(box, shifted(box, o, width: width, height: height)), write: box)
         default:
             return nil
         }
     }
 
-    /// Fills in what a step leaves to the canvas (none so far).
+    /// Fills in what a step leaves to the canvas: a copying tool's source, picked nearby.
     func resolve(_ step: Retouch, on image: RGBBuffer) -> Retouch {
-        step
+        guard RetouchTools.copying.contains(step.tool), step.offset == nil else { return step }
+        let box = footprintBox(step, width: image.width, height: image.height)
+        guard !box.isEmpty else { return step }
+        let hole = footprint(step, in: box).map { $0 > 0.02 }
+        var out = step
+        if let found = Healing.pickSource(hole: hole, box: box, image: image, diameter: 2 * radius(step), brightness: step.tool != "heal") {
+            out.offset = MaskPoint(Double(found.dx) / Double(image.width), Double(found.dy) / Double(image.height))
+        }
+        return out
+    }
+
+    /// An offset as whole pixels.
+    func pixels(_ offset: MaskPoint?) -> (dx: Int, dy: Int)? {
+        offset.map { (Int(($0.x * Double(base.width)).rounded()), Int(($0.y * Double(base.height)).rounded())) }
+    }
+
+    /// `box` moved by an offset, cut to the picture.
+    func shifted(_ box: PixelBox, _ o: (dx: Int, dy: Int), width: Int, height: Int) -> PixelBox {
+        PixelBox(x0: box.x0 + o.dx, y0: box.y0 + o.dy, x1: box.x1 + o.dx, y1: box.y1 + o.dy).expanded(by: 0, width: width, height: height)
+    }
+
+    /// The smallest box holding both (an empty one counts as nothing).
+    func union(_ a: PixelBox, _ b: PixelBox) -> PixelBox {
+        if b.isEmpty { return a }
+        return PixelBox(x0: Swift.min(a.x0, b.x0), y0: Swift.min(a.y0, b.y0), x1: Swift.max(a.x1, b.x1), y1: Swift.max(a.y1, b.y1))
     }
 
     /// The step's pixels in its write box, at full opacity.
@@ -224,6 +257,8 @@ public final class RetouchCanvas {
         switch step.tool {
         case "remove":
             return remove(step, plan: plan, image: image)
+        case "heal":
+            return heal(step, plan: plan, image: image)
         default:
             return image.crop(plan.write).pixels
         }
@@ -283,6 +318,38 @@ public final class RetouchCanvas {
         let cover = footprint(step, in: plan.read)
         let filled = Inpaint.fill(crop, hole: cover.map { $0 > 0.02 })
         return blend(filled, over: crop, cover: cover, from: plan.read, to: plan.write)
+    }
+
+    // MARK: - Heal
+
+    /// The source's pixels with the membrane added (so they meet the colours around the spot), blended in
+    /// by the brush's soft edge.
+    private func heal(_ step: Retouch, plan: Plan, image: RGBBuffer) -> [Float] {
+        let box = plan.write
+        guard let o = pixels(step.offset) else { return image.crop(box).pixels }
+        let here = image.crop(box)
+        let source = copied(image, box: box, offset: o)
+        let cover = footprint(step, in: box)
+        let difference = zip(here.pixels, source.pixels).map { $0 - $1 }
+        let correction = Healing.membrane(difference, hole: cover.map { $0 > 0.02 }, width: box.width, height: box.height)
+        let healed = RGBBuffer(width: box.width, height: box.height, pixels: zip(source.pixels, correction).map { $0 + $1 })
+        return blend(healed, over: here, cover: cover, from: box, to: box)
+    }
+
+    /// The pixels `offset` away from each pixel of `box` (the picture's edge repeated outside it).
+    func copied(_ image: RGBBuffer, box: PixelBox, offset o: (dx: Int, dy: Int)) -> RGBBuffer {
+        var out = [Float](repeating: 0, count: box.width * box.height * 3)
+        for y in 0..<box.height {
+            let sy = Swift.min(image.height - 1, Swift.max(0, box.y0 + y + o.dy))
+            for x in 0..<box.width {
+                let sx = Swift.min(image.width - 1, Swift.max(0, box.x0 + x + o.dx))
+                let c = image.color(sx, sy), i = 3 * (y * box.width + x)
+                out[i] = c.0
+                out[i + 1] = c.1
+                out[i + 2] = c.2
+            }
+        }
+        return RGBBuffer(width: box.width, height: box.height, pixels: out)
     }
 
     /// `top` over `bottom` (both pictures of the `from` box) by `cover`, cut to the `to` box.

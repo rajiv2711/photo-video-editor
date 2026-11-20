@@ -22,17 +22,29 @@ public struct Retouch: Hashable, Codable {
     public var size: Double
     /// Soft edge, % of the radius.
     public var feather: Double
+    /// Where a copying tool (heal, …) takes its pixels from: source = destination + offset, as shares of
+    /// the photo's width and height. Nil until picked: the canvas then picks one nearby (and the app
+    /// keeps it in the edit).
+    public var offset: MaskPoint?
     /// Settings by control id (opacity, …), copied from the panel when the step was made.
     public var values: [String: Double]
 
     public init(tool: String, points: [MaskPoint], pressure: [Double] = [], size: Double = 10, feather: Double = 50,
-                values: [String: Double] = [:]) {
+                offset: MaskPoint? = nil, values: [String: Double] = [:]) {
         self.tool = tool
         self.points = points
         self.pressure = pressure
         self.size = size
         self.feather = feather
+        self.offset = offset
         self.values = values
+    }
+
+    /// The middle of the stroke's points (a tap: the tap), from the top-left, 0…1.
+    public var centre: MaskPoint {
+        guard let first = points.first else { return MaskPoint(0.5, 0.5) }
+        let xs = points.map(\.x), ys = points.map(\.y)
+        return points.count == 1 ? first : MaskPoint((xs.min()! + xs.max()!) / 2, (ys.min()! + ys.max()!) / 2)
     }
 
     /// Opacity 0…1 (the "spotOpacity" value, 100 % when missing).
@@ -45,7 +57,10 @@ public struct Retouch: Hashable, Codable {
 /// which per-step settings each keeps.
 public enum RetouchTools {
     /// Option ids of the "retouchTool" choice; must match controls.json (unit-tested).
-    public static let ids = ["none", "remove"]
+    public static let ids = ["none", "remove", "heal"]
+
+    /// Tools that copy from a source spot (its `offset`; "clone source" picks it by a tap).
+    public static let copying: Set<String> = ["heal"]
 
     /// The controls a new step of `tool` copies from the panel (and keeps as its own settings).
     public static func settings(for tool: String) -> [String] {

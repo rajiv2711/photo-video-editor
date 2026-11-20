@@ -95,6 +95,13 @@ struct RetouchPanel: View {
             if let opacity = model.registry.control(id: "spotOpacity"), model.state.selectedRetouch != nil {
                 ControlRow(model: model, control: opacity)
             }
+            if let s = model.state.selectedRetouch, RetouchTools.copying.contains(model.state.retouches[s].tool),
+               let source = model.registry.control(id: "spotSource") {
+                Button("Choose source…") { model.runAction(source) }
+                    .buttonStyle(.bordered)
+                    .font(.footnote)
+                    .padding(.horizontal, 10)
+            }
             Button("Undo last spot") { model.apply([.run("undoSpot")]) }
                 .buttonStyle(.bordered)
                 .font(.footnote)
@@ -142,27 +149,43 @@ struct RetouchCanvasView: View {
         .onChange(of: tool) { _, _ in points = [] }
     }
 
-    /// The spots made so far: a ring for a tap, the stroke's band for a stroke.
+    /// The spots made so far: a ring for a tap, the stroke's band for a stroke; the selected one's
+    /// source (copying tools) dashed, with a line to it.
     private func outlines(_ size: CGSize) -> some View {
         ZStack {
             ForEach(Array(model.state.retouches.enumerated()), id: \.offset) { item in
-                let step = item.element
                 let selected = model.state.selectedRetouch == item.offset
-                let width = brushWidth(step.size, size)
-                let line = step.points.map { CGPoint(x: CGFloat($0.x) * size.width, y: CGFloat($0.y) * size.height) }
-                if line.count == 1, let centre = line.first {
-                    Circle()
-                        .stroke(Color.white.opacity(selected ? 0.95 : 0.5), lineWidth: selected ? 2 : 1)
-                        .frame(width: width, height: width)
-                        .position(centre)
-                } else {
-                    Path { path in path.addLines(line) }
-                        .stroke(Color.white.opacity(selected ? 0.35 : 0.15),
-                                style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
+                outline(item.element.points, width: brushWidth(item.element.size, size), size: size, selected: selected, dashed: false)
+                if selected, let offset = item.element.offset {
+                    let moved = item.element.points.map { MaskPoint($0.x + offset.x, $0.y + offset.y) }
+                    outline(moved, width: brushWidth(item.element.size, size), size: size, selected: true, dashed: true)
+                    Path { path in
+                        let c = item.element.centre
+                        path.move(to: CGPoint(x: CGFloat(c.x) * size.width, y: CGFloat(c.y) * size.height))
+                        path.addLine(to: CGPoint(x: CGFloat(c.x + offset.x) * size.width, y: CGFloat(c.y + offset.y) * size.height))
+                    }
+                    .stroke(Color.white.opacity(0.8), lineWidth: 1)
                 }
             }
         }
         .allowsHitTesting(false)
+    }
+
+    /// One spot's outline: a ring for a tap, a band for a stroke.
+    @ViewBuilder
+    private func outline(_ points: [MaskPoint], width: CGFloat, size: CGSize, selected: Bool, dashed: Bool) -> some View {
+        let line = points.map { CGPoint(x: CGFloat($0.x) * size.width, y: CGFloat($0.y) * size.height) }
+        if line.count == 1, let centre = line.first {
+            Circle()
+                .stroke(Color.white.opacity(selected ? 0.95 : 0.5),
+                        style: StrokeStyle(lineWidth: selected ? 2 : 1, dash: dashed ? [5, 4] : []))
+                .frame(width: width, height: width)
+                .position(centre)
+        } else {
+            Path { path in path.addLines(line) }
+                .stroke(Color.white.opacity(dashed ? 0.6 : selected ? 0.35 : 0.15),
+                        style: StrokeStyle(lineWidth: dashed ? 1.5 : width, lineCap: .round, lineJoin: .round, dash: dashed ? [5, 4] : []))
+        }
     }
 
     /// A brush diameter (% of the photo's long side) on screen.

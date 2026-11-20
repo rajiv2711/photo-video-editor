@@ -735,7 +735,7 @@
     {"id": "deleteMask", "label": "Delete Mask", "group": "masks", "kind": "action",
       "synonyms": ["remove mask", "mask delete", "delete this mask"]},
     {"id": "brushSize", "label": "Brush Size", "group": "masks", "section": "Brush", "kind": "slider",
-      "synonyms": ["brush radius", "brush diameter"], "min": 1, "max": 100, "default": 10, "step": 2},
+      "synonyms": ["brush radius", "brush diameter", "size"], "min": 1, "max": 100, "default": 10, "step": 2},
     {"id": "brushFeather", "label": "Brush Feather", "group": "masks", "section": "Brush", "kind": "slider",
       "synonyms": ["brush softness", "brush soft", "brush hardness"], "min": 0, "max": 100, "default": 50, "step": 5},
     {"id": "brushFlow", "label": "Brush Flow", "group": "masks", "section": "Brush", "kind": "slider",
@@ -900,7 +900,8 @@
       "synonyms": ["retouching tool", "tool"],
       "options": [
         {"id": "none", "label": "None", "synonyms": ["off", "no tool"]},
-        {"id": "remove", "label": "Remove Brush", "synonyms": ["remove"]}
+        {"id": "remove", "label": "Remove Brush", "synonyms": ["remove"]},
+        {"id": "heal", "label": "Heal", "synonyms": ["healing"]}
       ]},
     {"id": "removeBrush", "label": "Remove Brush", "group": "retouch", "kind": "action", "tool": "remove",
       "synonyms": ["remove tool", "content aware remove", "content-aware remove", "content aware fill", "content-aware fill",
@@ -912,6 +913,11 @@
     {"id": "deleteSpot", "label": "Delete Spot", "group": "retouch", "kind": "action",
       "synonyms": ["spot delete", "delete this spot", "delete retouch", "delete stroke"]},
     {"id": "undoSpot", "label": "Undo Last Spot", "group": "retouch", "kind": "action",
-      "synonyms": ["undo spot", "undo last stroke", "undo stroke", "undo last retouch", "undo retouch", "remove last spot", "delete last spot"]}
+      "synonyms": ["undo spot", "undo last stroke", "undo stroke", "undo last retouch", "undo retouch", "remove last spot", "delete last spot"]},
+    {"id": "healTool", "label": "Heal", "group": "retouch", "kind": "action", "tool": "heal",
+      "synonyms": ["heal brush", "healing brush", "healing", "heal tool", "spot healing", "spot heal", "spot healing brush",
+                   "spot removal", "heal spot"]},
+    {"id": "spotSource", "label": "Spot Source", "group": "retouch", "kind": "action",
+      "synonyms": ["clone source", "heal source", "source", "pick source", "set source", "choose source", "source point"]}
   ]
 }

@@ -262,6 +262,7 @@ final class EditorModel: ObservableObject {
     static let pickers: [String: String] = [
         "wbPicker": "Tap something on the photo that should be neutral grey.",
         "pointColorPicker": "Tap the colour on the photo you want to change.",
+        "spotSource": "Tap where the selected spot should copy from.",
     ]
 
     /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
@@ -305,6 +306,13 @@ final class EditorModel: ObservableObject {
                 feedback = describe(outcomes)
             } else {
                 feedback = Feedback(text: "That spot is grey. Tap a coloured area.", isProblem: true)
+            }
+        case "spotSource":
+            // The selected spot copies from around the tapped point.
+            if let s = state.selectedRetouch {
+                let centre = state.retouches[s].centre
+                state.retouches[s].offset = MaskPoint(x - centre.x, y - centre.y)
+                feedback = Feedback(text: "Spot \(s + 1): source set")
             }
         default:
             break
@@ -481,6 +489,16 @@ final class EditorModel: ObservableObject {
 
     private func render() {
         preview = renderer.uiImage(editedPreview(), hdr: isHDR)
+        pinRetouchSources()
+    }
+
+    /// Spots whose source the canvas picked keep it in the edit: it stays put when other spots change,
+    /// shows on the photo, and the saved photo copies from the same place.
+    private func pinRetouchSources() {
+        guard let done = renderer.retouch.finished, !done.sources.isEmpty, done.steps == state.retouches else { return }
+        for (i, offset) in done.sources where state.retouches.indices.contains(i) && state.retouches[i].offset == nil {
+            state.retouches[i].offset = offset
+        }
     }
 
     private func describe(_ outcomes: [CommandInterpreter.Outcome]) -> Feedback {
@@ -564,6 +582,7 @@ final class EditorModel: ObservableObject {
     /// What to do on the photo with a retouch tool.
     static let toolHints: [String: String] = [
         "remove": "paint over what to remove",
+        "heal": "tap or paint over a spot; it takes texture from nearby, matched to the colours around it (“clone source”, then tap, to choose where from)",
     ]
 
     /// What to do on the photo after making a mask part.

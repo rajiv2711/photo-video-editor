@@ -255,6 +255,12 @@ public struct CommandApplier {
             state.retouches.remove(at: s)
             state.selectRetouch(nil)
             return [.ran(controlID: control.id), .retouched(spot: s + 1, event: .deleted)]
+        case "spotSource":
+            // A tap on the photo then sets the selected spot's source (the app arms a picker on .ran).
+            guard let s = state.selectedRetouch, RetouchTools.copying.contains(state.retouches[s].tool) else {
+                return [.needsSpot(controlID: control.id)]
+            }
+            return [.ran(controlID: control.id)]
         case "undoSpot":
             guard !state.retouches.isEmpty else { return [.needsSpot(controlID: control.id)] }
             state.retouches.removeLast()

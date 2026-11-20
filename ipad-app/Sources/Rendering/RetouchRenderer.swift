@@ -54,7 +54,14 @@ final class RetouchRenderer {
     func apply(_ image: CIImage, steps: [Retouch], source: CIImage, key: [Double], wait: Bool) -> CIImage {
         guard !steps.isEmpty else { return image }
         let slot = self.slot(for: image, source: source, key: key)
-        if let finished = slot.finished, finished.steps == steps { return finished.image }
+        if let finished = slot.finished {
+            if finished.steps == steps { return finished.image }
+            // The same steps with the sources picked for them now kept in the edit: the same picture.
+            if !finished.sources.isEmpty, Self.pinned(finished.steps, finished.sources) == steps {
+                slot.finished = (steps: steps, image: finished.image, sources: [:])
+                return finished.image
+            }
+        }
         let extent = slot.extent
         if wait {
             var result: RetouchResult?
@@ -82,6 +89,13 @@ final class RetouchRenderer {
             }
         }
         return slot.finished?.image ?? image
+    }
+
+    /// Steps with the picked sources filled in.
+    static func pinned(_ steps: [Retouch], _ sources: [Int: MaskPoint]) -> [Retouch] {
+        var out = steps
+        for (i, offset) in sources where out.indices.contains(i) { out[i].offset = offset }
+        return out
     }
 
     private func isWanted(_ steps: [Retouch]) -> Bool {

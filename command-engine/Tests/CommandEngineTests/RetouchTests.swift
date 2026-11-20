@@ -224,4 +224,73 @@ final class RetouchTests: XCTestCase {
         XCTAssertEqual(Self.mean(onlyB, left), 0.1, accuracy: 0.001, "the deleted spot's dust is back")
         XCTAssertEqual(Self.difference(onlyB, both, in: right), 0, "the other spot is kept")
     }
+
+    // MARK: - Heal
+
+    func testHealNames() {
+        XCTAssertEqual(parse("heal"), [.run("healTool")])
+        XCTAssertEqual(parse("healing brush"), [.run("healTool")])
+        XCTAssertEqual(parse("heal brush size 3"), [.run("healTool"), .set("brushSize", 3)], "“size” alone is the brush size")
+        XCTAssertEqual(parse("clone source"), [.run("spotSource")])
+        XCTAssertEqual(parse("pick source"), [.run("spotSource")])
+        XCTAssertEqual(parse("clone mask"), [.run("duplicateMask")])
+    }
+
+    func testSourceNeedsASpotThatCopies() {
+        XCTAssertEqual(run("clone source"), [.needsSpot(controlID: "spotSource")])
+        state.addRetouch(Retouch(tool: "remove", points: [MaskPoint(0.5, 0.5)]))
+        XCTAssertEqual(run("clone source"), [.needsSpot(controlID: "spotSource")], "the Remove brush has no source")
+        state.addRetouch(Retouch(tool: "heal", points: [MaskPoint(0.5, 0.5)]))
+        XCTAssertEqual(run("clone source"), [.ran(controlID: "spotSource")])
+        XCTAssertEqual(state.retouches[1].centre, MaskPoint(0.5, 0.5))
+        XCTAssertEqual(Retouch(tool: "heal", points: [MaskPoint(0.2, 0.4), MaskPoint(0.6, 0.5)]).centre, MaskPoint(0.4, 0.45))
+    }
+
+    func testMembraneIsSmoothBetweenItsEdges() {
+        // A linear ramp is harmonic: the membrane fills the hole with the same ramp.
+        let w = 30, h = 24
+        let ramp = (0..<(w * h * 3)).map { i -> Float in
+            let p = i / 3
+            return 0.01 * Float(p % w) + 0.02 * Float(p / w) + (i % 3 == 0 ? 0.1 : 0)
+        }
+        let hole = (0..<(w * h)).map { p in abs(p % w - 15) < 8 && abs(p / w - 12) < 7 }
+        var edgeOnly = ramp
+        for p in 0..<(w * h) where hole[p] { edgeOnly.replaceSubrange((3 * p)..<(3 * p + 3), with: [9, 9, 9]) }
+        let filled = Healing.membrane(edgeOnly, hole: hole, width: w, height: h, iterations: 200)
+        let error = zip(filled, ramp).map { abs($0 - $1) }.max()!
+        XCTAssertLessThan(error, 0.01)
+    }
+
+    func testHealTakesTextureFromNearbyAndMatchesTheColoursAround() {
+        // Dark left half, light right half, the same fine texture on both; a spot on the left.
+        let size = (120, 60)
+        func clean(_ x: Int, _ y: Int) -> (Float, Float, Float) {
+            let v: Float = (x < 60 ? 0.35 : 0.75) + ((x + y) % 4 == 0 ? 0.04 : 0)
+            return (v, v, v)
+        }
+        let picture = Self.picture(size.0, size.1) { x, y in
+            abs(x - 30) < 4 && abs(y - 30) < 4 ? (0.05, 0.05, 0.05) : clean(x, y)
+        }
+        let canvas = RetouchCanvas(base: picture)
+        let spot = PixelBox(x0: 26, y0: 26, x1: 34, y1: 34)
+        let truth = Self.picture(size.0, size.1, clean)
+
+        // Automatic source: a clean place nearby, kept as the step's offset.
+        let auto = Self.tap("heal", 30, 30, of: size, brush: 15, values: ["spotOpacity": 100])
+        let result = canvas.render([auto])
+        XCTAssertLessThan(Self.difference(result.image, truth, in: spot), 0.04)
+        let offset = try! XCTUnwrap(result.sources[0])
+        let pixels = (offset.x * 120, offset.y * 60)
+        XCTAssertGreaterThan((pixels.0 * pixels.0 + pixels.1 * pixels.1).squareRoot(), 12, "the source doesn't overlap the spot")
+        var pinned = auto
+        pinned.offset = offset
+        XCTAssertEqual(canvas.render([pinned]).image, result.image, "the picked source, kept, draws the same")
+        XCTAssertTrue(canvas.render([pinned]).sources.isEmpty)
+
+        // A source on the light half still comes out dark: heal matches the colours around the spot.
+        var light = auto
+        light.offset = MaskPoint(55.0 / 120, 0)
+        let healed = canvas.render([light]).image
+        XCTAssertEqual(Self.mean(healed, spot), Self.mean(truth, spot), accuracy: 0.04)
+    }
 }
