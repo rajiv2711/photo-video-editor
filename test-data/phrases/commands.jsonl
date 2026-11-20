@@ -712,3 +712,8 @@
 {"group":"retouch","text":"patch tool","expect":[{"op":"run","control":"patchTool"}]}
 {"group":"retouch","text":"content aware move","expect":[{"op":"run","control":"moveTool"}]}
 {"group":"retouch","text":"move object","expect":[{"op":"run","control":"moveTool"}]}
+{"group":"retouch","text":"show spots","expect":[{"op":"set","control":"visualizeSpots","value":1}]}
+{"group":"retouch","text":"hide spots","expect":[{"op":"set","control":"visualizeSpots","value":0}]}
+{"group":"retouch","text":"visualize spots","expect":[{"op":"set","control":"visualizeSpots","value":1}]}
+{"group":"retouch","text":"visualize threshold 70","expect":[{"op":"set","control":"visualizeThreshold","value":70}]}
+{"group":"retouch","text":"spot threshold up","expect":[{"op":"nudge","control":"visualizeThreshold","steps":1}]}

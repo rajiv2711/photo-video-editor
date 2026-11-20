@@ -487,7 +487,13 @@ final class EditorModel: ObservableObject {
     /// The preview photo with the current edits (not yet turned into pixels).
     func editedPreview() -> CIImage {
         renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask,
-                       retouches: state.retouches, waitForRetouch: waitsForRetouch)
+                       retouches: state.retouches, waitForRetouch: waitsForRetouch, visualize: visualizeThreshold)
+    }
+
+    /// Visualize Spots' threshold while it is on (the preview only shows it).
+    private var visualizeThreshold: Double? {
+        guard let on = registry.control(id: "visualizeSpots"), state.value(of: on) != 0 else { return nil }
+        return registry.control(id: "visualizeThreshold").map { state.value(of: $0) } ?? 50
     }
 
     /// The mask shown as a red tint: the selected one, while Mask Overlay is on.

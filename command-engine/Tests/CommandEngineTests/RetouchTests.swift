@@ -391,4 +391,26 @@ final class RetouchTests: XCTestCase {
         XCTAssertEqual(Self.mean(moved, PixelBox(x0: 26, y0: 26, x1: 34, y1: 34)), ground, accuracy: 0.03, "the old place is filled")
         XCTAssertEqual(Self.mean(moved, PixelBox(x0: 81, y0: 26, x1: 89, y1: 34)), 0.1, accuracy: 0.01, "the object is 55 px to the right")
     }
+
+    // MARK: - Visualize spots
+
+    func testVisualizeSpotsNames() {
+        XCTAssertEqual(parse("show spots"), [.set("visualizeSpots", 1)])
+        XCTAssertEqual(parse("hide spots"), [.set("visualizeSpots", 0)])
+        XCTAssertEqual(parse("visualize spots"), [.set("visualizeSpots", 1)])
+        XCTAssertEqual(parse("visualize threshold 70"), [.set("visualizeThreshold", 70)])
+        XCTAssertEqual(parse("spot 2"), [.set("spot", 2)], "“spot” still selects a spot")
+    }
+
+    func testVisualizeTableStretchesSmallDifferences() {
+        let middle = VisualizeSpots.table(threshold: 50)
+        XCTAssertEqual(middle.count, 256)
+        XCTAssertEqual(middle[0], 0)
+        // A speck 0.1 darker than its surroundings shows bright; noise of 0.005 stays nearly black.
+        func at(_ table: [Double], _ x: Double) -> Double { table[Int((x * 255).rounded())] }
+        XCTAssertGreaterThan(at(middle, 0.1), 0.7)
+        XCTAssertLessThan(at(middle, 0.004), 0.05)
+        XCTAssertGreaterThan(at(VisualizeSpots.table(threshold: 90), 0.03), at(middle, 0.03), "a higher threshold shows more")
+        XCTAssertEqual(VisualizeSpots.table(threshold: 100).max(), 1)
+    }
 }

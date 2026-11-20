@@ -118,7 +118,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [ ] 86. **Remove wires & cables** — auto-detect and remove power lines **AI · later**
 - [ ] 87. **Remove reflections** — clear reflections from glass **AI · later**
 - [ ] 88. **Dust removal** — auto-detect and remove sensor dust **AI · later**
-- [ ] 89. **Visualize spots** — high-contrast view to find dust
+- [x] 89. **Visualize spots** — high-contrast view to find dust
 - [ ] 90. **Red eye / pet eye** — fix flash eyes
 - [ ] 91. **Blemish removal** — AI auto-detects and removes acne and spots **AI · later**
 - [ ] 92. **Skin smoothing** — soften skin, keep pores and freckles **AI · later**

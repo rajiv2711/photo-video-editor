@@ -86,6 +86,16 @@ public enum RetouchTools {
     }
 }
 
+/// Visualize Spots: the photo as white edges on black, so dust and specks stand out (preview only).
+public enum VisualizeSpots {
+    /// Display level for each high-pass level (|brightness − its blur|, sRGB levels, 0…1): the
+    /// difference times a gain that doubles every 12.5 steps of the threshold slider (1…100; 50 is 8×).
+    public static func table(threshold: Double) -> [Double] {
+        let gain = 8 * pow(2, (Swift.min(100, Swift.max(1, threshold)) - 50) / 12.5)
+        return Effects.table(count: 256) { Swift.min(1, $0 * gain) }
+    }
+}
+
 /// Something that happened to the retouch steps, for the feedback line.
 public enum RetouchEvent: Equatable {
     /// A step was deleted ("delete spot 2", "undo last spot").

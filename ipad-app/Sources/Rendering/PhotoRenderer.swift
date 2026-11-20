@@ -50,8 +50,9 @@ final class PhotoRenderer {
     /// `masks`: local adjustments, each blended in through its mask; `overlay`: a mask to show
     /// as a red tint (preview only). `retouches`: spots and brush strokes; with `waitForRetouch` false
     /// new ones may show a moment later (worked out in the background, see RetouchRenderer).
+    /// `visualize`: Visualize Spots' threshold when it is on (preview only).
     func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil,
-               retouches: [Retouch] = [], waitForRetouch: Bool = true) -> CIImage {
+               retouches: [Retouch] = [], waitForRetouch: Bool = true, visualize: Double? = nil) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         let extent = image.extent
         // Lens corrections, then film negative conversion: the picture range masks and pickers look at.
@@ -71,6 +72,9 @@ final class PhotoRenderer {
         output = effects.finish(output, extent: extent, value: value)  // vignette, grain
         if !hdr {
             output = output.applyingFilter("CIColorClamp")
+        }
+        if let threshold = visualize {
+            output = visualized(output, extent: extent, threshold: threshold)
         }
         if let overlay, !overlay.components.isEmpty {
             let shape = self.masks.image(of: overlay, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
@@ -93,6 +97,15 @@ final class PhotoRenderer {
         output = color.apply(output, extent: extent, value: value)
         output = effects.apply(output, extent: extent, value: value)
         return detail.apply(output, extent: extent, value: value)
+    }
+
+    /// Visualize Spots: how far each pixel's brightness is from its surroundings (a high pass, blurred
+    /// over 4 px of a 2048 px photo), shown white on black and stretched by the threshold.
+    private func visualized(_ image: CIImage, extent: CGRect, threshold: Double) -> CIImage {
+        let luma = Filters.luma(Filters.encoded(image))
+        let blur = Filters.blurred(luma, radius: Detail.pixels(4, longSide: Double(max(extent.width, extent.height))), extent: extent)
+        let difference = luma.applyingFilter("CIDifferenceBlendMode", parameters: [kCIInputBackgroundImageKey: blur])
+        return Filters.linear(Filters.lookup(difference, table: VisualizeSpots.table(threshold: threshold))).cropped(to: extent)
     }
 
     /// The lens settings and film negative conversion: when they change, the picture masks look at changes too.

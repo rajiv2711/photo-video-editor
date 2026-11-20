@@ -927,6 +927,11 @@
     {"id": "patchTool", "label": "Patch", "group": "retouch", "kind": "action", "tool": "patch",
       "synonyms": ["patch tool", "patch selection", "patch area"]},
     {"id": "moveTool", "label": "Content Aware Move", "group": "retouch", "kind": "action", "tool": "move",
-      "synonyms": ["content-aware move", "content aware move tool", "move tool", "move object", "move selection", "content move"]}
+      "synonyms": ["content-aware move", "content aware move tool", "move tool", "move object", "move selection", "content move"]},
+    {"id": "visualizeSpots", "label": "Visualize Spots", "group": "retouch", "kind": "toggle",
+      "synonyms": ["visualise spots", "spots", "spot view", "dust view", "visualize dust", "visualise dust", "find dust", "visualize", "visualise"]},
+    {"id": "visualizeThreshold", "label": "Visualize Threshold", "group": "retouch", "kind": "slider",
+      "synonyms": ["visualise threshold", "spot threshold", "dust threshold", "visualize spots threshold"],
+      "min": 1, "max": 100, "default": 50, "step": 5}
   ]
 }
