@@ -137,11 +137,16 @@ struct MaskCanvas: View {
                         if Self.painted.contains(tool) {
                             points.append(drag.location)
                         } else {
-                            model.draw([Self.unit(drag.startLocation, in: geo.size), Self.unit(drag.location, in: geo.size)])
+                            model.draw([Self.unit(drag.startLocation, in: geo.size), Self.unit(drag.location, in: geo.size)],
+                                       finished: false)
                         }
                     }
-                    .onEnded { _ in
-                        if Self.painted.contains(tool) { model.draw(points.map { Self.unit($0, in: geo.size) }) }
+                    .onEnded { drag in
+                        if Self.painted.contains(tool) {
+                            model.draw(points.map { Self.unit($0, in: geo.size) })
+                        } else {
+                            model.draw([Self.unit(drag.startLocation, in: geo.size), Self.unit(drag.location, in: geo.size)])
+                        }
                         points = []
                     }
             )
@@ -166,6 +171,21 @@ struct MaskCanvas: View {
                 Self.across(mid, b, size, through: mid).stroke(Color.white, style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
                 Self.across(b, a, size).stroke(Color.white.opacity(0.6), lineWidth: 1)
                 Circle().fill(Color.white).frame(width: 10, height: 10).position(mid)
+            }
+            .allowsHitTesting(false)
+        } else if tool == "radial", let part = model.selectedPart {
+            // The ellipse's edge, on screen (the photo fills the canvas, so its pixels scale evenly).
+            let v = part.values
+            let radii = MaskGeometry.radialRadii(size: v["radialSize"] ?? 60, aspect: v["radialAspect"] ?? 0,
+                                                 width: Double(size.width), height: Double(size.height))
+            let centre = CGPoint(x: CGFloat((v["radialX"] ?? 50) / 100) * size.width, y: CGFloat((v["radialY"] ?? 50) / 100) * size.height)
+            ZStack {
+                Ellipse()
+                    .stroke(Color.white, lineWidth: 1.5)
+                    .frame(width: CGFloat(2 * radii.x), height: CGFloat(2 * radii.y))
+                    .rotationEffect(.degrees(v["radialAngle"] ?? 0))
+                    .position(centre)
+                Circle().fill(Color.white).frame(width: 10, height: 10).position(centre)
             }
             .allowsHitTesting(false)
         }

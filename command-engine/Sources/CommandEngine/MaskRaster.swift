@@ -86,6 +86,10 @@ public enum MaskRaster {
         case "linear":
             values = linear(angle: part.values["linearAngle"] ?? 0, position: part.values["linearPosition"] ?? 25,
                             fade: part.values["linearWidth"] ?? 50, width: width, height: height)
+        case "radial":
+            let v = part.values
+            values = radial(x: v["radialX"] ?? 50, y: v["radialY"] ?? 50, size: v["radialSize"] ?? 60, aspect: v["radialAspect"] ?? 0,
+                            angle: v["radialAngle"] ?? 0, feather: v["radialFeather"] ?? 50, width: width, height: height)
         default:
             values = [Float](repeating: 0, count: width * height)
         }
@@ -114,6 +118,33 @@ public enum MaskRaster {
                 let x = Double(column) + 0.5 - w / 2
                 let t = (x * nx + y * ny - offset) / length + 0.5
                 out[row * width + column] = Float(1 - Effects.smoothstep(0, 1, t))
+            }
+        }
+        return out
+    }
+
+    // MARK: - Radial gradient
+
+    /// An ellipse, full inside and fading out towards its edge. `x`, `y`: its centre, % of the
+    /// width and height from the top-left; `size`: its radius, % of half the short side; `aspect`
+    /// −100…100 (+ wider, − taller); `angle`: turned clockwise, degrees; `feather` 0…100: 0 a hard
+    /// edge, 100 fading all the way from the centre.
+    public static func radial(x: Double, y: Double, size: Double, aspect: Double, angle: Double, feather: Double,
+                              width: Int, height: Int) -> [Float] {
+        let w = Double(width), h = Double(height)
+        let radii = MaskGeometry.radialRadii(size: size, aspect: aspect, width: w, height: h)
+        let rx = Swift.max(0.5, radii.x), ry = Swift.max(0.5, radii.y)
+        let cx = x / 100 * w, cy = y / 100 * h
+        let a = angle * .pi / 180, c = cos(a), s = sin(a)
+        let soft = Swift.max(feather / 100, 1.5 / Swift.min(rx, ry))
+        var out = [Float](repeating: 0, count: width * height)
+        for row in 0..<height {
+            let dy = Double(row) + 0.5 - cy
+            for column in 0..<width {
+                let dx = Double(column) + 0.5 - cx
+                let u = (dx * c + dy * s) / rx, v = (dy * c - dx * s) / ry
+                let d = (u * u + v * v).squareRoot()
+                out[row * width + column] = d >= 1 ? 0 : Float(1 - Effects.smoothstep(1 - soft, 1, d))
             }
         }
         return out

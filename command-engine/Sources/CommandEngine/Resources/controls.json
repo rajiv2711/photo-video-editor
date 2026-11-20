@@ -765,6 +765,37 @@
     {"id": "linearWidth", "label": "Linear Width", "group": "masks", "section": "Linear gradient", "kind": "slider",
       "scope": "component", "component": "linear",
       "synonyms": ["linear gradient width", "gradient width", "linear feather", "gradient feather", "linear softness"],
-      "min": 1, "max": 100, "default": 50, "step": 5}
+      "min": 1, "max": 100, "default": 50, "step": 5},
+    {"id": "radialGradient", "label": "Radial Gradient", "group": "masks", "kind": "action", "component": "radial",
+      "synonyms": ["radial gradient mask", "radial mask", "radial filter", "radial", "circle mask", "oval mask"],
+      "options": [
+        {"id": "center", "label": "Center", "synonyms": ["centre", "middle"]},
+        {"id": "top", "label": "Top", "synonyms": ["upper"]},
+        {"id": "bottom", "label": "Bottom", "synonyms": ["lower"]},
+        {"id": "left", "label": "Left"},
+        {"id": "right", "label": "Right"},
+        {"id": "topLeft", "label": "Top Left", "synonyms": ["upper left"]},
+        {"id": "topRight", "label": "Top Right", "synonyms": ["upper right"]},
+        {"id": "bottomLeft", "label": "Bottom Left", "synonyms": ["lower left"]},
+        {"id": "bottomRight", "label": "Bottom Right", "synonyms": ["lower right"]}
+      ]},
+    {"id": "radialX", "label": "Radial X", "group": "masks", "section": "Radial gradient", "kind": "slider",
+      "scope": "component", "component": "radial",
+      "synonyms": ["radial horizontal", "radial center x", "radial across"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "radialY", "label": "Radial Y", "group": "masks", "section": "Radial gradient", "kind": "slider",
+      "scope": "component", "component": "radial",
+      "synonyms": ["radial vertical", "radial center y", "radial down"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "radialSize", "label": "Radial Size", "group": "masks", "section": "Radial gradient", "kind": "slider",
+      "scope": "component", "component": "radial",
+      "synonyms": ["radial radius", "radial gradient size", "circle size", "oval size"], "min": 1, "max": 150, "default": 60, "step": 5},
+    {"id": "radialAspect", "label": "Radial Aspect", "group": "masks", "section": "Radial gradient", "kind": "slider",
+      "scope": "component", "component": "radial",
+      "synonyms": ["radial stretch", "radial shape", "radial gradient aspect"], "min": -100, "max": 100, "default": 0, "step": 10},
+    {"id": "radialAngle", "label": "Radial Angle", "group": "masks", "section": "Radial gradient", "kind": "slider",
+      "scope": "component", "component": "radial",
+      "synonyms": ["radial rotation", "radial gradient angle", "radial turn"], "min": -90, "max": 90, "default": 0, "step": 5},
+    {"id": "radialFeather", "label": "Radial Feather", "group": "masks", "section": "Radial gradient", "kind": "slider",
+      "scope": "component", "component": "radial",
+      "synonyms": ["radial softness", "radial gradient feather", "radial soft"], "min": 0, "max": 100, "default": 50, "step": 5}
   ]
 }

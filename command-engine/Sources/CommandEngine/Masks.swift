@@ -418,6 +418,27 @@ public enum MaskGeometry {
         return (point(offset - half), point(offset + half))
     }
 
+    /// A drag on a radial gradient (pixels of a `width` × `height` photo, from the values `base` had
+    /// when the drag began): one that starts inside the ellipse moves it; one that starts outside
+    /// grows or shrinks it by how much farther from (or nearer to) its centre the finger went.
+    public static func radialDrag(_ base: [String: Double], from start: MaskPoint, to end: MaskPoint,
+                                  width: Double, height: Double) -> [String: Double] {
+        let x = base["radialX"] ?? 50, y = base["radialY"] ?? 50, size = base["radialSize"] ?? 60
+        let radii = radialRadii(size: size, aspect: base["radialAspect"] ?? 0, width: width, height: height)
+        let a = (base["radialAngle"] ?? 0) * .pi / 180
+        let cx = x / 100 * width, cy = y / 100 * height
+        let sx = start.x * width - cx, sy = start.y * height - cy
+        let u = (sx * cos(a) + sy * sin(a)) / Swift.max(radii.x, 0.5), v = (sy * cos(a) - sx * sin(a)) / Swift.max(radii.y, 0.5)
+        if u * u + v * v <= 1 {
+            func clamp(_ p: Double) -> Double { Swift.min(100, Swift.max(0, p)) }
+            return ["radialX": clamp(x + (end.x - start.x) * 100), "radialY": clamp(y + (end.y - start.y) * 100)]
+        }
+        let from = (sx * sx + sy * sy).squareRoot()
+        let ex = end.x * width - cx, ey = end.y * height - cy
+        let to = (ex * ex + ey * ey).squareRoot()
+        return ["radialSize": Swift.min(150, Swift.max(1, size * to / Swift.max(from, 1)))]
+    }
+
     /// A radial gradient's two radii in pixels: `size` % of half the short side, stretched by
     /// `aspect` (−100…100: + wider, − taller, up to 2× each way).
     public static func radialRadii(size: Double, aspect: Double, width: Double, height: Double) -> (x: Double, y: Double) {

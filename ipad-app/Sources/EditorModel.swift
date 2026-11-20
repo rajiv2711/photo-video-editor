@@ -144,10 +144,16 @@ final class EditorModel: ObservableObject {
     /// The preview's width and height in pixels (gradient angles are measured on the photo).
     var photoSize: CGSize { previewSource.extent.size }
 
+    /// The selected part as it was when the current drag began (radial drags are relative to it).
+    private var dragBase: MaskComponent?
+
     /// A finger or Pencil drew on the photo (points from the top-left, 0…1), for the selected mask
-    /// part: a brush stroke with the current brush settings, or a gradient drawn from where the
-    /// effect is full (first point) to where it ends (last point).
-    func draw(_ points: [MaskPoint]) {
+    /// part: a brush stroke with the current brush settings, a linear gradient drawn from where the
+    /// effect is full (first point) to where it ends (last point), a radial gradient moved or
+    /// resized. `finished` is false while a drag is still going (the canvas sends it as it moves).
+    func draw(_ points: [MaskPoint], finished: Bool = true) {
+        let base = dragBase ?? selectedPart
+        dragBase = finished ? nil : base
         guard let tool = canvasTool, let start = points.first, let end = points.last else { return }
         switch tool {
         case "brush":
@@ -158,6 +164,10 @@ final class EditorModel: ObservableObject {
             guard start != end else { return }
             let g = MaskGeometry.linear(from: start, to: end, width: Double(photoSize.width), height: Double(photoSize.height))
             state.setComponentValues(["linearAngle": g.angle.rounded(), "linearPosition": g.position, "linearWidth": max(1, g.width)])
+        case "radial":
+            guard start != end, let base else { return }
+            state.setComponentValues(MaskGeometry.radialDrag(base.values, from: start, to: end,
+                                                             width: Double(photoSize.width), height: Double(photoSize.height)))
         default:
             return
         }
@@ -481,6 +491,7 @@ final class EditorModel: ObservableObject {
     static let hints: [String: String] = [
         "brush": "paint on the photo",
         "linear": "drag on the photo from where it is full to where it ends",
+        "radial": "drag inside it to move it, outside to resize it",
     ]
 
     nonisolated static func format(_ value: Double, _ control: Control?) -> String {

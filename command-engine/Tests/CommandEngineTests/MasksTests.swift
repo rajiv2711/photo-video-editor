@@ -303,3 +303,72 @@ final class LinearGradientTests: XCTestCase {
         XCTAssertEqual(again.width, d.width, accuracy: 1e-9)
     }
 }
+
+/// Radial gradient: names, placements, drags and the ellipse's maths.
+final class RadialGradientTests: XCTestCase {
+    private var registry: ControlRegistry!
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+    }
+
+    private func parse(_ text: String) -> [Command] {
+        CommandParser(registry: registry).parse(text)
+    }
+
+    func testRadialGradientNames() {
+        XCTAssertEqual(parse("radial gradient"), [.run("radialGradient")])
+        XCTAssertEqual(parse("radial gradient center"), [.run("radialGradient", value: 0)])
+        XCTAssertEqual(parse("new radial mask center"), [.run("radialGradient", value: 0, mode: "new")])
+        XCTAssertEqual(parse("radial filter top left exposure 1"), [.run("radialGradient", value: 5), .set("exposure", 1)])
+        XCTAssertEqual(parse("radial size 80"), [.set("radialSize", 80)])
+        XCTAssertEqual(parse("radial feather less"), [.nudge("radialFeather", -1)])
+    }
+
+    func testPlacements() {
+        var state = EditState()
+        var interpreter = CommandInterpreter(registry: registry)
+        _ = interpreter.interpret("radial gradient bottom right", state: &state)
+        let part = state.masks[0].components[0]
+        XCTAssertEqual(part.values["radialX"], 75)
+        XCTAssertEqual(part.values["radialY"], 75)
+        XCTAssertEqual(part.values["radialSize"], registry.control(id: "radialSize")!.defaultValue)
+    }
+
+    func testFullInsideNothingOutside() {
+        let w = 100, h = 60
+        // Radius 50 % of half the short side = 15 cells.
+        let grid = MaskRaster.radial(x: 50, y: 50, size: 50, aspect: 0, angle: 0, feather: 0, width: w, height: h)
+        XCTAssertEqual(grid[30 * w + 50], 1)
+        XCTAssertEqual(grid[30 * w + 50 + 12], 1, "inside")
+        XCTAssertEqual(grid[30 * w + 50 + 17], 0, "outside")
+        XCTAssertEqual(grid[0], 0)
+        let soft = MaskRaster.radial(x: 50, y: 50, size: 50, aspect: 0, angle: 0, feather: 100, width: w, height: h)
+        XCTAssertGreaterThan(soft[30 * w + 50 + 7], 0.3)
+        XCTAssertLessThan(soft[30 * w + 50 + 7], 0.9, "feather 100 fades from the centre")
+    }
+
+    func testAspectAndAngle() {
+        let w = 100, h = 100
+        let wide = MaskRaster.radial(x: 50, y: 50, size: 40, aspect: 100, angle: 0, feather: 0, width: w, height: h)
+        XCTAssertEqual(wide[50 * w + 50 + 30], 1, "40 cells wide each way")
+        XCTAssertEqual(wide[(50 + 15) * w + 50], 0, "10 cells tall each way")
+        let turned = MaskRaster.radial(x: 50, y: 50, size: 40, aspect: 100, angle: 90, feather: 0, width: w, height: h)
+        XCTAssertEqual(turned[(50 + 30) * w + 50], 1, "turned upright")
+        XCTAssertEqual(turned[50 * w + 50 + 15], 0)
+        let left = MaskRaster.radial(x: 20, y: 50, size: 20, aspect: 0, angle: 0, feather: 0, width: w, height: h)
+        XCTAssertEqual(left[50 * w + 20], 1)
+        XCTAssertEqual(left[50 * w + 50], 0)
+    }
+
+    func testDragsMoveOrResize() {
+        let base: [String: Double] = ["radialX": 50, "radialY": 50, "radialSize": 50, "radialAspect": 0, "radialAngle": 0]
+        let moved = MaskGeometry.radialDrag(base, from: MaskPoint(0.5, 0.5), to: MaskPoint(0.3, 0.6), width: 200, height: 100)
+        XCTAssertEqual(moved["radialX"]!, 30, accuracy: 1e-9)
+        XCTAssertEqual(moved["radialY"]!, 60, accuracy: 1e-9)
+        XCTAssertNil(moved["radialSize"])
+        // Radius is 25 px; a drag from 40 px out to 80 px out doubles it.
+        let grown = MaskGeometry.radialDrag(base, from: MaskPoint(0.7, 0.5), to: MaskPoint(0.9, 0.5), width: 200, height: 100)
+        XCTAssertEqual(grown["radialSize"]!, 100, accuracy: 1e-9)
+    }
+}

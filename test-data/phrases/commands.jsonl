@@ -610,3 +610,19 @@
 {"group":"masks","text":"gradient position up","expect":[{"op":"nudge","control":"linearPosition","steps":1}]}
 {"group":"masks","text":"linear width 30","expect":[{"op":"set","control":"linearWidth","value":30}]}
 {"group":"masks","text":"gradient feather more","expect":[{"op":"nudge","control":"linearWidth","steps":1}]}
+{"group":"masks","text":"radial gradient","expect":[{"op":"run","control":"radialGradient"}]}
+{"group":"masks","text":"radial gradient center","expect":[{"op":"run","control":"radialGradient","value":0}]}
+{"group":"masks","text":"new radial mask center","expect":[{"op":"run","control":"radialGradient","value":0,"mode":"new"}]}
+{"group":"masks","text":"radial filter top left exposure 1","expect":[{"op":"run","control":"radialGradient","value":5},{"op":"set","control":"exposure","value":1}]}
+{"group":"masks","text":"radial x 30","expect":[{"op":"set","control":"radialX","value":30}]}
+{"group":"masks","text":"radial horizontal more","expect":[{"op":"nudge","control":"radialX","steps":1}]}
+{"group":"masks","text":"radial y 70","expect":[{"op":"set","control":"radialY","value":70}]}
+{"group":"masks","text":"radial vertical less","expect":[{"op":"nudge","control":"radialY","steps":-1}]}
+{"group":"masks","text":"radial size 80","expect":[{"op":"set","control":"radialSize","value":80}]}
+{"group":"masks","text":"radial radius down","expect":[{"op":"nudge","control":"radialSize","steps":-1}]}
+{"group":"masks","text":"radial aspect 40","expect":[{"op":"set","control":"radialAspect","value":40}]}
+{"group":"masks","text":"radial stretch less","expect":[{"op":"nudge","control":"radialAspect","steps":-1}]}
+{"group":"masks","text":"radial angle 30","expect":[{"op":"set","control":"radialAngle","value":30}]}
+{"group":"masks","text":"radial rotation more","expect":[{"op":"nudge","control":"radialAngle","steps":1}]}
+{"group":"masks","text":"radial feather 80","expect":[{"op":"set","control":"radialFeather","value":80}]}
+{"group":"masks","text":"radial softness down","expect":[{"op":"nudge","control":"radialFeather","steps":-1}]}

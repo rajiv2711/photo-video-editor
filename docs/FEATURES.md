@@ -92,7 +92,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 - [x] 64. **Brush mask** — paint an area; size, feather, flow, density, auto-edge
 - [x] 65. **Linear gradient mask** — fade an edit across the photo
-- [ ] 66. **Radial gradient mask** — oval area with feather, inside or outside
+- [x] 66. **Radial gradient mask** — oval area with feather, inside or outside
 - [ ] 67. **Select subject** — AI selects the main subject **AI · later**
 - [ ] 68. **Select sky** — AI selects the sky **AI · later**
 - [ ] 69. **Select background** — AI selects everything but the subject **AI · later**
