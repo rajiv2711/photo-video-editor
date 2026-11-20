@@ -141,3 +141,7 @@
 {"group":"light","text":"reset shadows","expect":[{"op":"reset","control":"shadows"}]}
 {"group":"light","text":"shadow up up up","expect":[{"op":"nudge","control":"shadows","steps":3}]}
 {"group":"light","text":"shadows up highlights down","expect":[{"op":"nudge","control":"shadows","steps":1},{"op":"nudge","control":"highlights","steps":-1}]}
+{"group":"light","text":"whites more","expect":[{"op":"nudge","control":"whites","steps":1}]}
+{"group":"light","text":"whites 30","expect":[{"op":"set","control":"whites","value":30}]}
+{"group":"light","text":"reset whites","expect":[{"op":"reset","control":"whites"}]}
+{"group":"light","text":"white down","expect":[{"op":"nudge","control":"whites","steps":-1}]}

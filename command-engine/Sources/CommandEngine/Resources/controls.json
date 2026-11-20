@@ -45,6 +45,17 @@
       "step": 5
     },
     {
+      "id": "whites",
+      "label": "Whites",
+      "group": "light",
+      "kind": "slider",
+      "synonyms": ["white"],
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "step": 5
+    },
+    {
       "id": "saturation",
       "label": "Saturation",
       "group": "color",

@@ -14,7 +14,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 2. **Contrast** — spread between darks and lights
 - [x] 3. **Highlights** — recover or brighten the bright areas
 - [x] 4. **Shadows** — lift or deepen the dark areas
-- [ ] 5. **Whites** — set the brightest point
+- [x] 5. **Whites** — set the brightest point
 - [ ] 6. **Blacks** — set the darkest point
 - [ ] 7. **Brightness** — midtone lightness without clipping the ends
 - [ ] 8. **Brilliance** — lift shadows, tame highlights, add local contrast

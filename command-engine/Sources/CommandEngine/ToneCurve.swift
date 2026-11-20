@@ -2,7 +2,7 @@ import Foundation
 
 /// Tone math for the Light panel, shared by the iPad renderer and the Linux tests.
 ///
-/// The global tone controls (Highlights brightening so far; later Whites, Blacks, curves…) become one
+/// The global tone controls (Highlights brightening, Whites; later Blacks, curves…) become one
 /// lookup table per colour channel, applied in a single Core Image pass (CIColorCurves). Inputs and
 /// outputs are sRGB-encoded levels (0 = black, 1 = SDR white), i.e. what the eye sees.
 ///
@@ -37,7 +37,7 @@ public enum ToneCurve {
     }
 
     /// Control ids that feed the table; when all are at their default the table is skipped.
-    public static let controlIDs: [String] = ["highlights"]
+    public static let controlIDs: [String] = ["highlights", "whites"]
 
     /// The value of each tone control that leaves the picture untouched.
     public static func neutral(_ id: String) -> Double {
@@ -86,10 +86,12 @@ public enum ToneCurve {
             return (y, y, y)
         }
 
-        /// Highlights (brightening only; darkening is CIHighlightShadowAdjust in the renderer).
+        /// Whites and Highlights (brightening only; darkening is CIHighlightShadowAdjust in the renderer).
         func basic(_ x: Double) -> Double {
+            let whites = value("whites") / 100
             let highlights = Swift.max(value("highlights"), 0) / 100
-            var y = x
+            // Whites move the top end: +100 lifts white by a quarter (clipping the brightest tones), −100 dims it.
+            var y = x + 0.25 * whites * x * x * x
             if highlights > 0 {
                 // Bump peaking at 3/4, zero at 0 and 1.
                 y += 0.1 * highlights * (256.0 / 27.0) * x * x * x * (1 - x)
