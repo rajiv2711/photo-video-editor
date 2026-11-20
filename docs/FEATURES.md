@@ -99,7 +99,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [ ] 70. **Select objects** — rough-draw around an object; AI refines it **AI · later**
 - [ ] 71. **Select people** — per person: face/body skin, hair, eyes, iris, brows, lips, teeth, clothes **AI · later**
 - [ ] 72. **Select landscape** — water, mountains, vegetation, architecture, ground, sky **AI · later**
-- [ ] 73. **Color range mask** — select by sampled colour
+- [x] 73. **Color range mask** — select by sampled colour
 - [ ] 74. **Luminance range mask** — select by brightness range
 - [ ] 75. **Depth range mask** — select by distance (depth map) **AI · later**
 - [ ] 76. **Mask math** — add, subtract, intersect, invert, duplicate masks

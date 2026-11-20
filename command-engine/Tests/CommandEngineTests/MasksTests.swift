@@ -372,3 +372,84 @@ final class RadialGradientTests: XCTestCase {
         XCTAssertEqual(grown["radialSize"]!, 100, accuracy: 1e-9)
     }
 }
+
+/// Color range: names, the tap, named hues and the colour maths.
+final class ColorRangeTests: XCTestCase {
+    private var registry: ControlRegistry!
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+    }
+
+    private func parse(_ text: String) -> [Command] {
+        CommandParser(registry: registry).parse(text)
+    }
+
+    /// Left third red, middle third orange, right third grey (sRGB levels).
+    private func stripes(width: Int = 30, height: Int = 4) -> PixelGrid {
+        var rgb: [Float] = []
+        for _ in 0..<height {
+            for x in 0..<width {
+                switch x * 3 / width {
+                case 0: rgb += [0.85, 0.15, 0.12]
+                case 1: rgb += [0.9, 0.55, 0.1]
+                default: rgb += [0.5, 0.5, 0.5]
+                }
+            }
+        }
+        return PixelGrid(width: width, height: height, rgb: rgb)
+    }
+
+    func testColorRangeNames() {
+        XCTAssertEqual(parse("color range"), [.run("colorRange")])
+        XCTAssertEqual(parse("colour range red"), [.run("colorRange", value: 0)])
+        XCTAssertEqual(parse("new color range mask blue exposure -1"), [.run("colorRange", value: 5, mode: "new"), .set("exposure", -1)])
+        XCTAssertEqual(parse("color range refine 70"), [.set("colorRangeRefine", 70)])
+        XCTAssertEqual(parse("colour more"), [.ambiguous("colour", ["vibrance", "saturation"])], "still asks as before")
+    }
+
+    func testATapSelectsThatColour() {
+        let pixels = stripes()
+        var part = MaskComponent(kind: "colorRange", values: ["colorRangeRefine": 50])
+        XCTAssertEqual(MaskRaster.colorRange(part, width: 30, height: 4, pixels: pixels).max(), 0, "nothing until tapped")
+        part.point = MaskPoint(0.15, 0.5)
+        let grid = MaskRaster.colorRange(part, width: 30, height: 4, pixels: pixels)
+        XCTAssertEqual(grid[2 * 30 + 4], 1)
+        XCTAssertEqual(grid[2 * 30 + 15], 0, "orange is too far")
+        XCTAssertEqual(grid[2 * 30 + 25], 0, "grey is too far")
+    }
+
+    func testANamedHueSelectsEveryShadeOfIt() {
+        let pixels = stripes()
+        var part = MaskComponent(kind: "colorRange", values: ["colorRangeRefine": 50, "hue": 0])
+        var grid = MaskRaster.colorRange(part, width: 30, height: 4, pixels: pixels)
+        XCTAssertEqual(grid[4], 1, accuracy: 1e-6)
+        XCTAssertEqual(grid[15], 0, "orange (36°) is outside red's band")
+        XCTAssertEqual(grid[25], 0, "grey has no hue")
+        part.values["hue"] = 30
+        grid = MaskRaster.colorRange(part, width: 30, height: 4, pixels: pixels)
+        XCTAssertGreaterThan(grid[15], 0.9)
+        part.values["colorRangeRefine"] = 100
+        part.values["hue"] = 0
+        XCTAssertGreaterThan(MaskRaster.colorRange(part, width: 30, height: 4, pixels: pixels)[15], 0.1, "refine widens the band")
+    }
+
+    func testLabOfKnownColours() {
+        let white = MaskRaster.lab(1, 1, 1)
+        XCTAssertEqual(white.l, 100, accuracy: 0.1)
+        XCTAssertEqual(white.a, 0, accuracy: 0.1)
+        let red = MaskRaster.lab(1, 0, 0)
+        XCTAssertEqual(red.l, 53.2, accuracy: 0.5)
+        XCTAssertEqual(red.a, 80.1, accuracy: 0.5)
+    }
+
+    func testATapMovesToTheSelectedColourRange() {
+        var state = EditState()
+        var interpreter = CommandInterpreter(registry: registry)
+        _ = interpreter.interpret("color range red", state: &state)
+        XCTAssertEqual(state.masks[0].components[0].values["hue"], 0)
+        XCTAssertTrue(state.setPoint(MaskPoint(0.2, 0.3)))
+        XCTAssertNil(state.masks[0].components[0].values["hue"], "a tap replaces the named colour")
+        XCTAssertEqual(state.masks[0].components[0].point, MaskPoint(0.2, 0.3))
+    }
+}

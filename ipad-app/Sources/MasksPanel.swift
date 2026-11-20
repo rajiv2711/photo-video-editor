@@ -173,6 +173,13 @@ struct MaskCanvas: View {
                 Circle().fill(Color.white).frame(width: 10, height: 10).position(mid)
             }
             .allowsHitTesting(false)
+        } else if let point = model.selectedPart?.point {
+            // A tapped sample (colour range, magic wand).
+            Circle()
+                .stroke(Color.white, lineWidth: 2)
+                .frame(width: 18, height: 18)
+                .position(x: CGFloat(point.x) * size.width, y: CGFloat(point.y) * size.height)
+                .allowsHitTesting(false)
         } else if tool == "radial", let part = model.selectedPart {
             // The ellipse's edge, on screen (the photo fills the canvas, so its pixels scale evenly).
             let v = part.values

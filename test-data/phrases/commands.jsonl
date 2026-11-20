@@ -626,3 +626,8 @@
 {"group":"masks","text":"radial rotation more","expect":[{"op":"nudge","control":"radialAngle","steps":1}]}
 {"group":"masks","text":"radial feather 80","expect":[{"op":"set","control":"radialFeather","value":80}]}
 {"group":"masks","text":"radial softness down","expect":[{"op":"nudge","control":"radialFeather","steps":-1}]}
+{"group":"masks","text":"color range","expect":[{"op":"run","control":"colorRange"}]}
+{"group":"masks","text":"colour range red","expect":[{"op":"run","control":"colorRange","value":0}]}
+{"group":"masks","text":"new color range mask blue exposure -1","expect":[{"op":"run","control":"colorRange","value":5,"mode":"new"},{"op":"set","control":"exposure","value":-1}]}
+{"group":"masks","text":"color range refine 70","expect":[{"op":"set","control":"colorRangeRefine","value":70}]}
+{"group":"masks","text":"range refine more","expect":[{"op":"nudge","control":"colorRangeRefine","steps":1}]}

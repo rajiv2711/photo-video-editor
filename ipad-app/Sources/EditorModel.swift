@@ -164,6 +164,8 @@ final class EditorModel: ObservableObject {
             guard start != end else { return }
             let g = MaskGeometry.linear(from: start, to: end, width: Double(photoSize.width), height: Double(photoSize.height))
             state.setComponentValues(["linearAngle": g.angle.rounded(), "linearPosition": g.position, "linearWidth": max(1, g.width)])
+        case "colorRange":
+            state.setPoint(end)
         case "radial":
             guard start != end, let base else { return }
             state.setComponentValues(MaskGeometry.radialDrag(base.values, from: start, to: end,
@@ -221,9 +223,13 @@ final class EditorModel: ObservableObject {
         }
     }
 
-    /// The photo was tapped while a picker waited: `x`, `y` from the top-left corner, 0…1.
+    /// The photo was tapped while a picker waited, or for the selected mask part (a colour range's
+    /// sample): `x`, `y` from the top-left corner, 0…1.
     func tap(atX x: Double, y: Double) {
-        guard let picker = armedPicker else { return }
+        guard let picker = armedPicker else {
+            draw([MaskPoint(x, y)])
+            return
+        }
         armedPicker = nil
         switch picker {
         case "wbPicker":
@@ -492,6 +498,7 @@ final class EditorModel: ObservableObject {
         "brush": "paint on the photo",
         "linear": "drag on the photo from where it is full to where it ends",
         "radial": "drag inside it to move it, outside to resize it",
+        "colorRange": "tap the colour to select (or say a colour: “color range blue”)",
     ]
 
     nonisolated static func format(_ value: Double, _ control: Control?) -> String {

@@ -796,6 +796,24 @@
       "synonyms": ["radial rotation", "radial gradient angle", "radial turn"], "min": -90, "max": 90, "default": 0, "step": 5},
     {"id": "radialFeather", "label": "Radial Feather", "group": "masks", "section": "Radial gradient", "kind": "slider",
       "scope": "component", "component": "radial",
-      "synonyms": ["radial softness", "radial gradient feather", "radial soft"], "min": 0, "max": 100, "default": 50, "step": 5}
+      "synonyms": ["radial softness", "radial gradient feather", "radial soft"], "min": 0, "max": 100, "default": 50, "step": 5},
+    {"id": "colorRange", "label": "Color Range", "group": "masks", "kind": "action", "component": "colorRange",
+      "synonyms": ["colour range", "color range mask", "colour range mask", "range mask color", "range mask colour", "color selection",
+                   "colour selection"],
+      "options": [
+        {"id": "red", "label": "Red", "synonyms": ["reds"]},
+        {"id": "orange", "label": "Orange", "synonyms": ["oranges"]},
+        {"id": "yellow", "label": "Yellow", "synonyms": ["yellows"]},
+        {"id": "green", "label": "Green", "synonyms": ["greens"]},
+        {"id": "aqua", "label": "Aqua", "synonyms": ["aquas", "cyan", "cyans"]},
+        {"id": "blue", "label": "Blue", "synonyms": ["blues"]},
+        {"id": "purple", "label": "Purple", "synonyms": ["purples", "violet"]},
+        {"id": "magenta", "label": "Magenta", "synonyms": ["magentas", "pink"]}
+      ]},
+    {"id": "colorRangeRefine", "label": "Color Range Refine", "group": "masks", "section": "Color range", "kind": "slider",
+      "scope": "component", "component": "colorRange",
+      "synonyms": ["colour range refine", "range refine", "color range amount", "colour range amount", "color tolerance",
+                   "colour tolerance"],
+      "min": 0, "max": 100, "default": 50, "step": 5}
   ]
 }

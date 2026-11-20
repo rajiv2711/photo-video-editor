@@ -30,6 +30,18 @@ public final class PixelGrid {
     func color(_ i: Int) -> (Float, Float, Float) {
         (rgb[3 * i], rgb[3 * i + 1], rgb[3 * i + 2])
     }
+
+    /// CIE L*a*b* of every cell (L 0…100), worked out the first time a colour range needs it.
+    public private(set) lazy var lab: [Float] = {
+        var out = [Float](repeating: 0, count: rgb.count)
+        for i in 0..<(rgb.count / 3) {
+            let c = MaskRaster.lab(rgb[3 * i], rgb[3 * i + 1], rgb[3 * i + 2])
+            out[3 * i] = c.l
+            out[3 * i + 1] = c.a
+            out[3 * i + 2] = c.b
+        }
+        return out
+    }()
 }
 
 /// Mask pictures as numbers: a grid of `width` × `height` cells (0 = untouched, 1 = full local
@@ -86,6 +98,8 @@ public enum MaskRaster {
         case "linear":
             values = linear(angle: part.values["linearAngle"] ?? 0, position: part.values["linearPosition"] ?? 25,
                             fade: part.values["linearWidth"] ?? 50, width: width, height: height)
+        case "colorRange":
+            values = colorRange(part, width: width, height: height, pixels: pixels)
         case "radial":
             let v = part.values
             values = radial(x: v["radialX"] ?? 50, y: v["radialY"] ?? 50, size: v["radialSize"] ?? 60, aspect: v["radialAspect"] ?? 0,
@@ -148,6 +162,91 @@ public enum MaskRaster {
             }
         }
         return out
+    }
+
+    // MARK: - Color range
+
+    /// Colour range: colours like the one tapped (its `point`, averaged over 3 × 3 cells), or a
+    /// named hue (its "hue" value, degrees: every shade of that hue with some colour in it).
+    /// Color Range Refine (0…100) widens it.
+    public static func colorRange(_ part: MaskComponent, width: Int, height: Int, pixels: PixelGrid?) -> [Float] {
+        let refine = part.values["colorRangeRefine"] ?? 50
+        guard let pixels, pixels.width == width, pixels.height == height else {
+            return [Float](repeating: 0, count: width * height)
+        }
+        if let point = part.point {
+            return similarColors(to: sample(pixels.lab, at: point, width: width, height: height), refine: refine, lab: pixels.lab)
+        }
+        if let hue = part.values["hue"] {
+            return hueRange(hue, refine: refine, pixels: pixels)
+        }
+        return [Float](repeating: 0, count: width * height)
+    }
+
+    /// Cells whose colour is within reach of `target` (L*a*b*): full up to half the reach, none
+    /// beyond it. Brightness counts half as much as colour. Reach 10…60 ΔE by `refine` 0…100.
+    static func similarColors(to target: (l: Float, a: Float, b: Float), refine: Double, lab: [Float]) -> [Float] {
+        let reach = Float(10 + 0.5 * Swift.min(100, Swift.max(0, refine)))
+        var out = [Float](repeating: 0, count: lab.count / 3)
+        for i in out.indices {
+            let dl = 0.5 * (lab[3 * i] - target.l), da = lab[3 * i + 1] - target.a, db = lab[3 * i + 2] - target.b
+            let d = (dl * dl + da * da + db * db).squareRoot()
+            out[i] = d >= reach ? 0 : Float(1 - Effects.smoothstep(Double(reach / 2), Double(reach), Double(d)))
+        }
+        return out
+    }
+
+    /// Cells of one hue (sRGB hue, degrees), full within half the band, none beyond it (band
+    /// 15…45° by `refine`); greys and nearly-greys are left out.
+    static func hueRange(_ hue: Double, refine: Double, pixels: PixelGrid) -> [Float] {
+        let band = 15 + 0.3 * Swift.min(100, Swift.max(0, refine))
+        var out = [Float](repeating: 0, count: pixels.width * pixels.height)
+        for i in out.indices {
+            let (r, g, b) = pixels.color(i)
+            let hi = Swift.max(r, g, b), lo = Swift.min(r, g, b)
+            let chroma = Double(hi - lo)
+            guard chroma > 0.06 else { continue }
+            var h: Double
+            if hi == r {
+                h = 60 * Double((g - b) / (hi - lo))
+            } else if hi == g {
+                h = 60 * (2 + Double((b - r) / (hi - lo)))
+            } else {
+                h = 60 * (4 + Double((r - g) / (hi - lo)))
+            }
+            h = (h - hue).truncatingRemainder(dividingBy: 360)
+            if h > 180 { h -= 360 } else if h < -180 { h += 360 }
+            out[i] = Float(Effects.smoothstep(0.06, 0.16, chroma) * (1 - Effects.smoothstep(band / 2, band, abs(h))))
+        }
+        return out
+    }
+
+    /// Average L*a*b* of the 3 × 3 cells around a point.
+    static func sample(_ lab: [Float], at point: MaskPoint, width: Int, height: Int) -> (l: Float, a: Float, b: Float) {
+        let cx = Swift.min(width - 1, Swift.max(0, Int(point.x * Double(width))))
+        let cy = Swift.min(height - 1, Swift.max(0, Int(point.y * Double(height))))
+        var sum: (Float, Float, Float) = (0, 0, 0)
+        var n: Float = 0
+        for y in Swift.max(0, cy - 1)...Swift.min(height - 1, cy + 1) {
+            for x in Swift.max(0, cx - 1)...Swift.min(width - 1, cx + 1) {
+                let i = 3 * (y * width + x)
+                sum = (sum.0 + lab[i], sum.1 + lab[i + 1], sum.2 + lab[i + 2])
+                n += 1
+            }
+        }
+        return (sum.0 / n, sum.1 / n, sum.2 / n)
+    }
+
+    /// sRGB levels → CIE L*a*b* (D65).
+    static func lab(_ r: Float, _ g: Float, _ b: Float) -> (l: Float, a: Float, b: Float) {
+        func linear(_ v: Float) -> Float { v <= 0.04045 ? v / 12.92 : powf((v + 0.055) / 1.055, 2.4) }
+        let rl = linear(r), gl = linear(g), bl = linear(b)
+        let x = (0.4124 * rl + 0.3576 * gl + 0.1805 * bl) / 0.95047
+        let y = 0.2126 * rl + 0.7152 * gl + 0.0722 * bl
+        let z = (0.0193 * rl + 0.1192 * gl + 0.9505 * bl) / 1.08883
+        func f(_ t: Float) -> Float { t > 0.008856 ? cbrtf(t) : 7.787 * t + 16 / 116 }
+        let fx = f(x), fy = f(y), fz = f(z)
+        return (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz))
     }
 
     // MARK: - Brush
