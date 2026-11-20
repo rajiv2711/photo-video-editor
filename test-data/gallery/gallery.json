@@ -116,6 +116,10 @@
     {"id": "bw-blue", "command": "bw on bw blue 100", "source": "chart", "control": "bwBlue", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
     {"id": "bw-purple", "command": "bw on bw purple 100", "source": "chart", "control": "bwPurple", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
     {"id": "bw-magenta", "command": "bw on bw magenta 100", "source": "chart", "control": "bwMagenta", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bw-chart"}, {"metric": "mean_sat", "dir": "same", "vs": "bw-chart"}]},
+    {"id": "toning-sepia", "command": "toning sepia", "control": "toning", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}]},
+    {"id": "toning-duotone", "command": "toning duotone", "control": "toning", "expect": [{"metric": "mean_b", "dir": "up"}, {"metric": "mean_r", "dir": "down"}]},
+    {"id": "toning-tritone", "command": "toning tritone", "control": "toning", "expect": [{"metric": "diff", "dir": "changed"}, {"metric": "mean_sat", "dir": "up"}]},
+    {"id": "toning-amount", "command": "toning sepia toning amount 40", "control": "toningAmount", "expect": [{"metric": "mean_b", "dir": "up", "vs": "toning-sepia"}]},
     {"id": "saturation-plus", "command": "saturation 100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "up"}]},
     {"id": "saturation-minus", "command": "saturation -100", "control": "saturation", "expect": [{"metric": "mean_sat", "dir": "down"}]}
   ]

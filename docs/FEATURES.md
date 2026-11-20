@@ -41,7 +41,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 26. **Color grading** — tint shadows, midtones, highlights; blending and balance
 - [x] 27. **Calibration** — shift the red/green/blue primaries and shadow tint
 - [x] 28. **Black & white** — monochrome with a per-colour brightness mix
-- [ ] 29. **Toning** — sepia, duotone, tritone
+- [x] 29. **Toning** — sepia, duotone, tritone
 - [ ] 30. **Channel mixer** — rebuild each RGB channel from the others
 - [ ] 31. **Selective color** — CMYK shifts inside one colour family
 - [ ] 32. **Photo filter** — warming or cooling coloured filter

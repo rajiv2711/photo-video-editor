@@ -325,4 +325,30 @@ final class ColorTests: XCTestCase {
         let c = ColorLook.transform(RGB(0.15, 0.1, 0.3), v)
         XCTAssertGreaterThan(c.r, c.b, "split-toned shadows")
     }
+
+    // MARK: - Toning
+
+    func testToningOptionsMatchControlsJSON() {
+        XCTAssertEqual(options("toning"), ColorLook.toningOptions)
+        XCTAssertEqual(parse("toning sepia"), [.set("toning", 1)])
+        XCTAssertEqual(parse("toning off"), [.set("toning", 0)], "off is the None option here")
+        XCTAssertEqual(parse("tone curve shadows 20"), [.set("curveShadows", 20)])
+    }
+
+    func testToningPalettesKeepBrightnessRoughly() {
+        for (name, stops) in ColorLook.toningPalettes {
+            for t in stride(from: 0.0, through: 1, by: 0.25) {
+                assertClose(ColorLook.gradient(stops, t).luma, t, 0.12, "\(name) at \(t)")
+            }
+        }
+    }
+
+    func testSepiaWarmsAndAmountMixes() {
+        let grey = RGB(0.5, 0.5, 0.5)
+        let sepia = ColorLook.transform(grey, look(["toning": 1]))
+        XCTAssertGreaterThan(sepia.r, sepia.b)
+        let half = ColorLook.transform(grey, look(["toning": 1, "toningAmount": 50]))
+        assertClose(half.r, (sepia.r + 0.5) / 2, 1e-9)
+        XCTAssertTrue(ColorLook.isIdentity { $0 == "toningAmount" ? 30 : nil })
+    }
 }

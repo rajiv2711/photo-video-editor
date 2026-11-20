@@ -39,20 +39,24 @@ public enum ColorLook {
     /// Black & white: on/off and how bright each colour band turns.
     public static let bwIDs = ["bw"] + mixerBands.map { "bw" + $0.prefix(1).uppercased() + $0.dropFirst() }
 
+    /// Toning: option ids of the Toning choice, in controls.json order, and its palettes.
+    public static let toningOptions = ["none", "sepia", "duotone", "tritone"]
+
     /// Control ids that feed the cube.
     public static let controlIDs: [String] = calibrationIDs
         + mixerBands.flatMap { band in mixerProperties.map { mixerID(band, $0) } }
-        + pointIDs + bwIDs + gradingIDs
+        + pointIDs + bwIDs + gradingIDs + ["toning", "toningAmount"]
 
     /// Controls that only say how another control acts (which hue, how wide): on their own they
     /// change nothing, so they don't count when deciding whether the cube is needed.
-    static let modifierIDs = Set(["pointHue", "pointRange", "gradingBlending", "gradingBalance"]
+    static let modifierIDs = Set(["pointHue", "pointRange", "gradingBlending", "gradingBalance", "toningAmount"]
         + gradingZones.map { "grading" + $0 + "Hue" } + bwIDs.dropFirst())
 
     /// The value of each control that leaves the picture untouched (or its default, for modifiers).
     public static func neutral(_ id: String) -> Double {
         switch id {
         case "pointRange", "gradingBlending": return 50
+        case "toningAmount": return 100
         default: return 0
         }
     }
@@ -105,6 +109,7 @@ public enum ColorLook {
         c = pointColor(c, v)
         c = blackAndWhite(c, v)
         c = grading(c, v)
+        c = toning(c, v)
         return c
     }
 
@@ -295,6 +300,33 @@ public enum ColorLook {
     static func tintDirection(hue: Double) -> RGB {
         let c = rgb(hue: hue, saturation: 1, lightness: 0.5)
         return c - RGB(1, 1, 1) * c.luma
+    }
+
+    // MARK: - Toning
+
+    /// Colours (from black to white) that each toning style gives the photo's tones.
+    static let toningPalettes: [String: [(Double, RGB)]] = [
+        "sepia": [(0, RGB(0.08, 0.05, 0.02)), (0.5, RGB(0.62, 0.47, 0.30)), (1, RGB(1, 0.96, 0.88))],
+        "duotone": [(0, RGB(0, 0, 0)), (0.5, RGB(0.30, 0.53, 0.66)), (1, RGB(1, 1, 1))],
+        "tritone": [(0, RGB(0, 0, 0)), (0.33, RGB(0.35, 0.22, 0.30)), (0.66, RGB(0.85, 0.60, 0.35)), (1, RGB(1, 1, 1))],
+    ]
+
+    /// Replaces each colour by the style's colour for its brightness, mixed in by Toning Amount.
+    static func toning(_ color: RGB, _ v: Values) -> RGB {
+        let index = Int(v["toning"])
+        guard toningOptions.indices.contains(index), let stops = toningPalettes[toningOptions[index]] else { return color }
+        return color.mixed(with: gradient(stops, color.luma), v["toningAmount"] / 100)
+    }
+
+    /// The colour at position t (0…1) along a gradient of (position, colour) stops.
+    static func gradient(_ stops: [(Double, RGB)], _ t: Double) -> RGB {
+        guard let first = stops.first, let last = stops.last else { return RGB(t, t, t) }
+        if t <= first.0 { return first.1 }
+        for i in 1..<stops.count where t <= stops[i].0 {
+            let (p0, c0) = stops[i - 1], (p1, c1) = stops[i]
+            return c0.mixed(with: c1, (t - p0) / (p1 - p0))
+        }
+        return last.1
     }
 
     // MARK: - Colour helpers

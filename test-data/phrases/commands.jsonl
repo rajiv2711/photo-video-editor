@@ -350,3 +350,10 @@
 {"group":"color","text":"bw magenta -15","expect":[{"op":"set","control":"bwMagenta","value":-15}]}
 {"group":"color","text":"reset gray magenta","expect":[{"op":"reset","control":"bwMagenta"}]}
 {"group":"color","text":"bw on bw red 40","expect":[{"op":"set","control":"bw","value":1},{"op":"set","control":"bwRed","value":40}]}
+{"group":"color","text":"toning sepia","expect":[{"op":"set","control":"toning","value":1}]}
+{"group":"color","text":"toning duotone","expect":[{"op":"set","control":"toning","value":2}]}
+{"group":"color","text":"toning tri tone","expect":[{"op":"set","control":"toning","value":3}]}
+{"group":"color","text":"toning off","expect":[{"op":"set","control":"toning","value":0}]}
+{"group":"color","text":"toning amount 60","expect":[{"op":"set","control":"toningAmount","value":60}]}
+{"group":"color","text":"less toning amount","expect":[{"op":"nudge","control":"toningAmount","steps":-1}]}
+{"group":"color","text":"reset toning strength","expect":[{"op":"reset","control":"toningAmount"}]}

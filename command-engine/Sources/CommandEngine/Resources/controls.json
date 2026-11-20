@@ -439,6 +439,16 @@
       "synonyms": ["grading blending", "blend"], "min": 0, "max": 100, "default": 50, "step": 5},
     {"id": "gradingBalance", "label": "Balance", "group": "color", "section": "Color grading", "kind": "slider",
       "synonyms": ["grading balance"], "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "toning", "label": "Toning", "group": "color", "section": "Toning", "kind": "choice",
+      "synonyms": ["toning style", "toner"],
+      "options": [
+        {"id": "none", "label": "None", "synonyms": ["off", "no toning", "plain"]},
+        {"id": "sepia", "label": "Sepia", "synonyms": ["brown", "sepia tone"]},
+        {"id": "duotone", "label": "Duotone", "synonyms": ["duo tone", "two tone"]},
+        {"id": "tritone", "label": "Tritone", "synonyms": ["tri tone", "three tone"]}
+      ]},
+    {"id": "toningAmount", "label": "Toning Amount", "group": "color", "section": "Toning", "kind": "slider",
+      "synonyms": ["toning strength"], "min": 0, "max": 100, "default": 100, "step": 5},
     {"id": "calibrationShadowsTint", "label": "Shadows Tint", "group": "color", "section": "Calibration", "kind": "slider",
       "synonyms": ["shadow tint", "calibration shadows", "calibration tint", "calibration shadows tint"], "min": -100, "max": 100, "default": 0, "step": 5},
     {"id": "calibrationRedHue", "label": "Red Primary Hue", "group": "color", "section": "Calibration", "kind": "slider",
