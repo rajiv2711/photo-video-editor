@@ -656,3 +656,11 @@
 {"group":"masks","text":"part mode intersect","expect":[{"op":"set","control":"componentMode","value":2}]}
 {"group":"masks","text":"delete component","expect":[{"op":"run","control":"deleteComponent"}]}
 {"group":"masks","text":"remove part","expect":[{"op":"run","control":"deleteComponent"}]}
+{"group":"masks","text":"mask feather 50","expect":[{"op":"set","control":"maskFeather","value":50}]}
+{"group":"masks","text":"feather mask more","expect":[{"op":"nudge","control":"maskFeather","steps":1}]}
+{"group":"masks","text":"mask smooth 40","expect":[{"op":"set","control":"maskSmooth","value":40}]}
+{"group":"masks","text":"smooth mask less","expect":[{"op":"nudge","control":"maskSmooth","steps":-1}]}
+{"group":"masks","text":"expand mask 30","expect":[{"op":"set","control":"maskExpand","value":30}]}
+{"group":"masks","text":"shift edge -20","expect":[{"op":"set","control":"maskExpand","value":-20}]}
+{"group":"masks","text":"refine edge 60","expect":[{"op":"set","control":"maskRefineEdge","value":60}]}
+{"group":"masks","text":"mask refine more","expect":[{"op":"nudge","control":"maskRefineEdge","steps":1}]}

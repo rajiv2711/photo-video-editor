@@ -59,22 +59,134 @@ public enum MaskRaster {
         return (Swift.max(2, Int((width * scale).rounded())), Swift.max(2, Int((height * scale).rounded())))
     }
 
-    /// Whether the mask needs the photo's pixels (colour and brightness ranges, auto mask, …).
+    /// Whether the mask needs the photo's pixels (colour and brightness ranges, auto mask, refine edge, …).
     public static func needsPixels(_ mask: Mask) -> Bool {
-        mask.components.contains { part in
+        (mask.settings["maskRefineEdge"] ?? 0) > 0 || mask.components.contains { part in
             ["colorRange", "luminanceRange", "magicWand", "quickSelect"].contains(part.kind)
                 || part.strokes.contains { $0.autoMask }
         }
     }
 
-    /// The whole mask: its parts joined in order, then refined, then inverted if Invert Mask is on.
+    /// The whole mask: its parts joined in order, refined, then inverted if Invert Mask is on.
     public static func render(_ mask: Mask, width: Int, height: Int, pixels: PixelGrid?) -> [Float] {
         let parts = mask.components.map { (part($0, width: width, height: height, pixels: pixels), $0.mode) }
-        var out = combine(parts, count: width * height)
+        var out = refine(combine(parts, count: width * height), settings: mask.settings, width: width, height: height, pixels: pixels)
         if (mask.settings["maskInvert"] ?? 0) != 0 {
             for i in out.indices { out[i] = 1 - out[i] }
         }
         return out
+    }
+
+    // MARK: - Refine
+
+    /// Mask refine, in this order (sizes are shares of the photo's long side):
+    /// - Mask Expand −100…100: grows (or, negative, shrinks) the mask by up to 3 %.
+    /// - Mask Smooth 0…100: blurs by up to 1.5 % and sharpens the edge again, so jagged or speckled
+    ///   edges come out round and clean (soft gradients get firmer).
+    /// - Refine Edge 0…100: a guided filter (radius up to 3 %) that makes the mask follow the photo's
+    ///   own edges: hair and leaves against the sky.
+    /// - Mask Feather 0…100: a soft edge, blurred by up to 3 %.
+    public static func refine(_ values: [Float], settings: [String: Double], width: Int, height: Int, pixels: PixelGrid?) -> [Float] {
+        var out = values
+        let long = Double(Swift.max(width, height))
+        func cells(_ slider: String, _ share: Double) -> Int {
+            Int((abs(settings[slider] ?? 0) / 100 * share * long).rounded())
+        }
+        let expand = cells("maskExpand", 0.03)
+        if expand > 0 {
+            out = extreme(out, width: width, height: height, radius: expand, grow: (settings["maskExpand"] ?? 0) > 0)
+        }
+        let smooth = cells("maskSmooth", 0.015)
+        if smooth > 0 {
+            out = blur(out, width: width, height: height, radius: smooth)
+            for i in out.indices { out[i] = Float(Effects.smoothstep(0.25, 0.75, Double(out[i]))) }
+        }
+        let edge = Swift.max(1, cells("maskRefineEdge", 0.03))
+        if (settings["maskRefineEdge"] ?? 0) > 0, let pixels, pixels.width == width, pixels.height == height {
+            var luma = [Float](repeating: 0, count: width * height)
+            for i in luma.indices {
+                let (r, g, b) = pixels.color(i)
+                luma[i] = 0.2126 * r + 0.7152 * g + 0.0722 * b
+            }
+            out = guidedFilter(out, guide: luma, width: width, height: height, radius: edge, epsilon: 0.0004)
+        }
+        let feather = cells("maskFeather", 0.03)
+        if feather > 0 {
+            out = blur(out, width: width, height: height, radius: feather)
+        }
+        return out
+    }
+
+    /// A soft blur, about a Gaussian of `radius` cells (three box blurs).
+    static func blur(_ values: [Float], width: Int, height: Int, radius: Int) -> [Float] {
+        var out = values
+        for _ in 0..<3 { out = box(out, width: width, height: height, radius: radius) }
+        return out
+    }
+
+    /// Mean over a (2r + 1)² square around each cell (fewer cells at the borders).
+    static func box(_ values: [Float], width: Int, height: Int, radius r: Int) -> [Float] {
+        guard r > 0 else { return values }
+        var across = [Float](repeating: 0, count: values.count)
+        var line = [Double](repeating: 0, count: Swift.max(width, height) + 1)
+        for y in 0..<height {
+            for x in 0..<width { line[x + 1] = line[x] + Double(values[y * width + x]) }
+            for x in 0..<width {
+                let a = Swift.max(0, x - r), b = Swift.min(width - 1, x + r)
+                across[y * width + x] = Float((line[b + 1] - line[a]) / Double(b - a + 1))
+            }
+        }
+        var out = [Float](repeating: 0, count: values.count)
+        for x in 0..<width {
+            for y in 0..<height { line[y + 1] = line[y] + Double(across[y * width + x]) }
+            for y in 0..<height {
+                let a = Swift.max(0, y - r), b = Swift.min(height - 1, y + r)
+                out[y * width + x] = Float((line[b + 1] - line[a]) / Double(b - a + 1))
+            }
+        }
+        return out
+    }
+
+    /// Largest (`grow`) or smallest value within a (2r + 1)² square around each cell.
+    static func extreme(_ values: [Float], width: Int, height: Int, radius r: Int, grow: Bool) -> [Float] {
+        func pick(_ a: Float, _ b: Float) -> Float { grow ? Swift.max(a, b) : Swift.min(a, b) }
+        /// One row or column: the extreme within r on each side, edges repeated outwards (blocks of
+        /// 2r + 1 with running extremes from each block's start and end, so any window is two lookups).
+        func line(_ v: [Float]) -> [Float] {
+            let n = v.count, k = 2 * r + 1
+            let padded = (0..<(n + 2 * r)).map { v[Swift.min(n - 1, Swift.max(0, $0 - r))] }
+            let m = padded.count
+            var prefix = padded, suffix = padded
+            for j in 1..<m where j % k != 0 { prefix[j] = pick(prefix[j - 1], padded[j]) }
+            for j in stride(from: m - 2, through: 0, by: -1) where (j + 1) % k != 0 { suffix[j] = pick(suffix[j + 1], padded[j]) }
+            return (0..<n).map { i in pick(suffix[i], prefix[i + 2 * r]) }
+        }
+        var out = values
+        for y in 0..<height {
+            let row = line(Array(out[(y * width)..<((y + 1) * width)]))
+            for x in 0..<width { out[y * width + x] = row[x] }
+        }
+        for x in 0..<width {
+            let column = line((0..<height).map { out[$0 * width + x] })
+            for y in 0..<height { out[y * width + x] = column[y] }
+        }
+        return out
+    }
+
+    /// Guided filter (He, Sun, Tang 2010): the mask, locally a straight-line function of the guide
+    /// picture's brightness, so its edges move onto the guide's edges.
+    static func guidedFilter(_ p: [Float], guide i: [Float], width: Int, height: Int, radius: Int, epsilon: Float) -> [Float] {
+        func mean(_ v: [Float]) -> [Float] { box(v, width: width, height: height, radius: radius) }
+        let meanI = mean(i), meanP = mean(p)
+        let meanII = mean(zip(i, i).map { $0 * $1 }), meanIP = mean(zip(i, p).map { $0 * $1 })
+        var a = [Float](repeating: 0, count: p.count), b = a
+        for k in p.indices {
+            let variance = meanII[k] - meanI[k] * meanI[k]
+            a[k] = (meanIP[k] - meanI[k] * meanP[k]) / (variance + epsilon)
+            b[k] = meanP[k] - a[k] * meanI[k]
+        }
+        let meanA = mean(a), meanB = mean(b)
+        return p.indices.map { k in Swift.min(1, Swift.max(0, meanA[k] * i[k] + meanB[k])) }
     }
 
     /// Joins parts in order: add keeps the larger value, subtract takes the part away

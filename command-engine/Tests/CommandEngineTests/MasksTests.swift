@@ -584,3 +584,83 @@ final class MaskMathTests: XCTestCase {
         XCTAssertEqual(MaskRaster.render(part, width: w, height: h, pixels: nil), full, "a part's invert gives the same here")
     }
 }
+
+/// Mask refine: expand and contract, smooth, refine edge and feather.
+final class MaskRefineTests: XCTestCase {
+    private var registry: ControlRegistry!
+
+    override func setUpWithError() throws {
+        registry = try ControlRegistry.bundled()
+    }
+
+    private func parse(_ text: String) -> [Command] {
+        CommandParser(registry: registry).parse(text)
+    }
+
+    /// A hard 20 × 20 square in a 100 × 100 grid.
+    private func square() -> [Float] {
+        (0..<10_000).map { i in (40..<60).contains(i % 100) && (40..<60).contains(i / 100) ? 1 : 0 }
+    }
+
+    func testRefineNames() {
+        XCTAssertEqual(parse("mask feather 50"), [.set("maskFeather", 50)])
+        XCTAssertEqual(parse("smooth mask less"), [.nudge("maskSmooth", -1)])
+        XCTAssertEqual(parse("expand mask 30"), [.set("maskExpand", 30)])
+        XCTAssertEqual(parse("shift edge -20"), [.set("maskExpand", -20)])
+        XCTAssertEqual(parse("refine edge 60"), [.set("maskRefineEdge", 60)])
+    }
+
+    func testExpandAndContract() {
+        let sq = square()
+        // 100 cells long side: 100 % expand = 3 cells.
+        let grown = MaskRaster.refine(sq, settings: ["maskExpand": 100], width: 100, height: 100, pixels: nil)
+        XCTAssertEqual(grown.reduce(0, +), 26 * 26)
+        XCTAssertEqual(grown[50 * 100 + 37], 1)
+        XCTAssertEqual(grown[50 * 100 + 36], 0)
+        let shrunk = MaskRaster.refine(sq, settings: ["maskExpand": -100], width: 100, height: 100, pixels: nil)
+        XCTAssertEqual(shrunk.reduce(0, +), 14 * 14)
+        // At the picture's edge the edge value repeats outwards.
+        let edge = MaskRaster.extreme([1, 0, 0, 0, 0, 0], width: 6, height: 1, radius: 2, grow: true)
+        XCTAssertEqual(edge, [1, 1, 1, 0, 0, 0])
+        XCTAssertEqual(MaskRaster.extreme([0, 1, 1, 1, 1, 1, 1, 0], width: 8, height: 1, radius: 1, grow: false), [0, 0, 1, 1, 1, 1, 0, 0])
+    }
+
+    func testFeatherSoftensTheEdgeAndKeepsTheArea() {
+        let sq = square()
+        let soft = MaskRaster.refine(sq, settings: ["maskFeather": 100], width: 100, height: 100, pixels: nil)
+        XCTAssertEqual(soft.reduce(0, +), sq.reduce(0, +), accuracy: 1)
+        XCTAssertGreaterThan(soft[50 * 100 + 38], 0.05, "spills out")
+        XCTAssertLessThan(soft[50 * 100 + 41], 0.9, "softens inside")
+        XCTAssertEqual(soft[50 * 100 + 50], 1, accuracy: 0.05)
+    }
+
+    func testSmoothRemovesSpecksAndKeepsBigShapes() {
+        var sq = square()
+        sq[10 * 100 + 10] = 1  // a one-cell speck
+        let smooth = MaskRaster.refine(sq, settings: ["maskSmooth": 100], width: 100, height: 100, pixels: nil)
+        XCTAssertEqual(smooth[10 * 100 + 10], 0, "the speck is gone")
+        XCTAssertEqual(smooth[50 * 100 + 50], 1)
+        XCTAssertEqual(smooth[50 * 100 + 30], 0)
+    }
+
+    func testRefineEdgeFollowsThePhotosEdges() {
+        // The photo: dark left half, bright right half. The mask: a soft ramp across the middle, not
+        // lined up with the photo's edge. Refined, it follows the edge: high on the bright side, low on the dark.
+        let w = 100, h = 10  // Refine Edge 100 reaches 3 cells
+        var rgb: [Float] = []
+        for _ in 0..<h { for x in 0..<w { let v: Float = x < 50 ? 0.1 : 0.9; rgb += [v, v, v] } }
+        let pixels = PixelGrid(width: w, height: h, rgb: rgb)
+        let ramp: [Float] = (0..<(w * h)).map { i in Float(min(1, max(0, Double(i % w - 40) / 20))) }
+        let refined = MaskRaster.refine(ramp, settings: ["maskRefineEdge": 100], width: w, height: h, pixels: pixels)
+        XCTAssertLessThan(refined[5 * w + 49], ramp[5 * w + 49] - 0.05, "dark side: less")
+        XCTAssertGreaterThan(refined[5 * w + 50], ramp[5 * w + 50] + 0.05, "bright side: more")
+        XCTAssertEqual(refined[5 * w + 30], 0, "far from the edge: as it was")
+        XCTAssertEqual(refined[5 * w + 70], 1)
+        XCTAssertTrue(MaskRaster.needsPixels(Mask(settings: ["maskRefineEdge": 50])))
+    }
+
+    func testBoxMeanAtTheBorders() {
+        XCTAssertEqual(MaskRaster.box([0, 0, 3, 0, 0], width: 5, height: 1, radius: 1), [0, 1, 1, 1, 0])
+        XCTAssertEqual(MaskRaster.box([3, 0, 0], width: 3, height: 1, radius: 1), [1.5, 1, 0])
+    }
+}

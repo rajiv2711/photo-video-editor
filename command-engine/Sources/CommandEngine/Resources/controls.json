@@ -851,6 +851,17 @@
     {"id": "invertComponent", "label": "Invert Component", "group": "masks", "section": "Component", "kind": "toggle", "scope": "component",
       "synonyms": ["component invert", "invert part", "outside", "invert gradient", "inverted component"]},
     {"id": "deleteComponent", "label": "Delete Component", "group": "masks", "kind": "action",
-      "synonyms": ["remove component", "delete part", "remove part", "component delete"]}
+      "synonyms": ["remove component", "delete part", "remove part", "component delete"]},
+    {"id": "maskFeather", "label": "Mask Feather", "group": "masks", "section": "Mask", "kind": "slider", "scope": "mask",
+      "synonyms": ["feather mask", "mask softness", "feather selection", "selection feather", "soften mask"],
+      "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "maskSmooth", "label": "Mask Smooth", "group": "masks", "section": "Mask", "kind": "slider", "scope": "mask",
+      "synonyms": ["smooth mask", "mask smoothness", "smooth edges", "smooth selection"], "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "maskExpand", "label": "Mask Expand", "group": "masks", "section": "Mask", "kind": "slider", "scope": "mask",
+      "synonyms": ["expand mask", "shift edge", "mask shift edge", "grow mask", "mask grow", "expand selection"],
+      "min": -100, "max": 100, "default": 0, "step": 5},
+    {"id": "maskRefineEdge", "label": "Refine Edge", "group": "masks", "section": "Mask", "kind": "slider", "scope": "mask",
+      "synonyms": ["mask refine", "refine mask", "edge refine", "refine mask edge", "refine selection", "hair edges"],
+      "min": 0, "max": 100, "default": 0, "step": 5}
   ]
 }
