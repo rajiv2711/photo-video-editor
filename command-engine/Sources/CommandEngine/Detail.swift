@@ -38,4 +38,19 @@ public enum Detail {
     public static func noiseRadius(amount: Double, color: Bool) -> Double {
         color ? 2 + 6 * amount : 0.8 + 1.5 * amount
     }
+
+    // MARK: - Moiré
+
+    /// Moiré removal (`amount` 0…1): how much new colour to use, by how fast the colourfulness
+    /// changes around a pixel (local range of max − min channel, softened). Busy coloured patterns
+    /// get it; plain areas keep their colour.
+    public static func moireMask(amount: Double) -> [Double] {
+        let a = Swift.min(1, Swift.max(0, amount))
+        return Effects.table(count: 64) { range in a * Effects.smoothstep(0.03, 0.12, range) }
+    }
+
+    /// Blur radius (pixels of a 2048 px photo) for the colour that replaces moiré.
+    public static func moireRadius(amount: Double) -> Double {
+        4 + 8 * amount
+    }
 }

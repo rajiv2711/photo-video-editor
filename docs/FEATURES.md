@@ -74,7 +74,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [ ] 53. **Raw details** — better raw demosaicing for fine detail **AI · later**
 - [ ] 54. **Super resolution** — 2× AI upscale **AI · later**
 - [ ] 55. **AI deblur** — recover soft or shaken photos **AI · later**
-- [ ] 56. **Moiré removal** — remove fabric / screen colour patterns
+- [x] 56. **Moiré removal** — remove fabric / screen colour patterns
 - [ ] 57. **High pass** — edge-detail layer for sharpening
 
 ### Optics

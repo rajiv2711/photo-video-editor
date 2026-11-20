@@ -40,6 +40,23 @@ final class DetailRenderer {
             output = Filters.linear(Filters.mix(encoded, colour.cropped(to: extent), min(1, 2 * chromaNR)))
         }
 
+        // Moiré: busy coloured patterns (fabric, screens) take the colour of a median-filtered, blurred
+        // copy, on the picture's own brightness. Where: the local range of colourfulness, softened.
+        let moire = v("moire") / 100
+        if moire > 0 {
+            let encoded = Filters.encoded(output)
+            let radius = Detail.pixels(Detail.moireRadius(amount: moire), longSide: side)
+            let colour = Filters.blurred(encoded.applyingFilter("CIMedianFilter"), radius: radius, extent: extent)
+                .applyingFilter("CIColorBlendMode", parameters: [kCIInputBackgroundImageKey: encoded])
+                .cropped(to: extent)
+            let chroma = encoded.applyingFilter("CIMaximumComponent").applyingFilter("CIDifferenceBlendMode", parameters: [
+                kCIInputBackgroundImageKey: encoded.applyingFilter("CIMinimumComponent"),
+            ])
+            let busy = Filters.blurred(Filters.localRange(chroma, extent: extent, radius: Detail.pixels(2, longSide: side)),
+                                       radius: Detail.pixels(4, longSide: side), extent: extent)
+            output = Filters.linear(Filters.blend(colour, over: encoded, mask: Filters.lookup(busy, table: Detail.moireMask(amount: moire))))
+        }
+
         // Sharpening: an unsharp mask at Radius, plus a finer pass that Detail turns up; Masking
         // keeps flat areas out (by the local brightness range around each pixel).
         let amount = v("sharpening") / 100

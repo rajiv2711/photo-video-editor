@@ -137,8 +137,29 @@ enum RenderGallery {
     /// - "chart": colour patches (8 hues × 3 shades, then neutrals), for the colour-band tools.
     /// - "haze": the test photo seen through a bluish-grey haze (dehaze).
     /// - "noise": the test photo with strong brightness and colour noise (noise reduction).
+    /// - "moire": the test photo with fine magenta and green stripes over it (moiré removal).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "moire":
+            // White/black stripes turned into magenta/green levels around mid-grey, then overlaid.
+            let stripes = CIFilter(name: "CIStripesGenerator", parameters: [
+                "inputColor0": CIColor(red: 1, green: 1, blue: 1),
+                "inputColor1": CIColor(red: 0, green: 0, blue: 0),
+                "inputWidth": 2,
+                "inputSharpness": 0.5,
+            ])?.outputImage
+            guard let stripes else { return photo }
+            let layer = stripes.transformed(by: CGAffineTransform(rotationAngle: 0.3)).cropped(to: photo.extent)
+                .applyingFilter("CIColorMatrix", parameters: [
+                    "inputRVector": CIVector(x: 0.24, y: 0, z: 0, w: 0),
+                    "inputGVector": CIVector(x: -0.24, y: 0, z: 0, w: 0),
+                    "inputBVector": CIVector(x: 0.24, y: 0, z: 0, w: 0),
+                    "inputBiasVector": CIVector(x: 0.38, y: 0.62, z: 0.38, w: 0),
+                ])
+            let striped = layer.applyingFilter("CIOverlayBlendMode", parameters: [
+                kCIInputBackgroundImageKey: photo.applyingFilter("CILinearToSRGBToneCurve"),
+            ])
+            return striped.applyingFilter("CISRGBToneCurveToLinear").cropped(to: photo.extent)
         case "noise":
             // Independent random levels per channel, ±17 % around mid-grey, overlaid on sRGB levels.
             guard let random = CIFilter(name: "CIRandomGenerator")?.outputImage else { return photo }

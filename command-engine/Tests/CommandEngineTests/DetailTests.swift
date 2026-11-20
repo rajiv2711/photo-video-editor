@@ -17,7 +17,7 @@ final class DetailTests: XCTestCase {
 
     func testDetailControlsAreInTheDetailPanel() {
         for id in ["sharpening", "sharpeningRadius", "sharpeningDetail", "sharpeningMasking", "noiseReduction",
-                   "chromaNoiseReduction"] {
+                   "chromaNoiseReduction", "moire"] {
             XCTAssertEqual(registry.control(id: id)?.group, "detail", id)
         }
     }
@@ -73,5 +73,21 @@ final class DetailTests: XCTestCase {
         XCTAssertGreaterThan(strong[10], light[10])
         XCTAssertEqual(Detail.noiseSmoothing(amount: 0).max(), 0)
         XCTAssertGreaterThan(Detail.noiseRadius(amount: 1, color: true), Detail.noiseRadius(amount: 1, color: false))
+    }
+
+    // MARK: - Moiré
+
+    func testMoireNames() {
+        XCTAssertEqual(parse("moire 60"), [.set("moire", 60)])
+        XCTAssertEqual(parse("moiré removal more"), [.nudge("moire", 1)])
+        XCTAssertEqual(parse("remove moire max"), [.max("moire")])
+    }
+
+    func testMoireTargetsBusyColour() {
+        let mask = Detail.moireMask(amount: 1)
+        XCTAssertEqual(mask.first, 0, "plain colour stays")
+        XCTAssertEqual(mask.last, 1)
+        XCTAssertEqual(Detail.moireMask(amount: 0).max(), 0)
+        XCTAssertGreaterThan(Detail.moireRadius(amount: 1), Detail.moireRadius(amount: 0))
     }
 }

@@ -688,6 +688,9 @@
       "min": 0, "max": 100, "default": 0, "step": 5},
     {"id": "chromaNoiseReduction", "label": "Chroma Noise Reduction", "group": "detail", "section": "Noise reduction", "kind": "slider",
       "synonyms": ["chroma noise", "chrominance noise", "noise reduction color", "noise reduction colour"],
+      "min": 0, "max": 100, "default": 0, "step": 5},
+    {"id": "moire", "label": "Moiré", "group": "detail", "kind": "slider",
+      "synonyms": ["moire", "moire removal", "moiré removal", "remove moire", "moire reduction", "moiré reduction"],
       "min": 0, "max": 100, "default": 0, "step": 5}
   ]
 }

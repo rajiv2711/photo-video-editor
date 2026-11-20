@@ -540,3 +540,6 @@
 {"group":"detail","text":"chroma noise 50","expect":[{"op":"set","control":"chromaNoiseReduction","value":50}]}
 {"group":"detail","text":"noise reduction color more","expect":[{"op":"nudge","control":"chromaNoiseReduction","steps":1}]}
 {"group":"detail","text":"noise more","expect":[{"op":"ambiguous","word":"noise","candidates":["noiseReduction","chromaNoiseReduction"]}]}
+{"group":"detail","text":"moire 60","expect":[{"op":"set","control":"moire","value":60}]}
+{"group":"detail","text":"moiré removal more","expect":[{"op":"nudge","control":"moire","steps":1}]}
+{"group":"detail","text":"remove moire max","expect":[{"op":"max","control":"moire"}]}
