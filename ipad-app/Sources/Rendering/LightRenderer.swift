@@ -35,10 +35,10 @@ struct LightRenderer {
         // (amount 1 = untouched … 0 = strongest); above 0 they brighten through the tone curve.
         // Shadows lift (up to 1) or deepen (down to −1) the dark areas.
         // Brilliance (Apple Photos) adds a shadow lift and highlight recovery of its own (+), or
-        // deepens shadows (−), plus local contrast below.
+        // deepens shadows (−); positive brilliance also adds local contrast below.
         let brilliance = v("brilliance") / 100
         let highlightAmount = max(0, 1 + min(v("highlights"), 0) / 100 - 0.4 * max(brilliance, 0))
-        let shadowAmount = min(1, max(-1, v("shadows") / 100 + 0.5 * brilliance))
+        let shadowAmount = min(1, max(-1, v("shadows") / 100 + 0.6 * brilliance))
         if highlightAmount != 1 || shadowAmount != 0 {
             output = output.applyingFilter("CIHighlightShadowAdjust", parameters: [
                 "inputHighlightAmount": highlightAmount,
@@ -47,12 +47,13 @@ struct LightRenderer {
             ])
         }
 
-        // Brilliance's local contrast: a wide unsharp mask (negative softens it).
-        if brilliance != 0 {
+        // Brilliance's local contrast: a gentle, wide unsharp mask. (Its intensity can't go below 0,
+        // and stronger settings crush dark detail next to bright areas.)
+        if brilliance > 0 {
             let filter = CIFilter.unsharpMask()
             filter.inputImage = output
             filter.radius = Float(0.02 * max(image.extent.width, image.extent.height))
-            filter.intensity = Float(0.4 * brilliance)
+            filter.intensity = Float(0.2 * brilliance)
             output = filter.outputImage ?? output
         }
 
