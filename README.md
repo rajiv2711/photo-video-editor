@@ -17,7 +17,7 @@ License: [MIT](LICENSE)
 | [`test-data/phrases/`](test-data/phrases) | Test phrases with the commands each should produce (`commands.jsonl`). |
 | [`test-data/gallery/`](test-data/gallery) | Render test cases (`gallery.json`): a command per operation and the change it must cause. |
 | [`docs/FEATURES.md`](docs/FEATURES.md) | Feature checklist: every planned photo operation, ticked when built. |
-| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report), `ci_results.py` (cloud render checks). |
+| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report), `ci_results.py` (cloud render checks), `make_luts.py` (the sample LUTs). |
 | [`.github/workflows/`](.github/workflows) | Cloud build: Linux tests → unsigned `.ipa` + iPad simulator render gallery and screenshots (feature branches publish them to `ci-renders`). |
 | `reports/`, `research_notes/` | Local only, git-ignored. |
 
@@ -80,3 +80,7 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `input black 20` · `gamma 1.5` | Levels |
 | `hdr on` · `turn off equalize` | Toggles |
 | `auto` | Runs an action (Auto sets the light sliders, Temperature, Tint and Vibrance) |
+| `white balance cloudy` · `temperature more` · `tint -20` | White balance preset (a choice), then sliders on top |
+| `white balance picker` · `point color picker` | Arms a picker: tap the photo (a neutral spot, or the colour to change) |
+| `red saturation -40` · `shadows hue 220` · `reds cyan 20` · `red from green 30` | Color mixer, Color grading, Selective color, Channel mixer |
+| `black and white` · `toning sepia` · `lut warm film` · `profile vivid` · `match color sunset` | Switches and choices of the Color panel |
