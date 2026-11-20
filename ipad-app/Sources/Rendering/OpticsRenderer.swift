@@ -57,7 +57,9 @@ final class OpticsRenderer {
         // Defringe: purple and green fringes along strong edges lose their colour.
         let purple = v("defringePurple") / 100, green = v("defringeGreen") / 100
         if purple > 0 || green > 0 {
-            let key = [purple, value("defringePurpleHue") ?? 50, green, value("defringeGreenHue") ?? 50]
+            let purpleHue: Double = value("defringePurpleHue") ?? 50
+            let greenHue: Double = value("defringeGreenHue") ?? 50
+            let key: [Double] = [purple, purpleHue, green, greenHue]
             output = defringe(output, key: key)
         }
         return output
@@ -67,7 +69,7 @@ final class OpticsRenderer {
     private func lensVignetting(_ image: CIImage, amount: Double, midpoint: Double) -> CIImage {
         let extent = image.extent
         let grid = Vignette.gridSize(width: Double(extent.width), height: Double(extent.height))
-        let key = [Double(grid.width), Double(grid.height), amount, midpoint]
+        let key: [Double] = [Double(grid.width), Double(grid.height), amount, midpoint]
         let values: [Double]
         if let cachedVignetting, cachedVignetting.key == key {
             values = cachedVignetting.values
