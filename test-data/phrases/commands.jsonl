@@ -1120,3 +1120,13 @@
 {"group":"layers","text":"collage border more","expect":[{"op":"nudge","control":"collageSpacing","steps":1}]}
 {"group":"layers","text":"collage background black","expect":[{"op":"set","control":"collageBackground","value":1}]}
 {"group":"layers","text":"collage colour grey","expect":[{"op":"set","control":"collageBackground","value":9}]}
+{"group":"layers","text":"watermark text © Rajiv 2026","expect":[{"op":"run","control":"watermarkText","text":"© Rajiv 2026"}]}
+{"group":"layers","text":"add watermark: Proof","expect":[{"op":"run","control":"watermarkText","text":"Proof"}]}
+{"group":"layers","text":"watermark logo","expect":[{"op":"set","control":"watermark","value":2}]}
+{"group":"layers","text":"watermark off","expect":[{"op":"set","control":"watermark","value":0}]}
+{"group":"layers","text":"watermark opacity 30","expect":[{"op":"set","control":"watermarkOpacity","value":30}]}
+{"group":"layers","text":"watermark transparency less","expect":[{"op":"nudge","control":"watermarkOpacity","steps":-1}]}
+{"group":"layers","text":"watermark size 8","expect":[{"op":"set","control":"watermarkSize","value":8}]}
+{"group":"layers","text":"logo size more","expect":[{"op":"nudge","control":"watermarkSize","steps":1}]}
+{"group":"layers","text":"watermark position top left","expect":[{"op":"set","control":"watermarkPosition","value":3}]}
+{"group":"layers","text":"watermark corner bottom left","expect":[{"op":"set","control":"watermarkPosition","value":1}]}

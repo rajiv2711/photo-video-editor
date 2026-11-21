@@ -51,6 +51,44 @@ final class LayerRenderer {
         return out.cropped(to: extent)
     }
 
+    // MARK: - Watermark
+
+    /// The watermark over the finished picture: its words (white, with a soft shadow so they read on
+    /// light and dark parts) or the logo, Watermark Size tall, placed and faded as the panel says.
+    func watermark(_ image: CIImage, text: String, logo: CIImage?, value: (String) -> Double?) -> CIImage {
+        let extent = image.extent
+        let style = Int(value("watermark") ?? 0)
+        guard Watermark.styles.indices.contains(style), extent.width > 0 else { return image }
+        let long = Double(max(extent.width, extent.height))
+        let height = (value("watermarkSize") ?? 4) / 100 * long
+        var stamp: CIImage?
+        switch Watermark.styles[style] {
+        case "text" where !text.isEmpty:
+            stamp = art.stamp(text, size: height)
+        case "logo":
+            if let logo, logo.extent.height > 0 {
+                let k = height / Double(logo.extent.height)
+                let moved = logo.transformed(by: CGAffineTransform(translationX: -logo.extent.minX, y: -logo.extent.minY))
+                stamp = k < 0.9 ? moved.applyingFilter("CILanczosScaleTransform", parameters: [kCIInputScaleKey: k, kCIInputAspectRatioKey: 1])
+                    : moved.transformed(by: CGAffineTransform(scaleX: CGFloat(k), y: CGFloat(k)))
+            }
+        default:
+            break
+        }
+        guard let stamp, stamp.extent.width > 0 else { return image }
+        let i = Int(value("watermarkPosition") ?? 0)
+        let position = Watermark.positions.indices.contains(i) ? Watermark.positions[i] : "bottomRight"
+        let size = stamp.extent
+        let at = Watermark.origin(position, width: Double(size.width), height: Double(size.height),
+                                  canvasWidth: Double(extent.width), canvasHeight: Double(extent.height))
+        // Core Image's y is up: the stamp's bottom is that far above the picture's bottom.
+        let placed = stamp.transformed(by: CGAffineTransform(translationX: extent.minX + CGFloat(at.x) - size.minX,
+                                                             y: extent.maxY - CGFloat(at.y) - size.height - size.minY))
+            .composited(over: Self.clear(extent)).cropped(to: extent)
+        let opacity = min(1, max(0, (value("watermarkOpacity") ?? 50) / 100))
+        return Filters.mix(Self.clear(extent), placed, opacity).composited(over: image).cropped(to: extent)
+    }
+
     // MARK: - Layer styles
 
     /// The layer's styles, made from its shape (its coverage): the content bevelled, with a stroke

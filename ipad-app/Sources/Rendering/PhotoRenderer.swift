@@ -10,7 +10,7 @@ import UIKit
 /// (exposure, tone) → color → effects → detail → masks (local adjustments) → geometry (crop, turns,
 /// transforms) → creative filters (blur, distort, …, on the picture as framed) → vignette and grain
 /// (after the crop, as Lightroom's post-crop vignette) → canvas and resize → layers (Layers panel,
-/// on the finished picture) → frame (Creative panel).
+/// on the finished picture) → frame (Creative panel) → watermark.
 /// Each panel has its own file in Rendering/ (LightRenderer.swift, …).
 final class PhotoRenderer {
     let context: CIContext
@@ -68,11 +68,12 @@ final class PhotoRenderer {
     /// Geometry panel's touch tools made; `stage`: how much of the geometry to show (the crop tool
     /// shows the whole frame); `previewScale`: the preview's size ÷ the full photo's (nil when saving),
     /// so Resize keeps the preview no sharper than the saved photo. `layers`: the Layers panel's layers
-    /// (drawn only when the whole geometry shows), `layerPhotos` the pictures photo layers show.
+    /// (drawn only when the whole geometry shows), `layerPhotos` the pictures photo layers show;
+    /// `watermark`, `logo`: the watermark's words and logo.
     func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil,
                retouches: [Retouch] = [], waitForRetouch: Bool = true, visualize: Double? = nil,
                geometry edits: GeometryEdits = GeometryEdits(), stage: GeometryStage = .full, previewScale: Double? = nil,
-               layers: [Layer] = [], layerPhotos: [CIImage] = []) -> CIImage {
+               layers: [Layer] = [], layerPhotos: [CIImage] = [], watermark: String = "", logo: CIImage? = nil) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         let extent = image.extent
         // Lens corrections, then film negative conversion: the picture range masks and pickers look at.
@@ -116,7 +117,8 @@ final class PhotoRenderer {
                            extent: below.extent, hdr: hdr)
             }
         }
-        return creative.frame(output, value: value)  // a frame over the finished picture's edge
+        output = creative.frame(output, value: value)  // a frame over the finished picture's edge
+        return self.layers.watermark(output, text: watermark, logo: logo, value: value)  // last, over everything
     }
 
     /// Auto Straighten: the Straighten angle that levels the lines of the photo last rendered (nil

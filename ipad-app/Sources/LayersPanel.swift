@@ -40,12 +40,17 @@ struct LayersPanel: View {
                 if let l = model.state.selectedLayer, model.state.layers.indices.contains(l) {
                     selected(model.state.layers[l])
                 }
-                // The whole panel's sections: the collage (the photo as opened and the photos picked).
+                // The whole panel's sections: the collage (the photo as opened and the photos picked), the watermark.
                 ForEach(Self.panelSections.sorted().filter { s in controls.contains { $0.section == s } }, id: \.self) { section in
                     DisclosureGroup(isExpanded: isOpen("layers/" + section)) {
                         VStack(alignment: .leading, spacing: 6) {
                             ForEach(controls.filter { $0.section == section }) { control in
-                                if control.kind == .action {
+                                if control.id == "watermarkText" {
+                                    TextField("Watermark text", text: Binding(get: { model.state.watermarkText },
+                                                                              set: { model.setWatermarkText($0) }))
+                                        .textFieldStyle(.roundedBorder)
+                                        .padding(.horizontal, 10)
+                                } else if control.kind == .action {
                                     makerButton(control).buttonStyle(.bordered).padding(.horizontal, 10)
                                 } else {
                                     ControlRow(model: model, control: control)

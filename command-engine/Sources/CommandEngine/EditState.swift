@@ -14,6 +14,8 @@ public struct EditState: Equatable {
     public var geometry = GeometryEdits()
     /// Layers above the photo, the lowest first ("layer 2" is the second from the bottom).
     public var layers: [Layer] = []
+    /// The watermark's words (Watermark Text).
+    public var watermarkText = ""
 
     public init() {}
 

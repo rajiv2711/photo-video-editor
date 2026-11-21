@@ -570,6 +570,13 @@
     {"id": "collage-left", "command": "collage 2 by 1", "control": "collage", "photos": ["warm"], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "collage-background", "region": [0.493, 0.2, 0.507, 0.8], "min": 100}]},
     {"id": "collage-layout", "command": "collage layout 1 by 2 collage", "control": "collageLayout", "photos": ["chart"], "expect": [{"metric": "aspect", "dir": "down", "min": 0.2}]},
     {"id": "collage-spacing", "command": "collage 2 by 1 collage spacing 8", "control": "collageSpacing", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "collage", "region": [0.465, 0.3, 0.535, 0.7], "min": 60}]},
-    {"id": "collage-background", "command": "collage 2 by 1 collage background black", "control": "collageBackground", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "down", "vs": "collage", "region": [0.493, 0.2, 0.507, 0.8], "min": 100}]}
+    {"id": "collage-background", "command": "collage 2 by 1 collage background black", "control": "collageBackground", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "down", "vs": "collage", "region": [0.493, 0.2, 0.507, 0.8], "min": 100}]},
+
+    {"id": "watermark-text", "command": "watermark text HELLO", "control": "watermarkText", "expect": [{"metric": "diff", "dir": "changed", "region": [0.72, 0.9, 0.97, 0.975], "min": 2}, {"metric": "diff", "dir": "same", "region": [0.05, 0.05, 0.6, 0.85], "min": 0.5}]},
+    {"id": "watermark", "command": "watermark text \"HELLO\" watermark off", "control": "watermark", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "watermark-position", "command": "watermark text \"HELLO\" watermark position center", "control": "watermarkPosition", "expect": [{"metric": "p95_luma", "dir": "up", "region": [0.38, 0.46, 0.62, 0.54], "min": 40}, {"metric": "diff", "dir": "same", "region": [0.6, 0.88, 0.98, 0.98], "min": 0.5}]},
+    {"id": "watermark-opacity", "command": "watermark text \"HELLO\" watermark position center watermark opacity 100", "control": "watermarkOpacity", "expect": [{"metric": "p95_luma", "dir": "up", "vs": "watermark-position", "region": [0.38, 0.46, 0.62, 0.54], "min": 15}]},
+    {"id": "watermark-size", "command": "watermark text \"HELLO\" watermark size 10", "control": "watermarkSize", "expect": [{"metric": "diff", "dir": "changed", "region": [0.5, 0.88, 0.7, 0.95], "min": 2}, {"metric": "diff", "dir": "same", "vs": "watermark-text", "region": [0.05, 0.05, 0.45, 0.8], "min": 0.5}]},
+    {"id": "watermark-logo", "command": "watermark logo watermark size 15", "control": "watermark", "photos": ["chart"], "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.8, 0.82, 0.96, 0.96], "min": 10}, {"metric": "diff", "dir": "same", "region": [0.05, 0.05, 0.6, 0.6], "min": 0.5}]}
   ]
 }

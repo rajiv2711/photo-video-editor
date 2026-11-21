@@ -116,6 +116,7 @@ final class EditorModel: ObservableObject {
         layerDrag = nil
         layerMode = "move"
         layerPhotos = []
+        watermarkLogo = nil
         mergePhotos = []
         livePhoto = nil
         if merged != nil {
@@ -597,6 +598,8 @@ final class EditorModel: ObservableObject {
             switch outcome {
             case .layered(_, .created), .layered(_, .duplicated), .changed(EditState.layerSelectorID, _, _):
                 layerMode = "move"
+            case .changed("watermark", _, let to) where Watermark.styles.indices.contains(Int(to)) && Watermark.styles[Int(to)] == "logo":
+                useWatermarkLogo()
             case .layered(_, .masked(let part)):
                 // "layer mask brush": paint the mask; a gradient or radial: back to moving the layer.
                 layerMode = part == "brush" ? "mask" : "move"
@@ -609,6 +612,25 @@ final class EditorModel: ObservableObject {
         if outcomes.contains(.ran(controlID: "penTool")) { layerMode = "pen" }
         if outcomes.contains(.ran(controlID: "paintBrush")) { layerMode = "paint" }
         if state.selectedLayer != nil { geometryTool = nil }
+    }
+
+    /// The watermark's logo: the last photo picked, as picked and the preview's size.
+    private(set) var watermarkLogo: (full: CIImage, preview: CIImage)?
+
+    /// "watermark logo": the last photo picked becomes the logo.
+    private func useWatermarkLogo() {
+        guard let photo = mergePhotos.last else {
+            if watermarkLogo == nil {
+                feedback = Feedback(text: "Pick the logo first (Layers panel → Pick Photos), then say “watermark logo”.", isProblem: true)
+            }
+            return
+        }
+        watermarkLogo = (photo, PhotoRenderer.downscaled(photo, maxSide: previewSide))
+    }
+
+    /// The watermark's words (the panel's text field), as “watermark text …” would set them.
+    func setWatermarkText(_ text: String) {
+        apply([.run("watermarkText", text: text)])
     }
 
     /// New photo layers ("place photo", "place photo 2") get the photo picked they ask for (the last
@@ -929,12 +951,13 @@ final class EditorModel: ObservableObject {
         let name = effect == .loop ? "loop" : "bounce"
         feedback = Feedback(text: "Saving the \(name)…")
         let value = currentValue, masks = state.masks, geometry = state.geometry, lens = renderer.lens
-        let layers = state.layers, photos = layerPhotos.map { $0.full }
+        let layers = state.layers, photos = layerPhotos.map { $0.full }, words = state.watermarkText, logo = watermarkLogo?.full
         mergeQueue.async {
             let exporter = PhotoRenderer()
             exporter.lens = lens
             let data = live.gif(effect, side: 720, context: exporter.context) { frame in
-                exporter.apply(to: frame, value: value, masks: masks, geometry: geometry, layers: layers, layerPhotos: photos)
+                exporter.apply(to: frame, value: value, masks: masks, geometry: geometry, layers: layers, layerPhotos: photos,
+                               watermark: words, logo: logo)
             }
             Task { @MainActor in
                 guard let data else {
@@ -1068,7 +1091,8 @@ final class EditorModel: ObservableObject {
             return
         }
         let edited = renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches,
-                                    geometry: state.geometry, layers: state.layers, layerPhotos: layerPhotos.map { $0.full })
+                                    geometry: state.geometry, layers: state.layers, layerPhotos: layerPhotos.map { $0.full },
+                                    watermark: state.watermarkText, logo: watermarkLogo?.full)
         if isHDR {
             guard let data = renderer.hdrHEIF(edited) else {
                 feedback = Feedback(text: "Couldn't render the HDR photo.", isProblem: true)
@@ -1142,7 +1166,8 @@ final class EditorModel: ObservableObject {
         let edited = renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask,
                                     retouches: state.retouches, waitForRetouch: waitsForRetouch, visualize: visualizeThreshold,
                                     geometry: state.geometry, stage: geometryStage, previewScale: previewScale,
-                                    layers: state.layers, layerPhotos: layerPhotos.map { $0.preview })
+                                    layers: state.layers, layerPhotos: layerPhotos.map { $0.preview },
+                                    watermark: state.watermarkText, logo: watermarkLogo?.preview)
         previewPlan = renderer.lastPlan
         return edited
     }

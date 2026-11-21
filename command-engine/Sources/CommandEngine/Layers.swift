@@ -549,6 +549,16 @@ extension CommandApplier {
             state.layers.append(layer)
             state.selectLayer(state.layers.count - 1)
             return [ran, .layered(layer: state.layers.count, event: .created("sticker"))]
+        case "watermarkText":
+            // The words, and the watermark switched to them.
+            state.watermarkText = command.text ?? ""
+            var out = [ran]
+            if let style = registry.control(id: "watermark") {
+                let from = state.value(of: style)
+                let to = state.set(style, to: Double(Watermark.styles.firstIndex(of: state.watermarkText.isEmpty ? "none" : "text") ?? 0))
+                if from != to { out.append(.changed(controlID: style.id, from: from, to: to)) }
+            }
+            return out
         case "solidFill", "gradientFill":
             var layer = Layers.make("fill", registry: registry)
             var style = "solid"
@@ -759,5 +769,37 @@ public enum Collage {
         }
         let h = width / a
         return GeoRect(x: 0, y: (height - h) / 2, width: width, height: h)
+    }
+}
+
+// MARK: - Watermark
+
+/// Watermark (Layers panel): words (Watermark Text) or a logo (a photo picked) stamped over the finished
+/// picture, after the frame, in the saved photo and the preview alike: in a corner, the middle, or the
+/// middle of the top or bottom edge, Watermark Size tall (a share of the long side), Watermark Opacity
+/// strong.
+public enum Watermark {
+    /// "watermark" option ids, in order; must match controls.json.
+    public static let styles = ["none", "text", "logo"]
+    /// "watermarkPosition" option ids, in order; must match controls.json.
+    public static let positions = ["bottomRight", "bottomLeft", "topRight", "topLeft", "center", "bottom", "top"]
+
+    /// The space between the stamp and the picture's edges, as a share of the long side.
+    public static let margin = 0.03
+
+    /// Where a `width` × `height` stamp's top-left goes on a `canvasWidth` × `canvasHeight` picture (pixels).
+    public static func origin(_ position: String, width: Double, height: Double, canvasWidth: Double, canvasHeight: Double) -> Vec2 {
+        let m = margin * Swift.max(canvasWidth, canvasHeight)
+        let left = m, right = canvasWidth - m - width, middleX = (canvasWidth - width) / 2
+        let top = m, bottom = canvasHeight - m - height, middleY = (canvasHeight - height) / 2
+        switch position {
+        case "bottomLeft": return Vec2(left, bottom)
+        case "topRight": return Vec2(right, top)
+        case "topLeft": return Vec2(left, top)
+        case "center": return Vec2(middleX, middleY)
+        case "bottom": return Vec2(middleX, bottom)
+        case "top": return Vec2(middleX, top)
+        default: return Vec2(right, bottom)
+        }
     }
 }

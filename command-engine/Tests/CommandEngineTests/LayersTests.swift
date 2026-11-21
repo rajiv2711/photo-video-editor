@@ -640,4 +640,38 @@ final class LayersTests: XCTestCase {
         let tall = Collage.fill(width: 200, height: 400, cell: GeoRect(x: 0, y: 0, width: 100, height: 50))
         XCTAssertEqual(tall, GeoRect(x: 0, y: 150, width: 200, height: 100))
     }
+
+    // MARK: - Watermark
+
+    func testWatermarkNames() {
+        XCTAssertEqual(parse("watermark text © Rajiv 2026"), [.run("watermarkText", text: "© Rajiv 2026")])
+        XCTAssertEqual(parse("watermark text “Draft” watermark opacity 30"), [.run("watermarkText", text: "Draft"), .set("watermarkOpacity", 30)])
+        XCTAssertEqual(parse("watermark opacity 30"), [.set("watermarkOpacity", 30)], "a longer name takes no words")
+        XCTAssertEqual(parse("watermark logo"), [.set("watermark", 2)])
+        XCTAssertEqual(parse("watermark off"), [.set("watermark", 0)])
+        XCTAssertEqual(parse("watermark position top left"), [.set("watermarkPosition", 3)])
+        XCTAssertEqual(parse("watermark size 8"), [.set("watermarkSize", 8)])
+        XCTAssertEqual(registry.control(id: "watermark")!.options.map(\.id), Watermark.styles)
+        XCTAssertEqual(registry.control(id: "watermarkPosition")!.options.map(\.id), Watermark.positions)
+    }
+
+    func testWatermarkTextSwitchesItOn() {
+        XCTAssertEqual(run("watermark text Proof"), [.ran(controlID: "watermarkText"), .changed(controlID: "watermark", from: 0, to: 1)])
+        XCTAssertEqual(state.watermarkText, "Proof")
+        run("watermark off")
+        XCTAssertEqual(state.watermarkText, "Proof", "off keeps the words for later")
+        run("reset all")
+        XCTAssertEqual(state.watermarkText, "")
+    }
+
+    func testWatermarkPlaces() {
+        // 1000 × 500 picture, margin 30 px, a 200 × 40 stamp.
+        func at(_ position: String) -> Vec2 {
+            Watermark.origin(position, width: 200, height: 40, canvasWidth: 1000, canvasHeight: 500)
+        }
+        XCTAssertEqual(at("bottomRight"), Vec2(770, 430))
+        XCTAssertEqual(at("topLeft"), Vec2(30, 30))
+        XCTAssertEqual(at("center"), Vec2(400, 230))
+        XCTAssertEqual(at("bottom"), Vec2(400, 430))
+    }
 }

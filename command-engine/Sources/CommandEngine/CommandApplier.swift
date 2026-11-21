@@ -93,6 +93,7 @@ public struct CommandApplier {
                     state.layers = []
                     outcomes.append(.layered(layer: 0, event: .allDeleted))
                 }
+                state.watermarkText = ""
                 continue
             case .ambiguous:
                 flush()

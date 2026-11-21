@@ -182,7 +182,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 136. **Gradient & fill** — fill an area with colour or a gradient
 - [x] 137. **Stickers / overlays** — place images or graphics on top
 - [x] 138. **Collage** — arrange several photos in a layout
-- [ ] 139. **Watermark** — text or logo stamp on export
+- [x] 139. **Watermark** — text or logo stamp on export
 
 ## D. Workflow
 

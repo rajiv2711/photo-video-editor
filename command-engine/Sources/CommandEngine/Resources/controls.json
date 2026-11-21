@@ -1538,6 +1538,26 @@
                   {"id": "purple", "label": "Purple", "synonyms": ["violet"]},
                   {"id": "pink", "label": "Pink"},
                   {"id": "grey", "label": "Grey", "synonyms": ["gray"]},
-                  {"id": "brown", "label": "Brown"}]}
+                  {"id": "brown", "label": "Brown"}]},
+    {"id": "watermarkText", "label": "Watermark Text", "group": "layers", "section": "Watermark", "kind": "action", "takesText": true,
+      "synonyms": ["watermark says", "add watermark", "text watermark", "watermark words", "watermark with text", "stamp text"]},
+    {"id": "watermark", "label": "Watermark", "group": "layers", "section": "Watermark", "kind": "choice",
+      "synonyms": ["watermark style", "watermark type", "watermark stamp"],
+      "options": [{"id": "none", "label": "None", "synonyms": ["off", "no watermark", "remove"]},
+                  {"id": "text", "label": "Text", "synonyms": ["words"]},
+                  {"id": "logo", "label": "Logo", "synonyms": ["image", "picture", "photo"]}]},
+    {"id": "watermarkOpacity", "label": "Watermark Opacity", "group": "layers", "section": "Watermark", "min": 0, "max": 100, "default": 50, "step": 5,
+      "synonyms": ["watermark transparency", "watermark strength", "watermark alpha", "watermark fade"]},
+    {"id": "watermarkSize", "label": "Watermark Size", "group": "layers", "section": "Watermark", "min": 1, "max": 30, "default": 4, "step": 1,
+      "synonyms": ["watermark height", "watermark scale", "size of watermark", "logo size"]},
+    {"id": "watermarkPosition", "label": "Watermark Position", "group": "layers", "section": "Watermark", "kind": "choice",
+      "synonyms": ["watermark corner", "watermark place", "watermark at", "watermark location", "watermark in the"],
+      "options": [{"id": "bottomRight", "label": "Bottom Right", "synonyms": ["lower right", "bottom right corner"]},
+                  {"id": "bottomLeft", "label": "Bottom Left", "synonyms": ["lower left", "bottom left corner"]},
+                  {"id": "topRight", "label": "Top Right", "synonyms": ["upper right", "top right corner"]},
+                  {"id": "topLeft", "label": "Top Left", "synonyms": ["upper left", "top left corner"]},
+                  {"id": "center", "label": "Center", "synonyms": ["centre", "middle"]},
+                  {"id": "bottom", "label": "Bottom", "synonyms": ["bottom center", "bottom centre", "bottom middle"]},
+                  {"id": "top", "label": "Top", "synonyms": ["top center", "top centre", "top middle"]}]}
   ]
 }

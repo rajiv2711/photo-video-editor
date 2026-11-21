@@ -222,6 +222,39 @@ final class LayerArt {
         }
     }
 
+    /// The watermark's words: white, `size` pixels tall, with a soft dark shadow, on a transparent
+    /// picture just big enough (kept until the words or the size change).
+    func stamp(_ text: String, size: Double) -> CIImage? {
+        let key = Key(layer: Layer(kind: "watermark", values: ["size": size.rounded()], text: text), width: 0, height: 0)
+        if let known = drawn[key] { return known }
+        let shadow = NSShadow()
+        shadow.shadowColor = UIColor(white: 0, alpha: 0.6)
+        shadow.shadowBlurRadius = CGFloat(size * 0.12)
+        shadow.shadowOffset = CGSize(width: 0, height: size * 0.04)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: CGFloat(size), weight: .semibold),
+            .foregroundColor: UIColor.white,
+            .shadow: shadow,
+        ]
+        let words = NSAttributedString(string: text, attributes: attributes)
+        let bounds = words.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
+                                        options: [.usesLineFragmentOrigin], context: nil)
+        let pad = CGFloat(size * 0.2)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = false
+        format.preferredRange = .standard
+        let canvas = CGSize(width: ceil(bounds.width + 2 * pad), height: ceil(bounds.height + 2 * pad))
+        let picture = UIGraphicsImageRenderer(size: canvas, format: format).image { _ in
+            words.draw(with: CGRect(x: pad, y: pad, width: bounds.width, height: bounds.height), options: [.usesLineFragmentOrigin], context: nil)
+        }
+        guard let cg = picture.cgImage else { return nil }
+        let image = CIImage(cgImage: cg)
+        if drawn.count > 24 { drawn = [:] }
+        drawn[key] = image
+        return image
+    }
+
     /// Text Font's typefaces (Layers.fonts), all on the iPad already.
     static func font(_ index: Int, size: CGFloat) -> UIFont {
         let id = Layers.fonts.indices.contains(index) ? Layers.fonts[index] : "sans"
