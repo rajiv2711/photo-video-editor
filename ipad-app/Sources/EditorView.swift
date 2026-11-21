@@ -2,10 +2,16 @@ import CommandEngine
 import Photos
 import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct EditorView: View {
     @StateObject private var model = EditorModel()
+    /// Connected cameras and SD cards (Import From Camera).
+    @StateObject private var cameras = CameraImporter()
+    @Environment(\.scenePhase) private var scenePhase
     @State private var pickerItem: PhotosPickerItem?
+    /// Photos picked with Import Photos (the Library panel's button, or said).
+    @State private var importItems: [PhotosPickerItem] = []
     @State private var command = ""
     @State private var showSettings = false
     @FocusState private var commandFocused: Bool
@@ -23,8 +29,8 @@ struct EditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    // The original file (.current), so a Portrait photo keeps its depth map.
-                    PhotosPicker(selection: $pickerItem, matching: .images, preferredItemEncoding: .current) {
+                    // The original file (.current), so a Portrait photo keeps its depth map; it joins the library.
+                    PhotosPicker(selection: $pickerItem, matching: .images, preferredItemEncoding: .current, photoLibrary: .shared()) {
                         Label("Open Photo", systemImage: "photo.on.rectangle")
                     }
                 }
@@ -54,15 +60,51 @@ struct EditorView: View {
             .sheet(isPresented: $showSettings) { SettingsView() }
             .onChange(of: pickerItem) { _, item in
                 guard let item else { return }
-                Task { @MainActor in
-                    if let data = try? await item.loadTransferable(type: Data.self) {
-                        model.load(data)
-                    }
-                    // A Live Photo: its video for the Live Photo effects (Merge panel).
-                    if let live = try? await item.loadTransferable(type: PHLivePhoto.self) {
-                        await model.openLive(live)
-                    }
-                }
+                importPicked([item])
+            }
+            // Import Photos, Import Files, Import From Camera (said or tapped in the Library panel).
+            .photosPicker(isPresented: importer("photos"), selection: $importItems, selectionBehavior: .ordered, matching: .images,
+                          preferredItemEncoding: .current, photoLibrary: .shared())
+            .onChange(of: importItems) { _, picked in
+                importPicked(picked)
+                importItems = []
+            }
+            .fileImporter(isPresented: importer("files"), allowedContentTypes: [.image, .rawImage], allowsMultipleSelection: true) { result in
+                if case .success(let urls) = result { model.importFiles(urls) }
+            }
+            .sheet(isPresented: importer("camera")) {
+                CameraImportView(importer: cameras) { urls in model.importFiles(urls) }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                // The edit of the photo being edited is kept with it in the library.
+                if phase != .active { model.saveLibrary() }
+            }
+        }
+    }
+
+    /// Whether the picker an import asked for is showing.
+    private func importer(_ kind: String) -> Binding<Bool> {
+        Binding(get: { model.importer == kind }, set: { if !$0, model.importer == kind { model.importer = nil } })
+    }
+
+    /// Photos picked in Photos: they join the library (as references to Photos when the app may read the
+    /// library, else as copies) and the first one opens.
+    private func importPicked(_ picked: [PhotosPickerItem]) {
+        guard !picked.isEmpty else { return }
+        Task { @MainActor in
+            let reference = await LibraryStore.mayReferenceAssets()
+            var items: [LibraryImport] = []
+            for item in picked {
+                guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+                let asset = reference ? item.itemIdentifier : nil
+                let ext = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
+                let name = asset.flatMap { LibraryStore.assetName($0) } ?? "Photo.\(ext)"
+                items.append(LibraryImport(data: data, name: name, asset: asset))
+            }
+            model.importPictures(items)
+            // A Live Photo: its video for the Live Photo effects (Merge panel).
+            if picked.count == 1, let live = try? await picked[0].loadTransferable(type: PHLivePhoto.self) {
+                await model.openLive(live)
             }
         }
     }
@@ -135,8 +177,12 @@ struct EditorView: View {
     private var panel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                // The library first: where photos come from.
+                LibraryPanel(model: model, expanded: $expanded)
                 ForEach(model.registry.groups, id: \.self) { group in
-                    if group == "masks" {
+                    if group == "library" {
+                        EmptyView()  // shown above
+                    } else if group == "masks" {
                         MasksPanel(model: model, expanded: $expanded)
                     } else if group == "retouch", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
                         RetouchPanel(model: model, expanded: $expanded)

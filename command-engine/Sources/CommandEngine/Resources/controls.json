@@ -1680,6 +1680,13 @@
                   {"id": "matte", "label": "Matte Print", "synonyms": ["matte", "matte paper", "uncoated", "uncoated paper"]},
                   {"id": "newsprint", "label": "Newsprint", "synonyms": ["newspaper", "news print"]}]},
     {"id": "gamutWarning", "label": "Gamut Warning", "group": "view", "section": "Proof", "kind": "toggle",
-      "synonyms": ["out of gamut", "show gamut", "gamut", "gamut warnings", "out of gamut warning"]}
+      "synonyms": ["out of gamut", "show gamut", "gamut", "gamut warnings", "out of gamut warning"]},
+    {"id": "importPhotos", "label": "Import Photos", "group": "library", "section": "Import", "kind": "action", "synonyms": ["import", "import from photos", "import pictures", "import images", "add photos", "import from photo library", "add photos to library"]},
+    {"id": "importFiles", "label": "Import Files", "group": "library", "section": "Import", "kind": "action", "synonyms": ["import from files", "import file", "open file", "open files", "import raw", "import raw files", "import from icloud drive", "import dng"]},
+    {"id": "importCamera", "label": "Import From Camera", "group": "library", "section": "Import", "kind": "action", "synonyms": ["import from card", "import from sd card", "import sd card", "sd card", "import from memory card", "camera import", "card import", "import from the camera", "import from connected camera"]},
+    {"id": "browseLibrary", "label": "Library", "group": "library", "kind": "action", "synonyms": ["show library", "photo library", "browse", "browse photos", "browse library", "catalog", "catalogue", "all my photos"]},
+    {"id": "openPhoto", "label": "Photo", "group": "library", "kind": "action", "synonyms": ["open photo", "go to photo", "show photo", "photo number", "picture", "open picture", "go to picture"]},
+    {"id": "nextPhoto", "label": "Next Photo", "group": "library", "kind": "action", "synonyms": ["next", "next picture", "next image", "go to next photo", "next one", "following photo"]},
+    {"id": "previousPhoto", "label": "Previous Photo", "group": "library", "kind": "action", "synonyms": ["prev photo", "previous picture", "previous image", "go to previous photo", "last photo", "photo before"]}
   ]
 }

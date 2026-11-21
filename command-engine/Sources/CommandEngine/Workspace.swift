@@ -58,6 +58,8 @@ public enum WorkflowEvent: Equatable {
     case copyChoices(word: String, names: [String])
     /// The only edit of the photo can't be deleted.
     case lastCopy
+    /// The library did something (Library panel).
+    case library(LibraryEvent)
 }
 
 /// One of several edits of the same photo (Virtual copies), with its own history.
@@ -94,11 +96,13 @@ public struct Workspace {
     public private(set) var copies: [VirtualCopy] = []
     /// The copy being edited (an index into `copies`).
     public private(set) var currentCopy = 0
+    /// Every photo imported, each with its own edit (Library panel).
+    public var library = Library()
 
     /// The actions the workspace runs (the applier never sees them).
-    public static let actions: Set<String> = ["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings",
+    public static let actions: Set<String> = Set(["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings",
                                               "previousSettings", "undo", "redo", "history", "saveSnapshot", "restoreSnapshot", "deleteSnapshot",
-                                              "virtualCopy", "switchCopy", "deleteCopy"]
+                                              "virtualCopy", "switchCopy", "deleteCopy"]).union(Library.actions)
 
     /// Actions that move through the history: what was changed before them is recorded first.
     public static let historyActions: Set<String> = ["undo", "redo", "history"]
@@ -117,6 +121,11 @@ public struct Workspace {
         guard let id = command.control else { return [] }
         let ran = CommandOutcome.ran(controlID: id)
         let words = command.text ?? command.value.map { String(Int($0)) } ?? ""
+        if Library.actions.contains(id) {
+            let done = library.run(command)
+            if let target = done.open { openPhoto(target, state: &state) }
+            return [ran] + done.events.map { .workflow(.library($0)) }
+        }
         switch id {
         case "applyPreset":
             switch find(words) {
@@ -299,6 +308,23 @@ public struct Workspace {
             if let n = Int(words.trimmingCharacters(in: .whitespaces)), snapshots.indices.contains(n - 1) { return .index(n - 1) }
             return .failed(.noSnapshot(words))
         }
+    }
+
+    /// Opens a photo of the library: the edit of the one being edited stays with it (and becomes
+    /// Previous), the photo's own edit comes back (a fresh one the first time), with a history of its
+    /// own; how the user looks and works (the View panel, the Include switches) stays as it is.
+    public mutating func openPhoto(_ id: String, state: inout EditState) {
+        guard library.photo(id) != nil, id != library.current else { return }
+        if let current = library.current { library.store(state, for: current) }
+        closePhoto(state)
+        var next = library.photo(id)?.edit ?? EditState()
+        for control in registry.controls where Workflow.isSetting(control) { next.values[control.id] = state.values[control.id] }
+        state = next
+        history = EditHistory(state, registry: registry)
+        snapshots = []
+        copies = []
+        currentCopy = 0
+        library.current = id
     }
 
     /// Another photo is opened: the edit of this one becomes Previous.

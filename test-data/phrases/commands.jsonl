@@ -1256,3 +1256,19 @@
 {"group":"view","text":"gamut warning","expect":[{"op":"set","control":"gamutWarning","value":1}]}
 {"group":"view","text":"show out of gamut","expect":[{"op":"set","control":"gamutWarning","value":1}]}
 {"group":"view","text":"gamut warning off","expect":[{"op":"set","control":"gamutWarning","value":0}]}
+{"group":"library","text":"import photos","expect":[{"op":"run","control":"importPhotos"}]}
+{"group":"library","text":"import from photos","expect":[{"op":"run","control":"importPhotos"}]}
+{"group":"library","text":"import files","expect":[{"op":"run","control":"importFiles"}]}
+{"group":"library","text":"import raw files","expect":[{"op":"run","control":"importFiles"}]}
+{"group":"library","text":"import from sd card","expect":[{"op":"run","control":"importCamera"}]}
+{"group":"library","text":"import from camera","expect":[{"op":"run","control":"importCamera"}]}
+{"group":"library","text":"library","expect":[{"op":"run","control":"browseLibrary"}]}
+{"group":"library","text":"show library","expect":[{"op":"run","control":"browseLibrary"}]}
+{"group":"library","text":"photo 3","expect":[{"op":"run","control":"openPhoto","value":3}]}
+{"group":"library","text":"go to photo 12","expect":[{"op":"run","control":"openPhoto","value":12}]}
+{"group":"library","text":"next photo","expect":[{"op":"run","control":"nextPhoto"}]}
+{"group":"library","text":"next","expect":[{"op":"run","control":"nextPhoto"}]}
+{"group":"library","text":"previous photo","expect":[{"op":"run","control":"previousPhoto"}]}
+{"group":"library","text":"previous picture","expect":[{"op":"run","control":"previousPhoto"}]}
+{"group":"library","text":"previous photo settings","expect":[{"op":"run","control":"previousSettings"}]}
+{"group":"library","text":"next photo exposure 0.5","expect":[{"op":"run","control":"nextPhoto"},{"op":"set","control":"exposure","value":0.5}]}

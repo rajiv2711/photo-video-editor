@@ -36,4 +36,6 @@ targets:
           UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown
           UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: Save your edited photos to your library.
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: Open the photos you import again later, so they stay in Photos without copies.
+        INFOPLIST_KEY_NSCameraUsageDescription: Import photos from a connected camera or SD card, and take photos with the Pro camera.
         INFOPLIST_KEY_NSMicrophoneUsageDescription: Hear spoken editing commands such as contrast more.

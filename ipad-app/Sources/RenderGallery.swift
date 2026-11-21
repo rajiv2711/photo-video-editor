@@ -1,7 +1,9 @@
 import CommandEngine
 import CoreImage
+import ImageIO
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 /// Cloud-build test mode, started with the launch argument `-renderGallery`.
 ///
@@ -26,6 +28,9 @@ enum RenderGallery {
         let min: Double?
         /// Measure only this box of the pictures: x0, y0, x1, y1 from the top-left, 0…1 (masks).
         let region: [Double]?
+        /// metric "field": a manifest field (see `Entry.fields`) and the value it must have.
+        let field: String?
+        let value: String?
     }
 
     struct Case: Codable {
@@ -49,6 +54,9 @@ enum RenderGallery {
         /// What to save instead of the edited photo: "overlay", the preview with the View panel's
         /// overlays, as the screen shows it; "batch", the first picture Batch Edit made.
         let view: String?
+        /// Pictures imported into an empty library before the command (generated, see `sourceImage`),
+        /// with the capture times and places of `libraryImport`; the first one is opened.
+        let library: [String]?
     }
 
     /// One step: a command, a stroke, a tap, or a photo opened (generated, see `sourceImage`).
@@ -76,6 +84,8 @@ enum RenderGallery {
         let values: [String: Double]
         /// Brightest channel value (linear light) before conversion to 8-bit pixels.
         let peak: Double
+        /// Library and export details (photo count, the photo's place, an exported file's format…).
+        let fields: [String: String]
     }
 
     struct Manifest: Codable {
@@ -113,34 +123,38 @@ enum RenderGallery {
         }
 
         let small = PhotoRenderer.downscaled(photo, maxSide: longSide)
+        // Each editor keeps its library in a folder of its own, emptied for every case.
+        func newEditor(_ source: String?) -> EditorModel {
+            let folder = FileManager.default.temporaryDirectory.appendingPathComponent("gallery-library-" + UUID().uuidString, isDirectory: true)
+            let made = EditorModel(image: sourceImage(source, photo: small), previewSide: longSide, libraryFolder: folder)
+            made.waitsForRetouch = true
+            made.waitsForMerge = true
+            made.showsPreview = false  // only the final picture of each case is saved
+            made.keepsPresets = false  // each case starts with no presets of its own
+            made.keepsLibrary = false  // and an empty library
+            return made
+        }
         // One editor per starting picture, made when a case first needs it.
         var models: [String: EditorModel] = [:]
         func editor(for source: String?) -> EditorModel {
             let key = source ?? "photo"
             if let existing = models[key] { return existing }
-            let made = EditorModel(image: sourceImage(source, photo: small), previewSide: longSide)
+            let made = newEditor(source)
             if source == "portrait" { made.useDepth(disparity: portraitDepth(small)) }
-            made.waitsForRetouch = true
-            made.waitsForMerge = true
-            made.showsPreview = false  // only the final picture of each case is saved
-            made.keepsPresets = false  // each case starts with no presets of its own
             models[key] = made
             return made
         }
         var entries: [Entry] = []
         for item in cases {
             // A case that opens another photo gets an editor of its own (the shared one keeps its photo).
-            let opens = item.steps?.contains { $0.open != nil } ?? false
-            let model = opens ? EditorModel(image: sourceImage(item.source, photo: small), previewSide: longSide) : editor(for: item.source)
-            if opens {
-                model.waitsForRetouch = true
-                model.waitsForMerge = true
-                model.showsPreview = false
-                model.keepsPresets = false
-            }
+            let opens = item.steps?.contains { $0.open != nil } ?? false || item.library != nil
+            let model = opens ? newEditor(item.source) : editor(for: item.source)
             model.startOver()
             if let photos = item.photos {
                 model.pickForMerge(photos.map { sourceImage($0, photo: small) })
+            }
+            if let library = item.library {
+                model.importPictures(library.enumerated().compactMap { libraryImport($0.element, index: $0.offset, photo: small) })
             }
             if let live = item.live, live.count >= 2 {
                 let pictures = live.map { sourceImage($0, photo: small) }
@@ -176,12 +190,42 @@ enum RenderGallery {
                 file: file,
                 feedback: model.feedback?.text ?? "",
                 values: model.changedValues(),
-                peak: model.renderer.peak(of: edited)
+                peak: model.renderer.peak(of: edited),
+                fields: model.galleryFields()
             ))
         }
         writeFilterAttributes(to: folder)
         let size = small.extent.integral.size
         write(Manifest(photo: "test.jpg", width: Int(size.width), height: Int(size.height), cases: entries, error: nil), to: folder)
+    }
+
+    /// Seconds after 2026-11-21 10:00 (UTC) at which the library's generated photos were taken, in import
+    /// order: three a second apart (a burst), two more a minute later, then one every five minutes.
+    static let libraryTimes: [Double] = [0, 1, 2, 60, 61, 300, 600, 900]
+
+    /// A generated picture as a JPEG file to import, with EXIF saying when it was taken (`libraryTimes`)
+    /// and, for every other one (the 1st, 3rd, …), where: 51.50° N, 0.12° W, then 0.01° further north-west each.
+    static func libraryImport(_ source: String, index: Int, photo: CIImage) -> LibraryImport? {
+        let picture = sourceImage(source, photo: photo)
+        let context = CIContext()
+        guard let cg = context.createCGImage(picture, from: picture.extent.integral) else { return nil }
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil),
+              let start = PhotoMetadata.date("2026:11:21 10:00:00") else { return nil }
+        let taken = start.addingTimeInterval(libraryTimes[index % libraryTimes.count] + Double(index / libraryTimes.count) * 3600)
+        var properties: [CFString: Any] = [
+            kCGImageDestinationLossyCompressionQuality: 0.95,
+            kCGImagePropertyExifDictionary: [kCGImagePropertyExifDateTimeOriginal: PhotoMetadata.exifText(taken)] as [CFString: Any],
+            kCGImagePropertyTIFFDictionary: [kCGImagePropertyTIFFMake: "Gallery", kCGImagePropertyTIFFModel: "Test Camera"] as [CFString: Any],
+        ]
+        if index % 2 == 0 {
+            let step = 0.01 * Double(index / 2)
+            properties[kCGImagePropertyGPSDictionary] = [kCGImagePropertyGPSLatitude: 51.5 + step, kCGImagePropertyGPSLatitudeRef: "N",
+                                                        kCGImagePropertyGPSLongitude: 0.12 + step, kCGImagePropertyGPSLongitudeRef: "W"] as [CFString: Any]
+        }
+        CGImageDestinationAddImage(destination, cg, properties as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return LibraryImport(data: data as Data, name: source + ".jpg", asset: nil)
     }
 
     /// The picture a case starts from: the test photo, or one made from it so colour tools have

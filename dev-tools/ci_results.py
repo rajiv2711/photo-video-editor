@@ -15,6 +15,9 @@ Geometry: width, height (pixels) and aspect (width / height) of the picture; til
 straight edges are from level or upright (degrees, weighted median); vertical_spread: how much the nearly
 upright edges disagree (degrees, weighted spread: converging verticals spread, parallel ones don't).
 flat: the share (%) of pixels whose 3 x 3 neighbourhood spans at most 3 luma levels (mosaic, cutout).
+field: a value the app wrote in the manifest ("fields", or a control's value in "values"), e.g. the library's
+photo count or an exported file's format, read back with ImageIO; "dir": "is" and "value" what it must be
+(numbers within 0.5 %, text exactly).
 
 Exit code: 0 all passed · 1 a build step or a case failed · 3 no results for this commit yet.
 """
@@ -49,7 +52,7 @@ METRIC_NAMES = {
     "edge": "fine detail", "local_contrast": "local contrast", "fringe": "edge colour",
     "corner_luma": "corner luma", "center_luma": "centre luma",
     "width": "width (px)", "height": "height (px)", "aspect": "aspect (w/h)", "tilt": "tilt (°)", "vertical_spread": "vertical spread (°)",
-    "flat": "flat share (%)",
+    "flat": "flat share (%)", "field": "field",
 }
 STEPS = [("linux_tests", "Linux tests"), ("generate", "Xcode project"), ("build", "Build"),
          ("install", "Install"), ("gallery", "Gallery"), ("screenshots", "Screenshots")]
@@ -191,6 +194,24 @@ def check(expect: dict, value: float, ref: float) -> tuple[bool, float]:
     return ok, delta
 
 
+def check_field(case: dict, expect: dict) -> tuple[bool, str]:
+    """A manifest field ("fields", else "values") against the expected value: numbers within 0.5 %, text exactly."""
+    name, want = expect["field"], str(expect["value"])
+    fields = case.get("fields") or {}
+    got = fields.get(name)
+    if got is None and name in (case.get("values") or {}):
+        got = case["values"][name]
+    if got is None:
+        return False, f"{name}: missing (want {want})"
+    got = str(got)
+    try:
+        a, b = float(got), float(want)
+        ok = abs(a - b) <= max(1e-9, 0.005 * abs(b))
+    except ValueError:
+        ok = got == want
+    return ok, f"{name} is {want}: {got}"
+
+
 def thumb(src: Path, name: str) -> str:
     (OUT / "thumbs").mkdir(exist_ok=True)
     im = Image.open(src).convert("RGB")
@@ -258,6 +279,11 @@ def main() -> int:
         if c["id"] not in measured:
             ok_all, checks = False, [("no picture", False)]
         for e in c["expect"]:
+            if e["metric"] == "field":
+                ok, text = check_field(c, e)
+                ok_all &= ok
+                checks.append((text, ok))
+                continue
             ref_id = e.get("vs") or "base"
             if c["id"] not in measured or ref_id not in measured:
                 ok_all = False

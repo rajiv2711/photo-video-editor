@@ -11,6 +11,9 @@ final class GalleryCasesTests: XCTestCase {
         let dir: String
         let vs: String?
         let region: [Double]?
+        /// metric "field": a value the app wrote in the manifest (a library or export detail) and what it must be.
+        let field: String?
+        let value: String?
     }
 
     struct Case: Decodable {
@@ -25,6 +28,7 @@ final class GalleryCasesTests: XCTestCase {
         let photos: [String]?
         let live: [String]?
         let view: String?
+        let library: [String]?
     }
 
     struct Step: Decodable {
@@ -43,8 +47,9 @@ final class GalleryCasesTests: XCTestCase {
         "mean_luma", "p5_luma", "p25_luma", "p50_luma", "p75_luma", "p95_luma",
         "mean_sat", "mean_r", "mean_g", "mean_b", "diff", "peak",
         "edge", "local_contrast", "fringe", "corner_luma", "center_luma", "width", "height", "aspect", "tilt", "vertical_spread", "flat",
+        "field",
     ]
-    static let directions: Set = ["up", "down", "changed", "same"]
+    static let directions: Set = ["up", "down", "changed", "same", "is"]
     /// What a case may save instead of the edited photo; must match RenderGallery in the app.
     static let views: Set = ["batch", "overlay"]
     /// Generated starting pictures; must match RenderGallery.sourceImage in the app.
@@ -81,7 +86,7 @@ final class GalleryCasesTests: XCTestCase {
             XCTAssertFalse(c.id.contains("/") || c.id.contains(" "), "\(c.id): use letters, digits and dashes")
             if c.id != "base" { XCTAssertFalse(c.expect.isEmpty, "\(c.id) has no expectation") }
             if let source = c.source { XCTAssertTrue(Self.sources.contains(source), "\(c.id): unknown source \(source)") }
-            for photo in (c.photos ?? []) + (c.live ?? []) { XCTAssertTrue(Self.sources.contains(photo), "\(c.id): unknown photo \(photo)") }
+            for photo in (c.photos ?? []) + (c.live ?? []) + (c.library ?? []) { XCTAssertTrue(Self.sources.contains(photo), "\(c.id): unknown photo \(photo)") }
             if let live = c.live { XCTAssertGreaterThanOrEqual(live.count, 2, "\(c.id): a Live Photo is its photo and frames") }
             if let view = c.view { XCTAssertTrue(Self.views.contains(view), "\(c.id): unknown view \(view)") }
             if c.view == "batch" { XCTAssertFalse((c.photos ?? []).isEmpty, "\(c.id): a batch needs photos picked") }
@@ -102,6 +107,9 @@ final class GalleryCasesTests: XCTestCase {
             for e in c.expect {
                 XCTAssertTrue(Self.metrics.contains(e.metric), "\(c.id): unknown metric \(e.metric)")
                 XCTAssertTrue(Self.directions.contains(e.dir), "\(c.id): unknown direction \(e.dir)")
+                // A field is compared as it is ("is"); pictures are measured (up, down, changed, same).
+                XCTAssertEqual(e.metric == "field", e.dir == "is", "\(c.id): metric field goes with dir is")
+                if e.metric == "field" { XCTAssertTrue(e.field != nil && e.value != nil, "\(c.id): a field check needs field and value") }
                 if let vs = e.vs { XCTAssertTrue(ids.contains(vs), "\(c.id): vs \(vs) is not a case") }
                 if let r = e.region {
                     XCTAssertTrue(r.count == 4 && r.allSatisfy { (0...1).contains($0) } && r[0] < r[2] && r[1] < r[3],

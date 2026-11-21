@@ -35,6 +35,8 @@ final class EditorModel: ObservableObject {
     @Published private(set) var scopes: ScopeReadings?
     /// Colour samplers: points on the shown picture (0…1 from the top-left), oldest first.
     @Published private(set) var samplers: [MaskPoint] = []
+    /// An import asked for by name or button ("photos", "files", "camera"): the view shows its picker.
+    @Published var importer: String?
 
     /// What the View panel's scopes show.
     struct ScopeReadings: Equatable {
@@ -83,13 +85,18 @@ final class EditorModel: ObservableObject {
     private var historyKey: String?
     private var historySeal = false
     private let recorder = AudioRecorder()
+    /// The library's files (Documents/Library; the render gallery gives each editor a folder of its own).
+    let libraryStore: LibraryStore
+    /// Keep the library in its file and across "start over" (the render gallery starts each case with an empty one).
+    var keepsLibrary = true
 
     /// `image` replaces the bundled test photo (the render gallery passes a small copy);
-    /// `previewSide` is the long side of the live preview.
-    init(image: CIImage? = nil, previewSide: CGFloat = 2048) {
+    /// `previewSide` is the long side of the live preview; `libraryFolder` where the library is kept.
+    init(image: CIImage? = nil, previewSide: CGFloat = 2048, libraryFolder: URL? = nil) {
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
         self.registry = registry
         self.interpreter = CommandInterpreter(registry: registry)
+        self.libraryStore = LibraryStore(folder: libraryFolder ?? LibraryStore.standardFolder)
         // Default picture: the committed test photo, or a generated gradient if it's missing.
         let start: CIImage
         if let image {
@@ -107,12 +114,14 @@ final class EditorModel: ObservableObject {
         renderer.lens = Self.lens(of: start)
         savedPresets = Self.readPresets()
         interpreter.workspace.presets = savedPresets
+        interpreter.workspace.library = libraryStore.read()
         installActions()
         // Retouch steps are worked out in the background: show them when they are ready.
         renderer.retouch.onFinish = { [weak self] in
             Task { @MainActor in self?.render() }
         }
         render()
+        resumeLibrary()
 
         // Launch argument used by the cloud build to screenshot a command's effect.
         if let demo = UserDefaults.standard.string(forKey: "demoCommand") {
@@ -191,6 +200,7 @@ final class EditorModel: ObservableObject {
             interpreter.workspace.presets = kept.presets
             interpreter.workspace.clipboard = kept.clipboard
         }
+        if keepsLibrary { interpreter.workspace.library = kept.library }
         installActions()
         focusedControlID = nil
         feedback = nil
@@ -766,6 +776,9 @@ final class EditorModel: ObservableObject {
         "colorSampler": "Tap the photo where to read the colour (RGB and L*a*b*; up to 4 samplers).",
     ]
 
+    /// The import actions and the picker each asks the view to show.
+    static let importers = ["importPhotos": "photos", "importFiles": "files", "importCamera": "camera"]
+
     /// What the Effect Center picker asks.
     static let centerHint = "Tap the photo where the effect's centre should be."
 
@@ -775,6 +788,12 @@ final class EditorModel: ObservableObject {
         revealedPanel = nil
         for case .workflow(let event) in outcomes {
             if case .historyShown = event { revealedPanel = "history" }
+            if case .library(.browsed) = event { revealedPanel = "library" }
+            // "next photo": the engine has put that photo's edit in place; its picture comes now.
+            if case .library(.opened(let id, _, _)) = event { showLibraryPhoto(id) }
+        }
+        if outcomes.contains(where: { if case .ran(let id) = $0 { return Library.actions.contains(id) } else { return false } }) {
+            saveLibrary()
         }
         armGeometryTools(outcomes)
         armLayerTools(outcomes)
@@ -785,6 +804,10 @@ final class EditorModel: ObservableObject {
                 feedback = Feedback(text: "Colour samplers cleared")
             }
             if let kind = MergeTools.actions[id] { merge(kind) }
+            if let kind = Self.importers[id] {
+                importer = kind
+                revealedPanel = "library"
+            }
             if id == "batchEdit" { batchEdit() }
             if id == "matchExposures" { batchEdit(matching: true) }
         }
@@ -952,33 +975,166 @@ final class EditorModel: ObservableObject {
         }
     }
 
-    func load(_ data: Data) {
-        guard let image = CIImage(data: data, options: [.applyOrientationProperty: true]) else {
-            feedback = Feedback(text: "That file couldn't be opened as a photo.", isProblem: true)
+    // MARK: - Library (import, open, next / previous)
+
+    /// Every photo imported, each with its own edit.
+    var library: Library { interpreter.workspace.library }
+
+    /// The browser's small picture of a library photo.
+    func thumbnail(_ id: String) -> UIImage? {
+        libraryStore.thumbnail(id)
+    }
+
+    /// Pictures imported (from Photos, Files, a camera or an SD card): added to the library, the first
+    /// one opened.
+    func importPictures(_ items: [LibraryImport]) {
+        var added: [LibraryPhoto] = []
+        for item in items {
+            guard let photo = libraryStore.add(item) else { continue }
+            interpreter.workspace.library.add(photo)
+            added.append(photo)
+        }
+        guard let first = added.first else {
+            feedback = Feedback(text: items.isEmpty ? "Nothing to import." : "Those files couldn't be opened as photos.", isProblem: true)
             return
         }
-        open(image)
-        renderer.portrait.depth = Self.depth(in: data, context: renderer.context)
+        openLibraryPhoto(first.id)
+        let n = added.count
+        feedback = Feedback(text: "Imported \(n) photo\(n == 1 ? "" : "s")" + (n < items.count ? " (\(items.count - n) couldn't be read)" : "")
+                            + " · the library has \(library.photos.count) · editing \(first.name)")
+        saveLibrary()
+    }
+
+    /// Files picked in Files (or copied from a camera or card), read while the app may.
+    func importFiles(_ urls: [URL]) {
+        var items: [LibraryImport] = []
+        for url in urls {
+            let scoped = url.startAccessingSecurityScopedResource()
+            if let data = try? Data(contentsOf: url) { items.append(LibraryImport(data: data, name: url.lastPathComponent, asset: nil)) }
+            if scoped { url.stopAccessingSecurityScopedResource() }
+        }
+        importPictures(items)
+    }
+
+    /// A picture that isn't in the library yet (the render gallery's "open" step): imported, then opened.
+    func open(_ image: CIImage) {
+        guard let data = renderer.jpegData(image) else { return }
+        importPictures([LibraryImport(data: data, name: "Photo.jpg", asset: nil)])
+    }
+
+    /// Opens a library photo by touch (its thumbnail), as "photo 3" would: its own edit comes back.
+    func openLibraryPhoto(_ id: String) {
+        guard id != library.current, library.photo(id) != nil else { return }
+        historyLabel = nil
+        interpreter.workspace.openPhoto(id, state: &state)
+        let shown = library.shown
+        let index = (shown.firstIndex { $0.id == id } ?? 0) + 1
+        feedback = Feedback(text: describe(LibraryEvent.opened(id: id, index: index, count: shown.count)).text)
+        showLibraryPhoto(id)
+        saveLibrary()
         render()
     }
 
-    /// Edits a new photo from the start (as Lightroom does): the edit of the one before becomes
-    /// Previous; the presets, copied settings and Previous carry over.
-    func open(_ image: CIImage) {
-        var library = interpreter.workspace
-        library.closePhoto(state)
-        opened = image
+    /// Shows a library photo's picture (the engine has already put its edit in place): a file at once, a
+    /// Photos asset when it has loaded.
+    private func showLibraryPhoto(_ id: String) {
+        guard let photo = library.photo(id) else { return }
+        if let data = libraryStore.fileData(for: photo) {
+            show(data)
+            return
+        }
+        Task { @MainActor in
+            let data = await self.libraryStore.data(for: photo)
+            guard self.library.current == id else { return }
+            guard let data else {
+                self.feedback = Feedback(text: "“\(photo.name)” can't be read: was it deleted from Photos, or may the app no longer read the library?",
+                                         isProblem: true)
+                return
+            }
+            self.show(data)
+            self.render()
+        }
+    }
+
+    /// A picture's bytes become the photo being edited; the touch tools and what belonged to the photo
+    /// before (merges, layer pictures, samplers, zoom) start afresh.
+    private func show(_ data: Data) {
+        guard let picture = LibraryStore.decode(data) else {
+            feedback = Feedback(text: "That file couldn't be opened as a photo.", isProblem: true)
+            return
+        }
+        opened = picture.image
         merged = nil
         livePhoto = nil
         mergeJob += 1
         isMerging = false
-        replacePhoto(image, lens: Self.lens(of: image))
-        renderer.portrait.depth = nil
-        startOver()
-        interpreter.workspace.presets = library.presets
-        interpreter.workspace.clipboard = library.clipboard
-        interpreter.workspace.previous = library.previous
-        feedback = Feedback(text: "New photo: say “previous” for the last photo's edit, or “paste settings”")
+        replacePhoto(picture.image, lens: Self.lens(properties: picture.properties))
+        renderer.portrait.depth = Self.depth(in: data, context: renderer.context)
+        armedPicker = nil
+        geometryTool = nil
+        dragBase = nil
+        cropDrag = nil
+        quadDrag = nil
+        pinDrag = nil
+        layerDrag = nil
+        layerMode = "move"
+        layerPhotos = []
+        watermarkLogo = nil
+        samplers = []
+        zoomPercent = 0
+        viewCenter = MaskPoint(0.5, 0.5)
+        loupe = nil
+    }
+
+    /// At launch: the photo being edited when the app was last used, with its edit.
+    private func resumeLibrary() {
+        guard let id = library.current, let photo = library.photo(id) else { return }
+        state = photo.edit ?? EditState()
+        interpreter.workspace.history = EditHistory(state, registry: registry)
+        showLibraryPhoto(id)
+        render()
+    }
+
+    /// Writes the library (with the edit of the photo being edited) to its file.
+    func saveLibrary() {
+        guard keepsLibrary else { return }
+        var kept = library
+        if let id = kept.current { kept.store(state, for: id) }
+        libraryStore.write(kept)
+    }
+
+    /// What the library did, for the feedback line.
+    private func describe(_ event: LibraryEvent) -> (text: String, problem: Bool) {
+        func name(_ id: String?) -> String { library.photo(id)?.name ?? "" }
+        switch event {
+        case .empty:
+            return ("The library is empty: import photos first (Library panel → Photos, Files or Card)", true)
+        case .opened(let id, let index, let count):
+            let edited = library.photo(id)?.edit != nil
+            return ("Photo \(index) of \(count): \(name(id))" + (edited ? " (its edit is back)" : ""), false)
+        case .at(let index, let count):
+            return index == 0 ? ("This photo isn't among the \(count) the library shows", false)
+                : ("Photo \(index) of \(count): \(name(library.current))", false)
+        case .noPhoto(let n):
+            return ("No photo \(n): the library shows \(library.shown.count)", true)
+        case .end(let next):
+            return (next ? "That's the last photo" : "That's the first photo", true)
+        case .browsed(let shown, let total):
+            return ("Library: \(total) photo\(total == 1 ? "" : "s")" + (shown < total ? ", \(shown) shown" : ""), false)
+        }
+    }
+
+    /// Library and export details for the render gallery's manifest (checked as "field" expectations).
+    func galleryFields() -> [String: String] {
+        var out: [String: String] = [:]
+        let lib = library
+        out["library.count"] = String(lib.photos.count)
+        out["library.shown"] = String(lib.shown.count)
+        out["photo.index"] = String(lib.currentIndex ?? 0)
+        if let photo = lib.photo(lib.current) { out["photo.name"] = photo.name }
+        if let importer { out["ui.importer"] = importer }
+        if let revealedPanel { out["ui.panel"] = revealedPanel }
+        return out
     }
 
     // MARK: - Portrait depth
@@ -1206,6 +1362,8 @@ final class EditorModel: ObservableObject {
             return (copyNames.count == 1 ? "No virtual copies yet: say “virtual copy …”" : "No copy called “\(word)”", true)
         case .lastCopy:
             return ("The photo's only edit can't be deleted", true)
+        case .library(let event):
+            return describe(event)
         }
     }
 
@@ -1445,8 +1603,13 @@ final class EditorModel: ObservableObject {
 
     /// The lens a photo was taken with, from its EXIF data (Lens Profile Correction).
     static func lens(of image: CIImage) -> PhotoLens {
-        let exif = image.properties["{Exif}"] as? [String: Any]
-        let tiff = image.properties["{TIFF}"] as? [String: Any]
+        lens(properties: image.properties)
+    }
+
+    /// The lens in a file's properties (EXIF and TIFF dictionaries).
+    static func lens(properties: [String: Any]) -> PhotoLens {
+        let exif = properties["{Exif}"] as? [String: Any]
+        let tiff = properties["{TIFF}"] as? [String: Any]
         return PhotoLens(make: tiff?["Make"] as? String,
                          lensModel: exif?["LensModel"] as? String,
                          focal: (exif?["FocalLength"] as? NSNumber)?.doubleValue,
