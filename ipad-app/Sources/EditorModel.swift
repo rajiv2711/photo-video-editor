@@ -253,6 +253,12 @@ final class EditorModel: ObservableObject {
         viewCenter = MaskPoint(0.5, 0.5)
         loupe = nil
         livePhoto = nil
+        // What the last export, print and tethered shot did belongs to the old edit.
+        lastExported = ""
+        lastPrint = ""
+        lastShot = ""
+        fileToSave = nil
+        shareFile = nil
         if merged != nil {
             merged = nil
             mergeJob += 1

@@ -17,7 +17,7 @@ upright edges disagree (degrees, weighted spread: converging verticals spread, p
 flat: the share (%) of pixels whose 3 x 3 neighbourhood spans at most 3 luma levels (mosaic, cutout).
 field: a value the app wrote in the manifest ("fields", or a control's value in "values"), e.g. the library's
 photo count or an exported file's format, read back with ImageIO; "dir": "is" and "value" what it must be
-(numbers within 0.5 %, text exactly).
+(numbers within 0.5 %, text exactly; an empty value: the field must not be there).
 
 Exit code: 0 all passed · 1 a build step or a case failed · 3 no results for this commit yet.
 """
@@ -202,7 +202,8 @@ def check_field(case: dict, expect: dict) -> tuple[bool, str]:
     if got is None and name in (case.get("values") or {}):
         got = case["values"][name]
     if got is None:
-        return False, f"{name}: missing (want {want})"
+        # An empty value means the app must not have written the field (e.g. no print left over from a case before).
+        return (True, f"{name} not set") if want == "" else (False, f"{name}: missing (want {want})")
     got = str(got)
     try:
         a, b = float(got), float(want)
