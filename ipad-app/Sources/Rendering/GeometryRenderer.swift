@@ -45,7 +45,8 @@ final class GeometryRenderer {
     func plan(extent: CGRect, value: (String) -> Double?, edits: GeometryEdits, stage: GeometryStage) -> GeometryPlan {
         let settings = GeometrySettings(value: value)
         let lines = settings.upright == "off" ? [] : (lineCache?.segments ?? [])
-        return GeometryPlan(settings: settings, width: Double(extent.width), height: Double(extent.height), stage: stage, segments: lines)
+        return GeometryPlan(settings: settings, width: Double(extent.width), height: Double(extent.height), stage: stage, segments: lines,
+                            edits: edits)
     }
 
     /// The picture put into its frame and cropped, as the plan says; the result starts at the origin.

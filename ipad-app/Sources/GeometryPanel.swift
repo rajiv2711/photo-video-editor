@@ -73,6 +73,17 @@ struct GeometryCanvas: View {
             ZStack {
                 Color.clear.contentShape(Rectangle())
                 if tool == "crop" { cropBox(geo.size).allowsHitTesting(false) }
+                if tool == "guides" {
+                    // The guides drawn so far, where they now show.
+                    Path { path in
+                        for (a, b) in model.shownGuides {
+                            path.move(to: CGPoint(x: CGFloat(a.x) * geo.size.width, y: CGFloat(a.y) * geo.size.height))
+                            path.addLine(to: CGPoint(x: CGFloat(b.x) * geo.size.width, y: CGFloat(b.y) * geo.size.height))
+                        }
+                    }
+                    .stroke(Color.cyan, lineWidth: 2)
+                    .allowsHitTesting(false)
+                }
                 if let line {
                     Path { path in
                         path.move(to: line.0)
@@ -101,7 +112,7 @@ struct GeometryCanvas: View {
     }
 
     /// Tools that take a line drawn on the photo (handed over when the finger lifts).
-    static let lines: Set<String> = ["straighten"]
+    static let lines: Set<String> = ["straighten", "guides"]
 
     /// The crop box: the outside dimmed, thirds lines inside, handles at the corners.
     private func cropBox(_ size: CGSize) -> some View {

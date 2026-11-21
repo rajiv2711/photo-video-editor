@@ -1074,7 +1074,12 @@
         {"id": "auto", "label": "Auto", "synonyms": ["automatic", "balanced"]},
         {"id": "level", "label": "Level", "synonyms": ["levels", "horizon", "level only"]},
         {"id": "vertical", "label": "Vertical", "synonyms": ["verticals", "vertical lines", "vertical only"]},
-        {"id": "full", "label": "Full", "synonyms": ["all", "both", "full perspective"]}
-      ]}
+        {"id": "full", "label": "Full", "synonyms": ["all", "both", "full perspective"]},
+        {"id": "guided", "label": "Guided", "synonyms": ["guides", "manual guides", "by guides"]}
+      ]},
+    {"id": "guidedUpright", "label": "Guided Upright", "group": "geometry", "section": "Upright", "kind": "action",
+      "synonyms": ["guided", "draw guides", "guide tool", "guides tool", "upright guides", "guided perspective", "draw upright guides"]},
+    {"id": "clearGuides", "label": "Clear Guides", "group": "geometry", "section": "Upright", "kind": "action",
+      "synonyms": ["delete guides", "remove guides", "reset guides", "erase guides", "clear the guides", "no guides"]}
   ]
 }

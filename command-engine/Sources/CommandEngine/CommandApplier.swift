@@ -310,6 +310,10 @@ public struct CommandApplier {
             for id in GeometryTools.cropIDs {
                 if let c = registry.control(id: id) { set(id, c.defaultValue) }
             }
+        case "guidedUpright":
+            set("upright", Double(Upright.modes.firstIndex(of: "guided") ?? 0))
+        case "clearGuides":
+            state.geometry.guides = []
         case "rotateLeft", "rotateRight":
             let turns = registry.control(id: "rotation").map { state.value(of: $0) } ?? 0
             set("rotation", Double(((Int(turns) + (control.id == "rotateRight" ? 1 : 3)) % 4)))

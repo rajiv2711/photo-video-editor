@@ -431,6 +431,58 @@ final class GeometryTests: XCTestCase {
         for c in [Vec2(plan.crop.x, plan.crop.y), Vec2(plan.crop.maxX, plan.crop.maxY)] { XCTAssertTrue(Crop.inside(c, plan.photoCorners)) }
     }
 
+    /// A guide (normalized) along the line through `a`, `b` (pixels) as `g` shows it.
+    static func guide(_ a: Vec2, _ b: Vec2, through g: Homography, width: Double, height: Double) -> [MaskPoint] {
+        let p = g.apply(a), q = g.apply(b)
+        return [MaskPoint(p.x / width, p.y / height), MaskPoint(q.x / width, q.y / height)]
+    }
+
+    func testGuidedUprightFollowsTheDrawnGuides() {
+        let w = 600.0, h = 800.0
+        let g = Self.cameraTurn(pitch: 14, yaw: 8, width: w, height: h)
+        let segments = Self.gridSegments(through: g, width: w, height: h)
+        let left = Self.guide(Vec2(100, 100), Vec2(100, 700), through: g, width: w, height: h)
+        let right = Self.guide(Vec2(500, 100), Vec2(500, 700), through: g, width: w, height: h)
+        let top = Self.guide(Vec2(100, 200), Vec2(500, 200), through: g, width: w, height: h)
+        let bottom = Self.guide(Vec2(100, 600), Vec2(500, 600), through: g, width: w, height: h)
+        // Two upright guides: the uprights become parallel and upright.
+        let two = Upright.guided([left, right], width: w, height: h)
+        XCTAssertLessThan(Self.worstTilts(segments, after: two, width: w, height: h).upright, 0.2)
+        // Plus one level guide: the horizontals level too (yaw).
+        let three = Self.worstTilts(segments, after: Upright.guided([left, right, top], width: w, height: h), width: w, height: h)
+        XCTAssertLessThan(three.upright, 0.2)
+        XCTAssertLessThan(three.level, 0.2)
+        // Four guides: full correction.
+        let four = Self.worstTilts(segments, after: Upright.guided([left, right, top, bottom], width: w, height: h), width: w, height: h)
+        XCTAssertLessThan(four.upright, 0.2)
+        XCTAssertLessThan(four.level, 0.2)
+        // One guide only turns the photo about its middle until it is upright.
+        let one = Upright.guided([left], width: w, height: h)
+        XCTAssertTrue(one.isAffine)
+        let l0 = one.apply(Vec2(left[0].x * w, left[0].y * h)), l1 = one.apply(Vec2(left[1].x * w, left[1].y * h))
+        XCTAssertEqual(Upright.angleFromUpright(l0, l1), 0, accuracy: 1e-6)
+        XCTAssertEqual(Upright.guided([], width: w, height: h), .identity)
+        // Through the plan: Upright "guided" uses the edit's guides.
+        let plan = GeometryPlan(settings: GeometrySettings(upright: "guided"), width: w, height: h, edits: GeometryEdits(guides: [left, right]))
+        XCTAssertFalse(plan.transform.isAffine)
+        let shown = plan.guidesOnFrame([left])
+        XCTAssertEqual(Upright.angleFromUpright(Vec2(shown[0].0.x * w, shown[0].0.y * h), Vec2(shown[0].1.x * w, shown[0].1.y * h)), 0,
+                       accuracy: 0.2)
+    }
+
+    func testGuidedUprightActions() {
+        var interpreter = CommandInterpreter(registry: registry)
+        var state = EditState()
+        _ = interpreter.interpret("brush mask", state: &state)
+        let outcomes = interpreter.interpret("guided upright", state: &state)
+        XCTAssertEqual(outcomes.first, .ran(controlID: "guidedUpright"))
+        XCTAssertEqual(state.value(of: control("upright")), 5)
+        XCTAssertNil(state.selectedMask)
+        state.geometry.guides = [[MaskPoint(0.1, 0.1), MaskPoint(0.1, 0.9)]]
+        _ = interpreter.interpret("clear guides", state: &state)
+        XCTAssertTrue(state.geometry.guides.isEmpty)
+    }
+
     func testUprightNames() {
         XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
         XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])

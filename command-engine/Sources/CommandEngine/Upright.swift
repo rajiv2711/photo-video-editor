@@ -9,10 +9,14 @@ import Foundation
 ///
 /// Modes, as in Lightroom: level (turn about the middle only, levelling the horizontals), vertical
 /// (upright lines made parallel and upright), full (vertical and horizontal perspective), auto
-/// (vertical when the photo's upright lines agree and the correction stays moderate, else level).
+/// (vertical when the photo's upright lines agree and the correction stays moderate, else level),
+/// guided (from up to four lines drawn by hand along edges that should be upright or level).
 public enum Upright {
     /// Option ids of the "upright" choice; must match controls.json (unit-tested).
-    public static let modes = ["off", "auto", "level", "vertical", "full"]
+    public static let modes = ["off", "auto", "level", "vertical", "full", "guided"]
+
+    /// Guided upright draws at most this many guides (a new one replaces the oldest).
+    public static let maxGuides = 4
 
     /// A 3-vector (directions through the camera, homogeneous points and lines).
     struct V3 {
@@ -55,8 +59,10 @@ public enum Upright {
 
     /// The Upright transform for `mode`, in pixels of a `width` × `height` photo (the frame keeps its
     /// size; the middle stays). Identity when the photo has no lines to go by.
-    public static func transform(mode: String, segments: [LineSegment], width: Double, height: Double) -> Homography {
+    public static func transform(mode: String, segments: [LineSegment], width: Double, height: Double,
+                                 guides: [[MaskPoint]] = []) -> Homography {
         guard mode != "off", width > 0, height > 0 else { return .identity }
+        if mode == "guided" { return guided(guides, width: width, height: height) }
         var camera = Camera(f: defaultFocal(width: width, height: height), cx: width / 2, cy: height / 2)
         let lines = segments.map { s -> (Vec2, Vec2, Double) in
             let (a, b) = s.ends(width: width, height: height)
@@ -116,6 +122,83 @@ public enum Upright {
             if m[6] * corner.x + m[7] * corner.y + m[8] <= 0.05 { return level() }
         }
         return centred(g, width: width, height: height)
+    }
+
+    /// Guided upright: guides within 45° of upright should become upright, the others level. Two or
+    /// more of a kind give a vanishing point, made to lie at infinity straight down (or sideways) by
+    /// the smallest camera turn; a single guide of the other kind then sets the remaining turn (yaw or
+    /// pitch); with no more than one guide of each kind the photo only turns about its middle.
+    public static func guided(_ guides: [[MaskPoint]], width: Double, height: Double) -> Homography {
+        let lines = guides.compactMap { g -> (Vec2, Vec2, Double)? in
+            guard g.count >= 2 else { return nil }
+            let a = Vec2(g[0].x * width, g[0].y * height), b = Vec2(g[g.count - 1].x * width, g[g.count - 1].y * height)
+            return (b - a).length > 1 ? (a, b, (b - a).length) : nil
+        }
+        guard !lines.isEmpty else { return .identity }
+        let camera = Camera(f: defaultFocal(width: width, height: height), cx: width / 2, cy: height / 2)
+        let uprights = lines.filter { abs(angleFromUpright($0.0, $0.1)) <= 45 }
+        let levels = lines.filter { abs(angleFromUpright($0.0, $0.1)) > 45 }
+        func normal(_ l: (Vec2, Vec2, Double)) -> V3 { camera.ray(l.0).cross(camera.ray(l.1)).unit }
+        func meeting(_ ls: [(Vec2, Vec2, Double)]) -> V3? {
+            guard ls.count >= 2 else { return nil }
+            var m = [Double](repeating: 0, count: 9)
+            for l in ls {
+                let n = normal(l), a = [n.x, n.y, n.z]
+                for r in 0..<3 { for c in 0..<3 { m[r * 3 + c] += a[r] * a[c] } }
+            }
+            return smallestEigenvector(m)
+        }
+        let dv = meeting(uprights), dh = meeting(levels)
+        var turn: [Double]?
+        if let dv, let dh {
+            let r2 = upward(dv)
+            let r1 = (rightward(dh) - r2 * rightward(dh).dot(r2)).unit
+            let r3 = r1.cross(r2)
+            turn = [r1.x, r1.y, r1.z, r2.x, r2.y, r2.z, r3.x, r3.y, r3.z]
+        } else if let dv {
+            var r = rotation(taking: upward(dv), to: V3(0, 1, 0))
+            if let one = levels.first {
+                // Yaw (about the upright axis) until the level guide is level: its plane's normal has no x.
+                let n = apply(r, normal(one))
+                if abs(n.z) > 1e-9 {
+                    let yaw = atan(-n.x / n.z)
+                    r = multiply([cos(yaw), 0, sin(yaw), 0, 1, 0, -sin(yaw), 0, cos(yaw)], r)
+                }
+            }
+            turn = r
+        } else if let dh {
+            var r = rotation(taking: rightward(dh), to: V3(1, 0, 0))
+            if let one = uprights.first {
+                // Pitch (about the level axis) until the upright guide is upright: its normal has no y.
+                let n = apply(r, normal(one))
+                if abs(n.z) > 1e-9 {
+                    let pitch = atan(n.y / n.z)
+                    r = multiply([1, 0, 0, 0, cos(pitch), -sin(pitch), 0, sin(pitch), cos(pitch)], r)
+                }
+            }
+            turn = r
+        }
+        func roll() -> Homography {
+            let angles = lines.map { Straighten.angle(levelling: $0.0, $0.1) }
+            let mean = angles.reduce(0, +) / Double(angles.count)
+            return Homography.translation(width / 2, height / 2) * Homography.rotation(degrees: mean)
+                * Homography.translation(-width / 2, -height / 2)
+        }
+        guard let r = turn, angle(of: r) < 50 * Double.pi / 180 else { return roll() }
+        let g = camera.transform(r)
+        for corner in [Vec2(0, 0), Vec2(width, 0), Vec2(width, height), Vec2(0, height)] {
+            if g.m[6] * corner.x + g.m[7] * corner.y + g.m[8] <= 0.05 { return roll() }
+        }
+        return centred(g, width: width, height: height)
+    }
+
+    static func apply(_ r: [Double], _ v: V3) -> V3 {
+        V3(r[0] * v.x + r[1] * v.y + r[2] * v.z, r[3] * v.x + r[4] * v.y + r[5] * v.z, r[6] * v.x + r[7] * v.y + r[8] * v.z)
+    }
+
+    /// `a · b` for rotation matrices (rows): first b, then a.
+    static func multiply(_ a: [Double], _ b: [Double]) -> [Double] {
+        (Homography(a) * Homography(b)).m
     }
 
     /// `g` moved and scaled so the picture's middle stays in place at its own size.

@@ -806,3 +806,9 @@
 {"group":"geometry","text":"reset upright","expect":[{"op":"reset","control":"upright"}]}
 {"group":"geometry","text":"auto upright","expect":[{"op":"set","control":"upright","value":1}]}
 {"group":"geometry","text":"square crop","expect":[{"op":"set","control":"cropAspect","value":2}]}
+{"group":"geometry","text":"guided upright","expect":[{"op":"run","control":"guidedUpright"}]}
+{"group":"geometry","text":"draw guides","expect":[{"op":"run","control":"guidedUpright"}]}
+{"group":"geometry","text":"upright guided","expect":[{"op":"set","control":"upright","value":5}]}
+{"group":"geometry","text":"clear guides","expect":[{"op":"run","control":"clearGuides"}]}
+{"group":"geometry","text":"reset guides","expect":[{"op":"run","control":"clearGuides"}]}
+{"group":"geometry","text":"remove guides","expect":[{"op":"run","control":"clearGuides"}]}

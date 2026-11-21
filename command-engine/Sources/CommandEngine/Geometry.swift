@@ -208,7 +208,7 @@ public struct GeometrySettings: Equatable {
     public var quarterTurns: Int
     public var flipHorizontal: Bool
     public var flipVertical: Bool
-    /// Upright mode (an option id of Upright.modes: "off", "auto", "level", "vertical", "full").
+    /// Upright mode (an option id of Upright.modes: "off", "auto", "level", "vertical", "full", "guided").
     public var upright: String
 
     public init(aspect: String = "free", cropLeft: Double = 0, cropTop: Double = 0, cropRight: Double = 0,
@@ -261,15 +261,16 @@ public struct GeometryPlan: Equatable {
     /// Where the photo lies in the frame (its corners: top-left, top-right, bottom-right, bottom-left).
     public let photoCorners: [Vec2]
 
-    /// `segments`: the photo's straight lines (LineDetector), for Upright.
+    /// `segments`: the photo's straight lines (LineDetector), for Upright; `edits`: what the touch
+    /// tools made (guides, …).
     public init(settings: GeometrySettings, width: Double, height: Double, stage: GeometryStage = .full,
-                segments: [LineSegment] = []) {
+                segments: [LineSegment] = [], edits: GeometryEdits = GeometryEdits()) {
         sourceWidth = width
         sourceHeight = height
         self.stage = stage
         let corners = [Vec2(0, 0), Vec2(width, 0), Vec2(width, height), Vec2(0, height)]
         // Upright: the perspective correction the photo's lines ask for.
-        let pre = Upright.transform(mode: settings.upright, segments: segments, width: width, height: height)
+        let pre = Upright.transform(mode: settings.upright, segments: segments, width: width, height: height, guides: edits.guides)
         // Straighten turns the picture about the frame's middle; then the quarter turns (which swap
         // the frame's sides) and the flips, about the middle too.
         let turned = settings.quarterTurns % 2 == 1 && stage != .source
@@ -326,6 +327,15 @@ public struct GeometryPlan: Equatable {
     /// in pixels (where Straighten measures a drawn line).
     public func frameToPreStraighten(_ p: MaskPoint) -> Vec2 {
         (preStraighten * transform.inverse).apply(Vec2(p.x * frameWidth, p.y * frameHeight))
+    }
+
+    /// The guides (on the photo) where they show on the frame (normalized), for drawing them.
+    public func guidesOnFrame(_ guides: [[MaskPoint]]) -> [(MaskPoint, MaskPoint)] {
+        guides.compactMap { g in
+            guard let a = g.first, let b = g.last else { return nil }
+            let p = transform.apply(Vec2(a.x * sourceWidth, a.y * sourceHeight)), q = transform.apply(Vec2(b.x * sourceWidth, b.y * sourceHeight))
+            return (MaskPoint(p.x / frameWidth, p.y / frameHeight), MaskPoint(q.x / frameWidth, q.y / frameHeight))
+        }
     }
 
     /// A point on the frame (normalized, as the crop tool shows it) → normalized on the photo.
@@ -528,7 +538,7 @@ public enum Crop {
 /// The Geometry panel's actions and the controls they act on.
 public enum GeometryTools {
     /// Actions that pick a touch tool for the photo, and the tool: "crop" (drag the crop box).
-    public static let actions: [String: String] = ["cropTool": "crop", "straightenTool": "straighten"]
+    public static let actions: [String: String] = ["cropTool": "crop", "straightenTool": "straighten", "guidedUpright": "guides"]
     /// Actions the app works out from the photo (they come back as commands from its action handler).
     public static let fromPhoto: Set<String> = ["autoStraighten"]
     /// The crop box's controls ("reset crop" puts them back).

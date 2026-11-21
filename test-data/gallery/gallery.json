@@ -395,6 +395,8 @@
 
     {"id": "building", "command": "", "source": "building", "expect": [{"metric": "vertical_spread", "dir": "up", "min": 1.5}]},
     {"id": "upright", "command": "upright vertical", "source": "building", "control": "upright", "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}, {"metric": "tilt", "dir": "same", "vs": "building"}]},
-    {"id": "upright-auto", "command": "auto upright", "source": "building", "control": "upright", "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}]}
+    {"id": "upright-auto", "command": "auto upright", "source": "building", "control": "upright", "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}]},
+    {"id": "guided-upright", "command": "guided upright upright off", "source": "building", "control": "guidedUpright", "strokes": [[[0.2893, 0.1], [0.2021, 0.9]], [[0.7238, 0.1], [0.8163, 0.9]]], "steps": [{"command": "upright guided"}, {"command": "done"}], "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}]},
+    {"id": "clear-guides", "command": "guided upright", "source": "building", "control": "clearGuides", "strokes": [[[0.2893, 0.1], [0.2021, 0.9]]], "steps": [{"command": "clear guides"}, {"command": "done"}], "expect": [{"metric": "diff", "dir": "same", "vs": "building"}]}
   ]
 }

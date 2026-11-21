@@ -308,7 +308,7 @@ final class EditorModel: ObservableObject {
 
     /// The geometry steps the preview shows: the crop tool shows the whole frame with the crop box on it.
     var geometryStage: GeometryStage {
-        ["crop", "straighten"].contains(geometryTool ?? "") ? .frame : .full
+        ["crop", "straighten", "guides"].contains(geometryTool ?? "") ? .frame : .full
     }
 
     /// The crop box as it is (after aspect and constrain), as shares of the frame, for the crop tool.
@@ -375,10 +375,24 @@ final class EditorModel: ObservableObject {
             geometryTool = "crop"
             render()
             return
+        case "guides":
+            // A guide along an edge that should be upright or level, kept on the photo itself.
+            guard finished, let plan = previewPlan else { return }
+            let a = plan.frameToSource(start), b = plan.frameToSource(end)
+            guard hypot((b.x - a.x) * plan.sourceWidth, (b.y - a.y) * plan.sourceHeight) > 8 else { return }
+            state.geometry.guides.append([a, b])
+            if state.geometry.guides.count > Upright.maxGuides { state.geometry.guides.removeFirst() }
+            feedback = Feedback(text: "Guide \(state.geometry.guides.count) of \(Upright.maxGuides)")
         default:
             return
         }
         render()
+    }
+
+    /// The guides as they show on the frame (normalized), for the guides tool.
+    var shownGuides: [(MaskPoint, MaskPoint)] {
+        guard let plan = previewPlan, plan.stage == .frame else { return [] }
+        return plan.guidesOnFrame(state.geometry.guides)
     }
 
     /// A Geometry tool that ran (by button, voice or typing) takes the touches on the photo; "done"
@@ -762,6 +776,7 @@ final class EditorModel: ObservableObject {
     static let geometryHints: [String: String] = [
         "crop": "drag a corner or edge, or inside the box to move it (it keeps the Crop Aspect); “done” when finished",
         "straighten": "draw a line along something that should be level (a horizon) or upright; the photo turns to match",
+        "guides": "draw up to four lines along edges that should be upright or level (two upright ones straighten converging walls); “clear guides” to start again",
     ]
 
     /// What to do on the photo after making a mask part.
