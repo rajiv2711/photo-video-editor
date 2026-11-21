@@ -100,6 +100,10 @@ final class EditorModel: ObservableObject {
     let libraryStore: LibraryStore
     /// Keep the library in its file and across "start over" (the render gallery starts each case with an empty one).
     var keepsLibrary = true
+    /// Exports go to Photos, Files or the share sheet (the render gallery only notes what it would save).
+    var exportsFiles = true
+    /// The name of the last file exported (the render gallery's manifest).
+    private var lastExported = ""
 
     /// `image` replaces the bundled test photo (the render gallery passes a small copy);
     /// `previewSide` is the long side of the live preview; `libraryFolder` where the library is kept.
@@ -833,6 +837,7 @@ final class EditorModel: ObservableObject {
                 revealedPanel = "library"
             }
             if id == "tetheredShot" { tetheredShot() }
+            if id == "export" { save() }
             if id == "proCamera" { showsCamera = true }
             if id == "takePhoto" {
                 showsCamera = true
@@ -1251,6 +1256,8 @@ final class EditorModel: ObservableObject {
             return (count == 0 ? "This photo isn't in a stack" : "Unstacked \(count) photos", count == 0)
         case .stacksExpanded(let open):
             return (open ? "Stacks expanded: every photo shows" : "Stacks collapsed: one photo of each shows", false)
+        case .exportNamed(let name):
+            return (name.isEmpty ? "Say the name, e.g. “export name Trip”" : "Exports are named “\(name)-001”, “\(name)-002”…", name.isEmpty)
         case .mapShown(let located, let shown):
             return (located == 0 ? "None of the \(shown) photos shown says where it was taken"
                     : "Map: \(located) of \(shown) photos say where they were taken · tap one to edit it", located == 0)
@@ -1307,6 +1314,7 @@ final class EditorModel: ObservableObject {
             out["photo.captured"] = photo.captured.map { PhotoMetadata.exifText($0) } ?? ""
             if let lat = photo.latitude, let lon = photo.longitude { out["photo.gps"] = String(format: "%.2f,%.2f", lat, lon) }
         }
+        if !lastExported.isEmpty { out["export.saved"] = lastExported }
         out["camera.tethered"] = cameras.tethered ? "on" : "off"
         if showsCamera { out["ui.camera"] = "shown" }
         out["camera.shots"] = String(cameraShots)
@@ -1753,12 +1761,19 @@ final class EditorModel: ObservableObject {
             saveToPhotos([data], done: "Saved HDR photo to Photos.")
             return
         }
-        // A JPEG with the photo's metadata and the Resolution (pixels per inch) written into it.
+        // The Export panel's format, size, sharpening and metadata, with the Resolution written in.
         guard let file = exportFile(edited) else {
             feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
             return
         }
-        saveToPhotos([file.data], done: "Saved to Photos.")
+        interpreter.workspace.library.exportCount += 1
+        saveLibrary()
+        lastExported = file.name
+        guard exportsFiles else {
+            feedback = Feedback(text: "Exported \(file.name)")
+            return
+        }
+        saveToPhotos([file.data], names: [file.name], done: "Saved \(file.name) to Photos" + (file.note.map { " (\($0))" } ?? "") + ".")
     }
 
     /// The full-size edited photo.
@@ -1768,17 +1783,40 @@ final class EditorModel: ObservableObject {
                        watermark: state.watermarkText, logo: watermarkLogo?.full)
     }
 
-    /// The file the photo is saved or exported as, with its metadata: the camera data and date of the file
-    /// opened, its place (unless Remove Location), and the library's title, caption, keywords and copyright.
-    func exportFile(_ rendered: CIImage? = nil) -> (data: Data, type: String)? {
-        let edited = rendered ?? editedPhoto()
-        let ppi = registry.control(id: "resolution").map { state.value(of: $0) } ?? 72
-        let properties = PhotoMetadata.properties(for: library.photo(library.current), original: pictureInfo?.properties ?? original.properties,
-                                                  removeLocation: isOn("removeLocation"), ppi: ppi)
-        let type = UTType.jpeg.identifier
-        return Exporter.encode(edited, context: renderer.context, type: type, properties: properties).map { (data: $0, type: type) }
+    /// The Export panel's settings.
+    var exportOptions: ExportOptions {
+        func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+        var o = ExportOptions()
+        o.format = ExportSettings.option(ExportSettings.formats, v("exportFormat"))
+        o.quality = v("exportQuality") / 100
+        o.longEdge = v("exportLongEdge")
+        o.percent = v("exportScale")
+        o.sharpening = ExportSettings.option(ExportSettings.media, v("outputSharpening"))
+        o.sharpenAmount = ExportSettings.option(ExportSettings.amounts, v("sharpenAmount"))
+        o.metadata = ExportSettings.option(ExportSettings.metadata, v("exportMetadata"))
+        o.removeLocation = v("removeLocation") != 0
+        o.naming = ExportSettings.option(ExportSettings.namings, v("fileNaming"))
+        return o
     }
-        saveToPhotos([data], done: "Saved to Photos.")
+
+    /// The photo as the Export panel says (format, quality, size, output sharpening, metadata, name), with
+    /// the camera data and date of the file opened, its place (unless Remove Location), and the library's
+    /// title, caption, keywords and copyright. A format this iPad can't write becomes JPEG (said in `note`).
+    func exportFile(_ rendered: CIImage? = nil) -> ExportedFile? {
+        let o = exportOptions
+        let format = Exporter.isWritable(o.format) ? o.format : "jpeg"
+        let note = format == o.format ? nil : "\(o.format.uppercased()) can't be written on this iPad: JPEG instead"
+        let picture = Exporter.prepare(rendered ?? editedPhoto(), options: o)
+        let ppi = registry.control(id: "resolution").map { state.value(of: $0) } ?? 72
+        let photo = library.photo(library.current)
+        let all = PhotoMetadata.properties(for: photo, original: pictureInfo?.properties ?? original.properties,
+                                           removeLocation: o.removeLocation, ppi: ppi)
+        let type = ExportSettings.types[format] ?? UTType.jpeg.identifier
+        guard let data = Exporter.encode(picture, context: renderer.context, type: type, quality: o.quality,
+                                         properties: ExportSettings.filtered(all, keep: o.metadata)) else { return nil }
+        let name = ExportSettings.fileName(original: photo?.name ?? "Photo", naming: o.naming, custom: library.exportName, date: Date(),
+                                           sequence: library.exportCount + 1, ext: ExportSettings.extensions[format] ?? "jpg")
+        return ExportedFile(data: data, type: type, name: name, note: note)
     }
 
     /// JPEG bytes (quality 0.92) with the resolution (pixels per inch) written into them.
@@ -1793,7 +1831,7 @@ final class EditorModel: ObservableObject {
     }
 
     /// Adds photo files to the photo library.
-    private func saveToPhotos(_ files: [Data], done: String) {
+    private func saveToPhotos(_ files: [Data], names: [String] = [], done: String) {
         // The model lives as long as the app, so these closures may hold it.
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
             guard status == .authorized || status == .limited else {
@@ -1803,7 +1841,12 @@ final class EditorModel: ObservableObject {
                 return
             }
             PHPhotoLibrary.shared().performChanges({
-                for data in files { PHAssetCreationRequest.forAsset().addResource(with: .photo, data: data, options: nil) }
+                for (i, data) in files.enumerated() {
+                    // The file's name as exported (Photos shows it as the original name).
+                    let options = PHAssetResourceCreationOptions()
+                    if names.indices.contains(i) { options.originalFilename = names[i] }
+                    PHAssetCreationRequest.forAsset().addResource(with: .photo, data: data, options: options)
+                }
             }, completionHandler: { ok, _ in
                 Task { @MainActor in
                     self.feedback = Feedback(text: ok ? done : "Couldn't save to Photos.", isProblem: !ok)

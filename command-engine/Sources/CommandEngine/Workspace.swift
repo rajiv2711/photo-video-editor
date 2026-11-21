@@ -124,6 +124,11 @@ public struct Workspace {
         if Library.actions.contains(id) {
             let done = library.run(command)
             if let target = done.open { openPhoto(target, state: &state) }
+            // "export name Trip": files are then named Trip-001, Trip-002…
+            if id == "exportName", command.text?.isEmpty == false, let naming = registry.control(id: "fileNaming"),
+               let custom = ExportSettings.namings.firstIndex(of: "custom") {
+                state.set(naming, to: Double(custom))
+            }
             return [ran] + done.events.map { .workflow(.library($0)) }
         }
         switch id {

@@ -206,6 +206,8 @@ public enum LibraryEvent: Equatable {
     case stacksExpanded(Bool)
     /// The map: how many of the photos shown say where they were taken.
     case mapShown(located: Int, shown: Int)
+    /// Export Name: the words exported files are named after (File Naming "custom").
+    case exportNamed(String)
 }
 
 /// The part of the world a map shows: its middle and how far it reaches (degrees).
@@ -229,6 +231,9 @@ public struct Library: Codable, Equatable {
     public var stackGap = 2.0
     /// Photos selected in the browser, in the order they were selected.
     public var selected: [String] = []
+    /// Export Name's words, and how many photos were exported (the next file's sequence number is one more).
+    public var exportName = ""
+    public var exportCount = 0
 
     public init() {}
 
@@ -241,6 +246,8 @@ public struct Library: Codable, Equatable {
         stacksExpanded = try c.decodeIfPresent(Bool.self, forKey: .stacksExpanded) ?? false
         stackGap = try c.decodeIfPresent(Double.self, forKey: .stackGap) ?? 2
         selected = try c.decodeIfPresent([String].self, forKey: .selected) ?? []
+        exportName = try c.decodeIfPresent(String.self, forKey: .exportName) ?? ""
+        exportCount = try c.decodeIfPresent(Int.self, forKey: .exportCount) ?? 0
     }
 
     /// The library's actions (run by the workspace, in order with the other commands).
@@ -250,7 +257,7 @@ public struct Library: Codable, Equatable {
                                               "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum",
                                               "addKeyword", "removeKeyword", "showKeyword", "photoTitle", "photoCaption", "photoCopyright", "photoInfo",
                                               "selectPhoto", "clearSelection", "stackThese", "autoStack", "unstack", "expandStacks", "collapseStacks",
-                                              "showMap"]
+                                              "showMap", "exportName"]
 
     /// Colour labels, as the options of Label (controls.json; Show Label adds "any").
     public static let labels = ["red", "yellow", "green", "blue", "purple"]
@@ -499,6 +506,9 @@ public struct Library: Codable, Equatable {
             return ([.stacksExpanded(stacksExpanded)], nil)
         case "showMap":
             return ([.mapShown(located: located.count, shown: list.count)], nil)
+        case "exportName":
+            if let words = command.text?.trimmingCharacters(in: .whitespaces), !words.isEmpty { exportName = words }
+            return ([.exportNamed(exportName)], nil)
         case "showKeyword":
             // No words: any keyword again.
             filter.keyword = (command.text ?? "").trimmingCharacters(in: .whitespaces)

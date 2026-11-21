@@ -196,6 +196,8 @@ struct EditorView: View {
                         PresetsPanel(model: model, expanded: $expanded)
                     } else if group == "history" {
                         HistoryPanel(model: model, expanded: $expanded)
+                    } else if group == "export" {
+                        ExportPanel(model: model, expanded: $expanded)
                     } else if model.state.selectedMask == nil, !model.adjustmentLayerSelected {
                         // While a mask or an adjustment layer is selected only its panel shows: its sliders are local.
                         GroupPanel(model: model, group: group, expanded: $expanded)

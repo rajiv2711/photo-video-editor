@@ -231,7 +231,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 ### Export
 
-- [ ] 174. **Export** — JPEG, PNG, HEIC, TIFF, DNG, AVIF; quality, size, metadata
+- [x] 174. **Export** — JPEG, PNG, HEIC, TIFF, DNG, AVIF; quality, size, metadata
 - [ ] 175. **Export presets** — saved export settings
 - [ ] 176. **Save / share** — to Photos, Files, share sheet
 - [ ] 177. **Print** — AirPrint with layout

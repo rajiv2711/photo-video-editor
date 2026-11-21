@@ -517,4 +517,85 @@ final class LibraryTests: XCTestCase {
         let preset = Preset.capture(state, name: "p", groups: Presets.allGroups, registry: registry)
         XCTAssertNil(preset.values["cameraISO"])
     }
+
+    // MARK: - Export (#174)
+
+    func testExportNamesReachTheirControls() {
+        XCTAssertEqual(parse("export"), [.run("export")])
+        XCTAssertEqual(parse("export as png"), [.set("exportFormat", 1)])
+        XCTAssertEqual(parse("quality 80 export long edge 2048"), [.set("exportQuality", 80), .set("exportLongEdge", 2048)])
+        XCTAssertEqual(parse("output sharpening matte"), [.set("outputSharpening", 2)])
+        XCTAssertEqual(parse("output sharpening amount high"), [.set("sharpenAmount", 2)])
+        XCTAssertEqual(parse("export metadata minimal"), [.set("exportMetadata", 1)])
+        XCTAssertEqual(parse("export name Trip"), [.run("exportName", text: "Trip")])
+        // Names it mustn't take: the presets' save, the photo info.
+        XCTAssertEqual(parse("save preset warm"), [.run("savePreset", text: "warm")])
+        XCTAssertEqual(parse("metadata"), [.run("photoInfo")])
+        XCTAssertEqual(parse("sharpening 40"), [.set("sharpening", 40)])
+        XCTAssertEqual(parse("long edge 2000"), [.set("longEdge", 2000)])
+    }
+
+    func testExportOptionsMatchTheirControls() {
+        XCTAssertEqual(registry.control(id: "exportFormat")!.options.map(\.id), ExportSettings.formats)
+        XCTAssertEqual(registry.control(id: "outputSharpening")!.options.map(\.id), ExportSettings.media)
+        XCTAssertEqual(registry.control(id: "sharpenAmount")!.options.map(\.id), ExportSettings.amounts)
+        XCTAssertEqual(registry.control(id: "exportMetadata")!.options.map(\.id), ExportSettings.metadata)
+        XCTAssertEqual(registry.control(id: "fileNaming")!.options.map(\.id), ExportSettings.namings)
+        for format in ExportSettings.formats {
+            XCTAssertNotNil(ExportSettings.types[format])
+            XCTAssertNotNil(ExportSettings.extensions[format])
+        }
+    }
+
+    func testExportSizeNeverEnlarges() {
+        XCTAssertEqual(ExportSettings.scale(width: 4000, height: 3000, longEdge: 0, percent: 100), 1)
+        XCTAssertEqual(ExportSettings.scale(width: 4000, height: 3000, longEdge: 2000, percent: 100), 0.5)
+        XCTAssertEqual(ExportSettings.scale(width: 3000, height: 4000, longEdge: 1000, percent: 100), 0.25)
+        XCTAssertEqual(ExportSettings.scale(width: 4000, height: 3000, longEdge: 8000, percent: 100), 1, "no enlarging")
+        XCTAssertEqual(ExportSettings.scale(width: 4000, height: 3000, longEdge: 0, percent: 50), 0.5)
+        XCTAssertEqual(ExportSettings.scale(width: 4000, height: 3000, longEdge: 2000, percent: 25), 0.25, "the smaller")
+    }
+
+    func testOutputSharpeningByMedium() {
+        XCTAssertNil(ExportSettings.sharpening(medium: "off", amount: "standard", longSide: 3000))
+        let screen = ExportSettings.sharpening(medium: "screen", amount: "standard", longSide: 2048)!
+        let glossy = ExportSettings.sharpening(medium: "glossy", amount: "standard", longSide: 3000)!
+        let matte = ExportSettings.sharpening(medium: "matte", amount: "standard", longSide: 3000)!
+        XCTAssertLessThan(screen.radius, glossy.radius)
+        XCTAssertLessThan(glossy.radius, matte.radius)
+        XCTAssertLessThan(glossy.amount, matte.amount)
+        let high = ExportSettings.sharpening(medium: "matte", amount: "high", longSide: 3000)!
+        let low = ExportSettings.sharpening(medium: "matte", amount: "low", longSide: 3000)!
+        XCTAssertLessThan(low.amount, matte.amount)
+        XCTAssertLessThan(matte.amount, high.amount)
+        XCTAssertGreaterThan(ExportSettings.sharpening(medium: "matte", amount: "standard", longSide: 6000)!.radius, matte.radius)
+    }
+
+    func testExportFileNames() {
+        let date = PhotoMetadata.date("2026:11:21 10:00:00")!
+        XCTAssertEqual(ExportSettings.fileName(original: "IMG_0001.HEIC", naming: "original", custom: "", date: date, sequence: 1, ext: "jpg"), "IMG_0001.jpg")
+        XCTAssertEqual(ExportSettings.fileName(original: "IMG_0001.HEIC", naming: "edited", custom: "", date: date, sequence: 1, ext: "png"), "IMG_0001-edit.png")
+        XCTAssertTrue(ExportSettings.fileName(original: "a.jpg", naming: "date", custom: "", date: date, sequence: 7, ext: "jpg").hasSuffix("-007.jpg"))
+        XCTAssertEqual(ExportSettings.fileName(original: "a.jpg", naming: "custom", custom: "Trip/Rome", date: date, sequence: 12, ext: "tif"), "Trip-Rome-012.tif")
+        XCTAssertEqual(ExportSettings.fileName(original: "", naming: "original", custom: "", date: date, sequence: 1, ext: "jpg"), "Photo.jpg")
+    }
+
+    func testExportNameSwitchesToCustomNaming() {
+        run("export name Trip")
+        XCTAssertEqual(interpreter.workspace.library.exportName, "Trip")
+        XCTAssertEqual(value("fileNaming"), 3)
+    }
+
+    func testExportMetadataChoice() {
+        let all: [String: Any] = ["Orientation": 1, "DPIWidth": 300.0, "{Exif}": ["FNumber": 2.8] as [String: Any],
+                                  "{IPTC}": ["CopyrightNotice": "© R", "Keywords": ["a"]] as [String: Any], "{GPS}": ["Latitude": 1.0] as [String: Any]]
+        let copyright = ExportSettings.filtered(all, keep: "copyright")
+        XCTAssertEqual((copyright["{IPTC}"] as? [String: Any])?["CopyrightNotice"] as? String, "© R")
+        XCTAssertNil(copyright["{Exif}"])
+        XCTAssertNil(copyright["{GPS}"])
+        XCTAssertNil((copyright["{IPTC}"] as? [String: Any])?["Keywords"])
+        let none = ExportSettings.filtered(all, keep: "none")
+        XCTAssertEqual(Set(none.keys), ["Orientation", "DPIWidth"])
+        XCTAssertNotNil(ExportSettings.filtered(all, keep: "all")["{GPS}"])
+    }
 }

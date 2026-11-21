@@ -1366,3 +1366,24 @@
 {"group":"camera","text":"take photo","expect":[{"op":"run","control":"takePhoto"}]}
 {"group":"camera","text":"snap","expect":[{"op":"run","control":"takePhoto"}]}
 {"group":"camera","text":"camera profile","expect":[{"op":"select","control":"profile"}]}
+{"group":"export","text":"export","expect":[{"op":"run","control":"export"}]}
+{"group":"export","text":"save","expect":[{"op":"run","control":"export"}]}
+{"group":"export","text":"export as png","expect":[{"op":"set","control":"exportFormat","value":1}]}
+{"group":"export","text":"export format tiff","expect":[{"op":"set","control":"exportFormat","value":3}]}
+{"group":"export","text":"save as heic","expect":[{"op":"set","control":"exportFormat","value":2}]}
+{"group":"export","text":"export quality 80","expect":[{"op":"set","control":"exportQuality","value":80}]}
+{"group":"export","text":"quality 60","expect":[{"op":"set","control":"exportQuality","value":60}]}
+{"group":"export","text":"export long edge 2048","expect":[{"op":"set","control":"exportLongEdge","value":2048}]}
+{"group":"export","text":"export size 1080","expect":[{"op":"set","control":"exportLongEdge","value":1080}]}
+{"group":"export","text":"export scale 50","expect":[{"op":"set","control":"exportScale","value":50}]}
+{"group":"export","text":"export percent 25","expect":[{"op":"set","control":"exportScale","value":25}]}
+{"group":"export","text":"output sharpening screen","expect":[{"op":"set","control":"outputSharpening","value":1}]}
+{"group":"export","text":"sharpen for matte","expect":[{"op":"set","control":"outputSharpening","value":2}]}
+{"group":"export","text":"output sharpening amount high","expect":[{"op":"set","control":"sharpenAmount","value":2}]}
+{"group":"export","text":"output sharpen amount low","expect":[{"op":"set","control":"sharpenAmount","value":0}]}
+{"group":"export","text":"export metadata none","expect":[{"op":"set","control":"exportMetadata","value":2}]}
+{"group":"export","text":"include metadata minimal","expect":[{"op":"set","control":"exportMetadata","value":1}]}
+{"group":"export","text":"file naming date","expect":[{"op":"set","control":"fileNaming","value":2}]}
+{"group":"export","text":"file name original","expect":[{"op":"set","control":"fileNaming","value":0}]}
+{"group":"export","text":"export name Trip to Rome","expect":[{"op":"run","control":"exportName","text":"Trip to Rome"}]}
+{"group":"export","text":"custom file name Holiday","expect":[{"op":"run","control":"exportName","text":"Holiday"}]}

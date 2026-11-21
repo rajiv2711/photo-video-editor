@@ -3,10 +3,67 @@ import CoreImage
 import ImageIO
 import UniformTypeIdentifiers
 
+/// The Export panel's settings, read from its controls (see ExportSettings in CommandEngine).
+struct ExportOptions {
+    /// "jpeg", "png", "heic", "tiff", "avif" or "dng".
+    var format = "jpeg"
+    /// 0…1 (JPEG, HEIC, AVIF).
+    var quality = 0.9
+    var longEdge = 0.0
+    var percent = 100.0
+    /// "off", "screen", "matte", "glossy"; and "low", "standard", "high".
+    var sharpening = "off"
+    var sharpenAmount = "standard"
+    /// "all", "copyright", "none".
+    var metadata = "all"
+    var removeLocation = false
+    /// "original", "edited", "date", "custom".
+    var naming = "original"
+}
+
+/// A photo exported: the file's bytes, its type, its name, and what was changed to make it ("AVIF can't
+/// be written here: JPEG instead"), if anything.
+struct ExportedFile {
+    let data: Data
+    let type: String
+    let name: String
+    let note: String?
+}
+
 /// Turns the edited photo into a file (ImageIO), with the metadata PhotoMetadata gives (camera data,
 /// title, caption, keywords, copyright, place), and reads an exported file back (the render gallery
 /// checks what was written).
 enum Exporter {
+    /// The file types ImageIO can write on this iPad.
+    static let writableTypes: Set<String> = Set((CGImageDestinationCopyTypeIdentifiers() as? [String]) ?? [])
+
+    /// Whether an export format ("avif", …) can be written here.
+    static func isWritable(_ format: String) -> Bool {
+        ExportSettings.types[format].map { writableTypes.contains($0) } ?? false
+    }
+
+    /// The export formats this iPad can write, in the Export Format control's order.
+    static var writableFormats: [String] { ExportSettings.formats.filter(isWritable) }
+
+    /// The picture as exported: made smaller to the export size (Lanczos, as the preview), then sharpened
+    /// for its medium (on sRGB levels, as Lightroom's output sharpening).
+    static func prepare(_ edited: CIImage, options: ExportOptions) -> CIImage {
+        var out = edited
+        let e = edited.extent
+        let scale = ExportSettings.scale(width: Double(e.width), height: Double(e.height), longEdge: options.longEdge, percent: options.percent)
+        if scale < 0.999 {
+            out = edited.applyingFilter("CILanczosScaleTransform", parameters: [kCIInputScaleKey: scale, kCIInputAspectRatioKey: 1])
+            let r = out.extent
+            out = out.cropped(to: CGRect(x: r.minX.rounded(.up), y: r.minY.rounded(.up),
+                                         width: (r.width).rounded(.down), height: (r.height).rounded(.down)))
+        }
+        let side = Double(max(out.extent.width, out.extent.height))
+        if let sharp = ExportSettings.sharpening(medium: options.sharpening, amount: options.sharpenAmount, longSide: side) {
+            out = Filters.linear(Filters.unsharp(Filters.encoded(out), radius: sharp.radius, intensity: sharp.amount, extent: out.extent))
+        }
+        return out
+    }
+
     /// The picture as a file of `type` ("public.jpeg", …) with `properties` (ImageIO's keys) written in.
     static func encode(_ image: CIImage, context: CIContext, type: String = UTType.jpeg.identifier, quality: Double = 0.92,
                        properties: [String: Any]) -> Data? {
@@ -52,6 +109,7 @@ enum Exporter {
             "export.caption": text(iptc["Caption/Abstract"]),
             "export.keywords": text(iptc["Keywords"]),
             "export.copyright": text(iptc["CopyrightNotice"]),
+            "export.writable": writableFormats.joined(separator: ","),
         ]
     }
 }

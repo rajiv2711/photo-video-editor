@@ -133,6 +133,7 @@ enum RenderGallery {
             made.showsPreview = false  // only the final picture of each case is saved
             made.keepsPresets = false  // each case starts with no presets of its own
             made.keepsLibrary = false  // and an empty library
+            made.exportsFiles = false  // nothing goes to Photos or Files
             return made
         }
         // One editor per starting picture, made when a case first needs it.
@@ -187,6 +188,8 @@ enum RenderGallery {
                     try? exported.data.write(to: folder.appendingPathComponent("\(item.id).export.\(ext)"))
                     if let decoded = LibraryStore.decode(exported.data) { edited = decoded.image }
                     fields.merge(Exporter.readBack(exported.data)) { _, new in new }
+                    fields["export.name"] = exported.name
+                    if let note = exported.note { fields["export.note"] = note }
                 } else {
                     fields["export.type"] = "failed"
                 }
