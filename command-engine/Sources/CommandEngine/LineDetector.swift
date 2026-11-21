@@ -126,6 +126,41 @@ public enum LineDetector {
         return out.sorted { $0.length > $1.length }
     }
 
+    /// Pieces lying along the same straight line (within `degrees` of each other and `reach` × the
+    /// long side of it) joined into one segment spanning them all; its `length` is the pieces' total,
+    /// so gaps don't count. A long edge broken at every corner it meets (a page's border along its
+    /// patches) becomes one line again.
+    public static func merged(_ segments: [LineSegment], width: Double, height: Double, degrees: Double = 1.5,
+                              reach: Double = 0.004) -> [LineSegment] {
+        let near = reach * Swift.max(width, height)
+        var groups: [(a: Vec2, b: Vec2, support: Double)] = []
+        for s in segments.sorted(by: { $0.length > $1.length }) {
+            let (p, q) = s.ends(width: width, height: height)
+            var joined = false
+            for i in groups.indices {
+                let g = groups[i]
+                let d = g.b - g.a, len = d.length
+                guard len > 0 else { continue }
+                let u = d * (1 / len)
+                // Same direction, and both ends close to the group's line.
+                let cross = abs(u.x * (q - p).y - u.y * (q - p).x) / Swift.max((q - p).length, 1e-9)
+                guard asin(Swift.min(1, cross)) <= degrees * .pi / 180 else { continue }
+                func off(_ v: Vec2) -> Double { abs(u.x * (v - g.a).y - u.y * (v - g.a).x) }
+                guard off(p) <= near, off(q) <= near else { continue }
+                // Grow the span along the group's direction.
+                func t(_ v: Vec2) -> Double { (v - g.a).x * u.x + (v - g.a).y * u.y }
+                let lo = Swift.min(0, t(p), t(q)), hi = Swift.max(len, t(p), t(q))
+                groups[i] = (g.a + u * lo, g.a + u * hi, g.support + s.length)
+                joined = true
+                break
+            }
+            if !joined { groups.append((p, q, s.length)) }
+        }
+        return groups.map {
+            LineSegment(MaskPoint($0.a.x / width, $0.a.y / height), MaskPoint($0.b.x / width, $0.b.y / height), length: $0.support)
+        }.sorted { $0.length > $1.length }
+    }
+
     /// A line through a region of pixels (principal axis, weighted by edge strength): nil when the
     /// region is not long and thin, or has gaps.
     static func fit(_ region: [Int], width: Int, height: Int, weights: [Float]) -> LineSegment? {

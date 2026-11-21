@@ -45,17 +45,24 @@ public enum PerspectiveCrop {
     public static let inset: [MaskPoint] = [MaskPoint(0.15, 0.15), MaskPoint(0.85, 0.15), MaskPoint(0.85, 0.85), MaskPoint(0.15, 0.85)]
 
     /// The largest convex four-sided shape whose sides lie along long lines of the photo (each side
-    /// at least half covered by its line), as normalized corners; nil when the lines don't make one.
+    /// at least half covered by its line; pieces along one line count together), as normalized
+    /// corners; nil when the lines don't make one.
     public static func detect(_ segments: [LineSegment], width: Double, height: Double) -> [MaskPoint]? {
         let long = Swift.max(width, height)
-        let lines = segments.map { s -> (Vec2, Vec2) in s.ends(width: width, height: height) }.filter { ($0.1 - $0.0).length >= 0.1 * long }
+        // Each line: its ends (spanning its pieces) and how much of that span its pieces cover.
+        typealias Line = (Vec2, Vec2, Double)
+        let lines: [Line] = LineDetector.merged(segments, width: width, height: height).compactMap { s in
+            let (a, b) = s.ends(width: width, height: height)
+            let span = (b - a).length
+            return s.length >= 0.1 * long && span > 0 ? (a, b, Swift.min(1, s.length / span)) : nil
+        }
         let across = Array(lines.filter { abs(Straighten.deviation($0.0, $0.1)) <= 45 && abs(Upright.angleFromUpright($0.0, $0.1)) > 45 }
-            .sorted { ($0.1 - $0.0).length > ($1.1 - $1.0).length }.prefix(12))
+            .sorted { ($0.1 - $0.0).length * $0.2 > ($1.1 - $1.0).length * $1.2 }.prefix(14))
         let down = Array(lines.filter { abs(Upright.angleFromUpright($0.0, $0.1)) <= 45 }
-            .sorted { ($0.1 - $0.0).length > ($1.1 - $1.0).length }.prefix(12))
+            .sorted { ($0.1 - $0.0).length * $0.2 > ($1.1 - $1.0).length * $1.2 }.prefix(14))
         guard across.count >= 2, down.count >= 2 else { return nil }
 
-        func meet(_ l: (Vec2, Vec2), _ m: (Vec2, Vec2)) -> Vec2? {
+        func meet(_ l: Line, _ m: Line) -> Vec2? {
             let d1 = l.1 - l.0, d2 = m.1 - m.0
             let den = d1.x * d2.y - d1.y * d2.x
             guard abs(den) > 1e-9 else { return nil }
@@ -63,11 +70,11 @@ public enum PerspectiveCrop {
             return l.0 + d1 * t
         }
         /// How much of the side a→b the line covers (0…1).
-        func covered(_ a: Vec2, _ b: Vec2, by l: (Vec2, Vec2)) -> Double {
+        func covered(_ a: Vec2, _ b: Vec2, by l: Line) -> Double {
             let d = b - a, len2 = d.x * d.x + d.y * d.y
             guard len2 > 0 else { return 0 }
             let t0 = ((l.0 - a).x * d.x + (l.0 - a).y * d.y) / len2, t1 = ((l.1 - a).x * d.x + (l.1 - a).y * d.y) / len2
-            return Swift.max(0, Swift.min(1, Swift.max(t0, t1)) - Swift.max(0, Swift.min(t0, t1)))
+            return Swift.max(0, Swift.min(1, Swift.max(t0, t1)) - Swift.max(0, Swift.min(t0, t1))) * l.2
         }
         var best: (area: Double, corners: [Vec2])?
         for i in 0..<across.count {

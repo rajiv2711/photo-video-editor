@@ -562,6 +562,36 @@ final class GeometryTests: XCTestCase {
         XCTAssertNil(PerspectiveCrop.detect([], width: 10, height: 10))
     }
 
+    func testPerspectiveCropJoinsBrokenEdges() throws {
+        // A page whose border is broken into pieces (as at a chart's patch corners), with its own
+        // rows and columns inside: the whole page still wins.
+        let w = 400, h = 300
+        let c = [Vec2(70, 40), Vec2(330, 60), Vec2(310, 260), Vec2(50, 230)]
+        func at(_ p: Vec2, _ q: Vec2, _ t: Double) -> Vec2 { p + (q - p) * t }
+        var lines: [(Vec2, Vec2)] = []
+        for i in 0..<4 {
+            let p = c[i], q = c[(i + 1) % 4]
+            for k in 0..<4 { lines.append((at(p, q, Double(k) / 4 + 0.02), at(p, q, Double(k + 1) / 4 - 0.02))) }
+        }
+        for k in 1..<4 {
+            let t = Double(k) / 4
+            lines.append((at(c[0], c[3], t), at(c[1], c[2], t)))
+            lines.append((at(c[0], c[1], t), at(c[3], c[2], t)))
+        }
+        let segments = LineDetector.detect(Self.picture(width: w, height: h, lines: lines), width: w, height: h)
+        let found = try XCTUnwrap(PerspectiveCrop.detect(segments, width: Double(w), height: Double(h)))
+        for (p, q) in zip(found, c) {
+            XCTAssertEqual(p.x * Double(w), q.x, accuracy: 4)
+            XCTAssertEqual(p.y * Double(h), q.y, accuracy: 4)
+        }
+        // Merging: two pieces of one line become one line with their total length.
+        let pieces = [LineSegment(MaskPoint(0.1, 0.5), MaskPoint(0.4, 0.5), length: 120), LineSegment(MaskPoint(0.6, 0.5), MaskPoint(0.9, 0.5), length: 120)]
+        let one = LineDetector.merged(pieces, width: 400, height: 300)
+        XCTAssertEqual(one.count, 1)
+        XCTAssertEqual(one[0].length, 240)
+        XCTAssertEqual(abs(one[0].b.x - one[0].a.x), 0.8, accuracy: 1e-9)
+    }
+
     func testPerspectiveCropActions() {
         var interpreter = CommandInterpreter(registry: registry)
         var state = EditState()
