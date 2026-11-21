@@ -102,7 +102,7 @@ jobs:
           xcrun simctl launch "$UDID" "$APP" -renderGallery YES
           DATA=$(xcrun simctl get_app_container "$UDID" "$APP" data)
           MANIFEST="$DATA/Documents/gallery/manifest.json"
-          for i in $(seq 1 300); do   # up to 10 minutes
+          for i in $(seq 1 750); do   # up to 25 minutes (the gallery grows with every operation)
             [ -f "$MANIFEST" ] && break
             sleep 2
           done
