@@ -135,3 +135,17 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `sticker heart` · `add sticker speech bubble` | Stickers (simple vector pictures made by the app) |
 | `collage 2 by 2` · `collage spacing 4` · `collage background black` | Collage of the photo and the photos picked (it becomes the photo being edited) |
 | `watermark text © 2026` · `watermark logo` · `watermark opacity 30` · `watermark position top left` | Watermark, in the preview and the saved photo |
+| `save preset portrait warm` · `preset portrait warm` · `preset amount 50` · `rename preset warm to cosy` · `delete preset cosy` | Presets: the Include switches choose their panels (`include light off`, `include crop`); the words after a preset's name are commands again |
+| `preset noir` · `preset golden hour` · `preset black and white infrared` | Built-in looks (Film, Portrait, Travel, Landscape, Black & White, Cinematic, Vintage) |
+| `copy settings` · `paste settings` · `previous` | Copy and paste the included panels; Previous: the last photo's edit (opening a photo starts a fresh edit) |
+| `batch edit` · `match exposures` | The photos picked (Presets panel → Batch → Pick Photos) edited with the included panels and saved to Photos; Match Exposures also evens out their brightness |
+| `undo` · `undo 3` · `redo` · `history` · `history 12` | Every change is a step (a slider drag is one); the History panel lists them, `history 0` is the photo as opened |
+| `snapshot before crop` · `restore snapshot before crop` · `version 2` · `delete snapshot before crop` | Named states of the edit |
+| `virtual copy mono` · `go to copy original` · `switch to copy 2` · `delete copy mono` | Several edits of one photo, each with its own history |
+| `reset light panel` · `reset effects` · `reset panel` | One panel back to its defaults (also the arrow on each panel's title) |
+| `before` · `compare split` · `compare side by side` · `compare off` | Before / after (or hold the half-filled frame in the toolbar) |
+| `histogram` · `clipping warning` · `vectorscope` · `color sampler` (then tap) · `clear samplers` | Scopes and readouts over the photo (never in the saved photo) |
+| `zoom 100` · `zoom in` · `fit` | Zoom (also pinch; drag to pan and double-tap when no tool is in use) |
+| `grid thirds` · `golden ratio grid` · `guides diagonals` · `grid off` | Composition guides over the photo |
+| `targeted saturation` · `targeted tone curve` · `targeted off` | Targeted adjustment: drag up or down on a colour or tone |
+| `soft proof print` · `proof matte` · `soft proof srgb` · `gamut warning` | Soft proofing, with what can't be printed shown grey |
