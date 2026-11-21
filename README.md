@@ -16,9 +16,10 @@ come from the [lensfun](https://github.com/lensfun/lensfun) database and keep it
 | [`voice-server/`](voice-server) | Laptop server for development: the iPad sends a voice clip, Whisper returns the text. Reached through ngrok. |
 | [`test-data/photos/`](test-data/photos) | The test photo, used by the app as its default image and by the reports. |
 | [`test-data/phrases/`](test-data/phrases) | Test phrases with the commands each should produce (`commands.jsonl`). |
+| [`test-data/raw/`](test-data/raw) | A small synthetic camera raw (`test.dng`, made by `dev-tools/make_dng.py` with PiDNG) for the raw checks. |
 | [`test-data/gallery/`](test-data/gallery) | Render test cases (`gallery.json`): a command per operation and the change it must cause. |
 | [`docs/FEATURES.md`](docs/FEATURES.md) | Feature checklist: every planned photo operation, ticked when built. |
-| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report), `ci_results.py` (cloud render checks), `make_luts.py` (the sample LUTs). |
+| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report), `ci_results.py` (cloud render checks), `make_luts.py` (the sample LUTs), `make_dng.py` (the test raw). |
 | [`.github/workflows/`](.github/workflows) | Cloud build: Linux tests → unsigned `.ipa` + iPad simulator render gallery and screenshots (feature branches publish them to `ci-renders`). |
 | `reports/`, `research_notes/` | Local only, git-ignored. |
 
@@ -149,3 +150,17 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `grid thirds` · `golden ratio grid` · `guides diagonals` · `grid off` | Composition guides over the photo |
 | `targeted saturation` · `targeted tone curve` · `targeted off` | Targeted adjustment: drag up or down on a colour or tone |
 | `soft proof print` · `proof matte` · `soft proof srgb` · `gamut warning` | Soft proofing, with what can't be printed shown grey |
+| `import photos` · `import files` · `import from sd card` · `library` | Library: import from Photos, Files (JPEG, HEIC, PNG, TIFF, DNG, camera raws) or a camera / card; each photo keeps its own edit |
+| `photo 3` · `next photo` · `previous photo` | Open a library photo (`previous` alone is still the last photo's edit) |
+| `rate 4` · `flag pick` · `reject` · `unflag` · `label red` | Stars, flags and colour labels of the photo being edited |
+| `show rating 3` · `show picks` · `show rejected` · `show label green` · `show all photos` | Filter what the library shows |
+| `new album trips` · `add to album trips` · `album trips` · `remove from album trips` · `delete album trips` | Albums |
+| `keyword beach, sunset` · `remove keyword beach` · `show keyword beach` · `title Sunset` · `caption …` · `copyright © 2026` · `photo info` | Keywords and metadata (written into exports; `remove location` leaves GPS out) |
+| `auto stack` · `stack these` · `select photo 3` · `unstack` · `expand stacks` · `collapse stacks` | Stacks of bursts and brackets (by capture time, or the photos selected) |
+| `map` | The photos shown that say where they were taken, on a map |
+| `tethered capture` · `tethered shot` | Bring in each shot from a camera on USB; fire its shutter |
+| `pro camera` · `iso 400` · `shutter 250` · `camera focus 30` · `camera white balance 5600` · `capture raw` · `take photo` | The iPad's camera with manual settings (0 = automatic) and raw |
+| `export` · `save to files` · `share` · `print` | Save to Photos, Files, the share sheet, or AirPrint, as the Export panel says |
+| `export as png` · `export quality 80` · `export long edge 2048` · `output sharpening matte` · `export metadata minimal` · `file naming date` · `export name Trip` | Export settings (they stay from photo to photo) |
+| `color space adobe rgb` · `export bits 16` · `print size 4x6` · `print layout fill` · `print margins 10` | Colour space, bit depth and print layout |
+| `export preset web` · `save export preset proofs` · `delete export preset proofs` | Export presets (built in: Web, Instagram, Print, Full Size JPEG, Lossless PNG) |
