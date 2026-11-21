@@ -42,6 +42,8 @@ public struct CommandParser {
                 guard let control = matcher.exact(tokens[i...(i + extra)].map(\.token).joined(separator: " ")) else { continue }
                 // The longest name starting here wins; another control's name is not a place for words.
                 guard control.takesText else { break }
+                // "text font headline", "export metadata copyright only": an option of the choice just named.
+                if optionFollowsName(tokens.map(\.token), at: i) { break }
                 let before = String(text[..<tokens[i].range.lowerBound])
                 var rest = text[tokens[i + extra].range.upperBound...].drop { $0.isWhitespace || ",:;-–—".contains($0) }
                 // "change text to Goodbye": a "to" after a verb-like name isn't part of the new words.
@@ -67,6 +69,19 @@ public struct CommandParser {
             }
         }
         return nil
+    }
+
+    /// Whether the words at `i` are an option of the control named just before them (a choice, or an
+    /// action with options), so that they are not another action's name.
+    private func optionFollowsName(_ tokens: [String], at i: Int) -> Bool {
+        for count in 1...3 where i - count >= 0 {
+            guard let named = matcher.exact(tokens[(i - count)..<i].joined(separator: " ")), !named.options.isEmpty else { continue }
+            for extra in 0...3 where i + extra < tokens.count {
+                let phrase = tokens[i...(i + extra)].joined(separator: " ")
+                if named.options.contains(where: { $0.names.contains(phrase) }) { return true }
+            }
+        }
+        return false
     }
 
     /// The words of `text` as `tokenize` makes them, with where each stands in the text.
@@ -365,10 +380,10 @@ public struct CommandParser {
         }
     }
 
-    /// The option of a choice control named by `first` (plus up to two more words), as its index
+    /// The option of a choice control named by `first` (plus up to three more words), as its index
     /// and the number of extra words used. Near-miss single words count when only one option is close.
     private func option(of control: Control, _ first: String, _ rest: ArraySlice<String>) -> (index: Int, extra: Int)? {
-        let words = Array(rest.prefix(2))
+        let words = Array(rest.prefix(3))
         for extra in stride(from: words.count, through: 0, by: -1) {
             let phrase = ([first] + words.prefix(extra)).joined(separator: " ")
             if let index = control.options.firstIndex(where: { $0.names.contains(phrase) }) {

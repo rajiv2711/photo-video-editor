@@ -1462,7 +1462,7 @@
     {"id": "gradientFill", "label": "Gradient Fill", "group": "layers", "kind": "action", "layer": "fill",
       "synonyms": ["gradient layer", "add gradient", "new gradient", "add gradient fill", "gradient fill layer", "fill with gradient"],
       "options": [{"id": "linear", "label": "Linear", "synonyms": ["straight"]},
-                  {"id": "radial", "label": "Radial", "synonyms": ["circular", "round", "from the middle"]}]},
+                  {"id": "radial", "label": "Radial", "synonyms": ["circular", "round", "middle"]}]},
     {"id": "fillColor", "label": "Fill Colour", "group": "layers", "section": "Fill", "kind": "choice", "scope": "layer", "layer": "fill", "default": 1,
       "synonyms": ["fill color", "fill start colour", "fill start color", "gradient start colour", "gradient start color", "start colour"],
       "options": [{"id": "white", "label": "White"},

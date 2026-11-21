@@ -48,6 +48,24 @@ final class CommandParserTests: XCTestCase {
         XCTAssertEqual(unreachable, [])
     }
 
+    /// Every option name, said after its control's label, picks that option ("text font headline",
+    /// "collage one above the other"), except where a control of that very name does the same.
+    func testEveryOptionReachesItsControl() throws {
+        let registry = try ControlRegistry.bundled()
+        let sameEffect: Set = ["zoom fit", "zoom fit to screen", "upright guides", "watermark text", "watermark words"]
+        var unreachable: [String] = []
+        for control in registry.controls {
+            for (index, option) in control.options.enumerated() {
+                for name in option.names {
+                    let said = control.label.lowercased() + " " + name
+                    let picked = parser.parse(said).contains { $0.control == control.id && $0.value == Double(index) }
+                    if !picked && !sameEffect.contains(said) { unreachable.append("“\(said)”") }
+                }
+            }
+        }
+        XCTAssertEqual(unreachable, [])
+    }
+
     func testUnknownWordStopsLaterActions() {
         XCTAssertEqual(parser.parse("wobble more"), [.unknown("wobble")])
     }
