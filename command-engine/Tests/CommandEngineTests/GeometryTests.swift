@@ -743,6 +743,23 @@ final class GeometryTests: XCTestCase {
         XCTAssertTrue(state.geometry.pins.isEmpty, "puppet pins come from taps")
     }
 
+    func testEverythingTogetherMapsBothWays() {
+        var s = GeometrySettings(aspect: "4:5", cropLeft: 0.1, cropTop: 0.05, straighten: -3, quarterTurns: 1, flipHorizontal: true)
+        s.transformVertical = 20
+        s.canvasBorder = 0.05
+        s.canvasAspect = "1:1"
+        s.resize = 0.5
+        let plan = GeometryPlan(settings: s, width: 600, height: 400, previewScale: 0.5)
+        XCTAssertEqual(plan.canvasWidth, plan.canvasHeight)
+        for p in [MaskPoint(0.4, 0.5), MaskPoint(0.55, 0.45), MaskPoint(0.5, 0.6)] {
+            let back = plan.toSource(plan.toShown(p))
+            XCTAssertEqual(back.x, p.x, accuracy: 1e-9)
+            XCTAssertEqual(back.y, p.y, accuracy: 1e-9)
+        }
+        XCTAssertEqual(plan.resizeFactor, 1, "the preview is already this sharp")
+        XCTAssertEqual(plan.savedWidth, plan.canvasWidth, accuracy: 1, "half of a full photo twice the preview's size")
+    }
+
     func testUprightNames() {
         XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
         XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])
