@@ -4,7 +4,7 @@ import UIKit
 
 /// Layers (Layers panel) over the finished picture, the lowest first: each layer's content is made
 /// over the whole canvas (transparent around it), faded by its opacity and laid over everything below
-/// it with its blend mode, through its mask if it has one (worked out by MaskRaster, as the Masks
+/// it with its blend mode, on sRGB levels as Photoshop does, through its mask if it has one (worked out by MaskRaster, as the Masks
 /// panel's, on the canvas), with its styles (drop shadow, outer glow, stroke, bevel) worked out from
 /// its shape. An adjustment layer's content is everything below it with its own sliders.
 /// Positions and sizes are shares of the canvas (see Layers.swift), so the preview and the saved photo agree.
@@ -86,7 +86,7 @@ final class LayerRenderer {
                                                              y: extent.maxY - CGFloat(at.y) - size.height - size.minY))
             .composited(over: Self.clear(extent)).cropped(to: extent)
         let opacity = min(1, max(0, (value("watermarkOpacity") ?? 50) / 100))
-        return Filters.mix(Self.clear(extent), placed, opacity).composited(over: image).cropped(to: extent)
+        return Self.over(placed, image, opacity: opacity, filter: nil, extent: extent)
     }
 
     // MARK: - Layer styles
@@ -209,22 +209,28 @@ final class LayerRenderer {
             .composited(over: Self.clear(extent)).cropped(to: extent)
     }
 
-    /// The layer's content laid over `base`, faded by its opacity, with its blend mode. Blend modes
-    /// work on sRGB levels as in Photoshop (LayerBlend has the formulas): the layer's colours, made
-    /// opaque, are blended with the picture below by Core Image's filter of that mode, and the result
-    /// shows through the layer's own coverage and opacity.
+    /// The layer's content laid over `base`, faded by its opacity, with its blend mode.
     private func composite(_ content: CIImage, over base: CIImage, layer: Layer, extent: CGRect) -> CIImage {
-        let faded = layer.opacity < 1 ? Filters.mix(Self.clear(extent), content, layer.opacity) : content
-        let mode = LayerBlend.mode(layer.value("layerBlend", 0))
-        guard mode != "normal", let filter = Self.blendFilters[mode] else {
-            return faded.composited(over: base).cropped(to: extent)
+        Self.over(content, base, opacity: layer.opacity, filter: Self.blendFilters[LayerBlend.mode(layer.value("layerBlend", 0))],
+                  extent: extent)
+    }
+
+    /// `content` over `base` on sRGB levels, as Photoshop mixes layers (half-transparent black over grey
+    /// looks half as bright): its colours, made opaque, go through the blend mode's filter (none:
+    /// normal) with the picture below, and show through its coverage × `opacity`. LayerBlend has the
+    /// blend modes' formulas.
+    static func over(_ content: CIImage, _ base: CIImage, opacity: Double, filter: String?, extent: CGRect) -> CIImage {
+        let coverage = opacity < 1 ? Filters.mix(clear(extent), content, opacity) : content
+        let below = Filters.encoded(base)
+        var top = Filters.encoded(content.applyingFilter("CIUnpremultiply").settingAlphaOne(in: extent))
+        if let filter {
+            top = top.applyingFilter(filter, parameters: [kCIInputBackgroundImageKey: below])
         }
-        let top = Filters.encoded(content.applyingFilter("CIUnpremultiply").settingAlphaOne(in: extent))
-        let blended = Filters.linear(top.applyingFilter(filter, parameters: [kCIInputBackgroundImageKey: Filters.encoded(base)]))
-        return blended.cropped(to: extent).applyingFilter("CIBlendWithAlphaMask", parameters: [
-            kCIInputBackgroundImageKey: base,
-            kCIInputMaskImageKey: faded,
-        ]).cropped(to: extent)
+        let mixed = top.cropped(to: extent).applyingFilter("CIBlendWithAlphaMask", parameters: [
+            kCIInputBackgroundImageKey: below,
+            kCIInputMaskImageKey: coverage,
+        ])
+        return Filters.linear(mixed).cropped(to: extent)
     }
 
     /// Core Image's filter for each blend mode (the layer is the input, the picture below the background).
