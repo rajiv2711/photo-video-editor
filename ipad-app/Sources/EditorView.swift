@@ -32,12 +32,13 @@ struct EditorView: View {
                         panel
                     }
                 } else {
-                    // The photo across the whole width, the panel below it.
+                    // The photo across the whole width, the panel below it (36 % of the height: a tall photo
+                    // keeps most of its size, a wide one gets far bigger).
                     GeometryReader { geo in
                         VStack(spacing: 0) {
                             photoArea
                             panel
-                                .frame(height: (geo.size.height * 0.4).rounded())
+                                .frame(height: (geo.size.height * 0.36).rounded())
                         }
                     }
                 }
@@ -341,7 +342,7 @@ struct EditorView: View {
         .overlay(Capsule().strokeBorder(Color.white.opacity(0.1)))
         .frame(maxWidth: 640)
         .padding(.horizontal, 16)
-        .padding(.bottom, 12)
+        .padding(.bottom, 8)
     }
 
     /// What the last command did (and the choices when a word fits several controls), over the top of the
