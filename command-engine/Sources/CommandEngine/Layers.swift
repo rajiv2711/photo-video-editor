@@ -24,7 +24,7 @@ public struct Layer: Hashable, Codable {
     /// "photo" (a picked photo), …
     public var kind: String
     /// Settings by control id (layerOpacity, layerX, …) plus a few set by the action that made it
-    /// ("photo": which picked photo).
+    /// ("picked": which photo picked it shows, until the app gives it its picture, "photo").
     public var values: [String: Double]
     /// Adjustment layers: their own values of the sliders a mask can hold (exposure, …); missing = no change.
     public var adjustments: [String: Double]
@@ -502,8 +502,13 @@ extension CommandApplier {
 
         switch control.id {
         case "placePhoto":
-            // The app adds the layer: it holds the photos picked.
-            return [ran]
+            // Which photo picked ("place photo 2": the second; 0 = the last): the app, which holds the
+            // photos, gives the layer its picture.
+            var layer = Layers.make("photo", registry: registry)
+            layer.values["picked"] = command.value ?? 0
+            state.layers.append(layer)
+            state.selectLayer(state.layers.count - 1)
+            return [ran, .layered(layer: state.layers.count, event: .created("photo"))]
         case "newTextLayer":
             var layer = Layers.make("text", registry: registry)
             layer.text = command.text ?? "Text"

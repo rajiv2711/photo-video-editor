@@ -595,8 +595,6 @@ final class EditorModel: ObservableObject {
     private func armLayerTools(_ outcomes: [CommandInterpreter.Outcome]) {
         for outcome in outcomes {
             switch outcome {
-            case .ran("placePhoto"):
-                placePhoto(interpreter.lastCommands.first { $0.control == "placePhoto" }?.value)
             case .layered(_, .created), .layered(_, .duplicated), .changed(EditState.layerSelectorID, _, _):
                 layerMode = "move"
             case .layered(_, .masked(let part)):
@@ -606,27 +604,29 @@ final class EditorModel: ObservableObject {
                 break
             }
         }
+        attachLayerPhotos()
         // The pen: taps and drags on the picture add points to the selected path.
         if outcomes.contains(.ran(controlID: "penTool")) { layerMode = "pen" }
         if outcomes.contains(.ran(controlID: "paintBrush")) { layerMode = "paint" }
         if state.selectedLayer != nil { geometryTool = nil }
     }
 
-    /// A photo picked (the last one, or "place photo 2": the second) becomes a new layer on top.
-    private func placePhoto(_ number: Double?) {
-        guard !mergePhotos.isEmpty else {
-            feedback = Feedback(text: "Pick a photo first (Layers panel → Pick Photos).", isProblem: true)
-            return
+    /// New photo layers ("place photo", "place photo 2") get the photo picked they ask for (the last
+    /// one, or the second…); without photos picked they go again.
+    private func attachLayerPhotos() {
+        for i in state.layers.indices.reversed() where state.layers[i].kind == "photo" && state.layers[i].values["photo"] == nil {
+            guard !mergePhotos.isEmpty else {
+                state.layers.remove(at: i)
+                state.selectLayer(nil)
+                feedback = Feedback(text: "Pick a photo first (Layers panel → Pick Photos).", isProblem: true)
+                continue
+            }
+            let n = Int(state.layers[i].values["picked"] ?? 0) - 1
+            let photo = mergePhotos[mergePhotos.indices.contains(n) ? n : mergePhotos.count - 1]
+            layerPhotos.append((photo, PhotoRenderer.downscaled(photo, maxSide: previewSide)))
+            state.layers[i].values["photo"] = Double(layerPhotos.count - 1)
+            state.layers[i].values["picked"] = nil
         }
-        let i = number.map { Int($0) - 1 }.flatMap { mergePhotos.indices.contains($0) ? $0 : nil } ?? mergePhotos.count - 1
-        let photo = mergePhotos[i]
-        layerPhotos.append((photo, PhotoRenderer.downscaled(photo, maxSide: previewSide)))
-        var layer = Layers.make("photo", registry: registry)
-        layer.values["photo"] = Double(layerPhotos.count - 1)
-        state.layers.append(layer)
-        state.selectLayer(state.layers.count - 1)
-        layerMode = "move"
-        feedback = Feedback(text: "Layer \(state.layers.count): photo placed · " + (Self.layerHints["photo"] ?? ""))
     }
 
     // MARK: - Pickers (tap the photo)

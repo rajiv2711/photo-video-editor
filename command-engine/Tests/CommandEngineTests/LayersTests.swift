@@ -81,6 +81,14 @@ final class LayersTests: XCTestCase {
 
     // MARK: - Selecting and routing
 
+    func testPlacePhotoMakesALayerTheNextWordsChange() {
+        XCTAssertEqual(run("place photo 2 layer opacity 40"), [.ran(controlID: "placePhoto"), .layered(layer: 1, event: .created("photo")),
+                                                              .changedInLayer(layer: 1, controlID: "layerOpacity", from: 100, to: 40)])
+        XCTAssertEqual(state.layers[0].values["picked"], 2)
+        run("place photo")
+        XCTAssertEqual(state.layers[1].values["picked"], 0, "the last photo picked")
+    }
+
     func testLayerSettingsNeedALayer() {
         XCTAssertEqual(run("layer opacity 50"), [.needsLayer(controlID: "layerOpacity")])
         XCTAssertEqual(run("delete layer"), [.needsLayer(controlID: "deleteLayer")])
