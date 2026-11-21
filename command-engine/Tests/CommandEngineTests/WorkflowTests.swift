@@ -214,6 +214,23 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(value("cropLeft"), 0, "the crop belongs to its own photo unless included")
     }
 
+    // MARK: - Previous
+
+    func testPreviousAppliesTheLastPhotosEdit() {
+        XCTAssertEqual(parse("previous"), [.run("previousSettings")])
+        XCTAssertEqual(parse("paste previous"), [.run("previousSettings")])
+        XCTAssertEqual(events(run("previous")), [.noPrevious])
+        run("exposure 1 temperature 30 crop left 20")
+        interpreter.workspace.closePhoto(state)
+        state = EditState()
+        run("previous")
+        XCTAssertEqual(value("exposure"), 1)
+        XCTAssertEqual(value("temperature"), 30)
+        XCTAssertEqual(value("cropLeft"), 0, "the crop is only taken when Include Geometry is on")
+        run("include geometry previous")
+        XCTAssertEqual(value("cropLeft"), 20)
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

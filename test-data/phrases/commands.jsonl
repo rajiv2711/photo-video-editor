@@ -1177,3 +1177,6 @@
 {"group":"presets","text":"match exposures","expect":[{"op":"run","control":"matchExposures"}]}
 {"group":"presets","text":"match total exposures","expect":[{"op":"run","control":"matchExposures"}]}
 {"group":"presets","text":"even out brightness","expect":[{"op":"run","control":"matchExposures"}]}
+{"group":"presets","text":"previous","expect":[{"op":"run","control":"previousSettings"}]}
+{"group":"presets","text":"paste previous","expect":[{"op":"run","control":"previousSettings"}]}
+{"group":"presets","text":"same as previous","expect":[{"op":"run","control":"previousSettings"}]}

@@ -25,6 +25,10 @@ public enum WorkflowEvent: Equatable {
     case pasted(changes: Int)
     /// "paste" before anything was copied.
     case nothingCopied
+    /// The last photo's edit was applied: how many settings changed.
+    case previousApplied(changes: Int)
+    /// "previous" on the first photo opened.
+    case noPrevious
 }
 
 /// The presets, and later the history, copies and snapshots of the photo being edited.
@@ -38,9 +42,12 @@ public struct Workspace {
     public private(set) var applied: Preset?
     /// Settings copied (Copy Settings), for pasting on this photo or another.
     public var clipboard: Preset?
+    /// The edit of the photo opened before this one, every panel (Previous takes the included ones).
+    public var previous: Preset?
 
     /// The actions the workspace runs (the applier never sees them).
-    public static let actions: Set<String> = ["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings"]
+    public static let actions: Set<String> = ["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings",
+                                              "previousSettings"]
 
     public init(registry: ControlRegistry, packs: [Preset] = Presets.bundled()) {
         self.registry = registry
@@ -117,9 +124,20 @@ public struct Workspace {
         case "pasteSettings":
             guard let clipboard else { return [ran, .workflow(.nothingCopied)] }
             return [ran, .workflow(.pasted(changes: clipboard.apply(to: &state, registry: registry)))]
+        case "previousSettings":
+            // The panels the Include switches choose now.
+            guard let previous else { return [ran, .workflow(.noPrevious)] }
+            let groups = Presets.included(state, registry: registry)
+            return [ran, .workflow(.previousApplied(changes: previous.only(groups, registry: registry).apply(to: &state, registry: registry)))]
         default:
             return [ran]
         }
+    }
+
+    /// Another photo is opened: the edit of this one becomes Previous.
+    public mutating func closePhoto(_ state: EditState) {
+        previous = Preset.capture(state, name: "Previous", groups: Presets.allGroups, registry: registry)
+        applied = nil
     }
 
     /// After other commands: a new Preset Amount applies the last preset again at that strength.

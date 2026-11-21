@@ -599,6 +599,8 @@
     {"id": "paste-settings", "command": "exposure 1 contrast 40 temperature 30 copy settings reset all paste settings", "control": "pasteSettings", "expect": [{"metric": "diff", "dir": "same", "vs": "preset-source", "min": 0.5}, {"metric": "p50_luma", "dir": "up"}]},
     {"id": "copy-settings", "command": "exposure 1 contrast 40 temperature 30 include light off copy settings reset all paste settings", "control": "copySettings", "expect": [{"metric": "mean_b", "dir": "down"}, {"metric": "p50_luma", "dir": "down", "vs": "preset-source"}]},
     {"id": "batch-edit", "command": "exposure 0.5 batch edit", "control": "batchEdit", "photos": ["bracket-dark"], "view": "batch", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bracket-dark", "min": 8}, {"metric": "mean_luma", "dir": "down"}]},
-    {"id": "match-exposures", "command": "match exposures", "control": "matchExposures", "photos": ["bracket-dark"], "view": "batch", "expect": [{"metric": "mean_luma", "dir": "same", "min": 4}, {"metric": "mean_luma", "dir": "up", "vs": "batch-edit"}]}
+    {"id": "match-exposures", "command": "match exposures", "control": "matchExposures", "photos": ["bracket-dark"], "view": "batch", "expect": [{"metric": "mean_luma", "dir": "same", "min": 4}, {"metric": "mean_luma", "dir": "up", "vs": "batch-edit"}]},
+    {"id": "open-fresh", "command": "exposure 1 temperature 30", "steps": [{"open": "chart"}], "expect": [{"metric": "diff", "dir": "same", "vs": "chart", "min": 0.5}]},
+    {"id": "previous", "command": "exposure 1 temperature 30", "control": "previousSettings", "steps": [{"open": "chart"}, {"command": "previous"}], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "chart"}, {"metric": "mean_b", "dir": "down", "vs": "chart"}]}
   ]
 }

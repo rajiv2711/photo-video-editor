@@ -31,6 +31,7 @@ final class GalleryCasesTests: XCTestCase {
         let command: String?
         let stroke: [[Double]]?
         let tap: [Double]?
+        let open: String?
     }
 
     struct File: Decodable {
@@ -88,8 +89,9 @@ final class GalleryCasesTests: XCTestCase {
                 XCTAssertTrue(tap.count == 2 && tap.allSatisfy { (0...1).contains($0) }, "\(c.id): tap is x, y in 0…1")
             }
             for step in c.steps ?? [] {
-                let parts = [step.command != nil, step.stroke != nil, step.tap != nil].filter { $0 }.count
-                XCTAssertEqual(parts, 1, "\(c.id): a step is one command, stroke or tap")
+                let parts = [step.command != nil, step.stroke != nil, step.tap != nil, step.open != nil].filter { $0 }.count
+                XCTAssertEqual(parts, 1, "\(c.id): a step is one command, stroke, tap or photo opened")
+                if let open = step.open { XCTAssertTrue(Self.sources.contains(open), "\(c.id): unknown photo \(open)") }
                 if let tap = step.tap { XCTAssertTrue(tap.count == 2 && tap.allSatisfy { (0...1).contains($0) }, c.id) }
             }
             for stroke in (c.strokes ?? []) + (c.steps ?? []).compactMap(\.stroke) {

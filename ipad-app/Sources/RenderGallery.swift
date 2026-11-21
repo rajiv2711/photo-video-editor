@@ -50,11 +50,12 @@ enum RenderGallery {
         let view: String?
     }
 
-    /// One step: a command, a stroke or a tap.
+    /// One step: a command, a stroke, a tap, or a photo opened (generated, see `sourceImage`).
     struct Step: Codable {
         let command: String?
         let stroke: [[Double]]?
         let tap: [Double]?
+        let open: String?
     }
 
     struct CaseFile: Codable {
@@ -127,7 +128,15 @@ enum RenderGallery {
         }
         var entries: [Entry] = []
         for item in cases {
-            let model = editor(for: item.source)
+            // A case that opens another photo gets an editor of its own (the shared one keeps its photo).
+            let opens = item.steps?.contains { $0.open != nil } ?? false
+            let model = opens ? EditorModel(image: sourceImage(item.source, photo: small), previewSide: longSide) : editor(for: item.source)
+            if opens {
+                model.waitsForRetouch = true
+                model.waitsForMerge = true
+                model.showsPreview = false
+                model.keepsPresets = false
+            }
             model.startOver()
             if let photos = item.photos {
                 model.pickForMerge(photos.map { sourceImage($0, photo: small) })
@@ -146,6 +155,7 @@ enum RenderGallery {
                 if let command = step.command { model.run(command) }
                 if let stroke = step.stroke { model.draw(stroke.filter { $0.count == 2 }.map { MaskPoint($0[0], $0[1]) }) }
                 if let tap = step.tap, tap.count == 2 { model.tap(atX: tap[0], y: tap[1]) }
+                if let name = step.open { model.open(sourceImage(name, photo: small)) }
             }
             if let tap = item.tap, tap.count == 2 {
                 model.tap(atX: tap[0], y: tap[1])

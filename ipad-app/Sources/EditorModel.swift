@@ -852,14 +852,28 @@ final class EditorModel: ObservableObject {
             feedback = Feedback(text: "That file couldn't be opened as a photo.", isProblem: true)
             return
         }
+        open(image)
+        renderer.portrait.depth = Self.depth(in: data, context: renderer.context)
+        render()
+    }
+
+    /// Edits a new photo from the start (as Lightroom does): the edit of the one before becomes
+    /// Previous; the presets, copied settings and Previous carry over.
+    func open(_ image: CIImage) {
+        var library = interpreter.workspace
+        library.closePhoto(state)
         opened = image
         merged = nil
         livePhoto = nil
         mergeJob += 1
         isMerging = false
         replacePhoto(image, lens: Self.lens(of: image))
-        renderer.portrait.depth = Self.depth(in: data, context: renderer.context)
-        render()
+        renderer.portrait.depth = nil
+        startOver()
+        interpreter.workspace.presets = library.presets
+        interpreter.workspace.clipboard = library.clipboard
+        interpreter.workspace.previous = library.previous
+        feedback = Feedback(text: "New photo: say “previous” for the last photo's edit, or “paste settings”")
     }
 
     // MARK: - Portrait depth
@@ -1049,6 +1063,10 @@ final class EditorModel: ObservableObject {
             return ("Pasted (\(changes) setting\(changes == 1 ? "" : "s") changed)", false)
         case .nothingCopied:
             return ("Nothing copied yet: say “copy settings” first", true)
+        case .previousApplied(let changes):
+            return ("Previous: the last photo's edit (\(changes) setting\(changes == 1 ? "" : "s") changed)", false)
+        case .noPrevious:
+            return ("No previous photo yet: open another photo first", true)
         }
     }
 
