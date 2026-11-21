@@ -60,10 +60,11 @@ final class PhotoRenderer {
     /// new ones may show a moment later (worked out in the background, see RetouchRenderer).
     /// `visualize`: Visualize Spots' threshold when it is on (preview only). `geometry`: what the
     /// Geometry panel's touch tools made; `stage`: how much of the geometry to show (the crop tool
-    /// shows the whole frame).
+    /// shows the whole frame); `previewScale`: the preview's size ÷ the full photo's (nil when saving),
+    /// so Resize keeps the preview no sharper than the saved photo.
     func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil,
                retouches: [Retouch] = [], waitForRetouch: Bool = true, visualize: Double? = nil,
-               geometry edits: GeometryEdits = GeometryEdits(), stage: GeometryStage = .full) -> CIImage {
+               geometry edits: GeometryEdits = GeometryEdits(), stage: GeometryStage = .full, previewScale: Double? = nil) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         let extent = image.extent
         // Lens corrections, then film negative conversion: the picture range masks and pickers look at.
@@ -84,10 +85,10 @@ final class PhotoRenderer {
         if (value("upright") ?? 0) != 0 {
             _ = geometry.segments(of: lensFixed, key: lensKey)  // Upright reads the photo's lines
         }
-        let plan = geometry.plan(extent: extent, value: value, edits: edits, stage: stage)
+        let plan = geometry.plan(extent: extent, value: value, edits: edits, stage: stage, previewScale: previewScale)
         lastPlan = plan
         output = geometry.shape(output, plan: plan, clampEdges: stage == .full)
-        let shaped = plan.isIdentity ? extent : output.extent
+        let shaped = plan.isShapeIdentity ? extent : output.extent
         output = effects.finish(output, extent: shaped, value: value)  // vignette, grain
         if !hdr {
             output = output.applyingFilter("CIColorClamp")
@@ -99,7 +100,8 @@ final class PhotoRenderer {
             let shape = self.masks.image(of: overlay, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
             output = MaskRenderer.overlay(output, mask: geometry.shape(shape, plan: plan), extent: shaped)
         }
-        return output.cropped(to: shaped)
+        output = geometry.frame(output, plan: plan)  // resize
+        return output.cropped(to: plan.isFrameIdentity ? shaped : output.extent)
     }
 
     /// Auto Straighten: the Straighten angle that levels the lines of the photo last rendered (nil

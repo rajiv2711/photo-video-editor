@@ -831,3 +831,12 @@
 {"group":"geometry","text":"rectify","expect":[{"op":"run","control":"perspectiveCrop"}]}
 {"group":"geometry","text":"clear perspective crop","expect":[{"op":"run","control":"clearPerspectiveCrop"}]}
 {"group":"geometry","text":"reset perspective crop","expect":[{"op":"run","control":"clearPerspectiveCrop"}]}
+{"group":"geometry","text":"resize 50","expect":[{"op":"set","control":"resize","value":50}]}
+{"group":"geometry","text":"resize 50 percent","expect":[{"op":"set","control":"resize","value":50}]}
+{"group":"geometry","text":"image size 200","expect":[{"op":"set","control":"resize","value":200}]}
+{"group":"geometry","text":"long edge 2000","expect":[{"op":"set","control":"longEdge","value":2000}]}
+{"group":"geometry","text":"long edge 1080 pixels","expect":[{"op":"set","control":"longEdge","value":1080}]}
+{"group":"geometry","text":"reset long edge","expect":[{"op":"reset","control":"longEdge"}]}
+{"group":"geometry","text":"resolution 300","expect":[{"op":"set","control":"resolution","value":300}]}
+{"group":"geometry","text":"dpi 240","expect":[{"op":"set","control":"resolution","value":240}]}
+{"group":"geometry","text":"straighten 3 degrees","expect":[{"op":"set","control":"straighten","value":3}]}

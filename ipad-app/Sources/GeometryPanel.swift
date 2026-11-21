@@ -24,6 +24,11 @@ struct GeometryPanel: View {
                         .buttonStyle(.borderedProminent)
                         .padding(.horizontal, 10)
                 }
+                // The size the saved photo will have (crop, resize, …).
+                Text(model.savedSizeText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 10)
                 ForEach(controls.filter { $0.section == nil }) { ControlRow(model: model, control: $0) }
                 ForEach(sections, id: \.self) { section in
                     DisclosureGroup(isExpanded: isOpen("geometry/" + section)) {

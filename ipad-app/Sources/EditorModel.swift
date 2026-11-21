@@ -1,5 +1,6 @@
 import CoreImage
 import CommandEngine
+import ImageIO
 import Photos
 import SwiftUI
 import UIKit
@@ -322,7 +323,19 @@ final class EditorModel: ObservableObject {
 
     /// The whole geometry for a picture of this size (whatever the preview shows).
     private func fullPlan(_ extent: CGRect) -> GeometryPlan {
-        renderer.geometry.plan(extent: extent, value: currentValue, edits: state.geometry, stage: .full)
+        renderer.geometry.plan(extent: extent, value: currentValue, edits: state.geometry, stage: .full, previewScale: previewScale)
+    }
+
+    /// The preview's size ÷ the full photo's.
+    private var previewScale: Double {
+        Double(max(previewSource.extent.width, previewSource.extent.height) / max(original.extent.width, original.extent.height, 1))
+    }
+
+    /// The saved photo's size and resolution, for the Geometry panel.
+    var savedSizeText: String {
+        let plan = fullPlan(previewSource.extent)
+        let inches = String(format: "%.1f × %.1f in", plan.savedWidth / plan.resolution, plan.savedHeight / plan.resolution)
+        return "Saved photo: \(Int(plan.savedWidth)) × \(Int(plan.savedHeight)) px · \(inches) at \(Int(plan.resolution)) ppi"
     }
 
     /// Where the photo's own coordinates lie on the shown preview (`shown`: its size on screen): the
@@ -587,22 +600,33 @@ final class EditorModel: ObservableObject {
         let edited = renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches,
                                     geometry: state.geometry)
         if isHDR {
-            saveHDR(edited)
+            guard let data = renderer.hdrHEIF(edited) else {
+                feedback = Feedback(text: "Couldn't render the HDR photo.", isProblem: true)
+                return
+            }
+            saveToPhotos(data, done: "Saved HDR photo to Photos.")
             return
         }
-        guard let image = renderer.uiImage(edited) else {
+        // A JPEG with the Resolution (pixels per inch) written into it.
+        let ppi = registry.control(id: "resolution").map { state.value(of: $0) } ?? 72
+        let data = NSMutableData()
+        guard let cg = renderer.context.createCGImage(edited, from: edited.extent),
+              let destination = CGImageDestinationCreateWithData(data, "public.jpeg" as CFString, 1, nil) else {
             feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
             return
         }
-        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-        feedback = Feedback(text: "Saved to Photos.")
-    }
-
-    private func saveHDR(_ edited: CIImage) {
-        guard let data = renderer.hdrHEIF(edited) else {
-            feedback = Feedback(text: "Couldn't render the HDR photo.", isProblem: true)
+        let properties: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: 0.92,
+                                           kCGImagePropertyDPIWidth: ppi, kCGImagePropertyDPIHeight: ppi]
+        CGImageDestinationAddImage(destination, cg, properties as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else {
+            feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
             return
         }
+        saveToPhotos(data as Data, done: "Saved to Photos.")
+    }
+
+    /// Adds a photo file to the photo library.
+    private func saveToPhotos(_ data: Data, done: String) {
         // The model lives as long as the app, so these closures may hold it.
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
             guard status == .authorized || status == .limited else {
@@ -615,7 +639,7 @@ final class EditorModel: ObservableObject {
                 PHAssetCreationRequest.forAsset().addResource(with: .photo, data: data, options: nil)
             }, completionHandler: { ok, _ in
                 Task { @MainActor in
-                    self.feedback = Feedback(text: ok ? "Saved HDR photo to Photos." : "Couldn't save to Photos.", isProblem: !ok)
+                    self.feedback = Feedback(text: ok ? done : "Couldn't save to Photos.", isProblem: !ok)
                 }
             })
         }
@@ -647,7 +671,7 @@ final class EditorModel: ObservableObject {
     func editedPreview() -> CIImage {
         let edited = renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask,
                                     retouches: state.retouches, waitForRetouch: waitsForRetouch, visualize: visualizeThreshold,
-                                    geometry: state.geometry, stage: geometryStage)
+                                    geometry: state.geometry, stage: geometryStage, previewScale: previewScale)
         previewPlan = renderer.lastPlan
         return edited
     }

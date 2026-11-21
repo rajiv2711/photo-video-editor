@@ -141,7 +141,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 104. **Guided upright** — draw lines that should be straight
 - [x] 105. **Manual transform** — vertical, horizontal, rotate, aspect, scale, offset
 - [x] 106. **Perspective crop** — crop and square up a tilted plane
-- [ ] 107. **Resize** — pixel size and resolution
+- [x] 107. **Resize** — pixel size and resolution
 - [ ] 108. **Canvas size** — add space or borders around the photo
 - [ ] 109. **Content-aware scale** — resize while protecting the subject
 - [ ] 110. **Warp / puppet warp** — bend parts of the image with a grid or pins

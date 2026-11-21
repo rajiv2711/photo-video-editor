@@ -41,19 +41,36 @@ final class GeometryRenderer {
     }
 
     /// The plan for a picture over `extent`.
-    /// Upright uses the lines last found on the photo (see `segments(of:key:)`).
-    func plan(extent: CGRect, value: (String) -> Double?, edits: GeometryEdits, stage: GeometryStage) -> GeometryPlan {
+    /// Upright uses the lines last found on the photo (see `segments(of:key:)`). `previewScale`: the
+    /// preview's size ÷ the full photo's (nil when saving).
+    func plan(extent: CGRect, value: (String) -> Double?, edits: GeometryEdits, stage: GeometryStage,
+              previewScale: Double? = nil) -> GeometryPlan {
         let settings = GeometrySettings(value: value)
         let lines = settings.upright == "off" ? [] : (lineCache?.segments ?? [])
         return GeometryPlan(settings: settings, width: Double(extent.width), height: Double(extent.height), stage: stage, segments: lines,
-                            edits: edits)
+                            edits: edits, previewScale: previewScale)
+    }
+
+    /// The finished picture resized as the plan says (Lanczos), at the origin.
+    func frame(_ image: CIImage, plan: GeometryPlan) -> CIImage {
+        if plan.isFrameIdentity { return image }
+        let e = image.extent
+        var out = image.transformed(by: CGAffineTransform(translationX: -e.minX, y: -e.minY))
+        let k = plan.resizeFactor
+        if abs(k - 1) > 1e-9 {
+            // Edges repeated a little outwards, so the border pixels stay solid.
+            let area = CGRect(x: 0, y: 0, width: e.width, height: e.height)
+            out = out.clampedToExtent().cropped(to: area.insetBy(dx: -4, dy: -4))
+                .applyingFilter("CILanczosScaleTransform", parameters: [kCIInputScaleKey: k, kCIInputAspectRatioKey: 1])
+        }
+        return out.cropped(to: CGRect(x: 0, y: 0, width: CGFloat(plan.outputWidth), height: CGFloat(plan.outputHeight)))
     }
 
     /// The picture put into its frame and cropped, as the plan says; the result starts at the origin.
     /// `clampEdges`: repeat the photo's border pixels outwards (no see-through edge pixels); off while
     /// the crop tool shows the whole frame, so the empty corners show as empty.
     func shape(_ image: CIImage, plan: GeometryPlan, clampEdges: Bool = true) -> CIImage {
-        if plan.isIdentity { return image }
+        if plan.isShapeIdentity { return image }
         let e = image.extent
         // Core Image's coordinates (origin bottom-left) → the photo's pixels (from its top-left) → the
         // frame's pixels → Core Image's coordinates of the frame.

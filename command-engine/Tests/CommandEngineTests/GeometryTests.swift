@@ -571,6 +571,38 @@ final class GeometryTests: XCTestCase {
         XCTAssertTrue(state.geometry.quad.isEmpty)
     }
 
+    func testResizeSetsTheSavedSizeAndThePreviewIsNeverSharper() {
+        var s = GeometrySettings(aspect: "free", cropLeft: 0.5)
+        s.resize = 0.5
+        // Saving a 4000 × 3000 photo cropped to its right half, at 50 %.
+        let saved = GeometryPlan(settings: s, width: 4000, height: 3000)
+        XCTAssertEqual(saved.savedWidth, 1000)
+        XCTAssertEqual(saved.savedHeight, 1500)
+        XCTAssertEqual(saved.resizeFactor, 0.5)
+        XCTAssertEqual(saved.outputWidth, 1000)
+        XCTAssertFalse(saved.isIdentity)
+        // Its 2048 px preview (scale 0.512): 50 % of the full size is just below the preview's own.
+        let preview = GeometryPlan(settings: s, width: 2048, height: 1536, previewScale: 0.512)
+        XCTAssertEqual(preview.savedWidth, 1000)
+        XCTAssertEqual(preview.resizeFactor, 0.5 / 0.512, accuracy: 1e-9)
+        // Larger than the preview: the preview stays as it is.
+        s.resize = 3
+        XCTAssertEqual(GeometryPlan(settings: s, width: 2048, height: 1536, previewScale: 0.512).resizeFactor, 1)
+        XCTAssertEqual(GeometryPlan(settings: s, width: 4000, height: 3000).outputWidth, 6000, "saving enlarges")
+        // Long edge wins over the percentage.
+        s.longEdge = 1200
+        let long = GeometryPlan(settings: s, width: 4000, height: 3000)
+        XCTAssertEqual(long.savedHeight, 1200)
+        XCTAssertEqual(long.savedWidth, 800)
+        // Resolution is only kept for the file.
+        var dpi = GeometrySettings()
+        dpi.resolution = 300
+        let plain = GeometryPlan(settings: dpi, width: 400, height: 300)
+        XCTAssertTrue(plain.isIdentity)
+        XCTAssertEqual(plain.resolution, 300)
+        XCTAssertEqual(parse("long edge 2000 pixels"), [.set("longEdge", 2000)])
+    }
+
     func testUprightNames() {
         XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
         XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])

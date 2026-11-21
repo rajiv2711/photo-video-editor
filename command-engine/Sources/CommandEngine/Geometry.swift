@@ -219,6 +219,11 @@ public struct GeometrySettings: Equatable {
     public var transformScale = 1.0
     public var offsetX = 0.0
     public var offsetY = 0.0
+    /// Resize: the saved photo's size as a share of what the edit gives (1 = 100 %), or, when set,
+    /// its long edge in pixels (0 = not set); its resolution (pixels per inch, kept in the file).
+    public var resize = 1.0
+    public var longEdge = 0.0
+    public var resolution = 72.0
 
     public init(aspect: String = "free", cropLeft: Double = 0, cropTop: Double = 0, cropRight: Double = 0,
                 cropBottom: Double = 0, straighten: Double = 0, quarterTurns: Int = 0, flipHorizontal: Bool = false,
@@ -256,6 +261,9 @@ public struct GeometrySettings: Equatable {
         transformScale = Swift.max(0.1, (value("transformScale") ?? 100) / 100)
         offsetX = v("transformOffsetX")
         offsetY = v("transformOffsetY")
+        resize = Swift.max(0.01, (value("resize") ?? 100) / 100)
+        longEdge = Swift.max(0, v("longEdge"))
+        resolution = value("resolution") ?? 72
     }
 
     /// The manual transform in pixels of a `width` × `height` photo (the frame keeps its size): a camera
@@ -296,11 +304,21 @@ public struct GeometryPlan: Equatable {
     public let crop: GeoRect
     /// Where the photo lies in the frame (its corners: top-left, top-right, bottom-right, bottom-left).
     public let photoCorners: [Vec2]
+    /// Resize: the scale this render applies at the end, the size it puts out, and the size of the
+    /// saved photo (pixels of the full-size photo).
+    public let resizeFactor: Double
+    public let outputWidth: Double
+    public let outputHeight: Double
+    public let savedWidth: Double
+    public let savedHeight: Double
+    /// Pixels per inch written into the saved photo.
+    public let resolution: Double
 
     /// `segments`: the photo's straight lines (LineDetector), for Upright; `edits`: what the touch
-    /// tools made (guides, …).
+    /// tools made (guides, …). `previewScale`: for a preview, its size ÷ the full photo's (the
+    /// preview is resized only to be no sharper than the saved photo); nil when saving.
     public init(settings: GeometrySettings, width: Double, height: Double, stage: GeometryStage = .full,
-                segments: [LineSegment] = [], edits: GeometryEdits = GeometryEdits()) {
+                segments: [LineSegment] = [], edits: GeometryEdits = GeometryEdits(), previewScale: Double? = nil) {
         sourceWidth = width
         sourceHeight = height
         self.stage = stage
@@ -337,12 +355,33 @@ public struct GeometryPlan: Equatable {
         case .frame, .source:
             crop = Crop.whole(width: frameWidth, height: frameHeight)
         }
+        // Resize, on what the edit gives (in this render's pixels; the full photo's is that ÷ the preview scale).
+        let scale = previewScale ?? 1
+        let shapedW = crop.width, shapedH = crop.height
+        let full = Swift.max(shapedW, shapedH) / scale
+        let r = stage == .full ? (settings.longEdge > 0 ? settings.longEdge / full : settings.resize) : 1
+        savedWidth = Swift.max(1, (shapedW / scale * r).rounded())
+        savedHeight = Swift.max(1, (shapedH / scale * r).rounded())
+        resolution = settings.resolution
+        resizeFactor = previewScale == nil ? r : Swift.min(1, r / scale)
+        outputWidth = abs(resizeFactor - 1) < 1e-9 ? shapedW : Swift.max(1, (shapedW * resizeFactor).rounded())
+        outputHeight = abs(resizeFactor - 1) < 1e-9 ? shapedH : Swift.max(1, (shapedH * resizeFactor).rounded())
     }
 
     /// Nothing changes the picture: the pipeline can skip the geometry.
     public var isIdentity: Bool {
+        isShapeIdentity && isFrameIdentity
+    }
+
+    /// No turn, transform or crop (the photo keeps its shape).
+    public var isShapeIdentity: Bool {
         transform.isClose(to: .identity) && frameWidth == sourceWidth && frameHeight == sourceHeight
             && crop == Crop.whole(width: frameWidth, height: frameHeight)
+    }
+
+    /// No canvas and no resize at the end.
+    public var isFrameIdentity: Bool {
+        abs(resizeFactor - 1) < 1e-9
     }
 
     /// The size of the picture after the crop (before vignette and grain).

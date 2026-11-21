@@ -266,6 +266,8 @@ public struct CommandParser {
         "a", "an", "the", "it", "its", "bit", "little", "some", "please", "and", "then",
         "make", "set", "to", "by", "of", "much", "lot", "slightly", "again", "now", "go",
         "turn", "switch", "from",
+        // Units after a number ("long edge 2000 pixels", "resize 50 percent", "straighten 3 degrees").
+        "pixels", "px", "percent", "degrees",
     ]
 
     /// true for "on", false for "off", nil for any other word.

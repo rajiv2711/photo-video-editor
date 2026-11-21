@@ -1098,6 +1098,13 @@
     {"id": "perspectiveCrop", "label": "Perspective Crop", "group": "geometry", "section": "Perspective crop", "kind": "action",
       "synonyms": ["perspective crop tool", "crop perspective", "keystone crop", "rectify", "square up", "straighten plane", "document crop"]},
     {"id": "clearPerspectiveCrop", "label": "Clear Perspective Crop", "group": "geometry", "section": "Perspective crop", "kind": "action",
-      "synonyms": ["remove perspective crop", "reset perspective crop", "no perspective crop", "undo perspective crop", "cancel perspective crop"]}
+      "synonyms": ["remove perspective crop", "reset perspective crop", "no perspective crop", "undo perspective crop", "cancel perspective crop"]},
+    {"id": "resize", "label": "Resize", "group": "geometry", "section": "Resize", "min": 5, "max": 400, "default": 100, "step": 5,
+      "synonyms": ["resize percent", "resize percentage", "image size", "resize image", "output scale", "resize photo"]},
+    {"id": "longEdge", "label": "Long Edge", "group": "geometry", "section": "Resize", "min": 0, "max": 16384, "default": 0, "step": 100,
+      "synonyms": ["resize long edge", "long side", "longest side", "resize long side", "output long edge", "resize to long edge", "pixel size",
+                   "output size", "longest edge"]},
+    {"id": "resolution", "label": "Resolution", "group": "geometry", "section": "Resize", "min": 72, "max": 600, "default": 72, "step": 1,
+      "synonyms": ["dpi", "ppi", "pixels per inch", "dots per inch", "print resolution", "output resolution"]}
   ]
 }
