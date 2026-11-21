@@ -1399,3 +1399,12 @@
 {"group":"export","text":"airdrop","expect":[{"op":"run","control":"share"}]}
 {"group":"export","text":"save to photos","expect":[{"op":"run","control":"export"}]}
 {"group":"export","text":"export preset web share","expect":[{"op":"run","control":"exportPreset","text":"web share"}]}
+{"group":"export","text":"print","expect":[{"op":"run","control":"print"}]}
+{"group":"export","text":"print photo","expect":[{"op":"run","control":"print"}]}
+{"group":"export","text":"print size 4x6","expect":[{"op":"set","control":"printSize","value":1}]}
+{"group":"export","text":"paper size a4","expect":[{"op":"set","control":"printSize","value":5}]}
+{"group":"export","text":"print size full page","expect":[{"op":"set","control":"printSize","value":0}]}
+{"group":"export","text":"print layout fill","expect":[{"op":"set","control":"printFit","value":1}]}
+{"group":"export","text":"print fit whole photo","expect":[{"op":"set","control":"printFit","value":0}]}
+{"group":"export","text":"print margins 20","expect":[{"op":"set","control":"printMargins","value":20}]}
+{"group":"export","text":"margins 0","expect":[{"op":"set","control":"printMargins","value":0}]}

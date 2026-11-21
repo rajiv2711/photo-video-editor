@@ -55,6 +55,7 @@ struct EditorView: View {
                         Button { model.apply([.run("export")]) } label: { Label("Save to Photos", systemImage: "photo.on.rectangle") }
                         Button { model.apply([.run("saveToFiles")]) } label: { Label("Save to Files", systemImage: "folder") }
                         Button { model.apply([.run("share")]) } label: { Label("Share…", systemImage: "square.and.arrow.up") }
+                        Button { model.apply([.run("print")]) } label: { Label("Print…", systemImage: "printer") }
                     } label: {
                         Label("Save", systemImage: "square.and.arrow.down")
                     } primaryAction: {

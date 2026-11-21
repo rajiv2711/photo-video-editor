@@ -51,7 +51,7 @@ final class GalleryCasesTests: XCTestCase {
     ]
     static let directions: Set = ["up", "down", "changed", "same", "is"]
     /// What a case may save instead of the edited photo; must match RenderGallery in the app.
-    static let views: Set = ["batch", "overlay", "export"]
+    static let views: Set = ["batch", "overlay", "export", "print"]
     /// Generated starting pictures; must match RenderGallery.sourceImage in the app.
     static let sources: Set = ["warm", "negative", "chart", "haze", "noise", "moire", "grid", "lens", "lateral-ca", "fringe", "fisheye",
                                "dust", "red-eye", "pet-eye", "tilted", "building", "skewed",

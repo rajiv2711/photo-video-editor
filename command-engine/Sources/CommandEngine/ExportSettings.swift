@@ -126,3 +126,63 @@ public enum ExportSettings {
         ]
     }
 }
+
+/// A rectangle in points (1/72 inch), from the top-left of the paper.
+public struct PrintRect: Equatable {
+    public var x: Double
+    public var y: Double
+    public var width: Double
+    public var height: Double
+
+    public init(x: Double, y: Double, width: Double, height: Double) {
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    }
+}
+
+/// Print (Export panel): where the photo goes on the paper. A print size (4 × 6 in, …, A4, or the whole
+/// page), turned to match the photo, inside the printer's printable area less the margins (made smaller
+/// when it doesn't fit), in the middle; the photo fits inside it whole, or fills it (cut to its shape).
+public enum PrintLayout {
+    /// The Print Size options (controls.json) and their sizes in inches (short side, long side); "page":
+    /// as large as the page allows.
+    public static let sizes = ["page", "4x6", "5x7", "8x10", "a5", "a4"]
+    static let inches: [String: (Double, Double)] = ["4x6": (4, 6), "5x7": (5, 7), "8x10": (8, 10), "a5": (5.83, 8.27), "a4": (8.27, 11.69)]
+
+    /// The photo's place on the paper (`frame`, points from the paper's top-left) and the part of the photo
+    /// shown there (`crop`, shares of its width and height from its top-left: all of it unless filling).
+    public static func place(printable: PrintRect, marginMM: Double, size: String, fill: Bool, photoAspect: Double) -> (frame: PrintRect, crop: PrintRect) {
+        let margin = Swift.max(0, marginMM) * 72 / 25.4
+        let area = PrintRect(x: printable.x + margin, y: printable.y + margin,
+                             width: Swift.max(1, printable.width - 2 * margin), height: Swift.max(1, printable.height - 2 * margin))
+        var box = area
+        if let (short, long) = inches[size] {
+            // Turned as the photo is (a landscape photo prints on a landscape box), shrunk to fit.
+            var w = (photoAspect >= 1 ? long : short) * 72, h = (photoAspect >= 1 ? short : long) * 72
+            let k = Swift.min(1, area.width / w, area.height / h)
+            w *= k
+            h *= k
+            box = PrintRect(x: area.x + (area.width - w) / 2, y: area.y + (area.height - h) / 2, width: w, height: h)
+        }
+        let all = PrintRect(x: 0, y: 0, width: 1, height: 1)
+        let boxAspect = box.width / box.height
+        if fill {
+            // The photo's middle, cut to the box's shape.
+            if photoAspect > boxAspect {
+                let share = boxAspect / photoAspect
+                return (box, PrintRect(x: (1 - share) / 2, y: 0, width: share, height: 1))
+            }
+            let share = photoAspect / boxAspect
+            return (box, PrintRect(x: 0, y: (1 - share) / 2, width: 1, height: share))
+        }
+        // The whole photo, as large as the box allows.
+        var w = box.width, h = box.width / photoAspect
+        if h > box.height {
+            h = box.height
+            w = h * photoAspect
+        }
+        return (PrintRect(x: box.x + (box.width - w) / 2, y: box.y + (box.height - h) / 2, width: w, height: h), all)
+    }
+}

@@ -20,6 +20,7 @@ struct ExportPanel: View {
                         .buttonStyle(.borderedProminent)
                     Button { model.apply([.run("saveToFiles")]) } label: { Label("Files", systemImage: "folder") }
                     Button { model.apply([.run("share")]) } label: { Label("Share", systemImage: "square.and.arrow.up") }
+                    Button { model.apply([.run("print")]) } label: { Label("Print", systemImage: "printer") }
                 }
                 .buttonStyle(.bordered)
                 .font(.footnote)
@@ -53,7 +54,7 @@ struct ExportPanel: View {
     }
 
     /// Controls shown in their own way (buttons above, the name field, the presets list).
-    static let shownApart: Set<String> = ["export", "saveToFiles", "share", "exportName", "exportPreset", "saveExportPreset", "deleteExportPreset"]
+    static let shownApart: Set<String> = ["export", "saveToFiles", "share", "print", "exportName", "exportPreset", "saveExportPreset", "deleteExportPreset"]
 
     /// Export presets: tap one to use its settings (a long press deletes one of yours); save the panel's
     /// settings under a name.

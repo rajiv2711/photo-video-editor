@@ -849,6 +849,7 @@ final class EditorModel: ObservableObject {
             if id == "export" { save() }
             if id == "saveToFiles" { saveToFiles() }
             if id == "share" { share() }
+            if id == "print" { printPhoto() }
             if id == "proCamera" { showsCamera = true }
             if id == "takePhoto" {
                 showsCamera = true
@@ -1328,6 +1329,7 @@ final class EditorModel: ObservableObject {
         if !lastExported.isEmpty { out["export.saved"] = lastExported }
         if let url = shareFile { out["export.shared"] = url.lastPathComponent }
         if let file = fileToSave { out["export.files"] = file.name }
+        if !lastPrint.isEmpty { out["print.job"] = lastPrint }
         out["export.presets"] = interpreter.workspace.exportPresets.map(\.name).joined(separator: ", ")
         out["camera.tethered"] = cameras.tethered ? "on" : "off"
         if showsCamera { out["ui.camera"] = "shown" }
@@ -1831,6 +1833,41 @@ final class EditorModel: ObservableObject {
         lastExported = file.name
         feedback = Feedback(text: "Save \(file.name): choose where in Files" + (file.note.map { " (\($0))" } ?? ""))
         fileToSave = (ExportDocument(data: file.data), UTType(file.type) ?? .jpeg, file.name)
+    }
+
+    /// The Export panel's Print settings.
+    var printSetup: PrintSetup {
+        func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+        return PrintSetup(size: ExportSettings.option(PrintLayout.sizes, v("printSize")), fill: v("printFit") == 1, marginMM: v("printMargins"))
+    }
+
+    /// The photo as it prints: as exported (output sharpening and all), at full size.
+    func printPicture() -> CIImage {
+        var options = exportOptions
+        options.longEdge = 0
+        options.percent = 100
+        return Exporter.prepare(editedPhoto(), options: options)
+    }
+
+    /// What the last Print did (the render gallery's manifest).
+    private var lastPrint = ""
+
+    /// Print: AirPrint's dialog with the photo laid out as Print Size, Print Layout and Print Margins say.
+    func printPhoto() {
+        let picture = printPicture()
+        guard let cg = renderer.context.createCGImage(picture, from: picture.extent.integral) else {
+            feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
+            return
+        }
+        let name = library.photo(library.current)?.name ?? "Photo"
+        lastPrint = "ready"
+        let setup = printSetup
+        feedback = Feedback(text: "Print \(name): " + (setup.size == "page" ? "as large as the page allows" : setup.size)
+                            + (setup.fill ? ", filling it" : "") + ", \(Int(setup.marginMM)) mm margins")
+        guard exportsFiles else { return }
+        PhotoPrinter.present(UIImage(cgImage: cg), name: name, setup: setup) { [weak self] message in
+            Task { @MainActor in self?.feedback = Feedback(text: message) }
+        }
     }
 
     /// The Files app saved the export.

@@ -659,4 +659,50 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(interpreter.lastCommands, [.run("exportPreset", text: "web share")])
         XCTAssertEqual(value("exportLongEdge"), 2048)
     }
+
+    // MARK: - Print (#177)
+
+    /// A4 (595 × 842 points) with 18 points the printer can't reach all round.
+    private let a4 = PrintRect(x: 18, y: 18, width: 559, height: 806)
+
+    func testPrintNamesReachTheirControls() {
+        XCTAssertEqual(parse("print"), [.run("print")])
+        XCTAssertEqual(parse("print size 4x6"), [.set("printSize", 1)])
+        XCTAssertEqual(parse("print layout fill"), [.set("printFit", 1)])
+        XCTAssertEqual(parse("print margins 20"), [.set("printMargins", 20)])
+        XCTAssertEqual(registry.control(id: "printSize")!.options.map(\.id), PrintLayout.sizes)
+        // Soft proofing keeps its print option, Resolution its print name.
+        XCTAssertEqual(parse("soft proof print"), [.set("softProof", 2)])
+        XCTAssertEqual(parse("print resolution 300"), [.set("resolution", 300)])
+    }
+
+    func testWholePageLayout() {
+        // 5 mm margins; a portrait photo (534 × 800) as large as fits: the height decides.
+        let placed = PrintLayout.place(printable: a4, marginMM: 5, size: "page", fill: false, photoAspect: 534.0 / 800)
+        let m = 5 * 72 / 25.4
+        XCTAssertEqual(placed.frame.height, 806 - 2 * m, accuracy: 1e-6)
+        XCTAssertEqual(placed.frame.width, placed.frame.height * 534 / 800, accuracy: 1e-6)
+        XCTAssertEqual(placed.frame.x + placed.frame.width / 2, 297.5, accuracy: 1e-6, "in the middle")
+        XCTAssertEqual(placed.crop, PrintRect(x: 0, y: 0, width: 1, height: 1))
+        // Wider margins: the width decides.
+        let wide = PrintLayout.place(printable: a4, marginMM: 30, size: "page", fill: false, photoAspect: 534.0 / 800)
+        XCTAssertEqual(wide.frame.width, 559 - 2 * 30 * 72 / 25.4, accuracy: 1e-6)
+    }
+
+    func testPrintSizesTurnWithThePhoto() {
+        let portrait = PrintLayout.place(printable: a4, marginMM: 5, size: "4x6", fill: true, photoAspect: 0.75)
+        XCTAssertEqual(portrait.frame.width, 288, accuracy: 1e-6)
+        XCTAssertEqual(portrait.frame.height, 432, accuracy: 1e-6)
+        // Filling cuts the photo's middle to the box's shape (4:6 from 3:4: a little off each side).
+        XCTAssertEqual(portrait.crop.height, 1)
+        XCTAssertEqual(portrait.crop.width, (288.0 / 432) / 0.75, accuracy: 1e-9)
+        XCTAssertEqual(portrait.crop.x, (1 - portrait.crop.width) / 2, accuracy: 1e-9)
+        let landscape = PrintLayout.place(printable: a4, marginMM: 5, size: "4x6", fill: false, photoAspect: 1.5)
+        XCTAssertEqual(landscape.frame.width, 432, accuracy: 1e-6)
+        XCTAssertEqual(landscape.frame.height, 288, accuracy: 1e-6)
+        // A print larger than the paper shrinks to fit.
+        let big = PrintLayout.place(printable: PrintRect(x: 0, y: 0, width: 288, height: 432), marginMM: 0, size: "8x10", fill: true, photoAspect: 0.8)
+        XCTAssertLessThanOrEqual(big.frame.height, 432 + 1e-9)
+        XCTAssertEqual(big.frame.width / big.frame.height, 0.8, accuracy: 1e-9)
+    }
 }

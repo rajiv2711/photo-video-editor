@@ -53,7 +53,8 @@ enum RenderGallery {
         let live: [String]?
         /// What to save instead of the edited photo: "overlay", the preview with the View panel's
         /// overlays, as the screen shows it; "batch", the first picture Batch Edit made; "export", the
-        /// file the photo is exported as, read back (its details go into the manifest's fields).
+        /// file the photo is exported as, read back (its details go into the manifest's fields); "print",
+        /// the A4 page as it prints (where the photo goes, in the fields).
         let view: String?
         /// Pictures imported into an empty library before the command (generated, see `sourceImage`),
         /// with the capture times and places of `libraryImport`; the first one is opened.
@@ -181,6 +182,16 @@ enum RenderGallery {
             var edited = item.view == "overlay" ? model.shownPreview() : model.editedPreview()
             if item.view == "batch", let first = model.lastBatch.first { edited = first }
             var fields = model.galleryFields()
+            if item.view == "print" {
+                // The page as it prints: A4 (595 × 842 points, a pixel each), 18 points the printer can't reach.
+                let page = PhotoPrinter.preview(model.printPicture(), paper: CGSize(width: 595, height: 842),
+                                                printable: CGRect(x: 18, y: 18, width: 559, height: 806), setup: model.printSetup)
+                edited = page.page
+                fields["print.x"] = String(Int(page.frame.x.rounded()))
+                fields["print.y"] = String(Int(page.frame.y.rounded()))
+                fields["print.width"] = String(Int(page.frame.width.rounded()))
+                fields["print.height"] = String(Int(page.frame.height.rounded()))
+            }
             if item.view == "export" {
                 // The exported file itself, and its pixels and details as read back.
                 if let exported = model.exportFile() {
