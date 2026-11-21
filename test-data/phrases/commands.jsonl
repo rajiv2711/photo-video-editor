@@ -1174,3 +1174,6 @@
 {"group":"presets","text":"batch edit","expect":[{"op":"run","control":"batchEdit"}]}
 {"group":"presets","text":"sync settings","expect":[{"op":"run","control":"batchEdit"}]}
 {"group":"presets","text":"apply to picked photos","expect":[{"op":"run","control":"batchEdit"}]}
+{"group":"presets","text":"match exposures","expect":[{"op":"run","control":"matchExposures"}]}
+{"group":"presets","text":"match total exposures","expect":[{"op":"run","control":"matchExposures"}]}
+{"group":"presets","text":"even out brightness","expect":[{"op":"run","control":"matchExposures"}]}

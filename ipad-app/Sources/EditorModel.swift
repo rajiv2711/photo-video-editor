@@ -691,6 +691,7 @@ final class EditorModel: ObservableObject {
         for case .ran(let id) in outcomes {
             if let kind = MergeTools.actions[id] { merge(kind) }
             if id == "batchEdit" { batchEdit() }
+            if id == "matchExposures" { batchEdit(matching: true) }
         }
         for case .ran(let id) in outcomes {
             if let hint = Self.pickers[id] {
@@ -1060,18 +1061,29 @@ final class EditorModel: ObservableObject {
     /// them) on every photo picked (Merge or Layers panel), each saved to Photos as a JPEG; the photo
     /// being edited stays as it is. Worked out in the background with a renderer of its own (the
     /// render gallery waits and keeps the pictures instead of saving them).
-    private func batchEdit() {
+    /// Match Exposures (`matching`) also moves each photo's Exposure by the stops between its brightness
+    /// and this photo's, both before any edit (MatchExposure), so the set looks evenly exposed.
+    private func batchEdit(matching: Bool = false) {
         let photos = mergePhotos
+        let name = matching ? "Match Exposures" : "Batch Edit"
         guard !photos.isEmpty else {
-            feedback = Feedback(text: "Pick the photos first (Merge or Layers panel → Pick Photos), then say “batch edit”.", isProblem: true)
+            feedback = Feedback(text: "Pick the photos first (Merge or Layers panel → Pick Photos), then say “\(name.lowercased())”.", isProblem: true)
             return
         }
         let registry = self.registry
         let bundle = Preset.capture(state, name: "Batch", groups: Presets.included(state, registry: registry), registry: registry)
-        let edits: [EditState] = photos.map { _ in
+        var edits: [EditState] = photos.map { _ in
             var edit = EditState()
             bundle.apply(to: &edit, registry: registry)
             return edit
+        }
+        if matching, let exposure = registry.control(id: "exposure") {
+            let context = renderer.context
+            let reference = MatchExposure.key(rgba: ImageStats.linearPixels(of: previewSource, context: context))
+            for i in photos.indices {
+                let stops = MatchExposure.stops(reference: reference, photo: MatchExposure.key(rgba: ImageStats.linearPixels(of: photos[i], context: context)))
+                edits[i].set(exposure, to: edits[i].value(of: exposure) + (stops * 100).rounded() / 100)
+            }
         }
         let lenses = photos.map { Self.lens(of: $0) }
         let layerPhotos = self.layerPhotos.map { $0.full }, logo = watermarkLogo?.full
@@ -1079,11 +1091,11 @@ final class EditorModel: ObservableObject {
         if waitsForMerge {
             lastBatch = Self.renderBatch(photos, edits: edits, lenses: lenses, registry: registry, layerPhotos: layerPhotos, logo: logo,
                                     with: PhotoRenderer())
-            feedback = Feedback(text: "Batch Edit: \(count) photo\(count == 1 ? "" : "s") edited")
+            feedback = Feedback(text: "\(name): \(count) photo\(count == 1 ? "" : "s") edited")
             return
         }
         let ppis = edits.map { edit in registry.control(id: "resolution").map { edit.value(of: $0) } ?? 72 }
-        feedback = Feedback(text: "Batch Edit: editing \(count) photo\(count == 1 ? "" : "s")…")
+        feedback = Feedback(text: "\(name): editing \(count) photo\(count == 1 ? "" : "s")…")
         mergeQueue.async {
             let exporter = PhotoRenderer()
             let pictures = Self.renderBatch(photos, edits: edits, lenses: lenses, registry: registry, layerPhotos: layerPhotos, logo: logo,
@@ -1091,10 +1103,10 @@ final class EditorModel: ObservableObject {
             let files = pictures.indices.compactMap { Self.jpeg(pictures[$0], context: exporter.context, ppi: ppis[$0]) }
             Task { @MainActor in
                 guard !files.isEmpty else {
-                    self.feedback = Feedback(text: "Batch Edit: couldn't render the photos.", isProblem: true)
+                    self.feedback = Feedback(text: "\(name): couldn't render the photos.", isProblem: true)
                     return
                 }
-                self.saveToPhotos(files, done: "Batch Edit: saved \(files.count) edited photo\(files.count == 1 ? "" : "s") to Photos.")
+                self.saveToPhotos(files, done: "\(name): saved \(files.count) edited photo\(files.count == 1 ? "" : "s") to Photos.")
             }
         }
     }

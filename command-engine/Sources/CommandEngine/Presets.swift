@@ -262,3 +262,32 @@ public enum Presets {
         }
     }
 }
+
+/// Match Exposures: evens out the brightness of the photos picked, as Lightroom's Match Total Exposures
+/// does, from the pictures themselves (no camera data needed): each photo's exposure moves by the
+/// stops between its key and the key of the photo being edited, both read before any edit.
+public enum MatchExposure {
+    /// A picture's key: the log-average of its pixels' luminance (linear light, Rec. 709), as exposure
+    /// meters and tone mappers read overall brightness; one bright lamp barely moves it.
+    /// `rgba`: linear RGBA floats; see-through pixels don't count.
+    public static func key(rgba: [Float]) -> Double {
+        var sum = 0.0
+        var count = 0
+        var i = 0
+        while i + 3 < rgba.count {
+            if rgba[i + 3] > 0.5 {
+                let luma = 0.2126 * Double(rgba[i]) + 0.7152 * Double(rgba[i + 1]) + 0.0722 * Double(rgba[i + 2])
+                sum += log(1e-4 + Swift.max(0, luma))
+                count += 1
+            }
+            i += 4
+        }
+        return count == 0 ? 0 : exp(sum / Double(count))
+    }
+
+    /// The stops a photo of key `photo` needs to look as bright as one of key `reference` (within ±4).
+    public static func stops(reference: Double, photo: Double) -> Double {
+        guard reference > 0, photo > 0 else { return 0 }
+        return Swift.min(4, Swift.max(-4, log2(reference / photo)))
+    }
+}

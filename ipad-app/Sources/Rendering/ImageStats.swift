@@ -33,6 +33,19 @@ enum ImageStats {
         return averageColor(of: chroma, in: image.extent, context: context).r
     }
 
+    /// The picture's pixels in linear light (RGBA floats, row by row), shrunk to about `side` pixels
+    /// on its long side (Match Exposures reads its brightness from them).
+    static func linearPixels(of image: CIImage, side: CGFloat = 64, context: CIContext) -> [Float] {
+        let small = PhotoRenderer.downscaled(image, maxSide: side)
+        let e = small.extent
+        guard !e.isInfinite, e.width >= 1, e.height >= 1 else { return [] }
+        let w = Int(e.width), h = Int(e.height)
+        var pixels = [Float](repeating: 0, count: w * h * 4)
+        context.render(small, toBitmap: &pixels, rowBytes: w * 16, bounds: CGRect(x: e.minX, y: e.minY, width: CGFloat(w), height: CGFloat(h)),
+                       format: .RGBAf, colorSpace: nil)
+        return pixels
+    }
+
     /// Share of pixels per level bin for each channel (sRGB levels), darkest first.
     static func channelHistograms(of image: CIImage, extent: CGRect, context: CIContext, bins: Int = 256)
         -> (red: [Double], green: [Double], blue: [Double]) {

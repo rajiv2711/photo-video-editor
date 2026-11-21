@@ -1575,6 +1575,8 @@
       "synonyms": ["paste", "paste edits", "paste adjustments", "paste the edits", "paste the settings", "apply copied settings"]},
     {"id": "batchEdit", "label": "Batch Edit", "group": "presets", "section": "Batch", "kind": "action",
       "synonyms": ["batch", "edit picked photos", "apply to picked photos", "sync settings", "sync", "apply to all photos", "batch save", "save picked photos"]},
+    {"id": "matchExposures", "label": "Match Exposures", "group": "presets", "section": "Batch", "kind": "action",
+      "synonyms": ["match exposure", "match total exposures", "even out exposures", "even exposures", "match brightness", "even out brightness", "equalize exposures"]},
     {"id": "includeLight", "label": "Include Light", "group": "presets", "section": "Include", "kind": "toggle", "default": 1,
       "synonyms": ["include light panel", "include light settings"]},
     {"id": "includeColor", "label": "Include Color", "group": "presets", "section": "Include", "kind": "toggle", "default": 1,

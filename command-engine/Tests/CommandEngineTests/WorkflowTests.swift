@@ -214,6 +214,22 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(value("cropLeft"), 0, "the crop belongs to its own photo unless included")
     }
 
+    // MARK: - Match exposures
+
+    func testMatchExposuresEvensTheKeys() {
+        XCTAssertEqual(parse("match exposures"), [.run("matchExposures")])
+        func picture(_ lumas: [Float]) -> [Float] { lumas.flatMap { [$0, $0, $0, 1] } }
+        let bright = picture([0.02, 0.2, 0.4, 0.8])
+        let dark = picture([0.01, 0.1, 0.2, 0.4])
+        XCTAssertEqual(MatchExposure.stops(reference: MatchExposure.key(rgba: bright), photo: MatchExposure.key(rgba: dark)), 1, accuracy: 0.01)
+        XCTAssertEqual(MatchExposure.stops(reference: MatchExposure.key(rgba: dark), photo: MatchExposure.key(rgba: bright)), -1, accuracy: 0.01)
+        // One bright lamp hardly moves the key; see-through pixels don't count.
+        let lamp = picture(Array(repeating: [0.01, 0.1, 0.2, 0.4] as [Float], count: 5).flatMap { $0 } + [50])
+        XCTAssertLessThan(MatchExposure.stops(reference: MatchExposure.key(rgba: lamp), photo: MatchExposure.key(rgba: dark)), 0.5)
+        XCTAssertEqual(MatchExposure.key(rgba: dark + [9, 9, 9, 0]), MatchExposure.key(rgba: dark), accuracy: 1e-9)
+        XCTAssertEqual(MatchExposure.stops(reference: 1, photo: 0.0001), 4)
+    }
+
     func testNoPresetSaysSo() {
         XCTAssertEqual(events(run("preset nothing like this")), [.noPreset("nothing like this")])
         XCTAssertEqual(value("exposure"), 0)
