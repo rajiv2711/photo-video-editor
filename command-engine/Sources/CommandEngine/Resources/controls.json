@@ -1786,6 +1786,14 @@
     {"id": "printFit", "label": "Print Layout", "group": "export", "section": "Print", "kind": "choice", "synonyms": ["print fit", "print fill", "print crop"],
       "options": [{"id": "fit", "label": "Fit", "synonyms": ["whole photo", "fit whole"]},
                   {"id": "fill", "label": "Fill", "synonyms": ["crop to fill", "fill paper"]}]},
-    {"id": "printMargins", "label": "Print Margins", "group": "export", "section": "Print", "min": 0, "max": 50, "default": 5, "step": 1, "synonyms": ["print margin", "margins", "margin", "paper margin", "paper margins"]}
+    {"id": "printMargins", "label": "Print Margins", "group": "export", "section": "Print", "min": 0, "max": 50, "default": 5, "step": 1, "synonyms": ["print margin", "margins", "margin", "paper margin", "paper margins"]},
+    {"id": "outputColorSpace", "label": "Output Color Space", "group": "export", "section": "Color", "kind": "choice", "synonyms": ["output colour space", "export color space", "export colour space", "color space", "colour space", "icc profile", "export profile", "embedded profile"],
+      "options": [{"id": "srgb", "label": "sRGB", "synonyms": ["web", "standard"]},
+                  {"id": "displayP3", "label": "Display P3", "synonyms": ["p3", "display p 3"]},
+                  {"id": "adobeRGB", "label": "Adobe RGB", "synonyms": ["adobe", "adobe rgb 1998", "adobe 1998"]},
+                  {"id": "proPhoto", "label": "ProPhoto RGB", "synonyms": ["prophoto", "pro photo", "pro photo rgb", "romm"]}]},
+    {"id": "bitDepth", "label": "Bits Per Channel", "group": "export", "section": "Color", "kind": "choice", "synonyms": ["bits", "export bits", "output bits", "bitdepth", "export bit depth", "output bit depth"],
+      "options": [{"id": "8", "label": "8-bit", "synonyms": ["8", "8 bit", "eight bit"]},
+                  {"id": "16", "label": "16-bit", "synonyms": ["16", "16 bit", "sixteen bit"]}]}
   ]
 }

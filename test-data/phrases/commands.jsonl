@@ -1408,3 +1408,10 @@
 {"group":"export","text":"print fit whole photo","expect":[{"op":"set","control":"printFit","value":0}]}
 {"group":"export","text":"print margins 20","expect":[{"op":"set","control":"printMargins","value":20}]}
 {"group":"export","text":"margins 0","expect":[{"op":"set","control":"printMargins","value":0}]}
+{"group":"export","text":"color space display p3","expect":[{"op":"set","control":"outputColorSpace","value":1}]}
+{"group":"export","text":"export colour space adobe rgb","expect":[{"op":"set","control":"outputColorSpace","value":2}]}
+{"group":"export","text":"output color space prophoto","expect":[{"op":"set","control":"outputColorSpace","value":3}]}
+{"group":"export","text":"colour space srgb","expect":[{"op":"set","control":"outputColorSpace","value":0}]}
+{"group":"export","text":"export bits 16","expect":[{"op":"set","control":"bitDepth","value":1}]}
+{"group":"export","text":"output bit depth 16 bit","expect":[{"op":"set","control":"bitDepth","value":1}]}
+{"group":"export","text":"bits per channel 8","expect":[{"op":"set","control":"bitDepth","value":0}]}

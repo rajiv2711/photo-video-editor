@@ -21,6 +21,10 @@ struct ExportOptions {
     var removeLocation = false
     /// "original", "edited", "date", "custom".
     var naming = "original"
+    /// "srgb", "displayP3", "adobeRGB", "proPhoto": the profile the file is in (embedded).
+    var colorSpace = "srgb"
+    /// 8 or 16 bits per channel (as far as the format allows).
+    var bits = 8
 }
 
 /// A photo exported: the file's bytes, its type, its name, and what was changed to make it ("AVIF can't
@@ -66,10 +70,31 @@ enum Exporter {
         return out
     }
 
-    /// The picture as a file of `type` ("public.jpeg", …) with `properties` (ImageIO's keys) written in.
+    /// The colour space an output colour space id stands for (sRGB when unknown).
+    static func colorSpace(_ id: String) -> CGColorSpace {
+        let name: CFString
+        switch id {
+        case "displayP3": name = CGColorSpace.displayP3
+        case "adobeRGB": name = CGColorSpace.adobeRGB1998
+        case "proPhoto": name = CGColorSpace.rommrgb
+        default: name = CGColorSpace.sRGB
+        }
+        return CGColorSpace(name: name) ?? CGColorSpaceCreateDeviceRGB()
+    }
+
+    /// The picture as a file of `type` ("public.jpeg", …) with `properties` (ImageIO's keys) written in, its
+    /// colours in `space` (its ICC profile embedded) at `bits` per channel: 16 (PNG, TIFF), 10 (HEIC) or 8.
     static func encode(_ image: CIImage, context: CIContext, type: String = UTType.jpeg.identifier, quality: Double = 0.92,
-                       properties: [String: Any]) -> Data? {
-        guard let cg = context.createCGImage(image, from: image.extent.integral) else { return nil }
+                       properties: [String: Any], space: CGColorSpace? = nil, bits: Int = 8) -> Data? {
+        let space = space ?? CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+        if bits == 10, type == UTType.heic.identifier {
+            // 10-bit HEIF, its metadata from the picture's properties.
+            let options: [CIImageRepresentationOption: Any] = [CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String): quality]
+            return try? context.heif10Representation(of: image.settingProperties(properties), colorSpace: space, options: options)
+        }
+        guard let cg = context.createCGImage(image, from: image.extent.integral, format: bits > 8 ? .RGBA16 : .RGBA8, colorSpace: space) else {
+            return nil
+        }
         let data = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(data, type as CFString, 1, nil) else { return nil }
         var options = properties

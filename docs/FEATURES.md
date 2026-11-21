@@ -235,4 +235,4 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 175. **Export presets** — saved export settings
 - [x] 176. **Save / share** — to Photos, Files, share sheet
 - [x] 177. **Print** — AirPrint with layout
-- [ ] 178. **Color management** — sRGB, Display P3, ProPhoto, 16-bit
+- [x] 178. **Color management** — sRGB, Display P3, ProPhoto, 16-bit

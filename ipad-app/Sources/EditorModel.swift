@@ -1330,6 +1330,7 @@ final class EditorModel: ObservableObject {
         if let url = shareFile { out["export.shared"] = url.lastPathComponent }
         if let file = fileToSave { out["export.files"] = file.name }
         if !lastPrint.isEmpty { out["print.job"] = lastPrint }
+        out["color.working"] = renderer.context.workingColorSpace?.name.map { $0 as String } ?? ""
         out["export.presets"] = interpreter.workspace.exportPresets.map(\.name).joined(separator: ", ")
         out["camera.tethered"] = cameras.tethered ? "on" : "off"
         if showsCamera { out["ui.camera"] = "shown" }
@@ -1918,6 +1919,8 @@ final class EditorModel: ObservableObject {
         o.metadata = ExportSettings.option(ExportSettings.metadata, v("exportMetadata"))
         o.removeLocation = v("removeLocation") != 0
         o.naming = ExportSettings.option(ExportSettings.namings, v("fileNaming"))
+        o.colorSpace = ExportSettings.option(ExportSettings.colorSpaces, v("outputColorSpace"))
+        o.bits = v("bitDepth") >= 1 ? 16 : 8
         return o
     }
 
@@ -1927,7 +1930,11 @@ final class EditorModel: ObservableObject {
     func exportFile(_ rendered: CIImage? = nil) -> ExportedFile? {
         let o = exportOptions
         let format = Exporter.isWritable(o.format) ? o.format : "jpeg"
-        let note = format == o.format ? nil : "\(o.format.uppercased()) can't be written on this iPad: JPEG instead"
+        let bits = ExportSettings.bits(format: format, wanted: o.bits)
+        var notes: [String] = []
+        if format != o.format { notes.append("\(o.format.uppercased()) can't be written on this iPad: JPEG instead") }
+        if bits < o.bits { notes.append("\(format.uppercased()) holds \(bits) bits per channel") }
+        let note = notes.isEmpty ? nil : notes.joined(separator: "; ")
         let picture = Exporter.prepare(rendered ?? editedPhoto(), options: o)
         let ppi = registry.control(id: "resolution").map { state.value(of: $0) } ?? 72
         let photo = library.photo(library.current)
@@ -1935,7 +1942,8 @@ final class EditorModel: ObservableObject {
                                            removeLocation: o.removeLocation, ppi: ppi)
         let type = ExportSettings.types[format] ?? UTType.jpeg.identifier
         guard let data = Exporter.encode(picture, context: renderer.context, type: type, quality: o.quality,
-                                         properties: ExportSettings.filtered(all, keep: o.metadata)) else { return nil }
+                                         properties: ExportSettings.filtered(all, keep: o.metadata),
+                                         space: Exporter.colorSpace(o.colorSpace), bits: bits) else { return nil }
         let name = ExportSettings.fileName(original: photo?.name ?? "Photo", naming: o.naming, custom: library.exportName, date: Date(),
                                            sequence: library.exportCount + 1, ext: ExportSettings.extensions[format] ?? "jpg")
         return ExportedFile(data: data, type: type, name: name, note: note)

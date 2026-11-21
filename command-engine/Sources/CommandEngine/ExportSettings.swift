@@ -24,6 +24,20 @@ public enum ExportSettings {
     /// File naming schemes, as the options of File Naming.
     public static let namings = ["original", "edited", "date", "custom"]
 
+    /// Output colour spaces, as the options of Output Color Space; the app embeds each one's ICC profile.
+    public static let colorSpaces = ["srgb", "displayP3", "adobeRGB", "proPhoto"]
+
+    /// Bits per channel a format can hold when 16 are asked for (8 are always fine): PNG and TIFF 16,
+    /// HEIC 10, JPEG and AVIF 8.
+    public static func bits(format: String, wanted: Int) -> Int {
+        guard wanted > 8 else { return 8 }
+        switch format {
+        case "png", "tiff": return 16
+        case "heic": return 10
+        default: return 8
+        }
+    }
+
     /// The option id a choice control's value picks ("jpeg" for 0), or the first.
     public static func option(_ list: [String], _ value: Double) -> String {
         let i = Int(value)

@@ -41,6 +41,12 @@ struct ExportPanel: View {
                             }
                             if section == "Naming" { nameField }
                             if section == "Presets" { presetsSection }
+                            if section == "Color" {
+                                Text("Edits are worked out in linear light with sRGB's primaries, extended (wide-gamut and HDR colours kept), then converted to the output colour space, whose ICC profile goes into the file. 16 bits: PNG and TIFF; HEIC 10; JPEG and AVIF 8.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 10)
+                            }
                         }
                     } label: {
                         Text(section).font(.subheadline.weight(.semibold))
@@ -119,6 +125,8 @@ struct ExportPanel: View {
         parts.append(o.longEdge > 0 ? "long edge ≤ \(Int(o.longEdge)) px" : o.percent < 100 ? "\(Int(o.percent)) %" : "full size")
         if o.sharpening != "off" { parts.append("\(o.sharpening) sharpening (\(o.sharpenAmount))") }
         parts.append(o.metadata == "all" ? (o.removeLocation ? "metadata without location" : "all metadata") : o.metadata == "none" ? "no metadata" : "copyright only")
+        parts.append(o.colorSpace == "srgb" ? "sRGB" : o.colorSpace == "displayP3" ? "Display P3" : o.colorSpace == "adobeRGB" ? "Adobe RGB" : "ProPhoto RGB")
+        parts.append("\(ExportSettings.bits(format: o.format, wanted: o.bits))-bit")
         if !Exporter.isWritable(o.format) { parts.append("can't write \(o.format.uppercased()) here: JPEG") }
         return parts.joined(separator: " · ")
     }

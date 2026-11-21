@@ -705,4 +705,24 @@ final class LibraryTests: XCTestCase {
         XCTAssertLessThanOrEqual(big.frame.height, 432 + 1e-9)
         XCTAssertEqual(big.frame.width / big.frame.height, 0.8, accuracy: 1e-9)
     }
+
+    // MARK: - Color management (#178)
+
+    func testColorNamesReachTheirControls() {
+        XCTAssertEqual(parse("color space display p3"), [.set("outputColorSpace", 1)])
+        XCTAssertEqual(parse("export colour space adobe rgb"), [.set("outputColorSpace", 2)])
+        XCTAssertEqual(parse("output color space prophoto"), [.set("outputColorSpace", 3)])
+        XCTAssertEqual(parse("export bits 16"), [.set("bitDepth", 1)])
+        XCTAssertEqual(registry.control(id: "outputColorSpace")!.options.map(\.id), ExportSettings.colorSpaces)
+        // "colour" alone still asks Vibrance or Saturation.
+        XCTAssertEqual(parse("colour more").first?.op, .ambiguous)
+    }
+
+    func testBitsEachFormatHolds() {
+        XCTAssertEqual(ExportSettings.bits(format: "png", wanted: 16), 16)
+        XCTAssertEqual(ExportSettings.bits(format: "tiff", wanted: 16), 16)
+        XCTAssertEqual(ExportSettings.bits(format: "heic", wanted: 16), 10)
+        XCTAssertEqual(ExportSettings.bits(format: "jpeg", wanted: 16), 8)
+        XCTAssertEqual(ExportSettings.bits(format: "png", wanted: 8), 8)
+    }
 }

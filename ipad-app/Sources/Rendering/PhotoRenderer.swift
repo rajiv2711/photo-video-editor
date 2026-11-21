@@ -30,8 +30,16 @@ final class PhotoRenderer {
     /// Every control by id (a mask's local pass leaves all but its own sliders at their defaults).
     private let controls: [String: Control]
 
+    /// Core Image's working space, said outright: linear light with sRGB's primaries, extended (values
+    /// below 0 and above 1 kept, so wide-gamut and HDR colours survive every step). Pictures come in from
+    /// their own profiles (sRGB, Display P3, a raw's camera space) and go out to the export's (Output
+    /// Color Space) or the screen's.
+    static let workingSpace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
+
     init() {
-        let context = CIContext()
+        var options: [CIContextOption: Any] = [:]
+        if let space = PhotoRenderer.workingSpace { options[.workingColorSpace] = space }
+        let context = CIContext(options: options)
         self.context = context
         self.light = LightRenderer(context: context)
         self.color = ColorRenderer(context: context)
