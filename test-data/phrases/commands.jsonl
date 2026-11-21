@@ -871,3 +871,15 @@
 {"group":"merge","text":"hdr merge output fusion","expect":[{"op":"set","control":"hdrOutput","value":0}]}
 {"group":"merge","text":"photos to merge 3","expect":[{"op":"set","control":"mergeCount","value":3}]}
 {"group":"merge","text":"merge last 4","expect":[{"op":"set","control":"mergeCount","value":4}]}
+{"group":"merge","text":"panorama merge","expect":[{"op":"run","control":"panoramaMerge"}]}
+{"group":"merge","text":"stitch panorama","expect":[{"op":"run","control":"panoramaMerge"}]}
+{"group":"merge","text":"stitch","expect":[{"op":"run","control":"panoramaMerge"}]}
+{"group":"merge","text":"panorama merge 4","expect":[{"op":"run","control":"panoramaMerge","value":4}]}
+{"group":"merge","text":"panorama spherical","expect":[{"op":"set","control":"panoramaProjection","value":0}]}
+{"group":"merge","text":"panorama cylindrical","expect":[{"op":"set","control":"panoramaProjection","value":1}]}
+{"group":"merge","text":"panorama perspective","expect":[{"op":"set","control":"panoramaProjection","value":2}]}
+{"group":"merge","text":"cylindrical projection","expect":[{"op":"set","control":"panoramaProjection","value":1}]}
+{"group":"merge","text":"boundary warp 50","expect":[{"op":"set","control":"boundaryWarp","value":50}]}
+{"group":"merge","text":"boundary warp more","expect":[{"op":"nudge","control":"boundaryWarp","steps":1}]}
+{"group":"merge","text":"fill edges on","expect":[{"op":"set","control":"fillEdges","value":1}]}
+{"group":"merge","text":"turn off fill edges","expect":[{"op":"set","control":"fillEdges","value":0}]}

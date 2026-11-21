@@ -1150,6 +1150,17 @@
     {"id": "hdrOutput", "label": "HDR Merge Output", "group": "merge", "section": "HDR", "kind": "choice",
       "synonyms": ["hdr output", "merge output", "hdr merge mode", "hdr merge method", "hdr method"],
       "options": [{"id": "fusion", "label": "Fusion", "synonyms": ["exposure fusion", "tone mapped", "blended", "sdr"]},
-                  {"id": "radiance", "label": "Radiance", "synonyms": ["extended", "extended range", "linear", "high dynamic range"]}]}
+                  {"id": "radiance", "label": "Radiance", "synonyms": ["extended", "extended range", "linear", "high dynamic range"]}]},
+    {"id": "panoramaMerge", "label": "Panorama Merge", "group": "merge", "section": "Panorama", "kind": "action",
+      "synonyms": ["merge panorama", "stitch panorama", "stitch", "stitch photos", "pano merge", "panorama stitch", "make panorama", "create panorama", "photo merge panorama"]},
+    {"id": "panoramaProjection", "label": "Panorama Projection", "group": "merge", "section": "Panorama", "kind": "choice",
+      "synonyms": ["panorama", "pano", "projection", "pano projection", "panorama mode", "projection mode"],
+      "options": [{"id": "spherical", "label": "Spherical", "synonyms": ["sphere", "spherical projection"]},
+                  {"id": "cylindrical", "label": "Cylindrical", "synonyms": ["cylinder", "cylindrical projection"]},
+                  {"id": "perspective", "label": "Perspective", "synonyms": ["flat", "planar", "rectilinear", "perspective projection"]}]},
+    {"id": "boundaryWarp", "label": "Boundary Warp", "group": "merge", "section": "Panorama", "min": 0, "max": 100, "default": 0, "step": 10,
+      "synonyms": ["boundary", "warp edges", "edge warp", "panorama warp", "boundary warping"]},
+    {"id": "fillEdges", "label": "Fill Edges", "group": "merge", "section": "Panorama", "kind": "toggle",
+      "synonyms": ["fill edge", "panorama fill", "fill the edges", "fill empty edges", "content aware fill edges"]}
   ]
 }

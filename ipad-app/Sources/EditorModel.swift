@@ -711,7 +711,8 @@ final class EditorModel: ObservableObject {
         let value = currentValue
         let merger = self.merger
         let name = MergeTools.actions.first { $0.value == kind }.flatMap { registry.control(id: $0.key)?.label } ?? "Merge"
-        let lens = Self.lens(of: photos[0])
+        // A panorama's photos point different ways: no lens correction fits the result.
+        let lens = kind == "panorama" ? PhotoLens() : Self.lens(of: photos[0])
         if waitsForMerge {
             finishMerge(merger.merge(kind, photos: photos, value: value), name: name, count: photos.count, lens: lens, job: job)
             return
@@ -728,16 +729,17 @@ final class EditorModel: ObservableObject {
 
     /// A merge finished: its result becomes the photo being edited (only the newest job's), with the
     /// lens of the first photo merged.
-    private func finishMerge(_ result: CIImage?, name: String, count: Int, lens: PhotoLens, job: Int) {
+    private func finishMerge(_ result: MergeRenderer.Merged?, name: String, count: Int, lens: PhotoLens, job: Int) {
         guard job == mergeJob else { return }
         isMerging = false
-        guard let result, !result.extent.isEmpty else {
+        guard let result, !result.image.extent.isEmpty else {
             merged = nil
-            feedback = Feedback(text: "\(name): these photos couldn't be merged.", isProblem: true)
+            feedback = Feedback(text: "\(name): these photos couldn't be merged (do they overlap?).", isProblem: true)
             return
         }
-        replacePhoto(result, lens: lens)
-        feedback = Feedback(text: "\(name): \(count) photos merged")
+        replacePhoto(result.image, lens: lens)
+        feedback = Feedback(text: result.used < count ? "\(name): \(result.used) of \(count) photos fitted together"
+                            : "\(name): \(count) photos merged")
         render()
     }
 

@@ -188,8 +188,20 @@ enum RenderGallery {
     /// - "bracket-dark", "bracket-mid", "bracket-bright": the test photo as the scene of an exposure
     ///   bracket, at ½, 2 and 8 × its light (clipped at white), for HDR merge; "bracket-ghost": the dark
     ///   one with a pale disc passing over the lens (at `ghostDisc`), for deghosting.
+    /// - "pano-left", "pano-middle", "pano-right": overlapping crops of the test photo (60 % of its width,
+    ///   92 % of its height, each a little higher or lower, at 0.9, 1 and 1.1 × its light), for panoramas.
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "pano-left", "pano-middle", "pano-right":
+            // x0, y0 from the top-left (shares), and the light.
+            let parts: [String: (x: CGFloat, y: CGFloat, gain: Double)] = ["pano-left": (0, 0.04, 0.9), "pano-middle": (0.2, 0, 1),
+                                                                         "pano-right": (0.4, 0.08, 1.1)]
+            let part = parts[source ?? ""] ?? (0, 0, 1)
+            let e = photo.extent
+            let box = CGRect(x: e.minX + (part.x * e.width).rounded(), y: e.minY + ((1 - part.y - 0.92) * e.height).rounded(),
+                             width: (0.6 * e.width).rounded(), height: (0.92 * e.height).rounded())
+            let lit = Filters.affine(photo, scale: part.gain).applyingFilter("CIColorClamp")
+            return lit.cropped(to: box).transformed(by: CGAffineTransform(translationX: -box.minX, y: -box.minY))
         case "bracket-dark", "bracket-mid", "bracket-bright", "bracket-ghost":
             let gains: [String: Double] = ["bracket-mid": 2, "bracket-bright": 8]
             let gain = gains[source ?? ""] ?? 0.5

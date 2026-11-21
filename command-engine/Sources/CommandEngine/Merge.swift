@@ -9,7 +9,7 @@ import Foundation
 /// The Merge panel's actions and settings.
 public enum MergeTools {
     /// Merge actions and the kind of merge each makes.
-    public static let actions: [String: String] = ["hdrMerge": "hdr"]
+    public static let actions: [String: String] = ["hdrMerge": "hdr", "panoramaMerge": "panorama"]
 
     /// "Photos to Merge": how many of the last photos picked a merge uses (0 = all of them).
     public static let countID = "mergeCount"
@@ -18,6 +18,7 @@ public enum MergeTools {
     public static func settings(for kind: String) -> [String] {
         switch kind {
         case "hdr": return [countID, "deghost", "hdrOutput"]
+        case "panorama": return [countID, "panoramaProjection", "boundaryWarp", "fillEdges"]
         default: return [countID]
         }
     }
@@ -247,34 +248,68 @@ public enum Pyramid {
     }
 
     /// Blends pictures through per-pixel weights band by band: each picture's Laplacian levels times
-    /// its weights' Gaussian levels, summed. Weights should add up to 1 at every pixel (`normalize`).
-    /// Pictures are taken one at a time, so only one pyramid of each kind is held at once.
+    /// its weights' Gaussian levels, summed and divided by the summed weights. Pictures are taken one
+    /// at a time, so only one pyramid of each kind is held at once.
     public static func blend(_ images: [FloatImage], weights: [[Float]], levels: Int? = nil) -> FloatImage {
         guard let first = images.first else { return FloatImage(width: 0, height: 0, channels: 3) }
-        let n = levels ?? Pyramid.levels(width: first.width, height: first.height)
-        var sum: [FloatImage] = []
-        for (image, weight) in zip(images, weights) {
-            let bands = laplacian(image, levels: n)
-            let w = gaussian(FloatImage(width: image.width, height: image.height, channels: 1, data: weight), levels: n)
-            if sum.isEmpty {
-                sum = bands.map { FloatImage(width: $0.width, height: $0.height, channels: $0.channels) }
+        var sum = Accumulator(width: first.width, height: first.height, channels: first.channels,
+                              levels: levels ?? Pyramid.levels(width: first.width, height: first.height))
+        for (image, weight) in zip(images, weights) { sum.add(image, weight: weight) }
+        return sum.result()
+    }
+
+    /// Band-by-band blending, one picture at a time (multi-band blending, Burt & Adelson 1983).
+    public struct Accumulator {
+        let levels: Int
+        var bands: [FloatImage] = []
+        var weights: [FloatImage] = []
+
+        public init(width: Int, height: Int, channels: Int, levels: Int) {
+            self.levels = levels
+            var w = width, h = height
+            for _ in 0..<levels {
+                bands.append(FloatImage(width: w, height: h, channels: channels))
+                weights.append(FloatImage(width: w, height: h, channels: 1))
+                w = (w + 1) / 2
+                h = (h + 1) / 2
             }
-            for l in 0..<n {
-                let c = bands[l].channels
-                sum[l].data.withUnsafeMutableBufferPointer { s in
-                    bands[l].data.withUnsafeBufferPointer { b in
-                        w[l].data.withUnsafeBufferPointer { wt in
-                            for i in 0..<wt.count {
-                                let k = wt[i]
-                                if k == 0 { continue }
-                                for ch in 0..<c { s[i * c + ch] += k * b[i * c + ch] }
+        }
+
+        /// Adds a picture where `weight` (one number per pixel) says how much it counts.
+        public mutating func add(_ image: FloatImage, weight: [Float]) {
+            let lap = laplacian(image, levels: levels)
+            let gauss = gaussian(FloatImage(width: image.width, height: image.height, channels: 1, data: weight), levels: levels)
+            for l in 0..<levels {
+                let c = lap[l].channels
+                bands[l].data.withUnsafeMutableBufferPointer { s in
+                    weights[l].data.withUnsafeMutableBufferPointer { ws in
+                        lap[l].data.withUnsafeBufferPointer { b in
+                            gauss[l].data.withUnsafeBufferPointer { wt in
+                                for i in 0..<wt.count {
+                                    let k = wt[i]
+                                    if k == 0 { continue }
+                                    ws[i] += k
+                                    for ch in 0..<c { s[i * c + ch] += k * b[i * c + ch] }
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        return collapse(sum)
+
+        /// The blended picture (pixels no picture covered come out 0).
+        public func result() -> FloatImage {
+            var normalized = bands
+            for l in 0..<levels {
+                let c = normalized[l].channels
+                for i in 0..<weights[l].count {
+                    let k = weights[l].data[i]
+                    for ch in 0..<c { normalized[l].data[i * c + ch] = k > 1e-6 ? normalized[l].data[i * c + ch] / k : 0 }
+                }
+            }
+            return collapse(normalized)
+        }
     }
 
     /// Weights scaled to add up to 1 at every pixel (equal shares where they are all 0).

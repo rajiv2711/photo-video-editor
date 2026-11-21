@@ -14,9 +14,19 @@ final class MergeRenderer {
         self.context = context
     }
 
-    /// The merged picture of `photos` for a kind of merge ("hdr", …) with the panel's settings
-    /// (`value` gives a control's value by id); nil when there are too few photos.
-    func merge(_ kind: String, photos: [CIImage], value: (String) -> Double?) -> CIImage? {
+    /// Long side of each photo of a panorama, and of the whole panorama at most.
+    static let panoramaPhotoSide: CGFloat = 2048
+    static let panoramaSide = 8192
+
+    /// A merge's result: the picture and how many photos went into it.
+    struct Merged {
+        let image: CIImage
+        let used: Int
+    }
+
+    /// The merged picture of `photos` for a kind of merge ("hdr", "panorama", …) with the panel's
+    /// settings (`value` gives a control's value by id); nil when they can't be merged.
+    func merge(_ kind: String, photos: [CIImage], value: (String) -> Double?) -> Merged? {
         switch kind {
         case "hdr":
             guard photos.count >= 2 else { return nil }
@@ -24,10 +34,34 @@ final class MergeRenderer {
             let brackets = photos.map { floats($0, width: size.width, height: size.height) }
             let output = HDRMerge.Output(rawValue: option(value("hdrOutput"), HDRMerge.outputs)) ?? .fusion
             let merged = HDRMerge.merge(brackets, deghost: Int(value("deghost") ?? 0), output: output)
-            return picture(merged, linear: output == .radiance)
+            return Merged(image: picture(merged, linear: output == .radiance), used: photos.count)
+        case "panorama":
+            guard photos.count >= 2 else { return nil }
+            let pictures = photos.map { photo -> FloatImage in
+                let size = Self.size(of: photo, maxSide: Self.panoramaPhotoSide)
+                return floats(photo, width: size.width, height: size.height)
+            }
+            guard let result = Panorama.stitch(pictures, settings: panoramaSettings(value), focal: focal(of: photos[0], picture: pictures[0]),
+                                               maxSide: Self.panoramaSide) else { return nil }
+            return Merged(image: picture(result.image, alpha: result.coverage), used: result.used)
         default:
             return nil
         }
+    }
+
+    /// The Panorama section's settings.
+    private func panoramaSettings(_ value: (String) -> Double?) -> Panorama.Settings {
+        Panorama.Settings(projection: Panorama.Projection(rawValue: option(value("panoramaProjection"), Panorama.projections)) ?? .spherical,
+                          boundaryWarp: (value("boundaryWarp") ?? 0) / 100, fillEdges: (value("fillEdges") ?? 0) != 0)
+    }
+
+    /// A photo's focal length in pixels of `picture` (its copy being merged), from the 35 mm
+    /// equivalent focal length in its EXIF data (nil when it has none).
+    private func focal(of photo: CIImage, picture: FloatImage) -> Double? {
+        let exif = photo.properties["{Exif}"] as? [String: Any]
+        guard let f35 = (exif?["FocalLenIn35mmFilm"] as? NSNumber)?.doubleValue, f35 > 0 else { return nil }
+        // A 35 mm frame's diagonal is 43.27 mm.
+        return f35 * hypot(Double(picture.width), Double(picture.height)) / 43.27
     }
 
     /// The option id a choice's value stands for.
@@ -61,12 +95,20 @@ final class MergeRenderer {
         return out
     }
 
-    /// Floats back into a picture at the origin: sRGB levels, or linear light (levels above 1 kept).
-    func picture(_ image: FloatImage, linear: Bool = false) -> CIImage {
+    /// Floats back into a picture at the origin: sRGB levels, or linear light (levels above 1 kept);
+    /// `alpha` (one number per pixel) makes uncovered parts transparent.
+    func picture(_ image: FloatImage, linear: Bool = false, alpha: [Float]? = nil) -> CIImage {
         let name = linear ? CGColorSpace.extendedLinearSRGB : CGColorSpace.extendedSRGB
         guard image.width > 0, image.height > 0, let space = CGColorSpace(name: name) else { return CIImage.empty() }
-        let rgb = image.rgb
-        let data = rgb.rgba.withUnsafeBufferPointer { Data(buffer: $0) }
+        var rgba = image.rgb.rgba
+        if let alpha, alpha.count == image.width * image.height {
+            for i in alpha.indices where alpha[i] < 1 {
+                let a = max(0, alpha[i])
+                for c in 0..<3 { rgba[4 * i + c] *= a }
+                rgba[4 * i + 3] = a
+            }
+        }
+        let data = rgba.withUnsafeBufferPointer { Data(buffer: $0) }
         return CIImage(bitmapData: data, bytesPerRow: image.width * 16, size: CGSize(width: image.width, height: image.height),
                        format: .RGBAf, colorSpace: space)
     }

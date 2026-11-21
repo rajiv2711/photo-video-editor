@@ -113,6 +113,7 @@ final class MergeTests: XCTestCase {
     func testOptionIdsMatchControls() {
         XCTAssertEqual(registry.control(id: "deghost")!.options.map(\.id), HDRMerge.deghostLevels)
         XCTAssertEqual(registry.control(id: "hdrOutput")!.options.map(\.id), HDRMerge.outputs)
+        XCTAssertEqual(registry.control(id: "panoramaProjection")!.options.map(\.id), Panorama.projections)
         for (id, _) in MergeTools.actions {
             XCTAssertEqual(registry.control(id: id)?.group, "merge", id)
             for setting in MergeTools.settings(for: MergeTools.actions[id]!) { XCTAssertNotNil(registry.control(id: setting), setting) }
@@ -222,5 +223,143 @@ final class MergeTests: XCTestCase {
         let ghostHigh = Self.difference(high, clean, x0: box.x0, y0: box.y0, x1: box.x1, y1: box.y1)
         XCTAssertGreaterThan(ghostOff, 0.04, "without deghosting the object shows")
         XCTAssertLessThan(ghostHigh, ghostOff / 3, "deghosting leaves it out")
+    }
+}
+
+/// Panorama: matching, the stitch, projections, edges.
+final class PanoramaTests: XCTestCase {
+    /// A textured scene (smoothed random cells and a few soft blobs), RGB on sRGB levels.
+    static func scene(width: Int, height: Int) -> FloatImage {
+        var image = FloatImage(width: width, height: height, channels: 3)
+        for y in 0..<height {
+            for x in 0..<width {
+                let cell = MergeTests.hash(x / 6, y / 6)
+                let blob = 0.25 * sinf(Float(x) * 0.07) * cosf(Float(y) * 0.09)
+                let v = 0.2 + 0.5 * cell + blob
+                image[x, y, 0] = min(1, max(0, v * 1.1))
+                image[x, y, 1] = min(1, max(0, v))
+                image[x, y, 2] = min(1, max(0, v * 0.8 + 0.1))
+            }
+        }
+        let blurred = (0..<3).map { c in
+            Grid.blur((0..<(width * height)).map { image.data[$0 * 3 + c] }, width: width, height: height, radius: 1)
+        }
+        for i in 0..<(width * height) { for c in 0..<3 { image.data[i * 3 + c] = blurred[c][i] } }
+        return image
+    }
+
+    /// The part of a picture from (x, y), `width` × `height`, its linear light × `gain`.
+    static func crop(_ image: FloatImage, x: Int, y: Int, width: Int, height: Int, gain: Float = 1) -> FloatImage {
+        var out = FloatImage(width: width, height: height, channels: 3)
+        for j in 0..<height {
+            for i in 0..<width {
+                for c in 0..<3 {
+                    let v = image[min(image.width - 1, x + i), min(image.height - 1, y + j), c]
+                    out[i, j, c] = gain == 1 ? v : SRGB.encoded(min(1, SRGB.linear(v) * gain))
+                }
+            }
+        }
+        return out
+    }
+
+    func testFeaturesFindTheShiftBetweenTwoCrops() {
+        let scene = Self.scene(width: 260, height: 140)
+        let a = Self.crop(scene, x: 0, y: 0, width: 160, height: 120).luma
+        let b = Self.crop(scene, x: 70, y: 12, width: 160, height: 120).luma
+        let ca = Features.corners(a), cb = Features.corners(b)
+        XCTAssertGreaterThan(ca.count, 50)
+        let matches = Features.match(Features.describe(a, ca), Features.describe(b, cb))
+        XCTAssertGreaterThan(matches.count, 20)
+        let from = matches.map { Vec2(cb[$0.1].x, cb[$0.1].y) }, to = matches.map { Vec2(ca[$0.0].x, ca[$0.0].y) }
+        let found = Features.homography(from: from, to: to, size: (160, 120), threshold: 2)
+        XCTAssertNotNil(found)
+        // b's (0, 0) is a's (70, 12).
+        let p = found!.h.apply(Vec2(0, 0))
+        XCTAssertEqual(p.x, 70, accuracy: 0.7)
+        XCTAssertEqual(p.y, 12, accuracy: 0.7)
+    }
+
+    func testFitRecoversAHomographyDespiteOutliers() {
+        let truth = Homography([1.05, 0.03, 12, -0.02, 0.98, -7, 0.0002, -0.0001, 1])
+        var from: [Vec2] = [], to: [Vec2] = []
+        for k in 0..<80 {
+            let p = Vec2(Double((k * 37) % 200), Double((k * 53) % 150))
+            from.append(p)
+            to.append(k % 5 == 0 ? Vec2(Double((k * 91) % 200), Double((k * 17) % 150)) : truth.apply(p))  // every fifth is wrong
+        }
+        let found = Features.homography(from: from, to: to, size: (200, 150), threshold: 1)
+        XCTAssertNotNil(found)
+        XCTAssertEqual(found!.inliers.count, 64)
+        let q = found!.h.apply(Vec2(100, 75)), t = truth.apply(Vec2(100, 75))
+        XCTAssertLessThan((q - t).length, 0.01)
+    }
+
+    func testFocalFromATurningCamera() {
+        // H = K R K⁻¹ for a 20° turn about the upright axis, f = 500, centred coordinates.
+        let f = 500.0, a = 20 * Double.pi / 180
+        let k = Homography([f, 0, 0, 0, f, 0, 0, 0, 1])
+        let r = Homography([cos(a), 0, sin(a), 0, 1, 0, -sin(a), 0, cos(a)])
+        let h = (k * r * k.inverse).normalized
+        XCTAssertEqual(Panorama.focal(from: h) ?? 0, f, accuracy: 5)
+        XCTAssertNil(Panorama.focal(from: Homography.translation(40, 3)), "a sideways shift says nothing")
+    }
+
+    /// Three overlapping crops of a scene, a little higher or lower each, at different exposures.
+    static func crops(_ scene: FloatImage) -> [FloatImage] {
+        [crop(scene, x: 0, y: 6, width: 150, height: 110, gain: 0.85),
+         crop(scene, x: 90, y: 0, width: 150, height: 110),
+         crop(scene, x: 180, y: 10, width: 150, height: 110, gain: 1.15)]
+    }
+
+    func testPerspectivePanoramaRebuildsTheScene() {
+        let scene = Self.scene(width: 330, height: 120)
+        let photos = Self.crops(scene)
+        let result = Panorama.stitch([photos[2], photos[0], photos[1]], settings: .init(projection: .perspective))  // any order
+        XCTAssertNotNil(result)
+        guard let r = result else { return }
+        XCTAssertEqual(r.used, 3)
+        XCTAssertEqual(Double(r.image.width), 330, accuracy: 3)
+        XCTAssertEqual(Double(r.image.height), 120, accuracy: 3)
+        // Covered pixels match the scene (the middle photo is the reference: its top is the scene's row 0).
+        var diff: Float = 0, n: Float = 0
+        for y in 12..<100 {
+            for x in 10..<(min(r.image.width, 330) - 10) where r.coverage[y * r.image.width + x] > 0 {
+                for c in 0..<3 { diff += abs(r.image[x, y, c] - scene[x, y, c]) }
+                n += 3
+            }
+        }
+        XCTAssertGreaterThan(n, 20000)
+        XCTAssertLessThan(diff / n, 0.035, "seams and exposures hidden")
+        // The top-left corner was never photographed (the left photo starts lower).
+        XCTAssertEqual(r.coverage[2 * r.image.width + 2], 0)
+    }
+
+    func testCylindricalAndSphericalAreNarrower() {
+        let photos = Self.crops(Self.scene(width: 330, height: 120))
+        let flat = Panorama.stitch(photos, settings: .init(projection: .perspective))!
+        let cylinder = Panorama.stitch(photos, settings: .init(projection: .cylindrical), focal: 150)!
+        let sphere = Panorama.stitch(photos, settings: .init(projection: .spherical), focal: 150)!
+        XCTAssertLessThan(cylinder.image.width, flat.image.width - 10)
+        XCTAssertLessThan(sphere.image.height, cylinder.image.height)
+    }
+
+    func testBoundaryWarpAndFillEdgesFillTheFrame() {
+        let photos = Self.crops(Self.scene(width: 330, height: 120))
+        let plain = Panorama.stitch(photos, settings: .init(projection: .perspective))!
+        let empty = plain.coverage.filter { $0 < 0.5 }.count
+        XCTAssertGreaterThan(empty, 500)
+        let warped = Panorama.stitch(photos, settings: .init(projection: .perspective, boundaryWarp: 1))!
+        XCTAssertLessThan(warped.coverage.filter { $0 < 0.5 }.count, empty / 10)
+        let filled = Panorama.stitch(photos, settings: .init(projection: .perspective, fillEdges: true))!
+        XCTAssertTrue(filled.coverage.allSatisfy { $0 == 1 })
+        // The made-up corner looks like the picture nearby, not black.
+        XCTAssertGreaterThan(filled.image[2, 2, 1], 0.1)
+    }
+
+    func testUnrelatedPhotosAreNotJoined() {
+        let a = Self.scene(width: 150, height: 110)
+        var b = FloatImage(width: 150, height: 110, channels: 3)
+        for y in 0..<110 { for x in 0..<150 { for c in 0..<3 { b[x, y, c] = MergeTests.hash(x / 4 + 999, y / 4 + 77) } } }
+        XCTAssertNil(Panorama.stitch([a, b], settings: .init()))
     }
 }
