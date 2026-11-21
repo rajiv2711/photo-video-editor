@@ -979,3 +979,8 @@
 {"group":"creative","text":"comic more","expect":[{"op":"nudge","control":"cartoon","steps":1}]}
 {"group":"creative","text":"cutout","expect":[{"op":"select","control":"cutout"}]}
 {"group":"creative","text":"cut out 70","expect":[{"op":"set","control":"cutout","value":70}]}
+{"group":"creative","text":"lens flare","expect":[{"op":"select","control":"lensFlare"}]}
+{"group":"creative","text":"lens flare 80","expect":[{"op":"set","control":"lensFlare","value":80}]}
+{"group":"creative","text":"sun flare less","expect":[{"op":"nudge","control":"lensFlare","steps":-1}]}
+{"group":"creative","text":"flare size 50","expect":[{"op":"set","control":"effectSize","value":50}]}
+{"group":"creative","text":"place flare","expect":[{"op":"run","control":"placeCenter"}]}

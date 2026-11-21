@@ -165,7 +165,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 122. **Stylize filters** — oil paint, emboss, find edges, wind
 - [x] 123. **Pixelate filters** — mosaic, crystallize, halftone
 - [x] 124. **Artistic filters** — watercolour, sketch, cartoon, cutout
-- [ ] 125. **Lens flare** — add a light flare
+- [x] 125. **Lens flare** — add a light flare
 - [ ] 126. **Lighting effects** — spot and omni lights over the image
 - [ ] 127. **Film effects** — light leaks, dust and scratch overlays
 - [ ] 128. **Frames / borders** — add a border or frame

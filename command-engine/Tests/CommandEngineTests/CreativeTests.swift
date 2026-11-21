@@ -51,6 +51,13 @@ final class CreativeTests: XCTestCase {
         XCTAssertEqual(value("vignette"), 0, "older sliders still only select")
     }
 
+    func testNearMissesTryCreativeNamesLast() {
+        XCTAssertEqual(parse("light up"), [.nudge("curveLights", 1)], "still the Lights curve")
+        XCTAssertEqual(parse("embosss"), [.select("emboss")])
+        XCTAssertEqual(parse("spherise 40"), [.set("spherize", 40)])
+        XCTAssertEqual(parse("place center"), [.run("placeCenter")])
+    }
+
     // MARK: - Blur
 
     func testBlurNames() {
@@ -279,5 +286,27 @@ final class CreativeTests: XCTestCase {
         let table = CreativeFilters.sketchTable(50)
         XCTAssertEqual(table[255], 1, accuracy: 1e-9)
         XCTAssertLessThan(table[128], 128.0 / 255, "darker")
+    }
+
+    // MARK: - Lens flare
+
+    func testLensFlareNames() {
+        XCTAssertEqual(parse("lens flare"), [.select("lensFlare")])
+        XCTAssertEqual(parse("lens flare 80"), [.set("lensFlare", 80)])
+        XCTAssertEqual(parse("flare size 50"), [.set("effectSize", 50)])
+        XCTAssertEqual(parse("place flare"), [.run("placeCenter")])
+        XCTAssertTrue(CreativeFilters.centered.contains("lensFlare"), "naming it lets a tap place the light")
+    }
+
+    func testFlareGhostsRunThroughTheMiddle() {
+        let middle = Vec2(400, 300)
+        let axis = CreativeFilters.flareAxis(source: Vec2(100, 100), middle: middle, size: 100)
+        XCTAssertEqual(axis.x, 300, accuracy: 1e-9)
+        XCTAssertEqual(axis.y, 200, accuracy: 1e-9)
+        let centred = CreativeFilters.flareAxis(source: middle, middle: middle, size: 100)
+        XCTAssertGreaterThan(centred.length, 100, "a light in the middle still spreads its ghosts")
+        XCTAssertTrue(CreativeFilters.flareGhosts.allSatisfy { $0.radius > 0 && $0.strength > 0 && $0.at > 0 })
+        XCTAssertEqual(CreativeFilters.flareSize(size: 0.3, longSide: 800), 120, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.flareStrength(50), 0.6, accuracy: 1e-9)
     }
 }

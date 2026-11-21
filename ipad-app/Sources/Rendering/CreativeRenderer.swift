@@ -3,7 +3,7 @@ import CoreImage
 
 /// The Creative panel (CreativeFilters in CommandEngine), after the crop and before the post-crop
 /// vignette and grain, so the filters see the picture as framed. Every filter is a slider, 0 = off;
-/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic → pixelate. Sizes are shares of the picture's long side, so the
+/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic → pixelate → lens flare. Sizes are shares of the picture's long side, so the
 /// preview and the saved photo look alike. The Effect Center and Angle (Placement) are shared.
 final class CreativeRenderer {
     let context: CIContext
@@ -187,6 +187,12 @@ final class CreativeRenderer {
                 "inputUCR": 0.5,
             ]).cropped(to: extent))
         }
+
+        // Lens flare: light from the Effect Center, screened on (sRGB levels).
+        let flare = CreativeFilters.flareStrength(v("lensFlare"))
+        if flare > 0 {
+            output = Filters.linear(flared(Filters.encoded(output), extent: extent, value: value, strength: flare))
+        }
         return output
     }
 
@@ -289,6 +295,55 @@ final class CreativeRenderer {
             return best;
         }
         """)
+
+    // MARK: - Lens flare
+
+    /// The flare's light around the source: a bright core and its glow, six thin rays and a faint
+    /// rainbow ring (red outside) at 1.2 × `size`.
+    private static let flareKernel: CIColorKernel? = CIColorKernel(source: """
+        kernel vec4 lensFlare(vec2 source, float size, float strength) {
+            vec2 d = destCoord() - source;
+            float r = length(d) / size;
+            float core = exp(-r * r * 30.0) + 0.3 * exp(-r * 3.0);
+            float qr = (r - 1.25) * 14.0;
+            float qg = (r - 1.2) * 14.0;
+            float qb = (r - 1.15) * 14.0;
+            vec3 ring = vec3(exp(-qr * qr), exp(-qg * qg), exp(-qb * qb)) * 0.12;
+            float rays = pow(abs(cos(3.0 * atan(d.y, d.x))), 80.0) * exp(-r * 1.2) * 0.35;
+            vec3 light = (core * vec3(1.0, 0.92, 0.8) + ring + vec3(rays)) * strength;
+            return vec4(light, 1.0);
+        }
+        """)
+
+    /// `image` (sRGB levels) with a lens flare screened on: the light at the Effect Center and its
+    /// ghosts along the line through the picture's middle (CreativeFilters.flareGhosts).
+    private func flared(_ image: CIImage, extent: CGRect, value: (String) -> Double?, strength: Double) -> CIImage {
+        guard let kernel = Self.flareKernel else { return image }
+        let side = Double(max(extent.width, extent.height))
+        let size = CreativeFilters.flareSize(size: (value("effectSize") ?? 30) / 100, longSide: side)
+        // Pixels from the top-left, then Core Image's coordinates (y up).
+        let c = CreativeFilters.center(value: value)
+        let source = Vec2(c.x * Double(extent.width), c.y * Double(extent.height))
+        let middle = Vec2(Double(extent.width) / 2, Double(extent.height) / 2)
+        let axis = CreativeFilters.flareAxis(source: source, middle: middle, size: size)
+        func ci(_ p: Vec2) -> CGPoint { CGPoint(x: extent.minX + CGFloat(p.x), y: extent.maxY - CGFloat(p.y)) }
+        guard var light = kernel.apply(extent: extent, arguments: [CIVector(cgPoint: ci(source)), size, strength]) else { return image }
+        for ghost in CreativeFilters.flareGhosts {
+            let radius = ghost.radius * size
+            let k = ghost.strength * strength
+            let disc = CIFilter(name: "CIRadialGradient", parameters: [
+                kCIInputCenterKey: CIVector(cgPoint: ci(source + axis * ghost.at)),
+                "inputRadius0": 0.85 * radius,
+                "inputRadius1": radius,
+                "inputColor0": CIColor(red: CGFloat(ghost.color.r * k), green: CGFloat(ghost.color.g * k), blue: CGFloat(ghost.color.b * k)),
+                "inputColor1": CIColor(red: 0, green: 0, blue: 0),
+            ])?.outputImage?.cropped(to: extent)
+            if let disc {
+                light = disc.applyingFilter("CIAdditionCompositing", parameters: [kCIInputBackgroundImageKey: light])
+            }
+        }
+        return light.applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: image]).cropped(to: extent)
+    }
 
     // MARK: - Artistic
 

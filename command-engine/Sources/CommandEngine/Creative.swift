@@ -17,7 +17,7 @@ public enum CreativeFilters {
 
     /// Filters that work around the Effect Center: turning one on by name lets the next tap place it.
     public static let centered: Set<String> = ["zoomBlur", "spinBlur", "tiltShift", "irisBlur", "fieldBlur",
-                                               "twirl", "ripple", "pinch", "spherize"]
+                                               "twirl", "ripple", "pinch", "spherize", "lensFlare"]
 
     /// The Effect Center on the picture (0…1 from the top-left).
     public static func center(value: (String) -> Double?) -> MaskPoint {
@@ -259,5 +259,36 @@ public enum CreativeFilters {
         return (0..<256).map { j in
             means[band[min(bins - 1, Int(Double(j) / 256 * Double(bins)))]]
         }
+    }
+
+    // MARK: - Lens flare
+
+    /// Lens Flare's size (pixels): the glow's reach, half Effect Size × the long side; its halo ring
+    /// lies at 1.2 × that.
+    public static func flareSize(size: Double, longSide: Double) -> Double {
+        max(0.05, size) * 0.5 * longSide
+    }
+
+    /// Lens Flare's brightness (× the flare's light, screened onto the picture): up to 1.2.
+    public static func flareStrength(_ amount: Double) -> Double {
+        max(0, amount) / 100 * 1.2
+    }
+
+    /// Where the flare's ghosts sit: along the line from the light (`source`) through the picture's
+    /// middle, at these shares of the way (1 = the middle, 2 = as far past it), with their radius (×
+    /// the flare's size), colour and strength. A light in the very middle sends them along the diagonal.
+    public static let flareGhosts: [(at: Double, radius: Double, color: RGB, strength: Double)] = [
+        (0.4, 0.15, RGB(0.6, 0.8, 1.0), 0.15),
+        (0.8, 0.08, RGB(1.0, 0.7, 0.4), 0.2),
+        (1.25, 0.3, RGB(0.5, 1.0, 0.6), 0.08),
+        (1.6, 0.12, RGB(0.8, 0.6, 1.0), 0.15),
+        (2.1, 0.45, RGB(0.5, 0.7, 1.0), 0.07),
+    ]
+
+    /// The line the ghosts run along (pixels, y down): from the light to the picture's middle, or down
+    /// and to the right when the light is (almost) in the middle.
+    public static func flareAxis(source: Vec2, middle: Vec2, size: Double) -> Vec2 {
+        let axis = middle - source
+        return axis.length < 0.1 * size ? Vec2(1.4 * size, 1.4 * size) : axis
     }
 }
