@@ -82,6 +82,7 @@ final class CreativeTests: XCTestCase {
         XCTAssertEqual(CreativeFilters.gaussianRadius(50, longSide: 1000), 20, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.gaussianRadius(50, longSide: 4000), 4 * CreativeFilters.gaussianRadius(50, longSide: 1000), accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.motionLength(0, longSide: 1000), 0)
+        XCTAssertEqual(CreativeFilters.zoomLength(60, longSide: 800), 12, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.spinAngle(100), 24 * .pi / 180, accuracy: 1e-9)
     }
 

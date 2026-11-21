@@ -42,9 +42,10 @@ public enum CreativeFilters {
         max(0, amount) / 100 * 0.06 * longSide
     }
 
-    /// Zoom Blur's streak length at the edges (pixels): up to 8 % of the long side.
+    /// Zoom Blur's strength (Core Image's zoom amount, pixels): up to 2.5 % of the long side (its
+    /// streaks grow with the distance from the centre, to several times that at the edges).
     public static func zoomLength(_ amount: Double, longSide: Double) -> Double {
-        max(0, amount) / 100 * 0.08 * longSide
+        max(0, amount) / 100 * 0.025 * longSide
     }
 
     /// Spin Blur's whole arc (radians): up to 24°.
