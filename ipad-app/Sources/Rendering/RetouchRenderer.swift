@@ -54,12 +54,14 @@ final class RetouchRenderer {
     func apply(_ image: CIImage, steps: [Retouch], source: CIImage, key: [Double], wait: Bool) -> CIImage {
         guard !steps.isEmpty else { return image }
         let slot = self.slot(for: image, source: source, key: key)
+        // The retouched picture covers whole pixels: a part-pixel edge (a downscaled photo's) stays as it was.
+        func over(_ retouched: CIImage) -> CIImage { retouched.composited(over: image) }
         if let finished = slot.finished {
-            if finished.steps == steps { return finished.image }
+            if finished.steps == steps { return over(finished.image) }
             // The same steps with the sources picked for them now kept in the edit: the same picture.
             if !finished.sources.isEmpty, Self.pinned(finished.steps, finished.sources) == steps {
                 slot.finished = (steps: steps, image: finished.image, sources: [:])
-                return finished.image
+                return over(finished.image)
             }
         }
         let extent = slot.extent
@@ -70,7 +72,7 @@ final class RetouchRenderer {
             let picture = Self.picture(result.image, extent: extent)
             slot.finished = (steps: steps, image: picture, sources: result.sources)
             slot.pending = nil
-            return picture
+            return over(picture)
         }
         lock.lock()
         wanted = steps
@@ -97,7 +99,7 @@ final class RetouchRenderer {
                 }
             }
         }
-        return slot.finished?.image ?? image
+        return slot.finished.map { over($0.image) } ?? image
     }
 
     /// Where points on the preview were before its liquify strokes (spots made after liquifying are
@@ -156,7 +158,7 @@ final class RetouchRenderer {
         return RGBBuffer(width: width, height: height, rgba: rgba)
     }
 
-    /// Numbers back into a picture over `extent`.
+    /// Numbers back into a picture over the whole pixels of `extent`.
     static func picture(_ buffer: RGBBuffer, extent: CGRect) -> CIImage {
         guard buffer.width > 0, buffer.height > 0, let space = CGColorSpace(name: CGColorSpace.extendedSRGB) else {
             return CIImage.empty()
@@ -165,6 +167,6 @@ final class RetouchRenderer {
         return CIImage(bitmapData: data, bytesPerRow: buffer.width * 16, size: CGSize(width: buffer.width, height: buffer.height),
                        format: .RGBAf, colorSpace: space)
             .transformed(by: CGAffineTransform(translationX: extent.minX, y: extent.minY))
-            .cropped(to: extent)
+            .cropped(to: CGRect(x: extent.minX, y: extent.minY, width: extent.width.rounded(.down), height: extent.height.rounded(.down)))
     }
 }
