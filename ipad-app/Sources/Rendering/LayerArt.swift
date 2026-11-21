@@ -45,6 +45,10 @@ final class LayerArt {
 
     /// Draws a layer into a context whose y points down (UIKit's), `width` × `height` pixels.
     static func draw(_ layer: Layer, in context: CGContext, width: Double, height: Double) {
+        if layer.kind == "fill" {
+            drawFill(layer, in: context, width: width, height: height)
+            return
+        }
         let t = layer.transform
         context.saveGState()
         defer { context.restoreGState() }
@@ -132,6 +136,34 @@ final class LayerArt {
             context.setLineCap(.round)
             context.setLineJoin(.round)
             context.strokePath()
+        }
+    }
+
+    /// A fill over the whole canvas: one colour, or a gradient from Fill Colour to Fill End Colour (or
+    /// to transparent), blended on sRGB levels as Photoshop's are.
+    private static func drawFill(_ layer: Layer, in context: CGContext, width: Double, height: Double) {
+        let start = Layers.color(layer.value("fillColor", 1)) ?? RGB(0, 0, 0)
+        let i = Int(layer.value("fillStyle", 0))
+        let style = Layers.fillStyles.indices.contains(i) ? Layers.fillStyles[i] : "solid"
+        let all = CGRect(x: 0, y: 0, width: width, height: height)
+        guard style != "solid" else {
+            context.setFillColor(color(start).cgColor)
+            context.fill(all)
+            return
+        }
+        let end = Layers.color(layer.value("fillEndColor", 0), none: true)
+        let colors = [color(start).cgColor, end.map { color($0).cgColor } ?? color(start).withAlphaComponent(0).cgColor] as CFArray
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let gradient = CGGradient(colorsSpace: space, colors: colors, locations: [0, 1]) else { return }
+        let beyond: CGGradientDrawingOptions = [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+        if style == "radial" {
+            let r = Layers.radialFill(layer, width: width, height: height)
+            let c = CGPoint(x: r.centre.x, y: r.centre.y)
+            context.drawRadialGradient(gradient, startCenter: c, startRadius: 0, endCenter: c, endRadius: CGFloat(r.radius), options: beyond)
+        } else {
+            let ends = Layers.linearFill(layer, width: width, height: height)
+            context.drawLinearGradient(gradient, start: CGPoint(x: ends.start.x, y: ends.start.y), end: CGPoint(x: ends.end.x, y: ends.end.y),
+                                       options: beyond)
         }
     }
 

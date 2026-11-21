@@ -230,6 +230,27 @@ public enum Layers {
         return piece.0 * (u * u * u) + piece.1 * (3 * u * u * t) + piece.2 * (3 * u * t * t) + piece.3 * (t * t * t)
     }
 
+    /// A fill layer's look (its "fillStyle" setting): a solid colour, or a linear or radial gradient.
+    public static let fillStyles = ["solid", "linear", "radial"]
+
+    /// A linear gradient fill on a `width` × `height` canvas: where the start colour is full and where
+    /// the end colour is (pixels from the top-left). It runs along `angle` (Fill Angle: 0 = left to
+    /// right, 90 = top to bottom) through the layer's centre, across the whole canvas at Layer Scale 100.
+    public static func linearFill(_ layer: Layer, width: Double, height: Double) -> (start: Vec2, end: Vec2) {
+        let t = layer.transform, a = layer.value("fillAngle", -90) * .pi / 180
+        let u = Vec2(cos(a), sin(a))
+        let half = (abs(width * u.x) + abs(height * u.y)) / 2 * t.scale
+        let c = Vec2(t.x * width, t.y * height)
+        return (c - u * half, c + u * half)
+    }
+
+    /// A radial gradient fill: its centre (the layer's) and the radius where the end colour is (half the
+    /// canvas's diagonal at Layer Scale 100), in pixels.
+    public static func radialFill(_ layer: Layer, width: Double, height: Double) -> (centre: Vec2, radius: Double) {
+        let t = layer.transform
+        return (Vec2(t.x * width, t.y * height), (width * width + height * height).squareRoot() / 2 * t.scale)
+    }
+
     /// Text Size is per mille of the canvas's long side: the font size in L units.
     public static func fontSize(_ layer: Layer) -> Double {
         layer.value("textSize", 60) / 1000
@@ -243,6 +264,7 @@ public enum Layers {
         case "text": return "Text"
         case "shape": return "Shape"
         case "paint": return "Paint"
+        case "fill": return "Fill"
         default: return kind.prefix(1).uppercased() + kind.dropFirst()
         }
     }
@@ -512,6 +534,17 @@ extension CommandApplier {
             state.layers.append(Layers.make("paint", registry: registry))
             state.selectLayer(state.layers.count - 1)
             return [ran, .layered(layer: state.layers.count, event: .created("paint"))]
+        case "solidFill", "gradientFill":
+            var layer = Layers.make("fill", registry: registry)
+            var style = "solid"
+            if control.id == "gradientFill" {
+                let i = Int(command.value ?? 0)
+                style = control.options.indices.contains(i) ? control.options[i].id : "linear"
+            }
+            layer.values["fillStyle"] = Double(Layers.fillStyles.firstIndex(of: style) ?? 0)
+            state.layers.append(layer)
+            state.selectLayer(state.layers.count - 1)
+            return [ran, .layered(layer: state.layers.count, event: .created("fill"))]
         case "newAdjustmentLayer":
             state.layers.append(Layers.make("adjustment", registry: registry))
             state.selectLayer(state.layers.count - 1)

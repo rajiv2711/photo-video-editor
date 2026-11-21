@@ -521,4 +521,40 @@ final class LayersTests: XCTestCase {
         state.selectLayer(1)
         XCTAssertFalse(state.addPaintStroke([Vec2(1, 1)], size: 2, color: 2, width: 10, height: 10), "only on a paint layer")
     }
+
+    // MARK: - Gradient and fill
+
+    func testFillLayers() {
+        XCTAssertEqual(parse("gradient fill"), [.run("gradientFill")])
+        XCTAssertEqual(parse("gradient fill radial"), [.run("gradientFill", value: 1)])
+        XCTAssertEqual(parse("fill colour red"), [.set("fillColor", 2)])
+        XCTAssertEqual(parse("fill end colour transparent"), [.set("fillEndColor", 0)])
+        XCTAssertEqual(parse("fill angle 0"), [.set("fillAngle", 0)])
+        XCTAssertEqual(parse("fill edges on"), [.set("fillEdges", 1)], "still the panorama's")
+        run("gradient fill radial")
+        XCTAssertEqual(state.layers[0].kind, "fill")
+        XCTAssertEqual(Layers.fillStyles[Int(state.layers[0].values["fillStyle"]!)], "radial")
+        XCTAssertNil(Layers.box(of: state.layers[0]), "covers the whole canvas")
+        run("solid fill fill colour white")
+        XCTAssertEqual(Layers.fillStyles[Int(state.layers[1].values["fillStyle"]!)], "solid")
+        XCTAssertEqual(Layers.color(state.layers[1].values["fillColor"]!), RGB(1, 1, 1))
+        XCTAssertNil(Layers.color(state.layers[1].values["fillEndColor"]!, none: true), "fades to transparent")
+    }
+
+    func testFillGeometry() {
+        var layer = Layers.make("fill", registry: registry)
+        // Default: from the bottom (start colour) up to the top, across the whole 1000 × 500 canvas.
+        var ends = Layers.linearFill(layer, width: 1000, height: 500)
+        XCTAssertEqual(ends.start.x, 500, accuracy: 1e-9)
+        XCTAssertEqual(ends.start.y, 500, accuracy: 1e-9)
+        XCTAssertEqual(ends.end.y, 0, accuracy: 1e-9)
+        layer.values["fillAngle"] = 0
+        layer.values["layerScale"] = 50
+        ends = Layers.linearFill(layer, width: 1000, height: 500)
+        XCTAssertEqual(ends.start.x, 250, accuracy: 1e-9, "left to right, half as long at scale 50")
+        XCTAssertEqual(ends.end.x, 750, accuracy: 1e-9)
+        let radial = Layers.radialFill(Layers.make("fill", registry: registry), width: 300, height: 400)
+        XCTAssertEqual(radial.centre, Vec2(150, 200))
+        XCTAssertEqual(radial.radius, 250, accuracy: 1e-9, "half the diagonal")
+    }
 }

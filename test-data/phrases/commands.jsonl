@@ -1096,3 +1096,14 @@
 {"group":"layers","text":"pen color black","expect":[{"op":"set","control":"brushColor","value":1}]}
 {"group":"layers","text":"paint size 3","expect":[{"op":"set","control":"paintSize","value":3}]}
 {"group":"layers","text":"paint brush size more","expect":[{"op":"nudge","control":"paintSize","steps":1}]}
+{"group":"layers","text":"solid fill","expect":[{"op":"run","control":"solidFill"}]}
+{"group":"layers","text":"fill layer","expect":[{"op":"run","control":"solidFill"}]}
+{"group":"layers","text":"gradient fill","expect":[{"op":"run","control":"gradientFill"}]}
+{"group":"layers","text":"gradient fill radial","expect":[{"op":"run","control":"gradientFill","value":1}]}
+{"group":"layers","text":"add gradient","expect":[{"op":"run","control":"gradientFill"}]}
+{"group":"layers","text":"fill colour red","expect":[{"op":"set","control":"fillColor","value":2}]}
+{"group":"layers","text":"gradient start colour blue","expect":[{"op":"set","control":"fillColor","value":6}]}
+{"group":"layers","text":"fill end colour white","expect":[{"op":"set","control":"fillEndColor","value":1}]}
+{"group":"layers","text":"end colour transparent","expect":[{"op":"set","control":"fillEndColor","value":0}]}
+{"group":"layers","text":"fill angle 45","expect":[{"op":"set","control":"fillAngle","value":45}]}
+{"group":"layers","text":"fill direction more","expect":[{"op":"nudge","control":"fillAngle","steps":1}]}

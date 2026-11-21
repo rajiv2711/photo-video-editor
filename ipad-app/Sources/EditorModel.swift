@@ -1306,6 +1306,7 @@ final class EditorModel: ObservableObject {
         "adjustment": "the sliders a mask holds (exposure, contrast, …) now change everything below it; “layer mask top” limits it",
         "text": "drag it to move it; “edit text …”, Text Size, Text Font and Text Colour change it",
         "paint": "paint on the picture with a finger or the Pencil (press harder for a wider line, lean it over to shade); Brush Colour and Paint Size",
+        "fill": "Fill Colour, Fill End Colour and Fill Angle change it; Layer Opacity and Layer Blend mix it in; “layer mask top” fills only part",
         "shape": "drag it to move it; Shape Width, Height, Fill and Line Width change it (pen: tap corners, drag for curves, tap the first point to close)",
     ]
 

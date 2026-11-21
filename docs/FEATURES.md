@@ -179,7 +179,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 133. **Shapes & vectors** — rectangles, ellipses, pen paths
 - [x] 134. **Layer styles** — shadow, glow, stroke, bevel
 - [x] 135. **Paint brush** — draw with Pencil pressure and tilt
-- [ ] 136. **Gradient & fill** — fill an area with colour or a gradient
+- [x] 136. **Gradient & fill** — fill an area with colour or a gradient
 - [ ] 137. **Stickers / overlays** — place images or graphics on top
 - [ ] 138. **Collage** — arrange several photos in a layout
 - [ ] 139. **Watermark** — text or logo stamp on export

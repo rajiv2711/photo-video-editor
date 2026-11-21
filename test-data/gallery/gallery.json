@@ -553,6 +553,13 @@
 
     {"id": "paint-brush", "command": "paint brush", "control": "paintBrush", "strokes": [[[0.1, 0.1], [0.5, 0.1], [0.9, 0.1]]], "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.2, 0.096, 0.8, 0.104], "min": 30}, {"metric": "diff", "dir": "same", "region": [0.2, 0.15, 0.8, 0.2], "min": 1}]},
     {"id": "brush-colour", "command": "paint brush brush colour blue", "control": "brushColor", "strokes": [[[0.1, 0.1], [0.5, 0.1], [0.9, 0.1]]], "expect": [{"metric": "mean_b", "dir": "up", "vs": "paint-brush", "region": [0.2, 0.096, 0.8, 0.104], "min": 50}]},
-    {"id": "paint-size", "command": "paint brush paint size 5", "control": "paintSize", "strokes": [[[0.1, 0.1], [0.5, 0.1], [0.9, 0.1]]], "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.2, 0.08, 0.8, 0.09], "min": 30}]}
+    {"id": "paint-size", "command": "paint brush paint size 5", "control": "paintSize", "strokes": [[[0.1, 0.1], [0.5, 0.1], [0.9, 0.1]]], "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.2, 0.08, 0.8, 0.09], "min": 30}]},
+
+    {"id": "solid-fill", "command": "solid fill layer opacity 50", "control": "solidFill", "expect": [{"metric": "mean_luma", "dir": "down", "min": 40}, {"metric": "p95_luma", "dir": "down", "min": 60}]},
+    {"id": "fill-colour", "command": "solid fill fill colour red layer opacity 50", "control": "fillColor", "expect": [{"metric": "mean_r", "dir": "up", "vs": "solid-fill", "min": 60}, {"metric": "mean_sat", "dir": "up", "min": 20}]},
+    {"id": "gradient-fill", "command": "gradient fill", "control": "gradientFill", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.1, 0.92, 0.9, 0.99], "min": 100}, {"metric": "diff", "dir": "same", "region": [0.1, 0.0, 0.9, 0.03], "min": 8}]},
+    {"id": "gradient-fill-radial", "command": "gradient fill radial", "control": "gradientFill", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.02, 0.45, 0.1, 0.55], "min": 60}, {"metric": "diff", "dir": "same", "region": [0.0, 0.0, 0.04, 0.03], "min": 15}]},
+    {"id": "fill-end-colour", "command": "gradient fill fill end colour white", "control": "fillEndColor", "expect": [{"metric": "mean_luma", "dir": "up", "region": [0.1, 0.0, 0.9, 0.03], "min": 20}]},
+    {"id": "fill-angle", "command": "gradient fill fill angle 0", "control": "fillAngle", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.0, 0.3, 0.05, 0.7], "min": 80}, {"metric": "diff", "dir": "same", "region": [0.95, 0.3, 1.0, 0.7], "min": 8}]}
   ]
 }
