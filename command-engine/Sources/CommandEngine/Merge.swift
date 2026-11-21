@@ -10,7 +10,7 @@ import Foundation
 public enum MergeTools {
     /// Merge actions and the kind of merge each makes.
     public static let actions: [String: String] = ["hdrMerge": "hdr", "panoramaMerge": "panorama", "hdrPanorama": "hdrPanorama",
-                                                   "focusStack": "focus"]
+                                                   "focusStack": "focus", "stackAverage": "stack"]
 
     /// "Photos to Merge": how many of the last photos picked a merge uses (0 = all of them).
     public static let countID = "mergeCount"
@@ -21,12 +21,13 @@ public enum MergeTools {
         case "hdr": return [countID, "deghost", "hdrOutput"]
         case "panorama": return [countID, "panoramaProjection", "boundaryWarp", "fillEdges"]
         case "hdrPanorama": return [countID, "deghost", "hdrOutput", "panoramaProjection", "boundaryWarp", "fillEdges"]
+        case "stack": return [countID, "stackMode"]
         default: return [countID]
         }
     }
 
     /// The choice an action's option sets ("stack median" → Stack Mode).
-    public static let optionSetting: [String: String] = [:]
+    public static let optionSetting: [String: String] = ["stackAverage": "stackMode"]
 
     /// The last `count` photos of `picked` (all of them for 0 or more than there are).
     public static func chosen<T>(_ picked: [T], count: Double) -> [T] {

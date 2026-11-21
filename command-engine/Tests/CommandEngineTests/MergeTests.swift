@@ -442,3 +442,48 @@ final class StackTests: XCTestCase {
         XCTAssertLessThan(MergeTests.difference(stacked, reference, x0: 10, y0: 10, x1: 150, y1: 90), 0.015)
     }
 }
+
+extension StackTests {
+    /// The scene with noise (seeded per frame) and a dark square at a frame's own place.
+    static func frame(_ scene: FloatImage, seed: Int, square x0: Int?) -> FloatImage {
+        var out = scene
+        for y in 0..<scene.height {
+            for x in 0..<scene.width {
+                for c in 0..<3 {
+                    var v = scene[x, y, c] + 0.16 * (MergeTests.hash(x * 3 + c, y + 1000 * seed) - 0.5)
+                    if let x0, x >= x0, x < x0 + 12, y >= 20, y < 32 { v = 0.05 }
+                    out[x, y, c] = min(1, max(0, v))
+                }
+            }
+        }
+        return out
+    }
+
+    func testMedianRemovesWhatPassesAndMeanLowersNoise() {
+        let scene = PanoramaTests.scene(width: 120, height: 80)
+        let frames = [Self.frame(scene, seed: 1, square: 10), Self.frame(scene, seed: 2, square: 40),
+                      Self.frame(scene, seed: 3, square: 70), Self.frame(scene, seed: 4, square: 95), Self.frame(scene, seed: 5, square: nil)]
+        let median = Stack.merge(frames, mode: .median)
+        let mean = Stack.merge(frames, mode: .mean)
+        // The square that was in the first frame only is gone in the median.
+        XCTAssertLessThan(MergeTests.difference(median, scene, x0: 10, y0: 20, x1: 22, y1: 32), 0.05)
+        XCTAssertGreaterThan(MergeTests.difference(frames[0], scene, x0: 10, y0: 20, x1: 22, y1: 32), 0.2)
+        // Noise: the mean is closer to the clean scene than any one frame.
+        let noisy = MergeTests.difference(frames[4], scene, x0: 0, y0: 40, x1: 120, y1: 80)
+        XCTAssertLessThan(MergeTests.difference(mean, scene, x0: 0, y0: 40, x1: 120, y1: 80), 0.6 * noisy)
+        // The mean keeps a faint trace of each square.
+        XCTAssertGreaterThan(MergeTests.difference(mean, scene, x0: 10, y0: 20, x1: 22, y1: 32), 0.04)
+    }
+
+    func testStackModesMatchControls() throws {
+        let registry = try ControlRegistry.bundled()
+        XCTAssertEqual(registry.control(id: "stackMode")!.options.map(\.id), Stack.modes)
+        XCTAssertEqual(registry.control(id: "stackAverage")!.options.map(\.id), Stack.modes)
+        XCTAssertEqual(MergeTools.optionSetting["stackAverage"], "stackMode")
+        var state = EditState()
+        var interpreter = CommandInterpreter(registry: registry)
+        XCTAssertEqual(CommandParser(registry: registry).parse("stack mean"), [.run("stackAverage", value: 1)])
+        XCTAssertEqual(interpreter.interpret("stack mean", state: &state),
+                       [.ran(controlID: "stackAverage"), .changed(controlID: "stackMode", from: 0, to: 1)])
+    }
+}

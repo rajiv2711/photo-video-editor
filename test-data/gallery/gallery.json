@@ -444,6 +444,10 @@
 
     {"id": "focus-top", "command": "", "source": "focus-top", "expect": [{"metric": "edge", "dir": "down", "region": [0, 0.6, 1, 1], "min": 0.5}]},
     {"id": "focus-bottom", "command": "", "source": "focus-bottom", "expect": [{"metric": "edge", "dir": "down", "region": [0, 0, 1, 0.4], "min": 0.5}]},
-    {"id": "focus-stack", "command": "focus stack", "photos": ["focus-top", "focus-bottom"], "control": "focusStack", "expect": [{"metric": "edge", "dir": "up", "vs": "focus-top", "region": [0, 0.6, 1, 1], "min": 0.5}, {"metric": "edge", "dir": "up", "vs": "focus-bottom", "region": [0, 0, 1, 0.4], "min": 0.5}, {"metric": "diff", "dir": "same", "min": 3}]}
+    {"id": "focus-stack", "command": "focus stack", "photos": ["focus-top", "focus-bottom"], "control": "focusStack", "expect": [{"metric": "edge", "dir": "up", "vs": "focus-top", "region": [0, 0.6, 1, 1], "min": 0.5}, {"metric": "edge", "dir": "up", "vs": "focus-bottom", "region": [0, 0, 1, 0.4], "min": 0.5}, {"metric": "diff", "dir": "same", "min": 3}]},
+
+    {"id": "burst-1", "command": "", "source": "burst-1", "expect": [{"metric": "edge", "dir": "up", "min": 1}, {"metric": "mean_luma", "dir": "down", "region": [0.12, 0.1, 0.18, 0.14], "min": 50}]},
+    {"id": "stack-median", "command": "stack median", "photos": ["burst-1", "burst-2", "burst-3", "burst-4"], "control": "stackAverage", "expect": [{"metric": "mean_luma", "dir": "same", "region": [0.12, 0.1, 0.18, 0.14], "min": 8}, {"metric": "edge", "dir": "down", "vs": "burst-1", "min": 1}]},
+    {"id": "stack-mean", "command": "stack mode mean stack average", "photos": ["burst-1", "burst-2", "burst-3", "burst-4"], "control": "stackMode", "expect": [{"metric": "edge", "dir": "down", "vs": "burst-1", "min": 1}, {"metric": "mean_luma", "dir": "down", "vs": "stack-median", "region": [0.12, 0.1, 0.18, 0.14], "min": 3}]}
   ]
 }

@@ -193,12 +193,17 @@ enum RenderGallery {
     /// - "hdrpano-left-dark" … "hdrpano-right-bright": "pano-left" and "pano-right" as the dark, mid and
     ///   bright brackets (for HDR panorama).
     /// - "focus-top", "focus-bottom": the test photo sharp in its top or bottom half only (focus stacking).
+    /// - "burst-1" … "burst-4": the test photo with its own noise each and a dark disc passing along
+    ///   the top (stack averaging; see `burst`).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         if let source, source.hasPrefix("hdrpano-") {
             let parts = source.split(separator: "-")
             guard parts.count == 3 else { return photo }
             let bracket = sourceImage("bracket-" + String(parts[2]), photo: photo)
             return sourceImage("pano-" + String(parts[1]), photo: bracket)
+        }
+        if let source, source.hasPrefix("burst-"), let n = Int(source.dropFirst(6)), (1...4).contains(n) {
+            return burst(photo, frame: n)
         }
         switch source {
         case "focus-top", "focus-bottom":
@@ -411,6 +416,38 @@ enum RenderGallery {
 
     /// The "skewed" page's corners (x, y from the top-left, 0…1): top-left, top-right, bottom-right, bottom-left.
     static let skewedCorners: [(x: CGFloat, y: CGFloat)] = [(0.18, 0.12), (0.86, 0.20), (0.80, 0.88), (0.12, 0.80)]
+
+    /// Where the dark disc of "burst-1" … "burst-4" is (x, y from the top-left; radius a share of the width).
+    static let burstDiscs: [(x: CGFloat, y: CGFloat)] = [(0.15, 0.12), (0.4, 0.12), (0.6, 0.12), (0.85, 0.12)]
+    static let burstRadius: CGFloat = 0.05
+
+    /// One frame of a burst: the photo with noise (±8 %, a different patch of random numbers per frame)
+    /// and a dark disc at its own place.
+    static func burst(_ photo: CIImage, frame: Int) -> CIImage {
+        let area = photo.extent
+        guard let random = CIFilter(name: "CIRandomGenerator")?.outputImage else { return photo }
+        let moved = random.transformed(by: CGAffineTransform(translationX: CGFloat(frame * 117), y: CGFloat(frame * 53)))
+        let layer = moved.cropped(to: area).settingAlphaOne(in: area).applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: 0.16, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: 0.16, z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: 0.16, w: 0),
+            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+            "inputBiasVector": CIVector(x: 0.42, y: 0.42, z: 0.42, w: 0),
+        ])
+        let noisy = layer.applyingFilter("CIOverlayBlendMode", parameters: [
+            kCIInputBackgroundImageKey: photo.applyingFilter("CILinearToSRGBToneCurve"),
+        ]).applyingFilter("CISRGBToneCurveToLinear").cropped(to: area)
+        let spot = burstDiscs[frame - 1]
+        let centre = CGPoint(x: area.minX + spot.x * area.width, y: area.minY + (1 - spot.y) * area.height)
+        let disc = CIFilter(name: "CIRadialGradient", parameters: [
+            "inputCenter": CIVector(cgPoint: centre),
+            "inputRadius0": burstRadius * area.width,
+            "inputRadius1": burstRadius * area.width + 1,
+            "inputColor0": CIColor(red: 0.05, green: 0.05, blue: 0.06, alpha: 1),
+            "inputColor1": CIColor(red: 0, green: 0, blue: 0, alpha: 0),
+        ])?.outputImage
+        return disc.map { $0.composited(over: noisy).cropped(to: area) } ?? noisy
+    }
 
     /// The pale disc in "bracket-ghost" (centre x, y from the top-left and radius, shares of the width and height).
     static let ghostDisc: (x: CGFloat, y: CGFloat, r: CGFloat) = (0.45, 0.55, 0.06)

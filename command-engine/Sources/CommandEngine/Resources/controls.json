@@ -1165,6 +1165,13 @@
     {"id": "fillEdges", "label": "Fill Edges", "group": "merge", "section": "Panorama", "kind": "toggle",
       "synonyms": ["fill edge", "panorama fill", "fill the edges", "fill empty edges", "content aware fill edges"]},
     {"id": "focusStack", "label": "Focus Stack", "group": "merge", "section": "Focus stack", "kind": "action",
-      "synonyms": ["focus stacking", "stack focus", "merge focus", "focus merge", "focus blend", "focus stack photos", "stack for focus", "depth of field stack"]}
+      "synonyms": ["focus stacking", "stack focus", "merge focus", "focus merge", "focus blend", "focus stack photos", "stack for focus", "depth of field stack"]},
+    {"id": "stackAverage", "label": "Stack Average", "group": "merge", "section": "Stack", "kind": "action",
+      "synonyms": ["stack", "average stack", "stack photos", "stack burst", "average photos", "burst average", "stack averaging", "average burst"],
+      "options": [{"id": "median", "label": "Median", "synonyms": ["middle"]}, {"id": "mean", "label": "Mean", "synonyms": ["average"]}]},
+    {"id": "stackMode", "label": "Stack Mode", "group": "merge", "section": "Stack", "kind": "choice",
+      "synonyms": ["stack method", "stacking mode", "average mode", "stack type"],
+      "options": [{"id": "median", "label": "Median", "synonyms": ["middle", "remove people", "remove crowds"]},
+                  {"id": "mean", "label": "Mean", "synonyms": ["average", "long exposure", "smooth"]}]}
   ]
 }

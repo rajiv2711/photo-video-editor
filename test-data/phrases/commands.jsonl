@@ -889,3 +889,8 @@
 {"group":"merge","text":"focus stack","expect":[{"op":"run","control":"focusStack"}]}
 {"group":"merge","text":"focus stacking","expect":[{"op":"run","control":"focusStack"}]}
 {"group":"merge","text":"merge focus","expect":[{"op":"run","control":"focusStack"}]}
+{"group":"merge","text":"stack median","expect":[{"op":"run","control":"stackAverage","value":0}]}
+{"group":"merge","text":"stack mean","expect":[{"op":"run","control":"stackAverage","value":1}]}
+{"group":"merge","text":"average photos","expect":[{"op":"run","control":"stackAverage"}]}
+{"group":"merge","text":"stack mode mean","expect":[{"op":"set","control":"stackMode","value":1}]}
+{"group":"merge","text":"stack mode median","expect":[{"op":"set","control":"stackMode","value":0}]}

@@ -40,6 +40,12 @@ final class MergeRenderer {
             let size = Self.size(of: photos[0], maxSide: Self.maxSide)
             let slices = photos.map { floats($0, width: size.width, height: size.height) }
             return Merged(image: picture(FocusStack.merge(slices)), used: photos.count)
+        case "stack":
+            guard photos.count >= 2 else { return nil }
+            let size = Self.size(of: photos[0], maxSide: Self.maxSide)
+            let burst = photos.map { floats($0, width: size.width, height: size.height) }
+            let mode = Stack.Mode(rawValue: option(value("stackMode"), Stack.modes)) ?? .median
+            return Merged(image: picture(Stack.merge(burst, mode: mode)), used: photos.count)
         case "panorama":
             guard photos.count >= 2 else { return nil }
             let pictures = photos.map { photo -> FloatImage in

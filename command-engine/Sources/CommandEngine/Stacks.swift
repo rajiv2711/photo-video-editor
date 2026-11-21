@@ -50,3 +50,46 @@ public enum FocusStack {
         return Grid.blur(lap, width: w, height: h, radius: max(2, min(w, h) / 100))
     }
 }
+
+/// Stack averaging: a burst of photos of one scene, lined up and combined pixel by pixel. Median keeps
+/// what most photos agree on (people walking through, passing cars disappear); Mean averages
+/// everything (noise falls by √n; moving things smear like a long exposure).
+public enum Stack {
+    public enum Mode: String {
+        case median, mean
+    }
+
+    /// "stackMode" option ids, in order; must match controls.json (and the Stack Average action's options).
+    public static let modes = ["median", "mean"]
+
+    /// The combined picture of `photos` (RGB, one size). `align`: line them up with the middle one first.
+    public static func merge(_ photos: [FloatImage], mode: Mode, align: Bool = true) -> FloatImage {
+        guard let first = photos.first else { return FloatImage(width: 0, height: 0, channels: 3) }
+        guard photos.count > 1 else { return first }
+        let lined: (photos: [FloatImage], valid: [[Float]], reference: Int) =
+            align ? Lineup.aligned(photos) : (photos, [[Float]](repeating: [], count: photos.count), 0)
+        let n = photos.count, count = first.count, channels = first.channels
+        var out = first
+        var values = [Float](repeating: 0, count: n)
+        for i in 0..<count {
+            for c in 0..<channels {
+                var m = 0
+                for k in 0..<n where lined.valid[k].isEmpty || lined.valid[k][i] > 0 {
+                    values[m] = lined.photos[k].data[i * channels + c]
+                    m += 1
+                }
+                if m == 0 { continue }
+                switch mode {
+                case .mean:
+                    var sum: Float = 0
+                    for j in 0..<m { sum += values[j] }
+                    out.data[i * channels + c] = sum / Float(m)
+                case .median:
+                    let sorted = values[0..<m].sorted()
+                    out.data[i * channels + c] = m % 2 == 1 ? sorted[m / 2] : (sorted[m / 2 - 1] + sorted[m / 2]) / 2
+                }
+            }
+        }
+        return out
+    }
+}
