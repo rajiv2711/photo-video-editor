@@ -35,6 +35,19 @@ final class CommandParserTests: XCTestCase {
         XCTAssertEqual(parser.parse("add a wobble"), [.unknown("wobble")])
     }
 
+    /// Every label and synonym in controls.json must reach its own control when said alone (a name whose
+    /// first word the parser reads as something else, like "make" or "set", can never be used).
+    func testEveryNameReachesItsControl() throws {
+        let registry = try ControlRegistry.bundled()
+        var unreachable: [String] = []
+        for control in registry.controls {
+            for name in control.names where !parser.parse(name).contains(where: { $0.control == control.id }) {
+                unreachable.append("“\(name)” (\(control.id))")
+            }
+        }
+        XCTAssertEqual(unreachable, [])
+    }
+
     func testUnknownWordStopsLaterActions() {
         XCTAssertEqual(parser.parse("wobble more"), [.unknown("wobble")])
     }
