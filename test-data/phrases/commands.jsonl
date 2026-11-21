@@ -956,3 +956,12 @@
 {"group":"creative","text":"polar coordinates","expect":[{"op":"set","control":"polarCoordinates","value":1}]}
 {"group":"creative","text":"tiny planet off","expect":[{"op":"set","control":"polarCoordinates","value":0}]}
 {"group":"creative","text":"twirl radius 60","expect":[{"op":"set","control":"effectSize","value":60}]}
+{"group":"creative","text":"oil paint","expect":[{"op":"select","control":"oilPaint"}]}
+{"group":"creative","text":"oil painting 70","expect":[{"op":"set","control":"oilPaint","value":70}]}
+{"group":"creative","text":"emboss","expect":[{"op":"select","control":"emboss"}]}
+{"group":"creative","text":"emboss less","expect":[{"op":"nudge","control":"emboss","steps":-1}]}
+{"group":"creative","text":"find edges","expect":[{"op":"select","control":"findEdges"}]}
+{"group":"creative","text":"edge detection 50","expect":[{"op":"set","control":"findEdges","value":50}]}
+{"group":"creative","text":"wind","expect":[{"op":"select","control":"wind"}]}
+{"group":"creative","text":"wind 80","expect":[{"op":"set","control":"wind","value":80}]}
+{"group":"creative","text":"wind direction 180","expect":[{"op":"set","control":"effectAngle","value":180}]}

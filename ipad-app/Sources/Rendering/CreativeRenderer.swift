@@ -3,7 +3,7 @@ import CoreImage
 
 /// The Creative panel (CreativeFilters in CommandEngine), after the crop and before the post-crop
 /// vignette and grain, so the filters see the picture as framed. Every filter is a slider, 0 = off;
-/// those that are on run in a fixed order: distort → blur → tilt-shift. Sizes are shares of the picture's long side, so the
+/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize. Sizes are shares of the picture's long side, so the
 /// preview and the saved photo look alike. The Effect Center and Angle (Placement) are shared.
 final class CreativeRenderer {
     let context: CIContext
@@ -99,6 +99,32 @@ final class CreativeRenderer {
                 kCIInputRadiusKey: radius,
             ]).cropped(to: extent)
         }
+
+        // Stylize filters, on sRGB levels: oil paint, emboss, find edges, wind.
+        let oil = CreativeFilters.oilRadius(v("oilPaint"), longSide: side)
+        if oil > 0.5 {
+            output = Filters.linear(apply(Self.oilKernel, to: Filters.encoded(output), extent: extent, reach: oil,
+                                          arguments: [oil]))
+        }
+        if v("emboss") > 0 {
+            let emboss = CreativeFilters.emboss(v("emboss"), longSide: side)
+            let light = CreativeFilters.embossLightAngle(v("effectAngle")) * .pi / 180
+            let offset = CIVector(x: CGFloat(cos(light) * emboss.offset), y: CGFloat(sin(light) * emboss.offset))
+            output = Filters.linear(apply(Self.embossKernel, to: Filters.encoded(output), extent: extent, reach: emboss.offset,
+                                          arguments: [offset, emboss.height]))
+        }
+        let edges = v("findEdges") / 100
+        if edges > 0 {
+            let offset = CreativeFilters.edgeOffset(longSide: side)
+            let encoded = Filters.encoded(output)
+            let found = apply(Self.edgesKernel, to: encoded, extent: extent, reach: offset, arguments: [offset, 2.5])
+            output = Filters.linear(Filters.mix(encoded, found, edges))
+        }
+        if v("wind") > 0 {
+            let wind = CreativeFilters.wind(v("wind"), longSide: side)
+            output = Filters.linear(apply(Self.windKernel, to: Filters.encoded(output), extent: extent, reach: wind.length,
+                                          arguments: [CIVector(x: CGFloat(cos(angle)), y: CGFloat(sin(angle))), wind.length, wind.band]))
+        }
         return output
     }
 
@@ -106,6 +132,101 @@ final class CreativeRenderer {
     static func point(_ p: MaskPoint, in extent: CGRect) -> CGPoint {
         CGPoint(x: extent.minX + CGFloat(p.x) * extent.width, y: extent.minY + CGFloat(1 - p.y) * extent.height)
     }
+
+    /// `image` through a kernel that reads its neighbours up to `reach` pixels away (the picture's
+    /// edges repeat outside it); the kernel's first argument is the picture.
+    private func apply(_ kernel: CIKernel?, to image: CIImage, extent: CGRect, reach: Double, arguments: [Any]) -> CIImage {
+        guard let kernel else { return image }
+        let r = CGFloat(reach) + 2
+        return kernel.apply(extent: extent, roiCallback: { _, rect in rect.insetBy(dx: -r, dy: -r) },
+                            arguments: [image.clampedToExtent() as Any] + arguments)?.cropped(to: extent) ?? image
+    }
+
+    // MARK: - Stylize
+
+    /// Oil paint: the Kuwahara filter. Each pixel takes the mean colour of whichever of the four
+    /// squares it is a corner of (5 × 5 samples across `radius`) has the least variance, so flat
+    /// patches form while edges stay sharp, like brush strokes.
+    private static let oilKernel: CIKernel? = CIKernel(source: """
+        kernel vec4 oilPaint(sampler image, float radius) {
+            vec2 c = destCoord();
+            float spacing = radius / 4.0;
+            vec3 m0 = vec3(0.0); vec3 m1 = vec3(0.0); vec3 m2 = vec3(0.0); vec3 m3 = vec3(0.0);
+            vec3 s0 = vec3(0.0); vec3 s1 = vec3(0.0); vec3 s2 = vec3(0.0); vec3 s3 = vec3(0.0);
+            for (int j = 0; j < 5; j++) {
+                for (int i = 0; i < 5; i++) {
+                    vec2 o = vec2(float(i), float(j)) * spacing;
+                    vec3 a = sample(image, samplerTransform(image, c + vec2(-o.x, -o.y))).rgb;
+                    vec3 b = sample(image, samplerTransform(image, c + vec2(o.x, -o.y))).rgb;
+                    vec3 d = sample(image, samplerTransform(image, c + vec2(-o.x, o.y))).rgb;
+                    vec3 e = sample(image, samplerTransform(image, c + o)).rgb;
+                    m0 += a; s0 += a * a;
+                    m1 += b; s1 += b * b;
+                    m2 += d; s2 += d * d;
+                    m3 += e; s3 += e * e;
+                }
+            }
+            m0 /= 25.0; m1 /= 25.0; m2 /= 25.0; m3 /= 25.0;
+            vec3 w = vec3(1.0);
+            float v0 = dot(abs(s0 / 25.0 - m0 * m0), w);
+            float v1 = dot(abs(s1 / 25.0 - m1 * m1), w);
+            float v2 = dot(abs(s2 / 25.0 - m2 * m2), w);
+            float v3 = dot(abs(s3 / 25.0 - m3 * m3), w);
+            vec3 best = m0;
+            float least = v0;
+            float t = step(v1, least); best = mix(best, m1, t); least = mix(least, v1, t);
+            t = step(v2, least); best = mix(best, m2, t); least = mix(least, v2, t);
+            t = step(v3, least); best = mix(best, m3, t);
+            return vec4(best, sample(image, samplerCoord(image)).a);
+        }
+        """)
+
+    /// Emboss: a grey relief, the brightness read as height and lit from the side `offset` points to.
+    private static let embossKernel: CIKernel? = CIKernel(source: """
+        kernel vec4 emboss(sampler image, vec2 offset, float height) {
+            vec2 c = destCoord();
+            vec3 w = vec3(0.2126, 0.7152, 0.0722);
+            float toLight = dot(sample(image, samplerTransform(image, c + offset)).rgb, w);
+            float away = dot(sample(image, samplerTransform(image, c - offset)).rgb, w);
+            float g = clamp(0.5 + height * (away - toLight), 0.0, 1.0);
+            return vec4(g, g, g, sample(image, samplerCoord(image)).a);
+        }
+        """)
+
+    /// Find edges: white paper with the edges drawn in their own colour, darker where the colour
+    /// changes more across the pixel.
+    private static let edgesKernel: CIKernel? = CIKernel(source: """
+        kernel vec4 findEdges(sampler image, float offset, float gain) {
+            vec2 c = destCoord();
+            vec4 here = sample(image, samplerCoord(image));
+            vec3 l = sample(image, samplerTransform(image, c - vec2(offset, 0.0))).rgb;
+            vec3 r = sample(image, samplerTransform(image, c + vec2(offset, 0.0))).rgb;
+            vec3 d = sample(image, samplerTransform(image, c - vec2(0.0, offset))).rgb;
+            vec3 u = sample(image, samplerTransform(image, c + vec2(0.0, offset))).rgb;
+            vec3 e = abs(r - l) + abs(u - d);
+            float k = clamp(gain * max(e.r, max(e.g, e.b)), 0.0, 1.0);
+            return vec4(mix(vec3(1.0), here.rgb, k), here.a);
+        }
+        """)
+
+    /// Wind: light parts streak downwind (along `direction`). Each pixel keeps the brightest of 24
+    /// points upwind, faded with distance; bands across the wind get streaks of different lengths.
+    private static let windKernel: CIKernel? = CIKernel(source: """
+        kernel vec4 wind(sampler image, vec2 direction, float len, float band) {
+            vec2 c = destCoord();
+            vec4 here = sample(image, samplerCoord(image));
+            float row = floor(dot(c, vec2(-direction.y, direction.x)) / band);
+            float random = fract(sin(row * 12.9898) * 43758.5453);
+            float reach = len * (0.3 + 0.7 * random);
+            vec4 best = here;
+            for (int i = 1; i <= 24; i++) {
+                float t = float(i) / 24.0;
+                vec4 s = sample(image, samplerTransform(image, c - direction * (t * reach)));
+                best = max(best, mix(here, s, 1.0 - t));
+            }
+            return best;
+        }
+        """)
 
     // MARK: - Distort
 

@@ -162,7 +162,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 119. **Blur filters** — Gaussian, motion, radial / zoom / spin
 - [x] 120. **Tilt-shift / iris / field blur** — miniature and selective-focus effects
 - [x] 121. **Distort filters** — twirl, wave, ripple, pinch, spherize, polar
-- [ ] 122. **Stylize filters** — oil paint, emboss, find edges, wind
+- [x] 122. **Stylize filters** — oil paint, emboss, find edges, wind
 - [ ] 123. **Pixelate filters** — mosaic, crystallize, halftone
 - [ ] 124. **Artistic filters** — watercolour, sketch, cartoon, cutout
 - [ ] 125. **Lens flare** — add a light flare

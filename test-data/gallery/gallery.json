@@ -482,6 +482,10 @@
     {"id": "ripple", "command": "ripple", "control": "ripple", "expect": [{"metric": "diff", "dir": "changed", "min": 1}]},
     {"id": "pinch", "command": "pinch", "control": "pinch", "expect": [{"metric": "diff", "dir": "changed", "region": [0.3, 0.35, 0.7, 0.65], "min": 5}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.15, 0.15], "min": 0.5}]},
     {"id": "spherize", "command": "spherize", "control": "spherize", "expect": [{"metric": "diff", "dir": "changed", "region": [0.3, 0.35, 0.7, 0.65], "min": 5}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.15, 0.15], "min": 0.5}]},
-    {"id": "polar-coordinates", "command": "polar coordinates", "control": "polarCoordinates", "expect": [{"metric": "diff", "dir": "changed", "min": 10}]}
+    {"id": "polar-coordinates", "command": "polar coordinates", "control": "polarCoordinates", "expect": [{"metric": "diff", "dir": "changed", "min": 10}]},
+    {"id": "oil-paint", "command": "oil paint", "control": "oilPaint", "expect": [{"metric": "edge", "dir": "down", "min": 1}]},
+    {"id": "emboss", "command": "emboss", "control": "emboss", "expect": [{"metric": "mean_sat", "dir": "down", "min": 3}, {"metric": "p5_luma", "dir": "up", "min": 30}]},
+    {"id": "find-edges", "command": "find edges", "control": "findEdges", "expect": [{"metric": "mean_luma", "dir": "up", "min": 30}, {"metric": "p5_luma", "dir": "up", "min": 50}]},
+    {"id": "wind", "command": "wind", "control": "wind", "expect": [{"metric": "diff", "dir": "changed", "min": 2}]}
   ]
 }

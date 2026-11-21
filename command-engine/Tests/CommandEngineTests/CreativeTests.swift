@@ -198,4 +198,29 @@ final class CreativeTests: XCTestCase {
         XCTAssertEqual(ripple.wavelength, 75, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.distortRadius(size: 0.3, longSide: 800), 240, accuracy: 1e-9)
     }
+
+    // MARK: - Stylize
+
+    func testStylizeNames() {
+        XCTAssertEqual(parse("oil paint"), [.select("oilPaint")])
+        XCTAssertEqual(parse("oil painting 70"), [.set("oilPaint", 70)])
+        XCTAssertEqual(parse("emboss"), [.select("emboss")])
+        XCTAssertEqual(parse("find edges"), [.select("findEdges")])
+        XCTAssertEqual(parse("wind 80 wind direction 180"), [.set("wind", 80), .set("effectAngle", 180)])
+        run("find edges")
+        XCTAssertEqual(value("findEdges"), 100, "Find Edges turns fully on")
+        // Older names keep their meaning.
+        XCTAssertEqual(parse("long edge 2000"), [.set("longEdge", 2000)])
+        XCTAssertEqual(parse("fill edges"), [.set("fillEdges", 1)])
+    }
+
+    func testStylizeSizesFollowThePicture() {
+        XCTAssertEqual(CreativeFilters.oilRadius(50, longSide: 800), 4, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.emboss(50, longSide: 4000).offset, 8, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.emboss(50, longSide: 100).offset, 1, "at least a pixel")
+        XCTAssertEqual(CreativeFilters.emboss(50, longSide: 800).height, 4, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.embossLightAngle(0), 135, "from the top-left")
+        XCTAssertEqual(CreativeFilters.wind(100, longSide: 1000).length, 80, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.edgeOffset(longSide: 400), 1)
+    }
 }

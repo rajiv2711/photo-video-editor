@@ -158,4 +158,33 @@ public enum CreativeFilters {
         let a = atan2(-d.x, d.y)
         return Vec2((a / (2 * .pi) + 0.5) * width, (1 - r) * height)
     }
+
+    // MARK: - Stylize
+
+    /// Oil Paint's brush (the Kuwahara filter's reach, pixels): up to 1 % of the long side.
+    public static func oilRadius(_ amount: Double, longSide: Double) -> Double {
+        max(0, amount) / 100 * 0.01 * longSide
+    }
+
+    /// Emboss: how far apart the two samples of the relief are (pixels, 0.2 % of the long side, at
+    /// least 1) and how steep the relief is (× the brightness difference, up to 8).
+    public static func emboss(_ amount: Double, longSide: Double) -> (offset: Double, height: Double) {
+        (max(1, 0.002 * longSide), max(0, amount) / 100 * 8)
+    }
+
+    /// Emboss's light comes from the top-left, turned by Effect Angle (degrees, anticlockwise).
+    public static func embossLightAngle(_ effectAngle: Double) -> Double {
+        135 + effectAngle
+    }
+
+    /// Find Edges looks this far to each side (pixels, 0.12 % of the long side, at least 1).
+    public static func edgeOffset(longSide: Double) -> Double {
+        max(1, 0.0012 * longSide)
+    }
+
+    /// Wind: the longest streak (pixels, up to 8 % of the long side) and the height of the bands
+    /// whose streaks differ in length (0.12 % of the long side, at least 1 pixel).
+    public static func wind(_ amount: Double, longSide: Double) -> (length: Double, band: Double) {
+        (max(0, amount) / 100 * 0.08 * longSide, max(1, 0.0012 * longSide))
+    }
 }
