@@ -100,3 +100,13 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `liquify pucker` · `liquify mode bloat` · `tool strength 80` | Liquify: push, twirl, pucker, bloat, reconstruct |
 | `dodge midtones` · `burn shadows` · `sponge desaturate` · `blur brush` · `sharpen brush` · `smudge` | Toning and touch-up brushes (Apple Pencil pressure counts) |
 | `show spots` · `visualize threshold 70` | Visualize Spots: dust and specks white on black (preview only) |
+| `crop 16 by 9` · `crop square` · `crop left 10` · `reset crop` · `crop tool` | Crop: aspect presets, the edges, or the box to drag on the photo (`done` when finished) |
+| `straighten 3` · `auto straighten` · `straighten tool` | Straighten by angle, from the photo's lines, or along a line drawn on the photo |
+| `rotate left` · `rotate 180` · `flip horizontal` · `flip vertical` | Quarter turns and flips (the crop turns with the photo) |
+| `upright auto` · `auto upright` · `upright vertical` · `guided upright` · `clear guides` | Upright from the photo's lines (no AI), or from up to four guides drawn on the photo |
+| `vertical 30` · `horizontal -20` · `transform rotate 2` · `aspect 20` · `scale 110` · `offset x 10` | Manual transform |
+| `perspective crop` · `clear perspective crop` | Square up a tilted page, picture or wall (drag its four corners) |
+| `resize 50` · `long edge 2000 pixels` · `resolution 300` | Saved size and resolution (the Geometry panel shows the saved size) |
+| `canvas size 10` · `canvas aspect square` · `canvas color blur` | Space around the photo |
+| `content aware width 80` · `content aware height 90` | Content-aware scale (seam carving: the subject keeps its shape) |
+| `warp` · `puppet warp` · `reset warp` | Bend the picture: drag a grid's handles, or tap to pin and drag a pin |
