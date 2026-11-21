@@ -265,6 +265,7 @@ public enum Layers {
         case "shape": return "Shape"
         case "paint": return "Paint"
         case "fill": return "Fill"
+        case "sticker": return "Sticker"
         default: return kind.prefix(1).uppercased() + kind.dropFirst()
         }
     }
@@ -319,6 +320,8 @@ public enum Layers {
         case "photo":
             let a = Swift.max(0.01, aspect ?? 1)
             return a >= 1 ? (photoSide, photoSide / a) : (photoSide * a, photoSide)
+        case "sticker":
+            return (Stickers.side, Stickers.side)
         case "text":
             // About: letters are near 0.6 of the font size wide, lines 1.2 tall.
             let lines = layer.text.split(separator: "\n", omittingEmptySubsequences: false)
@@ -539,6 +542,13 @@ extension CommandApplier {
             state.layers.append(Layers.make("paint", registry: registry))
             state.selectLayer(state.layers.count - 1)
             return [ran, .layered(layer: state.layers.count, event: .created("paint"))]
+        case "addSticker":
+            var layer = Layers.make("sticker", registry: registry)
+            let i = Int(command.value ?? 0)
+            layer.values["sticker"] = Double(Stickers.ids.indices.contains(i) ? i : 0)
+            state.layers.append(layer)
+            state.selectLayer(state.layers.count - 1)
+            return [ran, .layered(layer: state.layers.count, event: .created("sticker"))]
         case "solidFill", "gradientFill":
             var layer = Layers.make("fill", registry: registry)
             var style = "solid"

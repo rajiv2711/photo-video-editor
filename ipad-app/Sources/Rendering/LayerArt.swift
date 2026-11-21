@@ -64,6 +64,8 @@ final class LayerArt {
             drawShape(layer, in: context, long: long)
         case "paint":
             drawPaint(layer, in: context, long: long)
+        case "sticker":
+            drawSticker(layer, in: context, long: long)
         default:
             break
         }
@@ -164,6 +166,34 @@ final class LayerArt {
             let ends = Layers.linearFill(layer, width: width, height: height)
             context.drawLinearGradient(gradient, start: CGPoint(x: ends.start.x, y: ends.start.y), end: CGPoint(x: ends.end.x, y: ends.end.y),
                                        options: beyond)
+        }
+    }
+
+    /// A sticker's parts (Stickers in CommandEngine), Stickers.side of the long side across.
+    private static func drawSticker(_ layer: Layer, in context: CGContext, long: Double) {
+        let i = Int(layer.value("sticker", 0))
+        guard Stickers.ids.indices.contains(i) else { return }
+        let k = Stickers.side * long
+        func p(_ v: Vec2) -> CGPoint { CGPoint(x: v.x * k, y: v.y * k) }
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        for part in Stickers.parts(Stickers.ids[i]) {
+            let ink = color(part.color).cgColor
+            switch part.shape {
+            case .polygon(let points):
+                context.addLines(between: points.map(p))
+                context.closePath()
+                context.setFillColor(ink)
+                context.fillPath()
+            case .ellipse(let c, let rx, let ry):
+                context.setFillColor(ink)
+                context.fillEllipse(in: CGRect(x: (c.x - rx) * k, y: (c.y - ry) * k, width: 2 * rx * k, height: 2 * ry * k))
+            case .line(let points, let width):
+                context.addLines(between: points.map(p))
+                context.setStrokeColor(ink)
+                context.setLineWidth(CGFloat(width * k))
+                context.strokePath()
+            }
         }
     }
 

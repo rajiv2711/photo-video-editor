@@ -1491,6 +1491,18 @@
                   {"id": "grey", "label": "Grey", "synonyms": ["gray"]},
                   {"id": "brown", "label": "Brown"}]},
     {"id": "fillAngle", "label": "Fill Angle", "group": "layers", "section": "Fill", "scope": "layer", "layer": "fill", "min": -180, "max": 180, "default": -90, "step": 15,
-      "synonyms": ["fill direction", "gradient fill angle", "gradient fill direction", "fill rotation"]}
+      "synonyms": ["fill direction", "gradient fill angle", "gradient fill direction", "fill rotation"]},
+    {"id": "addSticker", "label": "Sticker", "group": "layers", "kind": "action", "layer": "sticker",
+      "synonyms": ["add sticker", "stickers", "new sticker", "emoji", "add emoji", "add a sticker", "sticker layer"],
+      "options": [{"id": "heart", "label": "Heart", "synonyms": ["love", "love heart"]},
+                  {"id": "star", "label": "Star"},
+                  {"id": "smiley", "label": "Smiley", "synonyms": ["smile", "smiley face", "happy face", "smiling face"]},
+                  {"id": "sun", "label": "Sun", "synonyms": ["sunshine"]},
+                  {"id": "cloud", "label": "Cloud"},
+                  {"id": "flower", "label": "Flower", "synonyms": ["blossom"]},
+                  {"id": "crown", "label": "Crown"},
+                  {"id": "sparkle", "label": "Sparkle", "synonyms": ["sparkles", "shine", "twinkle"]},
+                  {"id": "arrow", "label": "Arrow"},
+                  {"id": "speech", "label": "Speech Bubble", "synonyms": ["speech", "bubble", "speech balloon", "talk bubble"]}]}
   ]
 }

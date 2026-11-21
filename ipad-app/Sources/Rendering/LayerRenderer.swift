@@ -142,7 +142,7 @@ final class LayerRenderer {
             let i = Int(layer.value("photo", -1))
             guard photos.indices.contains(i) else { return nil }
             return place(photos[i], side: Layers.photoSide, layer: layer, extent: extent)
-        case "text", "shape", "paint", "fill":
+        case "text", "shape", "paint", "fill", "sticker":
             return art.image(of: layer, extent: extent)
         default:
             return nil

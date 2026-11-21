@@ -565,4 +565,34 @@ final class LayersTests: XCTestCase {
         XCTAssertEqual(radial.centre, Vec2(150, 200))
         XCTAssertEqual(radial.radius, 250, accuracy: 1e-9, "half the diagonal")
     }
+
+    // MARK: - Stickers
+
+    func testStickers() {
+        XCTAssertEqual(registry.control(id: "addSticker")!.options.map(\.id), Stickers.ids)
+        XCTAssertEqual(parse("sticker heart"), [.run("addSticker", value: 0)])
+        XCTAssertEqual(parse("add sticker speech bubble"), [.run("addSticker", value: 9)])
+        run("sticker smiley")
+        XCTAssertEqual(state.layers[0].kind, "sticker")
+        XCTAssertEqual(state.layers[0].values["sticker"], 2)
+        XCTAssertEqual(Layers.size(of: state.layers[0])?.width, Stickers.side)
+        for id in Stickers.ids {
+            let parts = Stickers.parts(id)
+            XCTAssertFalse(parts.isEmpty, id)
+            for part in parts {
+                let points: [Vec2]
+                switch part.shape {
+                case .polygon(let p), .line(let p, _): points = p
+                case .ellipse(let c, let rx, let ry): points = [Vec2(c.x - rx, c.y - ry), Vec2(c.x + rx, c.y + ry)]
+                }
+                for p in points {
+                    XCTAssertTrue(abs(p.x) <= 0.5 + 1e-9 && abs(p.y) <= 0.5 + 1e-9, "\(id) leaves its box at \(p)")
+                }
+            }
+        }
+        guard case .polygon(let heart) = Stickers.parts("heart")[0].shape else { return XCTFail("heart") }
+        XCTAssertTrue(Stickers.inside(Vec2(0, 0), heart), "the heart's middle is inside it")
+        XCTAssertFalse(Stickers.inside(Vec2(0, -0.3), heart), "the dip between its lobes is not")
+        XCTAssertEqual(Stickers.star(points: 5, outer: 0.5, inner: 0.2).count, 10)
+    }
 }

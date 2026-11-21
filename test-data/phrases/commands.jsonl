@@ -1107,3 +1107,7 @@
 {"group":"layers","text":"end colour transparent","expect":[{"op":"set","control":"fillEndColor","value":0}]}
 {"group":"layers","text":"fill angle 45","expect":[{"op":"set","control":"fillAngle","value":45}]}
 {"group":"layers","text":"fill direction more","expect":[{"op":"nudge","control":"fillAngle","steps":1}]}
+{"group":"layers","text":"sticker heart","expect":[{"op":"run","control":"addSticker","value":0}]}
+{"group":"layers","text":"add sticker smiley face","expect":[{"op":"run","control":"addSticker","value":2}]}
+{"group":"layers","text":"emoji sun","expect":[{"op":"run","control":"addSticker","value":3}]}
+{"group":"layers","text":"sticker speech bubble","expect":[{"op":"run","control":"addSticker","value":9}]}

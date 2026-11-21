@@ -1292,7 +1292,12 @@ final class EditorModel: ObservableObject {
     func layerName(_ index: Int) -> String {
         guard state.layers.indices.contains(index) else { return "" }
         let layer = state.layers[index]
-        return layer.kind == "text" ? "Text “\(layer.text)”" : Layers.title(of: layer.kind)
+        if layer.kind == "text" { return "Text “\(layer.text)”" }
+        if layer.kind == "sticker", let control = registry.control(id: "addSticker"),
+           control.options.indices.contains(Int(layer.value("sticker", 0))) {
+            return "Sticker " + control.options[Int(layer.value("sticker", 0))].label
+        }
+        return Layers.title(of: layer.kind)
     }
 
     /// Changes the selected text layer's words (the panel's text field), as “edit text …” would.
@@ -1307,6 +1312,7 @@ final class EditorModel: ObservableObject {
         "text": "drag it to move it; “edit text …”, Text Size, Text Font and Text Colour change it",
         "paint": "paint on the picture with a finger or the Pencil (press harder for a wider line, lean it over to shade); Brush Colour and Paint Size",
         "fill": "Fill Colour, Fill End Colour and Fill Angle change it; Layer Opacity and Layer Blend mix it in; “layer mask top” fills only part",
+        "sticker": "drag it to move it; Layer Scale and Layer Rotation change it, the layer styles dress it up",
         "shape": "drag it to move it; Shape Width, Height, Fill and Line Width change it (pen: tap corners, drag for curves, tap the first point to close)",
     ]
 
