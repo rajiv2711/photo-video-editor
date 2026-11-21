@@ -7,6 +7,7 @@ struct HistoryPanel: View {
     @ObservedObject var model: EditorModel
     @Binding var expanded: Set<String>
     @State private var snapshotName = ""
+    @State private var copyName = ""
 
     var body: some View {
         DisclosureGroup(isExpanded: isOpen("history")) {
@@ -24,6 +25,11 @@ struct HistoryPanel: View {
                     snapshots
                 } label: {
                     Text("Snapshots").font(.subheadline.weight(.semibold))
+                }
+                DisclosureGroup(isExpanded: isOpen("history/Virtual copies")) {
+                    copies
+                } label: {
+                    Text("Virtual copies").font(.subheadline.weight(.semibold))
                 }
             }
             .padding(.top, 6)
@@ -50,6 +56,31 @@ struct HistoryPanel: View {
                 }
                 .contextMenu {
                     Button("Delete", role: .destructive) { model.apply([.run("deleteSnapshot", text: item.element.name)]) }
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+    }
+
+    /// The photo's edits: make a new one from this edit, tap one to edit it (a long press deletes it).
+    private var copies: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                TextField("Copy name", text: $copyName)
+                    .textFieldStyle(.roundedBorder)
+                Button("New Copy") {
+                    model.apply([.run("virtualCopy", text: copyName.trimmingCharacters(in: .whitespaces))])
+                    copyName = ""
+                }
+                .buttonStyle(.bordered)
+            }
+            ForEach(Array(model.copyNames.enumerated()), id: \.offset) { item in
+                Button("\(item.offset + 1). \(item.element)") {
+                    model.apply([.run("switchCopy", text: String(item.offset + 1))])
+                }
+                .fontWeight(item.offset == model.currentCopy ? .semibold : .regular)
+                .contextMenu {
+                    Button("Delete", role: .destructive) { model.apply([.run("deleteCopy", text: String(item.offset + 1))]) }
                 }
             }
         }

@@ -132,6 +132,9 @@ final class EditorModel: ObservableObject {
     var historyPosition: Int { interpreter.workspace.history.position }
     /// Named states of this photo's edit.
     var snapshots: [Snapshot] { interpreter.workspace.snapshots }
+    /// The photo's edits (virtual copies; "Original" alone when there are none) and the one being edited.
+    var copyNames: [String] { interpreter.workspace.copyNames }
+    var currentCopy: Int { interpreter.workspace.currentCopy }
 
     /// The history name of a touch on the photo with the tool in use.
     private var touchLabel: String {
@@ -1140,8 +1143,18 @@ final class EditorModel: ObservableObject {
             return ("Snapshot “\(name)” deleted", false)
         case .noSnapshot(let word):
             return (word.isEmpty ? "Say the snapshot's name or number, e.g. “restore snapshot 1”" : "No snapshot called “\(word)”", true)
-        case .snapshotChoices(let word, let names):
+        case .snapshotChoices(let word, let names), .copyChoices(let word, let names):
             return ("“\(word)” could be: " + names.map { "“\($0)”" }.joined(separator: ", "), true)
+        case .copyMade(let name):
+            return ("Virtual copy “\(name)”: a new edit of this photo, with its own history (“go to copy original” goes back)", false)
+        case .copySwitched(let name):
+            return ("Editing copy “\(name)”", false)
+        case .copyDeleted(let name):
+            return ("Copy “\(name)” deleted", false)
+        case .noCopy(let word):
+            return (copyNames.count == 1 ? "No virtual copies yet: say “virtual copy …”" : "No copy called “\(word)”", true)
+        case .lastCopy:
+            return ("The photo's only edit can't be deleted", true)
         }
     }
 

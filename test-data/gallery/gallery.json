@@ -609,6 +609,9 @@
     {"id": "history-jump", "command": "exposure 1", "control": "history", "steps": [{"command": "contrast 60"}, {"command": "temperature 40"}, {"command": "history 1"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
     {"id": "snapshot-save", "command": "exposure 1 snapshot \"s1\" contrast 60 temperature 40 restore snapshot 1", "control": "saveSnapshot", "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
     {"id": "snapshot-restore", "command": "exposure 1", "control": "restoreSnapshot", "steps": [{"command": "snapshot bright"}, {"command": "crop left 30 contrast 60"}, {"command": "restore snapshot bright"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
-    {"id": "snapshot-delete", "command": "exposure 1 snapshot \"s2\" delete snapshot \"s2\" reset all restore snapshot s2", "control": "deleteSnapshot", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]}
+    {"id": "snapshot-delete", "command": "exposure 1 snapshot \"s2\" delete snapshot \"s2\" reset all restore snapshot s2", "control": "deleteSnapshot", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "virtual-copy", "command": "exposure 1", "control": "virtualCopy", "steps": [{"command": "virtual copy mono"}, {"command": "black and white"}], "expect": [{"metric": "mean_sat", "dir": "down", "vs": "history-source", "min": 5}]},
+    {"id": "switch-copy", "command": "exposure 1", "control": "switchCopy", "steps": [{"command": "virtual copy mono"}, {"command": "black and white"}, {"command": "go to copy original"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
+    {"id": "delete-copy", "command": "exposure 1", "control": "deleteCopy", "steps": [{"command": "virtual copy mono"}, {"command": "black and white"}, {"command": "delete copy mono"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]}
   ]
 }

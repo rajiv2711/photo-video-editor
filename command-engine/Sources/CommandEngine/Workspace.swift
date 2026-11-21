@@ -48,6 +48,23 @@ public enum WorkflowEvent: Equatable {
     case noSnapshot(String)
     /// Several snapshots fit the words: their names.
     case snapshotChoices(word: String, names: [String])
+    /// A virtual copy was made (and is being edited now).
+    case copyMade(String)
+    case copySwitched(String)
+    case copyDeleted(String)
+    /// No virtual copy has that name or number.
+    case noCopy(String)
+    /// Several copies fit the words: their names.
+    case copyChoices(word: String, names: [String])
+    /// The only edit of the photo can't be deleted.
+    case lastCopy
+}
+
+/// One of several edits of the same photo (Virtual copies), with its own history.
+public struct VirtualCopy: Equatable {
+    public var name: String
+    public var state: EditState
+    public var history: EditHistory
 }
 
 /// A named state of the edit, to come back to (Versions / snapshots).
@@ -73,10 +90,15 @@ public struct Workspace {
     public var history: EditHistory
     /// Named states of this photo's edit, oldest first.
     public var snapshots: [Snapshot] = []
+    /// The photo's edits when there are virtual copies (the first is the original edit); empty: just one.
+    public private(set) var copies: [VirtualCopy] = []
+    /// The copy being edited (an index into `copies`).
+    public private(set) var currentCopy = 0
 
     /// The actions the workspace runs (the applier never sees them).
     public static let actions: Set<String> = ["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings",
-                                              "previousSettings", "undo", "redo", "history", "saveSnapshot", "restoreSnapshot", "deleteSnapshot"]
+                                              "previousSettings", "undo", "redo", "history", "saveSnapshot", "restoreSnapshot", "deleteSnapshot",
+                                              "virtualCopy", "switchCopy", "deleteCopy"]
 
     /// Actions that move through the history: what was changed before them is recorded first.
     public static let historyActions: Set<String> = ["undo", "redo", "history"]
@@ -204,8 +226,66 @@ public struct Workspace {
             case .failed(let event):
                 return [ran, .workflow(event)]
             }
+        case "virtualCopy":
+            // A new edit of the photo, starting from this one, with a history of its own.
+            if copies.isEmpty { copies = [VirtualCopy(name: "Original", state: state, history: history)] }
+            copies[currentCopy].state = state
+            copies[currentCopy].history = history
+            let name = words.isEmpty ? "Copy \(copies.count + 1)" : words
+            history = EditHistory(state, registry: registry, label: "Virtual copy of " + copies[currentCopy].name)
+            copies.append(VirtualCopy(name: name, state: state, history: history))
+            currentCopy = copies.count - 1
+            return [ran, .workflow(.copyMade(name))]
+        case "switchCopy":
+            switch findCopy(words) {
+            case .index(let i):
+                copies[currentCopy].state = state
+                copies[currentCopy].history = history
+                currentCopy = i
+                history = copies[i].history
+                state = history.restored(keeping: state)
+                return [ran, .workflow(.copySwitched(copies[i].name))]
+            case .failed(let event):
+                return [ran, .workflow(event)]
+            }
+        case "deleteCopy":
+            switch findCopy(words.isEmpty ? (copies.indices.contains(currentCopy) ? copies[currentCopy].name : "") : words) {
+            case .index(let i):
+                guard copies.count > 1 else { return [ran, .workflow(.lastCopy)] }
+                copies[currentCopy].state = state
+                copies[currentCopy].history = history
+                let name = copies.remove(at: i).name
+                // Deleting the copy being edited goes to the one before it.
+                if i == currentCopy {
+                    currentCopy = Swift.max(0, i - 1)
+                    history = copies[currentCopy].history
+                    state = history.restored(keeping: state)
+                } else if i < currentCopy {
+                    currentCopy -= 1
+                }
+                if copies.count == 1 { copies = [] }
+                return [ran, .workflow(.copyDeleted(name))]
+            case .failed(let event):
+                return [ran, .workflow(event)]
+            }
         default:
             return [ran]
+        }
+    }
+
+    /// The names of the photo's edits ("Original" alone when there are no virtual copies).
+    public var copyNames: [String] { copies.isEmpty ? ["Original"] : copies.map(\.name) }
+
+    /// The copy `words` name, or number ("copy 2", when none is called "2").
+    private func findCopy(_ words: String) -> Found {
+        guard !copies.isEmpty else { return .failed(.noCopy(words)) }
+        let names = copies.map(\.name)
+        switch Presets.find(words, names: names) {
+        case .found(let i): return .index(i)
+        case .ambiguous(let found): return .failed(.copyChoices(word: words, names: found.map { names[$0] }))
+        case .none:
+            if let n = Int(words.trimmingCharacters(in: .whitespaces)), copies.indices.contains(n - 1) { return .index(n - 1) }
+            return .failed(.noCopy(words))
         }
     }
 
@@ -248,6 +328,8 @@ public struct Workspace {
             names = Set(allPresets.flatMap { p in [Presets.normalized(p.name)] + (p.pack.map { [Presets.normalized($0 + " " + p.name)] } ?? []) })
         case "restoreSnapshot":
             names = Set(snapshots.map { Presets.normalized($0.name) } + snapshots.indices.map { String($0 + 1) })
+        case "switchCopy":
+            names = Set(copies.map { Presets.normalized($0.name) } + copies.indices.map { String($0 + 1) })
         default:
             return nil
         }

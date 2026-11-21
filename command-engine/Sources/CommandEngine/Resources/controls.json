@@ -1610,6 +1610,12 @@
     {"id": "restoreSnapshot", "label": "Restore Snapshot", "group": "history", "section": "Snapshots", "kind": "action", "takesText": true,
       "synonyms": ["back to snapshot", "go back to snapshot", "load snapshot", "open snapshot", "use snapshot", "restore version", "load version", "version", "go to snapshot"]},
     {"id": "deleteSnapshot", "label": "Delete Snapshot", "group": "history", "section": "Snapshots", "kind": "action", "takesText": true,
-      "synonyms": ["remove snapshot", "forget snapshot", "delete version", "remove version"]}
+      "synonyms": ["remove snapshot", "forget snapshot", "delete version", "remove version"]},
+    {"id": "virtualCopy", "label": "Virtual Copy", "group": "history", "section": "Virtual copies", "kind": "action", "takesText": true,
+      "synonyms": ["new virtual copy", "make virtual copy", "make a virtual copy", "create virtual copy", "create a virtual copy", "duplicate the edit"]},
+    {"id": "switchCopy", "label": "Go To Copy", "group": "history", "section": "Virtual copies", "kind": "action", "takesText": true,
+      "synonyms": ["switch to copy", "switch copy", "open copy", "show copy", "use copy", "go to virtual copy", "switch to virtual copy"]},
+    {"id": "deleteCopy", "label": "Delete Copy", "group": "history", "section": "Virtual copies", "kind": "action", "takesText": true,
+      "synonyms": ["remove copy", "delete virtual copy", "remove virtual copy"]}
   ]
 }

@@ -1199,3 +1199,9 @@
 {"group":"history","text":"go back to snapshot warm","expect":[{"op":"run","control":"restoreSnapshot","text":"warm"}]}
 {"group":"history","text":"delete snapshot warm","expect":[{"op":"run","control":"deleteSnapshot","text":"warm"}]}
 {"group":"history","text":"remove version 2","expect":[{"op":"run","control":"deleteSnapshot","text":"2"}]}
+{"group":"history","text":"virtual copy black and white","expect":[{"op":"run","control":"virtualCopy","text":"black and white"}]}
+{"group":"history","text":"make a virtual copy","expect":[{"op":"run","control":"virtualCopy"}]}
+{"group":"history","text":"go to copy original","expect":[{"op":"run","control":"switchCopy","text":"original"}]}
+{"group":"history","text":"switch to copy 2","expect":[{"op":"run","control":"switchCopy","text":"2"}]}
+{"group":"history","text":"delete copy mono","expect":[{"op":"run","control":"deleteCopy","text":"mono"}]}
+{"group":"history","text":"remove virtual copy 2","expect":[{"op":"run","control":"deleteCopy","text":"2"}]}

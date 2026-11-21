@@ -349,6 +349,37 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(events(run("restore snapshot before crop")), [.noSnapshot("before crop")])
     }
 
+    // MARK: - Virtual copies
+
+    func testVirtualCopiesAreSeparateEditsWithTheirOwnHistory() {
+        XCTAssertEqual(parse("virtual copy black and white"), [.run("virtualCopy", text: "black and white")])
+        XCTAssertEqual(parse("go to copy original"), [.run("switchCopy", text: "original")])
+        XCTAssertEqual(parse("switch to copy 2"), [.run("switchCopy", text: "2")])
+        XCTAssertEqual(parse("delete copy mono"), [.run("deleteCopy", text: "mono")])
+        XCTAssertEqual(parse("copy"), [.run("copySettings")], "“copy” alone copies the settings")
+        run("exposure 1")
+        XCTAssertEqual(events(run("virtual copy mono")), [.copyMade("mono")])
+        XCTAssertEqual(value("exposure"), 1, "a copy starts from the edit it was made from")
+        run("black and white")
+        XCTAssertEqual(events(run("undo")), [.undone(["black and white"])])
+        XCTAssertEqual(events(run("undo")), [.nothingToUndo], "the copy has a history of its own")
+        run("redo")
+        XCTAssertEqual(events(run("go to copy original")), [.copySwitched("Original")])
+        XCTAssertEqual(value("bw"), 0)
+        XCTAssertEqual(value("exposure"), 1)
+        run("undo")
+        XCTAssertEqual(value("exposure"), 0, "the original's history is back")
+        run("redo switch to copy 2 contrast 20")
+        XCTAssertEqual(value("bw"), 1)
+        XCTAssertEqual(value("contrast"), 20)
+        XCTAssertEqual(interpreter.workspace.copyNames, ["Original", "mono"])
+        // Deleting the copy being edited goes back to the one before it.
+        XCTAssertEqual(events(run("delete copy mono")), [.copyDeleted("mono")])
+        XCTAssertEqual(value("bw"), 0)
+        XCTAssertEqual(interpreter.workspace.copyNames, ["Original"])
+        XCTAssertEqual(events(run("delete copy original")), [.noCopy("original")])
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

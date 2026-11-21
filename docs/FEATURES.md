@@ -202,7 +202,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 148. **Undo / redo** — step back and forward
 - [x] 149. **History** — list of steps; jump back to any
 - [x] 150. **Versions / snapshots** — save named states of an edit
-- [ ] 151. **Virtual copies** — several edits of one photo
+- [x] 151. **Virtual copies** — several edits of one photo
 - [ ] 152. **Before / after** — compare split, side-by-side, or hold
 - [ ] 153. **Reset** — one slider, one panel, or everything
 - [ ] 154. **Histogram** — live tone graph
