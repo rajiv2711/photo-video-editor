@@ -447,6 +447,32 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(value("temperature"), 30)
     }
 
+    // MARK: - Scopes
+
+    func testHistogramBinsTheShownLevels() {
+        XCTAssertEqual(parse("histogram"), [.set("histogram", 1)])
+        XCTAssertEqual(parse("show histogram"), [.set("histogram", 1)])
+        XCTAssertEqual(parse("histogram off"), [.set("histogram", 0)])
+        XCTAssertEqual(parse("histogram equalize"), [.set("equalize", 1)], "the Light panel's Equalize keeps its name")
+        // Black, white, pure red, mid grey, and a see-through pixel that doesn't count.
+        let pixels: [UInt8] = [0, 0, 0, 255, 255, 255, 255, 255, 255, 0, 0, 255, 128, 128, 128, 255, 200, 200, 200, 0]
+        let h = Scopes.histogram(rgba: pixels)
+        XCTAssertEqual(h.count, 4)
+        XCTAssertEqual(h.red[255], 2)
+        XCTAssertEqual(h.green[0], 2)
+        XCTAssertEqual(h.luma[0], 1)
+        XCTAssertEqual(h.luma[255], 1)
+        XCTAssertEqual(h.luma[54], 1, "pure red's luma is 0.2126 × 255")
+        XCTAssertEqual(h.luma[128], 1)
+        XCTAssertEqual(h.red.reduce(0, +), 4)
+        // A clipped spike doesn't flatten the rest.
+        var bins = Array(repeating: 10, count: 256)
+        bins[255] = 5000
+        let heights = Scopes.heights(bins)
+        XCTAssertEqual(heights[100], 1)
+        XCTAssertEqual(heights[255], 1)
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

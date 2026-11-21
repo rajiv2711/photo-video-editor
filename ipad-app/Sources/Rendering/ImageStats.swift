@@ -46,6 +46,19 @@ enum ImageStats {
         return pixels
     }
 
+    /// The picture as shown on screen, sRGB levels (RGBA bytes, row by row), shrunk to about `side`
+    /// pixels on its long side (the View panel's scopes read it).
+    static func srgbBytes(of image: CIImage, side: CGFloat = 256, context: CIContext) -> [UInt8] {
+        let small = PhotoRenderer.downscaled(image, maxSide: side)
+        let e = small.extent
+        guard !e.isInfinite, e.width >= 1, e.height >= 1, let space = CGColorSpace(name: CGColorSpace.sRGB) else { return [] }
+        let w = Int(e.width), h = Int(e.height)
+        var bytes = [UInt8](repeating: 0, count: w * h * 4)
+        context.render(small, toBitmap: &bytes, rowBytes: w * 4, bounds: CGRect(x: e.minX, y: e.minY, width: CGFloat(w), height: CGFloat(h)),
+                       format: .RGBA8, colorSpace: space)
+        return bytes
+    }
+
     /// Share of pixels per level bin for each channel (sRGB levels), darkest first.
     static func channelHistograms(of image: CIImage, extent: CGRect, context: CIContext, bins: Int = 256)
         -> (red: [Double], green: [Double], blue: [Double]) {

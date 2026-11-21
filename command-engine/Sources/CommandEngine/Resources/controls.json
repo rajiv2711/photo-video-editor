@@ -1635,6 +1635,8 @@
                   {"id": "creative", "label": "Creative", "synonyms": ["creative filters", "filters"]},
                   {"id": "masks", "label": "Masks", "synonyms": ["mask", "masking"]},
                   {"id": "retouch", "label": "Retouch", "synonyms": ["retouching", "spots"]},
-                  {"id": "layers", "label": "Layers", "synonyms": ["layer"]}]}
+                  {"id": "layers", "label": "Layers", "synonyms": ["layer"]}]},
+    {"id": "histogram", "label": "Histogram", "group": "view", "section": "Scopes", "kind": "toggle",
+      "synonyms": ["histo", "tone graph", "levels graph", "rgb histogram", "show the histogram"]}
   ]
 }

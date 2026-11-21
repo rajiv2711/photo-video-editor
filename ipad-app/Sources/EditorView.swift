@@ -105,6 +105,12 @@ struct EditorView: View {
                     }
                     .padding(24)
             }
+            // The View panel's scopes, over the top-right corner.
+            if let scopes = model.scopes {
+                ScopesView(scopes: scopes)
+                    .padding(32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            }
         }
     }
 

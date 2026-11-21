@@ -31,6 +31,19 @@ final class EditorModel: ObservableObject {
     @Published private(set) var layerMode = "move"
     /// A panel a command asked to see ("history" alone opens the History panel).
     @Published private(set) var revealedPanel: String?
+    /// The scopes of the preview as shown (View panel), while one is on.
+    @Published private(set) var scopes: ScopeReadings?
+
+    /// What the View panel's scopes show.
+    struct ScopeReadings: Equatable {
+        /// Histogram: per channel and luma, bar heights 0…1 (nil while it is off).
+        var histogram: (red: [Double], green: [Double], blue: [Double], luma: [Double])?
+
+        static func == (a: ScopeReadings, b: ScopeReadings) -> Bool {
+            a.histogram?.luma == b.histogram?.luma && a.histogram?.red == b.histogram?.red
+                && a.histogram?.green == b.histogram?.green && a.histogram?.blue == b.histogram?.blue
+        }
+    }
 
     enum VoiceState: Equatable {
         case idle, listening, transcribing
@@ -1436,6 +1449,22 @@ final class EditorModel: ObservableObject {
         viewRenderer.apply(edited, before: isHDR ? previewSource : previewSource.applyingFilter("CIColorClamp"), value: currentValue)
     }
 
+    /// Whether a View panel switch is on.
+    private func isOn(_ id: String) -> Bool {
+        registry.control(id: id).map { state.value(of: $0) != 0 } ?? false
+    }
+
+    /// The scopes that are on, from a small copy of the edited preview as sRGB levels.
+    private func readScopes(_ edited: CIImage) {
+        guard isOn("histogram") else {
+            scopes = nil
+            return
+        }
+        let bytes = ImageStats.srgbBytes(of: edited, context: renderer.context)
+        let h = Scopes.histogram(rgba: bytes)
+        scopes = ScopeReadings(histogram: (Scopes.heights(h.red), Scopes.heights(h.green), Scopes.heights(h.blue), Scopes.heights(h.luma)))
+    }
+
     /// Before / after is on: touches on the photo do nothing (it isn't the picture being edited).
     var isComparing: Bool {
         ["showBefore", "compare"].contains { id in registry.control(id: id).map { state.value(of: $0) != 0 } ?? false }
@@ -1484,7 +1513,10 @@ final class EditorModel: ObservableObject {
         historyKey = nil
         historySeal = false
         let edited = editedPreview()
-        if showsPreview { preview = renderer.uiImage(shown(edited), hdr: isHDR) }
+        if showsPreview {
+            preview = renderer.uiImage(shown(edited), hdr: isHDR)
+            readScopes(edited)
+        }
         pinRetouchSources()
         writePresets()
     }

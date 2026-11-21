@@ -1219,3 +1219,6 @@
 {"group":"history","text":"reset geometry","expect":[{"op":"run","control":"resetPanel","value":5}]}
 {"group":"history","text":"reset masks panel","expect":[{"op":"run","control":"resetPanel","value":7}]}
 {"group":"history","text":"reset panel","expect":[{"op":"run","control":"resetPanel"}]}
+{"group":"view","text":"histogram","expect":[{"op":"set","control":"histogram","value":1}]}
+{"group":"view","text":"show histogram","expect":[{"op":"set","control":"histogram","value":1}]}
+{"group":"view","text":"histogram off","expect":[{"op":"set","control":"histogram","value":0}]}

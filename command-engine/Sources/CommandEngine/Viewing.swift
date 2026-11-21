@@ -51,3 +51,44 @@ public enum CompareLayout {
         }
     }
 }
+
+/// The scopes (Histogram, …), read from a small copy of the preview as it is shown: sRGB levels,
+/// 4 bytes per pixel (red, green, blue, alpha), row by row.
+public enum Scopes {
+    /// How many pixels have each level (0…255), per channel and for luma (Rec. 709 of the levels).
+    public struct Histogram: Equatable {
+        public var red: [Int]
+        public var green: [Int]
+        public var blue: [Int]
+        public var luma: [Int]
+        /// Pixels counted.
+        public var count: Int
+    }
+
+    /// The histogram of the opaque pixels.
+    public static func histogram(rgba: [UInt8]) -> Histogram {
+        var h = Histogram(red: Array(repeating: 0, count: 256), green: Array(repeating: 0, count: 256),
+                          blue: Array(repeating: 0, count: 256), luma: Array(repeating: 0, count: 256), count: 0)
+        var i = 0
+        while i + 3 < rgba.count {
+            if rgba[i + 3] >= 128 {
+                let r = Int(rgba[i]), g = Int(rgba[i + 1]), b = Int(rgba[i + 2])
+                h.red[r] += 1
+                h.green[g] += 1
+                h.blue[b] += 1
+                h.luma[Swift.min(255, (2126 * r + 7152 * g + 722 * b + 5000) / 10000)] += 1
+                h.count += 1
+            }
+            i += 4
+        }
+        return h
+    }
+
+    /// Bar heights 0…1 to draw: each bin over a reference height, the tallest bin but one in a hundred
+    /// (so a spike of clipped pixels doesn't flatten the rest; spikes are cut at the top).
+    public static func heights(_ bins: [Int]) -> [Double] {
+        let sorted = bins.sorted()
+        let reference = Double(Swift.max(1, sorted.isEmpty ? 1 : sorted[Swift.min(sorted.count - 1, sorted.count * 99 / 100)]))
+        return bins.map { Swift.min(1, Double($0) / reference) }
+    }
+}
