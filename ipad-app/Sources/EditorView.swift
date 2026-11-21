@@ -2,6 +2,7 @@ import CommandEngine
 import Photos
 import PhotosUI
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct EditorView: View {
@@ -243,7 +244,7 @@ struct EditorView: View {
                     case "export": ExportPanel(model: model, expanded: $expanded)
                     default: GroupPanel(model: model, group: model.shownPanel, expanded: $expanded)
                     }
-                    Text("Double-tap a name to reset it.")
+                    Text("Double-tap a slider to reset it; tap its value to type one.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else {
@@ -567,7 +568,8 @@ private struct CurveEditor: View {
     }
 }
 
-/// The simplest working control for each kind: slider, switch, picker or button.
+/// The simplest working control for each kind: slider, switch, picker or button. Rows are compact: the
+/// name on the left, the value or switch on the right.
 struct ControlRow: View {
     @ObservedObject var model: EditorModel
     let control: Control
@@ -575,25 +577,35 @@ struct ControlRow: View {
     var body: some View {
         switch control.kind {
         case .toggle:
-            Toggle(control.label, isOn: Binding(
+            Toggle(isOn: Binding(
                 get: { model.value(of: control) != 0 },
                 set: { model.setFromSlider(control, to: $0 ? 1 : 0) }
-            ))
-            .padding(10)
+            )) {
+                Text(control.label).font(.subheadline)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
         case .action:
             Button(control.label) { model.runAction(control) }
                 .buttonStyle(.bordered)
                 .padding(.horizontal, 10)
         case .choice:
-            Picker(control.label, selection: Binding(
-                get: { Int(model.value(of: control)) },
-                set: { model.setFromSlider(control, to: Double($0)) }
-            )) {
-                ForEach(Array(control.options.enumerated()), id: \.offset) { item in
-                    Text(item.element.label).tag(item.offset)
+            // The name stays visible: a menu picker alone shows only the option chosen.
+            HStack {
+                Text(control.label).font(.subheadline)
+                Spacer(minLength: 8)
+                Picker(control.label, selection: Binding(
+                    get: { Int(model.value(of: control)) },
+                    set: { model.setFromSlider(control, to: Double($0)) }
+                )) {
+                    ForEach(Array(control.options.enumerated()), id: \.offset) { item in
+                        Text(item.element.label).tag(item.offset)
+                    }
                 }
+                .labelsHidden()
             }
             .padding(.horizontal, 10)
+            .frame(minHeight: 44)
         case .slider, .curvePoint:
             SliderRow(
                 control: control,
@@ -609,6 +621,8 @@ struct ControlRow: View {
     }
 }
 
+/// A slider in about 48 points: its name and value on one line, the slider under them. Double-tap the
+/// row to reset it; tap the value to type an exact number. Dragging across the default taps lightly.
 struct SliderRow: View {
     let control: Control
     @Binding var value: Double
@@ -616,27 +630,68 @@ struct SliderRow: View {
     let onReset: () -> Void
     /// The finger left the slider (one drag is one history step).
     var onEnd: () -> Void = {}
+    @State private var typing = false
+    @State private var typed = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(control.label)
                     .fontWeight(isFocused ? .semibold : .regular)
-                    .onTapGesture(count: 2, perform: onReset)
-                Spacer()
-                Text(EditorModel.format(value, control))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Button {
+                    typed = EditorModel.format(value, control)
+                    typing = true
+                } label: {
+                    Text(EditorModel.format(value, control))
+                        .monospacedDigit()
+                        .frame(minWidth: 44, alignment: .trailing)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(isFocused ? Color.accentColor : Color.secondary)
+                .accessibilityLabel("Type a value for \(control.label)")
             }
-            Slider(value: $value, in: control.min...control.max, onEditingChanged: { editing in
+            .font(.subheadline)
+            Slider(value: Binding(get: { value }, set: { moved(to: $0) }), in: control.min...control.max, onEditingChanged: { editing in
                 if !editing { onEnd() }
             })
+            .accessibilityLabel(control.label)
         }
-        .padding(10)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 3)
         .background(
             isFocused ? Color.accentColor.opacity(0.15) : Color.clear,
-            in: RoundedRectangle(cornerRadius: 10)
+            in: RoundedRectangle(cornerRadius: 8)
         )
+        .contentShape(Rectangle())
+        .simultaneousGesture(TapGesture(count: 2).onEnded { onReset() })
+        .alert(control.label, isPresented: $typing) {
+            TextField("Value", text: $typed)
+                .keyboardType(.numbersAndPunctuation)
+            Button("Set") { setTyped() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("From \(EditorModel.format(control.min, control)) to \(EditorModel.format(control.max, control))")
+        }
+    }
+
+    /// A light tap as the slider crosses its default value.
+    private func moved(to new: Double) {
+        let d = control.defaultValue
+        if (value - d) * (new - d) < 0 || (new == d && value != d) {
+            UISelectionFeedbackGenerator().selectionChanged()
+        }
+        value = new
+    }
+
+    /// The number typed, kept within the slider's range ("+20", "-0,5" and "20 %" work too).
+    private func setTyped() {
+        let text = typed.replacingOccurrences(of: ",", with: ".").filter { "0123456789.-".contains($0) }
+        guard let number = Double(text) else { return }
+        value = min(control.max, max(control.min, number))
+        onEnd()
     }
 }
 
