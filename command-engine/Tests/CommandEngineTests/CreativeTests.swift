@@ -241,4 +241,43 @@ final class CreativeTests: XCTestCase {
         XCTAssertEqual(CreativeFilters.crystalRadius(50, longSide: 800), 24, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.halftoneSpacing(30, longSide: 800), 9.6, accuracy: 1e-9)
     }
+
+    // MARK: - Artistic
+
+    func testArtisticNames() {
+        XCTAssertEqual(parse("watercolour"), [.select("watercolor")])
+        XCTAssertEqual(parse("water color 80"), [.set("watercolor", 80)])
+        XCTAssertEqual(parse("sketch"), [.select("sketch")])
+        XCTAssertEqual(parse("pencil sketch 50"), [.set("sketch", 50)])
+        XCTAssertEqual(parse("cartoon"), [.select("cartoon")])
+        XCTAssertEqual(parse("comic dots"), [.select("halftone")], "the longer name wins")
+        XCTAssertEqual(parse("cutout"), [.select("cutout")])
+        XCTAssertEqual(parse("cut out 70"), [.set("cutout", 70)])
+    }
+
+    func testToneBandsFollowThePicturesOwnBrightness() {
+        // Most pixels light (a background), a third dark (the subject).
+        var histogram = [Double](repeating: 0, count: 256)
+        for i in 0..<50 { histogram[i] = 10 }
+        for i in 190..<240 { histogram[i] = 20 }
+        let table = CreativeFilters.toneBands(histogram: histogram, levels: 6)
+        XCTAssertEqual(table.count, 256)
+        XCTAssertLessThanOrEqual(Set(table).count, 6)
+        XCTAssertEqual(zip(table, table.dropFirst()).allSatisfy { $0 <= $1 }, true, "darker stays darker")
+        XCTAssertGreaterThanOrEqual(Set(table[0..<40]).count, 2, "the dark subject keeps more than one tone")
+        XCTAssertGreaterThanOrEqual(Set(table[190..<240]).count, 2)
+        XCTAssertEqual(table[10], 10.5 / 256, accuracy: 0.1, "each tone is its band's mean")
+        XCTAssertEqual(CreativeFilters.toneBands(histogram: [], levels: 4)[255], 1, "no picture: unchanged")
+    }
+
+    func testArtisticSizes() {
+        XCTAssertEqual(CreativeFilters.cutoutLevels(0), 8)
+        XCTAssertEqual(CreativeFilters.cutoutLevels(50), 6)
+        XCTAssertEqual(CreativeFilters.cutoutLevels(100), 3)
+        XCTAssertEqual(CreativeFilters.paintRadius(50, longSide: 800, cutout: true), 4.8, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.sketchStroke(0, longSide: 1000), 2, accuracy: 1e-9)
+        let table = CreativeFilters.sketchTable(50)
+        XCTAssertEqual(table[255], 1, accuracy: 1e-9)
+        XCTAssertLessThan(table[128], 128.0 / 255, "darker")
+    }
 }

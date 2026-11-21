@@ -971,3 +971,11 @@
 {"group":"creative","text":"crystallize 50","expect":[{"op":"set","control":"crystallize","value":50}]}
 {"group":"creative","text":"halftone","expect":[{"op":"select","control":"halftone"}]}
 {"group":"creative","text":"halftone more","expect":[{"op":"nudge","control":"halftone","steps":1}]}
+{"group":"creative","text":"watercolour","expect":[{"op":"select","control":"watercolor"}]}
+{"group":"creative","text":"watercolor 80","expect":[{"op":"set","control":"watercolor","value":80}]}
+{"group":"creative","text":"sketch","expect":[{"op":"select","control":"sketch"}]}
+{"group":"creative","text":"pencil sketch 50","expect":[{"op":"set","control":"sketch","value":50}]}
+{"group":"creative","text":"cartoon","expect":[{"op":"select","control":"cartoon"}]}
+{"group":"creative","text":"comic more","expect":[{"op":"nudge","control":"cartoon","steps":1}]}
+{"group":"creative","text":"cutout","expect":[{"op":"select","control":"cutout"}]}
+{"group":"creative","text":"cut out 70","expect":[{"op":"set","control":"cutout","value":70}]}

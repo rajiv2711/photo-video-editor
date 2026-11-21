@@ -204,4 +204,60 @@ public enum CreativeFilters {
     public static func halftoneSpacing(_ amount: Double, longSide: Double) -> Double {
         max(0, amount) / 100 * 0.04 * longSide
     }
+
+    // MARK: - Artistic
+
+    /// Watercolor's and Cartoon's smoothing (the Kuwahara filter's reach, pixels): up to 0.8 % of the
+    /// long side; Cutout's: up to 1.2 %.
+    public static func paintRadius(_ amount: Double, longSide: Double, cutout: Bool = false) -> Double {
+        max(0, amount) / 100 * (cutout ? 0.012 : 0.008) * longSide
+    }
+
+    /// Cutout's number of flat tones: 8 at the lowest amount, down to 3 at 100.
+    public static func cutoutLevels(_ amount: Double) -> Int {
+        min(8, max(3, Int((8 - 5 * amount / 100).rounded())))
+    }
+
+    /// Sketch: how wide the pencil strokes are (the blur of the inverted picture, pixels: 0.2 % to
+    /// 0.8 % of the long side) and how dark (each level raised to the power 1 + 2 × amount).
+    public static func sketchStroke(_ amount: Double, longSide: Double) -> Double {
+        (0.002 + 0.006 * min(max(amount, 0), 100) / 100) * longSide
+    }
+
+    /// Sketch's darkening: output levels for 256 evenly spaced inputs (0…1).
+    public static func sketchTable(_ amount: Double) -> [Double] {
+        let p = 1 + 2 * min(max(amount, 0), 100) / 100
+        return (0..<256).map { pow(Double($0) / 255, p) }
+    }
+
+    /// Cartoon, Cutout and Watercolor: `levels` flat tones placed by the picture's own brightness, half
+    /// by how many pixels hold each level and half evenly, so a dark subject on a light background still
+    /// keeps a few tones of its own. `histogram`: pixel counts of sRGB luma in equal bins over 0…1.
+    /// Returns output levels for 256 evenly spaced inputs: each the mean luma of its band.
+    public static func toneBands(histogram: [Double], levels: Int) -> [Double] {
+        let bins = histogram.count
+        let total = histogram.reduce(0, +)
+        guard bins > 0, total > 0, levels > 1 else { return (0..<256).map { Double($0) / 255 } }
+        var band = [Int](repeating: 0, count: bins)
+        var before = 0.0
+        for i in 0..<bins {
+            let position = 0.5 * (before + histogram[i] / 2) / total + 0.5 * (Double(i) + 0.5) / Double(bins)
+            band[i] = min(levels - 1, Int(position * Double(levels)))
+            before += histogram[i]
+        }
+        // Each band's mean level (or its middle when no pixel falls in it).
+        var sums = [Double](repeating: 0, count: levels), counts = [Double](repeating: 0, count: levels)
+        var lows = [Double](repeating: 1, count: levels), highs = [Double](repeating: 0, count: levels)
+        for i in 0..<bins {
+            let centre = (Double(i) + 0.5) / Double(bins)
+            sums[band[i]] += histogram[i] * centre
+            counts[band[i]] += histogram[i]
+            lows[band[i]] = min(lows[band[i]], centre)
+            highs[band[i]] = max(highs[band[i]], centre)
+        }
+        let means = (0..<levels).map { counts[$0] > 0 ? sums[$0] / counts[$0] : (lows[$0] + highs[$0]) / 2 }
+        return (0..<256).map { j in
+            means[band[min(bins - 1, Int(Double(j) / 256 * Double(bins)))]]
+        }
+    }
 }

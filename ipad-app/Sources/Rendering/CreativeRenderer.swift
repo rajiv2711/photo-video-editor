@@ -3,7 +3,7 @@ import CoreImage
 
 /// The Creative panel (CreativeFilters in CommandEngine), after the crop and before the post-crop
 /// vignette and grain, so the filters see the picture as framed. Every filter is a slider, 0 = off;
-/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → pixelate. Sizes are shares of the picture's long side, so the
+/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic → pixelate. Sizes are shares of the picture's long side, so the
 /// preview and the saved photo look alike. The Effect Center and Angle (Placement) are shared.
 final class CreativeRenderer {
     let context: CIContext
@@ -103,8 +103,7 @@ final class CreativeRenderer {
         // Stylize filters, on sRGB levels: oil paint, emboss, find edges, wind.
         let oil = CreativeFilters.oilRadius(v("oilPaint"), longSide: side)
         if oil > 0.5 {
-            output = Filters.linear(apply(Self.oilKernel, to: Filters.encoded(output), extent: extent, reach: oil,
-                                          arguments: [oil]))
+            output = Filters.linear(painted(Filters.encoded(output), extent: extent, radius: oil))
         }
         if v("emboss") > 0 {
             let emboss = CreativeFilters.emboss(v("emboss"), longSide: side)
@@ -124,6 +123,40 @@ final class CreativeRenderer {
             let wind = CreativeFilters.wind(v("wind"), longSide: side)
             output = Filters.linear(apply(Self.windKernel, to: Filters.encoded(output), extent: extent, reach: wind.length,
                                           arguments: [CIVector(x: CGFloat(cos(angle)), y: CGFloat(sin(angle))), wind.length, wind.band]))
+        }
+
+        // Artistic filters, on sRGB levels: watercolor, sketch, cartoon, cutout.
+        let watercolor = v("watercolor")
+        if watercolor > 0 {
+            output = Filters.linear(watercolored(Filters.encoded(output), extent: extent, amount: watercolor))
+        }
+        let sketch = v("sketch")
+        if sketch > 0 {
+            // Pencil sketch: the grey picture colour-dodged by its blurred negative, so only the edges
+            // stay dark, then darkened.
+            let grey = Filters.luma(Filters.encoded(output))
+            let negative = Filters.blurred(Filters.affine(grey, scale: -1, bias: 1),
+                                           radius: CreativeFilters.sketchStroke(sketch, longSide: side), extent: extent)
+            let dodged = negative.applyingFilter("CIColorDodgeBlendMode", parameters: [kCIInputBackgroundImageKey: grey])
+                .applyingFilter("CIColorClamp")
+            output = Filters.linear(Filters.lookup(dodged, table: CreativeFilters.sketchTable(sketch)))
+        }
+        let cartoon = v("cartoon")
+        if cartoon > 0 {
+            // Smoothed colours in a few flat tones, inked where the smoothed picture changes sharply.
+            let r = max(1, CreativeFilters.paintRadius(cartoon, longSide: side))
+            let smooth = Filters.blurred(painted(Filters.encoded(output), extent: extent, radius: r), radius: 0.002 * side, extent: extent)
+            let flat = toneBanded(smooth, extent: extent, levels: 6)
+            let offset = CreativeFilters.edgeOffset(longSide: side)
+            output = Filters.linear(apply(Self.edgeDarkenKernel, to: smooth, extent: extent, reach: offset,
+                                          arguments: [flat.clampedToExtent(), offset, 12.5, 0.08, 1.0]))
+        }
+        let cutout = v("cutout")
+        if cutout > 0 {
+            // Paper shapes: smoothed hard, then a few flat tones.
+            let r = max(1, CreativeFilters.paintRadius(cutout, longSide: side, cutout: true))
+            let smooth = Filters.blurred(painted(Filters.encoded(output), extent: extent, radius: r), radius: 0.6 * r, extent: extent)
+            output = Filters.linear(toneBanded(smooth, extent: extent, levels: CreativeFilters.cutoutLevels(cutout)))
         }
 
         // Pixelate filters: square cells from the picture's top-left corner, crystal cells, or a
@@ -256,6 +289,68 @@ final class CreativeRenderer {
             return best;
         }
         """)
+
+    // MARK: - Artistic
+
+    /// The Kuwahara filter (oil paint's brush) over `radius` pixels.
+    private func painted(_ image: CIImage, extent: CGRect, radius: Double) -> CIImage {
+        apply(Self.oilKernel, to: image, extent: extent, reach: radius, arguments: [radius])
+    }
+
+    /// `levels` flat tones placed by the picture's own brightness (CreativeFilters.toneBands): each
+    /// pixel's brightness moves to its tone's, its colour differences kept. On sRGB levels.
+    private func toneBanded(_ image: CIImage, extent: CGRect, levels: Int) -> CIImage {
+        guard let kernel = Self.toneKernel else { return image }
+        let histogram = ImageStats.lumaHistogram(of: Filters.linear(image), extent: extent, context: context)
+        let tone = Filters.lookup(Filters.luma(image), table: CreativeFilters.toneBands(histogram: histogram, levels: levels))
+        return kernel.apply(extent: extent, arguments: [image, tone]) ?? image
+    }
+
+    private static let toneKernel: CIColorKernel? = CIColorKernel(source: """
+        kernel vec4 toTone(__sample c, __sample tone) {
+            float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+            return vec4(clamp(c.rgb + (tone.r - l), 0.0, 1.0), c.a);
+        }
+        """)
+
+    /// Darkens `colours` where `lines` changes across the pixel (the largest channel difference over
+    /// `offset` pixels each way, past `threshold`, × `gain`), by up to `depth`: cartoon ink, watercolor's
+    /// pigment gathering at the edge of a wash.
+    private static let edgeDarkenKernel: CIKernel? = CIKernel(source: """
+        kernel vec4 darkenEdges(sampler lines, sampler colours, float offset, float gain, float threshold, float depth) {
+            vec2 c = destCoord();
+            vec3 l = sample(lines, samplerTransform(lines, c - vec2(offset, 0.0))).rgb;
+            vec3 r = sample(lines, samplerTransform(lines, c + vec2(offset, 0.0))).rgb;
+            vec3 d = sample(lines, samplerTransform(lines, c - vec2(0.0, offset))).rgb;
+            vec3 u = sample(lines, samplerTransform(lines, c + vec2(0.0, offset))).rgb;
+            vec3 e = abs(r - l) + abs(u - d);
+            float k = clamp(gain * (max(e.r, max(e.g, e.b)) - threshold), 0.0, 1.0);
+            vec4 here = sample(colours, samplerCoord(colours));
+            return vec4(here.rgb * (1.0 - depth * k), here.a);
+        }
+        """)
+
+    /// Watercolor (sRGB levels): smoothed washes, half pooled into 8 tones, pigment darkening their
+    /// edges, a faint paper grain and the paper's white showing through.
+    private func watercolored(_ image: CIImage, extent: CGRect, amount: Double) -> CIImage {
+        let side = Double(max(extent.width, extent.height))
+        let r = max(1, CreativeFilters.paintRadius(amount, longSide: side))
+        let wash = Filters.blurred(painted(image, extent: extent, radius: r), radius: 0.6 * r, extent: extent)
+        let pooled = Filters.mix(wash, toneBanded(wash, extent: extent, levels: 8), 0.5)
+        let offset = max(1, 0.0015 * side)
+        let edged = apply(Self.edgeDarkenKernel, to: pooled, extent: extent, reach: offset,
+                          arguments: [pooled.clampedToExtent(), offset, 4.0, 0.0, 0.5])
+        let lighter = Filters.affine(edged, scale: 0.9, bias: 0.1)
+        guard let random = CIFilter(name: "CIRandomGenerator")?.outputImage else { return lighter }
+        // Paper: the fixed random pattern in cells of 0.4 % of the long side, softened (about ±1.5 %).
+        let cell = CGFloat(max(1, 0.004 * side))
+        let area = CGRect(x: 0, y: 0, width: extent.width / cell + 4, height: extent.height / cell + 4)
+        let grain = Filters.luma(random.cropped(to: area).settingAlphaOne(in: area))
+            .transformed(by: CGAffineTransform(translationX: extent.minX - 2 * cell, y: extent.minY - 2 * cell).scaledBy(x: cell, y: cell))
+            .clampedToExtent().applyingGaussianBlur(sigma: Double(cell)).cropped(to: extent)
+        let paper = Filters.affine(grain, scale: 0.15, bias: 1 - 0.075)
+        return lighter.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: paper])
+    }
 
     // MARK: - Distort
 

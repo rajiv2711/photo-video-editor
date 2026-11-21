@@ -164,7 +164,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 121. **Distort filters** — twirl, wave, ripple, pinch, spherize, polar
 - [x] 122. **Stylize filters** — oil paint, emboss, find edges, wind
 - [x] 123. **Pixelate filters** — mosaic, crystallize, halftone
-- [ ] 124. **Artistic filters** — watercolour, sketch, cartoon, cutout
+- [x] 124. **Artistic filters** — watercolour, sketch, cartoon, cutout
 - [ ] 125. **Lens flare** — add a light flare
 - [ ] 126. **Lighting effects** — spot and omni lights over the image
 - [ ] 127. **Film effects** — light leaks, dust and scratch overlays
