@@ -190,7 +190,15 @@ enum RenderGallery {
     ///   one with a pale disc passing over the lens (at `ghostDisc`), for deghosting.
     /// - "pano-left", "pano-middle", "pano-right": overlapping crops of the test photo (60 % of its width,
     ///   92 % of its height, each a little higher or lower, at 0.9, 1 and 1.1 × its light), for panoramas.
+    /// - "hdrpano-left-dark" … "hdrpano-right-bright": "pano-left" and "pano-right" as the dark, mid and
+    ///   bright brackets (for HDR panorama).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
+        if let source, source.hasPrefix("hdrpano-") {
+            let parts = source.split(separator: "-")
+            guard parts.count == 3 else { return photo }
+            let bracket = sourceImage("bracket-" + String(parts[2]), photo: photo)
+            return sourceImage("pano-" + String(parts[1]), photo: bracket)
+        }
         switch source {
         case "pano-left", "pano-middle", "pano-right":
             // x0, y0 from the top-left (shares), and the light.

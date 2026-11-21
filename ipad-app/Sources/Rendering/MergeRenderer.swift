@@ -44,6 +44,21 @@ final class MergeRenderer {
             guard let result = Panorama.stitch(pictures, settings: panoramaSettings(value), focal: focal(of: photos[0], picture: pictures[0]),
                                                maxSide: Self.panoramaSide) else { return nil }
             return Merged(image: picture(result.image, alpha: result.coverage), used: result.used)
+        case "hdrPanorama":
+            // Each position's brackets share the first one's size.
+            guard photos.count >= 4 else { return nil }
+            var pictures: [FloatImage] = []
+            for photo in photos {
+                let size = Self.size(of: photo, maxSide: Self.panoramaPhotoSide)
+                let first = pictures.first.map { (width: $0.width, height: $0.height) }
+                let same = first.map { abs(Double($0.width) / Double($0.height) - Double(size.width) / Double(size.height)) < 0.01 } ?? false
+                pictures.append(floats(photo, width: same ? first!.width : size.width, height: same ? first!.height : size.height))
+            }
+            let output = HDRMerge.Output(rawValue: option(value("hdrOutput"), HDRMerge.outputs)) ?? .fusion
+            guard let merged = HDRPanorama.merge(pictures, deghost: Int(value("deghost") ?? 0), output: output,
+                                                 settings: panoramaSettings(value), focal: focal(of: photos[0], picture: pictures[0]),
+                                                 maxSide: Self.panoramaSide) else { return nil }
+            return Merged(image: picture(merged.result.image, linear: merged.linear, alpha: merged.result.coverage), used: merged.result.used)
         default:
             return nil
         }

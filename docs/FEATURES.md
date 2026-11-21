@@ -150,7 +150,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 - [x] 111. **HDR merge** — combine bracketed exposures, remove ghosts
 - [x] 112. **Panorama merge** — stitch photos; projection, boundary warp, fill edges
-- [ ] 113. **HDR panorama** — HDR merge and stitch in one step
+- [x] 113. **HDR panorama** — HDR merge and stitch in one step
 - [ ] 114. **Focus stacking** — combine focus slices into one sharp photo
 - [ ] 115. **Stack averaging** — median/mean of a burst: remove crowds, fake long exposure
 - [ ] 116. **Double exposure** — blend two photos

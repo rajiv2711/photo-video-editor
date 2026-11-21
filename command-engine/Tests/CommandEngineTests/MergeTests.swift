@@ -363,3 +363,36 @@ final class PanoramaTests: XCTestCase {
         XCTAssertNil(Panorama.stitch([a, b], settings: .init()))
     }
 }
+
+/// HDR panorama: telling the brackets apart, and the whole merge on a small scene.
+final class HDRPanoramaTests: XCTestCase {
+    func testBracketSizeFromTheExposurePattern() {
+        XCTAssertEqual(HDRPanorama.bracketSize([0.05, 0.2, 0.8, 0.06, 0.22, 0.75]), 3)
+        XCTAssertEqual(HDRPanorama.bracketSize([0.05, 0.2, 0.06, 0.25, 0.04, 0.18]), 2)
+        XCTAssertEqual(HDRPanorama.bracketSize([0.05, 0.2, 0.8, 0.05, 0.2, 0.8, 0.06, 0.21, 0.7]), 3)
+        XCTAssertNil(HDRPanorama.bracketSize([0.2, 0.21, 0.19, 0.2]), "no brackets: one exposure")
+        XCTAssertNil(HDRPanorama.bracketSize([0.05, 0.2, 0.8]), "one position is not a panorama")
+    }
+
+    func testMergesEachPositionThenStitches() {
+        // The bracket scene (shadows to 3 × white) made wider, seen from two overlapping positions.
+        let width = 240, height = 100
+        func shot(_ x0: Int, _ exposure: Float) -> FloatImage {
+            let full = MergeTests.bracket(exposure, width: width, height: height)
+            return PanoramaTests.crop(full, x: x0, y: 0, width: 150, height: height)
+        }
+        let photos = [shot(0, 0.25), shot(0, 1), shot(0, 4), shot(90, 0.25), shot(90, 1), shot(90, 4)]
+        guard let (result, linear) = HDRPanorama.merge(photos, deghost: 0, output: .fusion, settings: .init(projection: .perspective)) else {
+            return XCTFail("no panorama")
+        }
+        XCTAssertFalse(linear)
+        XCTAssertEqual(Double(result.image.width), Double(width), accuracy: 3)
+        // The bright right end, clipped flat in the middle brackets, keeps its texture.
+        XCTAssertGreaterThan(MergeTests.spread(result.image, x0: 200, y0: 10, x1: 235, y1: 90), 0.04)
+        guard let (radiance, isLinear) = HDRPanorama.merge(photos, deghost: 0, output: .radiance, settings: .init(projection: .perspective)) else {
+            return XCTFail("no radiance panorama")
+        }
+        XCTAssertTrue(isLinear)
+        XCTAssertGreaterThan(radiance.image.data.max() ?? 0, 1.5, "levels above white survive the stitch")
+    }
+}

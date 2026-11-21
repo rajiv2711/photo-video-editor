@@ -529,3 +529,67 @@ extension Grid {
         }
     }
 }
+
+/// HDR panorama: brackets shot at each position of a panorama, picked in order (all of one position's
+/// brackets, then the next position's), merged by HDRMerge position by position and then stitched.
+public enum HDRPanorama {
+    /// How many brackets each position has: the group size whose exposure pattern repeats best from
+    /// group to group (log brightness at each place in the group varies least across groups), with a
+    /// real exposure spread inside a group. Nil when no size fits.
+    public static func bracketSize(_ brightness: [Float]) -> Int? {
+        let n = brightness.count
+        guard n >= 4 else { return nil }
+        let logs = brightness.map { log(max($0, 1e-5)) }
+        let mean = logs.reduce(0, +) / Float(n)
+        let total = logs.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Float(n)
+        guard total > 1e-6 else { return nil }
+        var best: (size: Int, score: Float)?
+        for size in 2...(n / 2) where n % size == 0 {
+            var within: Float = 0
+            for place in 0..<size {
+                let values = stride(from: place, to: n, by: size).map { logs[$0] }
+                let m = values.reduce(0, +) / Float(values.count)
+                within += values.reduce(0) { $0 + ($1 - m) * ($1 - m) }
+            }
+            let score = within / Float(n) / total
+            // Inside each group the exposures must differ (at least 1.4 × from darkest to brightest).
+            let spread = stride(from: 0, to: n, by: size).allSatisfy { start in
+                let group = logs[start..<(start + size)]
+                return (group.max() ?? 0) - (group.min() ?? 0) > log(1.4)
+            }
+            if spread, score < 0.35, score < (best?.score ?? .infinity) - 1e-4 { best = (size, score) }
+        }
+        return best?.size
+    }
+
+    /// Merges each position's brackets, then stitches the merged pictures. The result is on sRGB
+    /// levels for Fusion; for Radiance it is linear light (`linear` true), brought into 0…1 for the
+    /// stitch and back. Nil when the brackets can't be told apart or the positions don't fit together.
+    public static func merge(_ photos: [FloatImage], deghost: Int, output: HDRMerge.Output, settings: Panorama.Settings,
+                             focal: Double? = nil, maxSide: Int = 8000) -> (result: Panorama.Result, linear: Bool)? {
+        let brightness = photos.map { $0.luma.map(SRGB.linear).mean }
+        guard let size = bracketSize(brightness) else { return nil }
+        var merged: [FloatImage] = []
+        for start in stride(from: 0, to: photos.count, by: size) {
+            let group = Array(photos[start..<(start + size)])
+            // A position's brackets share the first one's size.
+            let first = group[0]
+            let same = group.allSatisfy { $0.width == first.width && $0.height == first.height }
+            guard same else { return nil }
+            merged.append(HDRMerge.merge(group, deghost: deghost, output: output))
+        }
+        // (`used` then counts photos: every bracket of each position joined in.)
+        guard output == .radiance else {
+            guard var result = Panorama.stitch(merged, settings: settings, focal: focal, maxSide: maxSide) else { return nil }
+            result.used *= size
+            return (result, false)
+        }
+        // Radiance: every position ÷ the brightest level, on sRGB levels for the stitch, then back.
+        let peak = max(1e-6, merged.map { $0.data.max() ?? 1 }.max() ?? 1)
+        let encoded = merged.map { $0.map { SRGB.encoded(min(1, max(0, $0 / peak))) } }
+        guard var result = Panorama.stitch(encoded, settings: settings, focal: focal, maxSide: maxSide) else { return nil }
+        result.image = result.image.map { SRGB.linear($0) * peak }
+        result.used *= size
+        return (result, true)
+    }
+}

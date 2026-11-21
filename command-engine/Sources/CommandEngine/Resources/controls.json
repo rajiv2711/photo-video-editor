@@ -1158,6 +1158,8 @@
       "options": [{"id": "spherical", "label": "Spherical", "synonyms": ["sphere", "spherical projection"]},
                   {"id": "cylindrical", "label": "Cylindrical", "synonyms": ["cylinder", "cylindrical projection"]},
                   {"id": "perspective", "label": "Perspective", "synonyms": ["flat", "planar", "rectilinear", "perspective projection"]}]},
+    {"id": "hdrPanorama", "label": "HDR Panorama", "group": "merge", "section": "Panorama", "kind": "action",
+      "synonyms": ["hdr pano", "merge hdr panorama", "hdr panorama merge", "panorama hdr", "hdr stitch", "stitch hdr", "photo merge hdr panorama"]},
     {"id": "boundaryWarp", "label": "Boundary Warp", "group": "merge", "section": "Panorama", "min": 0, "max": 100, "default": 0, "step": 10,
       "synonyms": ["boundary", "warp edges", "edge warp", "panorama warp", "boundary warping"]},
     {"id": "fillEdges", "label": "Fill Edges", "group": "merge", "section": "Panorama", "kind": "toggle",

@@ -685,7 +685,7 @@ final class EditorModel: ObservableObject {
 
     /// The fewest photos a kind of merge needs.
     private static func minimumPhotos(_ kind: String) -> Int {
-        2
+        kind == "hdrPanorama" ? 4 : 2
     }
 
     /// The settings a kind of merge reads, as numbers (when they change, the photo it made is merged again).
@@ -712,7 +712,7 @@ final class EditorModel: ObservableObject {
         let merger = self.merger
         let name = MergeTools.actions.first { $0.value == kind }.flatMap { registry.control(id: $0.key)?.label } ?? "Merge"
         // A panorama's photos point different ways: no lens correction fits the result.
-        let lens = kind == "panorama" ? PhotoLens() : Self.lens(of: photos[0])
+        let lens = kind == "panorama" || kind == "hdrPanorama" ? PhotoLens() : Self.lens(of: photos[0])
         if waitsForMerge {
             finishMerge(merger.merge(kind, photos: photos, value: value), name: name, count: photos.count, lens: lens, job: job)
             return

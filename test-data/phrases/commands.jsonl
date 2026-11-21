@@ -883,3 +883,6 @@
 {"group":"merge","text":"boundary warp more","expect":[{"op":"nudge","control":"boundaryWarp","steps":1}]}
 {"group":"merge","text":"fill edges on","expect":[{"op":"set","control":"fillEdges","value":1}]}
 {"group":"merge","text":"turn off fill edges","expect":[{"op":"set","control":"fillEdges","value":0}]}
+{"group":"merge","text":"hdr panorama","expect":[{"op":"run","control":"hdrPanorama"}]}
+{"group":"merge","text":"hdr pano","expect":[{"op":"run","control":"hdrPanorama"}]}
+{"group":"merge","text":"merge hdr panorama","expect":[{"op":"run","control":"hdrPanorama"}]}

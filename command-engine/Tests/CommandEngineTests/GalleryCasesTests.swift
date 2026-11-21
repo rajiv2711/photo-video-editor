@@ -45,7 +45,9 @@ final class GalleryCasesTests: XCTestCase {
     /// Generated starting pictures; must match RenderGallery.sourceImage in the app.
     static let sources: Set = ["warm", "negative", "chart", "haze", "noise", "moire", "grid", "lens", "lateral-ca", "fringe", "fisheye",
                                "dust", "red-eye", "pet-eye", "tilted", "building", "skewed",
-                               "bracket-dark", "bracket-mid", "bracket-bright", "bracket-ghost", "pano-left", "pano-middle", "pano-right"]
+                               "bracket-dark", "bracket-mid", "bracket-bright", "bracket-ghost", "pano-left", "pano-middle", "pano-right",
+                               "hdrpano-left-dark", "hdrpano-left-mid", "hdrpano-left-bright",
+                               "hdrpano-right-dark", "hdrpano-right-mid", "hdrpano-right-bright"]
 
     private var registry: ControlRegistry!
     private var cases: [Case] = []
