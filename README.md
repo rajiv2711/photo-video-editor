@@ -110,3 +110,9 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `canvas size 10` · `canvas aspect square` · `canvas color blur` | Space around the photo |
 | `content aware width 80` · `content aware height 90` | Content-aware scale (seam carving: the subject keeps its shape) |
 | `warp` · `puppet warp` · `reset warp` | Bend the picture: drag a grid's handles, or tap to pin and drag a pin |
+| `hdr merge` · `deghost high` · `hdr output radiance` · `hdr merge 3` · `photos to merge 3` | Merge panel: pick photos (Pick Photos to Merge), then merge; the result becomes the photo being edited, and changing a merge setting merges again (`hdr merge 3`: the last 3 photos picked) |
+| `panorama merge` · `panorama cylindrical` · `boundary warp 50` · `fill edges on` · `hdr panorama` | Panorama (spherical, cylindrical or perspective); HDR panorama takes each position's brackets in turn |
+| `focus stack` · `stack median` · `stack mean` | Focus stacking; stack averaging (median removes passers-by, mean lowers noise) |
+| `double exposure` · `blend mode screen` · `blend amount 60` | Double exposure (one picked photo goes over the photo being edited) |
+| `live photo long exposure` · `live photo loop` · `live photo bounce` · `key frame 12` | Live Photo effects (Loop and Bounce save an animated GIF; key frame 0 is the photo) |
+| `portrait aperture f2.8` · `portrait focus` · `focus depth 40` · `portrait lighting stage` | Portrait depth editing of iPhone Portrait photos (`portrait focus`, then tap what should be sharp) |
