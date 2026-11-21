@@ -886,3 +886,6 @@
 {"group":"merge","text":"hdr panorama","expect":[{"op":"run","control":"hdrPanorama"}]}
 {"group":"merge","text":"hdr pano","expect":[{"op":"run","control":"hdrPanorama"}]}
 {"group":"merge","text":"merge hdr panorama","expect":[{"op":"run","control":"hdrPanorama"}]}
+{"group":"merge","text":"focus stack","expect":[{"op":"run","control":"focusStack"}]}
+{"group":"merge","text":"focus stacking","expect":[{"op":"run","control":"focusStack"}]}
+{"group":"merge","text":"merge focus","expect":[{"op":"run","control":"focusStack"}]}

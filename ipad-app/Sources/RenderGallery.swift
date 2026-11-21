@@ -192,6 +192,7 @@ enum RenderGallery {
     ///   92 % of its height, each a little higher or lower, at 0.9, 1 and 1.1 × its light), for panoramas.
     /// - "hdrpano-left-dark" … "hdrpano-right-bright": "pano-left" and "pano-right" as the dark, mid and
     ///   bright brackets (for HDR panorama).
+    /// - "focus-top", "focus-bottom": the test photo sharp in its top or bottom half only (focus stacking).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         if let source, source.hasPrefix("hdrpano-") {
             let parts = source.split(separator: "-")
@@ -200,6 +201,19 @@ enum RenderGallery {
             return sourceImage("pano-" + String(parts[1]), photo: bracket)
         }
         switch source {
+        case "focus-top", "focus-bottom":
+            // Sharp above or below the middle, blurred (3 px) on the other side, with a soft change.
+            let e = photo.extent
+            let blurred = photo.clampedToExtent().applyingGaussianBlur(sigma: 3).cropped(to: e)
+            let sharpTop = source == "focus-top"
+            let mask = CIFilter(name: "CILinearGradient", parameters: [
+                "inputPoint0": CIVector(x: e.midX, y: e.minY + 0.45 * e.height),
+                "inputPoint1": CIVector(x: e.midX, y: e.minY + 0.55 * e.height),
+                "inputColor0": sharpTop ? CIColor(red: 0, green: 0, blue: 0) : CIColor(red: 1, green: 1, blue: 1),
+                "inputColor1": sharpTop ? CIColor(red: 1, green: 1, blue: 1) : CIColor(red: 0, green: 0, blue: 0),
+            ])?.outputImage?.cropped(to: e)
+            guard let mask else { return photo }
+            return Filters.blend(photo, over: blurred, mask: mask)
         case "pano-left", "pano-middle", "pano-right":
             // x0, y0 from the top-left (shares), and the light.
             let parts: [String: (x: CGFloat, y: CGFloat, gain: Double)] = ["pano-left": (0, 0.04, 0.9), "pano-middle": (0.2, 0, 1),

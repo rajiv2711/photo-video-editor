@@ -1163,6 +1163,8 @@
     {"id": "boundaryWarp", "label": "Boundary Warp", "group": "merge", "section": "Panorama", "min": 0, "max": 100, "default": 0, "step": 10,
       "synonyms": ["boundary", "warp edges", "edge warp", "panorama warp", "boundary warping"]},
     {"id": "fillEdges", "label": "Fill Edges", "group": "merge", "section": "Panorama", "kind": "toggle",
-      "synonyms": ["fill edge", "panorama fill", "fill the edges", "fill empty edges", "content aware fill edges"]}
+      "synonyms": ["fill edge", "panorama fill", "fill the edges", "fill empty edges", "content aware fill edges"]},
+    {"id": "focusStack", "label": "Focus Stack", "group": "merge", "section": "Focus stack", "kind": "action",
+      "synonyms": ["focus stacking", "stack focus", "merge focus", "focus merge", "focus blend", "focus stack photos", "stack for focus", "depth of field stack"]}
   ]
 }

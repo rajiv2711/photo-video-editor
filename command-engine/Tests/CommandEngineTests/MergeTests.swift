@@ -396,3 +396,49 @@ final class HDRPanoramaTests: XCTestCase {
         XCTAssertGreaterThan(radiance.image.data.max() ?? 0, 1.5, "levels above white survive the stitch")
     }
 }
+
+/// Focus stacking and stack averaging on small made-up pictures.
+final class StackTests: XCTestCase {
+    /// The textured panorama scene, blurred (by about `radius` pixels) where `blurred` says so.
+    static func slice(_ scene: FloatImage, radius: Int, blurred: (Int, Int) -> Bool) -> FloatImage {
+        let w = scene.width, h = scene.height
+        var soft = scene
+        for c in 0..<3 {
+            let channel = Grid.blur((0..<(w * h)).map { scene.data[$0 * 3 + c] }, width: w, height: h, radius: radius)
+            for i in 0..<(w * h) { soft.data[i * 3 + c] = channel[i] }
+        }
+        var out = scene
+        for y in 0..<h { for x in 0..<w where blurred(x, y) { for c in 0..<3 { out[x, y, c] = soft[x, y, c] } } }
+        return out
+    }
+
+    /// Mean |Laplacian| of brightness in a box (fine detail left).
+    static func detail(_ image: FloatImage, x0: Int, y0: Int, x1: Int, y1: Int) -> Float {
+        let lap = Grid.laplacian(image.luma.data, width: image.width, height: image.height)
+        var sum: Float = 0
+        for y in y0..<y1 { for x in x0..<x1 { sum += lap[y * image.width + x] } }
+        return sum / Float((x1 - x0) * (y1 - y0))
+    }
+
+    func testFocusStackIsSharpEverywhere() {
+        let scene = PanoramaTests.scene(width: 160, height: 100)
+        let near = Self.slice(scene, radius: 3) { x, _ in x >= 80 }   // sharp on the left
+        let far = Self.slice(scene, radius: 3) { x, _ in x < 80 }     // sharp on the right
+        let stacked = FocusStack.merge([near, far])
+        for (x0, x1) in [(10, 70), (90, 150)] {
+            let sharp = Self.detail(scene, x0: x0, y0: 10, x1: x1, y1: 90)
+            XCTAssertGreaterThan(Self.detail(stacked, x0: x0, y0: 10, x1: x1, y1: 90), 0.85 * sharp, "\(x0)")
+        }
+        XCTAssertLessThan(MergeTests.difference(stacked, scene, x0: 10, y0: 10, x1: 150, y1: 90), 0.01)
+    }
+
+    func testFocusStackLinesUpShiftedSlices() {
+        let scene = PanoramaTests.scene(width: 170, height: 110)
+        let a = Self.slice(PanoramaTests.crop(scene, x: 0, y: 0, width: 160, height: 100), radius: 3) { x, _ in x >= 80 }
+        let b = Self.slice(PanoramaTests.crop(scene, x: 4, y: 3, width: 160, height: 100), radius: 3) { x, _ in x < 80 }
+        let stacked = FocusStack.merge([a, b])
+        // b is the reference (the middle of two): both halves sharp in its frame.
+        let reference = PanoramaTests.crop(scene, x: 4, y: 3, width: 160, height: 100)
+        XCTAssertLessThan(MergeTests.difference(stacked, reference, x0: 10, y0: 10, x1: 150, y1: 90), 0.015)
+    }
+}

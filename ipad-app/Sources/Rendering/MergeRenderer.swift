@@ -35,6 +35,11 @@ final class MergeRenderer {
             let output = HDRMerge.Output(rawValue: option(value("hdrOutput"), HDRMerge.outputs)) ?? .fusion
             let merged = HDRMerge.merge(brackets, deghost: Int(value("deghost") ?? 0), output: output)
             return Merged(image: picture(merged, linear: output == .radiance), used: photos.count)
+        case "focus":
+            guard photos.count >= 2 else { return nil }
+            let size = Self.size(of: photos[0], maxSide: Self.maxSide)
+            let slices = photos.map { floats($0, width: size.width, height: size.height) }
+            return Merged(image: picture(FocusStack.merge(slices)), used: photos.count)
         case "panorama":
             guard photos.count >= 2 else { return nil }
             let pictures = photos.map { photo -> FloatImage in

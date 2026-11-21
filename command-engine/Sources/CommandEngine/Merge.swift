@@ -9,7 +9,8 @@ import Foundation
 /// The Merge panel's actions and settings.
 public enum MergeTools {
     /// Merge actions and the kind of merge each makes.
-    public static let actions: [String: String] = ["hdrMerge": "hdr", "panoramaMerge": "panorama", "hdrPanorama": "hdrPanorama"]
+    public static let actions: [String: String] = ["hdrMerge": "hdr", "panoramaMerge": "panorama", "hdrPanorama": "hdrPanorama",
+                                                   "focusStack": "focus"]
 
     /// "Photos to Merge": how many of the last photos picked a merge uses (0 = all of them).
     public static let countID = "mergeCount"
