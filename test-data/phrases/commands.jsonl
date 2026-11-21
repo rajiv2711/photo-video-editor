@@ -1130,3 +1130,35 @@
 {"group":"layers","text":"logo size more","expect":[{"op":"nudge","control":"watermarkSize","steps":1}]}
 {"group":"layers","text":"watermark position top left","expect":[{"op":"set","control":"watermarkPosition","value":3}]}
 {"group":"layers","text":"watermark corner bottom left","expect":[{"op":"set","control":"watermarkPosition","value":1}]}
+{"group":"presets","text":"preset portrait warm","expect":[{"op":"run","control":"applyPreset","text":"portrait warm"}]}
+{"group":"presets","text":"apply preset golden hour","expect":[{"op":"run","control":"applyPreset","text":"golden hour"}]}
+{"group":"presets","text":"use preset noir","expect":[{"op":"run","control":"applyPreset","text":"noir"}]}
+{"group":"presets","text":"preset amount 50","expect":[{"op":"set","control":"presetAmount","value":50}]}
+{"group":"presets","text":"preset strength more","expect":[{"op":"nudge","control":"presetAmount","steps":1}]}
+{"group":"presets","text":"preset intensity 150","expect":[{"op":"set","control":"presetAmount","value":150}]}
+{"group":"presets","text":"save preset portrait warm","expect":[{"op":"run","control":"savePreset","text":"portrait warm"}]}
+{"group":"presets","text":"save as preset my look","expect":[{"op":"run","control":"savePreset","text":"my look"}]}
+{"group":"presets","text":"rename preset warm to cosy","expect":[{"op":"run","control":"renamePreset","text":"warm to cosy"}]}
+{"group":"presets","text":"rename the preset old look to new look","expect":[{"op":"run","control":"renamePreset","text":"old look to new look"}]}
+{"group":"presets","text":"delete preset cosy","expect":[{"op":"run","control":"deletePreset","text":"cosy"}]}
+{"group":"presets","text":"remove preset old look","expect":[{"op":"run","control":"deletePreset","text":"old look"}]}
+{"group":"presets","text":"include light off","expect":[{"op":"set","control":"includeLight","value":0}]}
+{"group":"presets","text":"turn off include light","expect":[{"op":"set","control":"includeLight","value":0}]}
+{"group":"presets","text":"include colour off","expect":[{"op":"set","control":"includeColor","value":0}]}
+{"group":"presets","text":"include color on","expect":[{"op":"set","control":"includeColor","value":1}]}
+{"group":"presets","text":"include effects off","expect":[{"op":"set","control":"includeEffects","value":0}]}
+{"group":"presets","text":"include effects","expect":[{"op":"set","control":"includeEffects","value":1}]}
+{"group":"presets","text":"include detail off","expect":[{"op":"set","control":"includeDetail","value":0}]}
+{"group":"presets","text":"include sharpening on","expect":[{"op":"set","control":"includeDetail","value":1}]}
+{"group":"presets","text":"include optics off","expect":[{"op":"set","control":"includeOptics","value":0}]}
+{"group":"presets","text":"include lens corrections","expect":[{"op":"set","control":"includeOptics","value":1}]}
+{"group":"presets","text":"include geometry","expect":[{"op":"set","control":"includeGeometry","value":1}]}
+{"group":"presets","text":"include crop on","expect":[{"op":"set","control":"includeGeometry","value":1}]}
+{"group":"presets","text":"include creative off","expect":[{"op":"set","control":"includeCreative","value":0}]}
+{"group":"presets","text":"include filters","expect":[{"op":"set","control":"includeCreative","value":1}]}
+{"group":"presets","text":"include masks","expect":[{"op":"set","control":"includeMasks","value":1}]}
+{"group":"presets","text":"include local adjustments off","expect":[{"op":"set","control":"includeMasks","value":0}]}
+{"group":"presets","text":"include retouch on","expect":[{"op":"set","control":"includeRetouch","value":1}]}
+{"group":"presets","text":"include spots","expect":[{"op":"set","control":"includeRetouch","value":1}]}
+{"group":"presets","text":"include layers","expect":[{"op":"set","control":"includeLayers","value":1}]}
+{"group":"presets","text":"include watermark off","expect":[{"op":"set","control":"includeLayers","value":0}]}

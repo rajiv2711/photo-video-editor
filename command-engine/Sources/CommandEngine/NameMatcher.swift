@@ -3,11 +3,12 @@ import Foundation
 /// Finds the control a spoken or typed word refers to, tolerating small mistakes
 /// ("contrst", "satur"), synonyms ("vividness" → Saturation) and plurals ("colours" → "colour").
 /// A word that fits several controls equally ("colour": Vibrance or Saturation) is ambiguous.
-/// Masks-, Retouch-, Creative- and Layers-panel names are only tried when no other control is close: they
+/// Masks-, Retouch-, Creative-, Layers-, Presets-, History- and View-panel names are only tried when no other control is close: they
 /// reuse words of the other panels ("color range", "sharpen brush") or everyday words ("light leak", "wind"),
 /// and a near-miss should keep meaning what it meant ("light" is still the Lights curve).
 /// Their actions, and the Geometry and Merge panels', need their exact name: a misheard word must never
-/// make or delete a mask, a spot or a layer ("one" is not "done"), reset a crop ("undo" is not "uncrop") or merge photos.
+/// make or delete a mask, a spot or a layer ("one" is not "done"), reset a crop ("undo" is not "uncrop"), merge photos
+/// or apply a preset.
 public struct NameMatcher {
     public enum Match: Equatable {
         case found(Control)
@@ -18,7 +19,7 @@ public struct NameMatcher {
     public let registry: ControlRegistry
 
     /// Panels whose names are matched only when nothing else is close, and whose actions only by exact name.
-    static let toolGroups: Set<String> = ["masks", "retouch", "creative", "layers"]
+    static let toolGroups: Set<String> = ["masks", "retouch", "creative", "layers", "presets", "history", "view"]
 
     /// Panels whose actions are only reached by their exact name.
     static let exactActionGroups: Set<String> = toolGroups.union(["geometry", "merge"])

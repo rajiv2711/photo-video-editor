@@ -45,6 +45,10 @@ final class EditorModel: ObservableObject {
     var waitsForRetouch = false
     /// Turn each render into the on-screen picture (the render gallery only saves the last one).
     var showsPreview = true
+    /// Keep the user's presets in a file and across "start over" (the render gallery starts each case afresh).
+    var keepsPresets = true
+    /// The presets as last written to the file.
+    private var savedPresets: [Preset] = []
     private let recorder = AudioRecorder()
 
     /// `image` replaces the bundled test photo (the render gallery passes a small copy);
@@ -68,6 +72,8 @@ final class EditorModel: ObservableObject {
         self.previewSide = previewSide
         self.previewSource = PhotoRenderer.downscaled(start, maxSide: previewSide)
         renderer.lens = Self.lens(of: start)
+        savedPresets = Self.readPresets()
+        interpreter.workspace.presets = savedPresets
         installActions()
         // Retouch steps are worked out in the background: show them when they are ready.
         renderer.retouch.onFinish = { [weak self] in
@@ -87,6 +93,11 @@ final class EditorModel: ObservableObject {
     }
 
     func setFromSlider(_ control: Control, to value: Double) {
+        if control.id == Presets.amountID {
+            // Preset Amount applies the last preset again at the new strength.
+            apply([.set(control.id, value)])
+            return
+        }
         guard let target = state.target(for: control) else {
             feedback = describe([.needsMask(controlID: control.id)])
             return
@@ -103,7 +114,9 @@ final class EditorModel: ObservableObject {
     /// Back to the untouched photo: every control at its default, nothing focused, no feedback.
     func startOver() {
         state = EditState()
+        let presets = interpreter.workspace.presets
         interpreter = CommandInterpreter(registry: registry)
+        if keepsPresets { interpreter.workspace.presets = presets }
         installActions()
         focusedControlID = nil
         feedback = nil
@@ -978,6 +991,54 @@ final class EditorModel: ObservableObject {
         installActions()
     }
 
+    // MARK: - Presets
+
+    /// The user's own presets, oldest first.
+    var userPresets: [Preset] { interpreter.workspace.presets }
+    /// The built-in presets, pack by pack.
+    var builtInPresets: [Preset] { interpreter.workspace.packs }
+
+    /// Where the user's presets are kept.
+    private static var presetsFile: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("presets.json")
+    }
+
+    private static func readPresets() -> [Preset] {
+        guard let data = try? Data(contentsOf: presetsFile) else { return [] }
+        return (try? JSONDecoder().decode([Preset].self, from: data)) ?? []
+    }
+
+    /// Writes the presets when they changed (saved, renamed, deleted).
+    private func writePresets() {
+        let presets = interpreter.workspace.presets
+        guard keepsPresets, presets != savedPresets, let data = try? JSONEncoder().encode(presets) else { return }
+        try? data.write(to: Self.presetsFile, options: .atomic)
+        savedPresets = presets
+    }
+
+    /// What a workspace event says on the feedback line.
+    private func describe(_ event: WorkflowEvent) -> (text: String, problem: Bool) {
+        func panels(_ groups: [String]) -> String {
+            groups.isEmpty ? "no panels" : groups.map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: ", ")
+        }
+        switch event {
+        case .presetApplied(let name, let amount, let changes):
+            return ("Preset “\(name)” at \(Int(amount)) % (\(changes) setting\(changes == 1 ? "" : "s") changed)", false)
+        case .presetSaved(let name, let groups):
+            return ("Saved preset “\(name)”: \(panels(groups))", false)
+        case .presetRenamed(let from, let to):
+            return ("Preset “\(from)” is now “\(to)”", false)
+        case .presetDeleted(let name):
+            return ("Preset “\(name)” deleted", false)
+        case .noPreset(let word):
+            return (word.isEmpty ? "Say the preset's name, e.g. “preset portra”" : "No preset called “\(word)”", true)
+        case .presetChoices(let word, let names):
+            return ("“\(word)” could be: " + names.map { "“\($0)”" }.joined(separator: ", "), true)
+        case .builtInPreset(let name):
+            return ("“\(name)” is a built-in preset: it can't be renamed or deleted", true)
+        }
+    }
+
     // MARK: - Merge (HDR, …)
 
     /// Photos picked for merging, in the order they were picked.
@@ -1200,6 +1261,7 @@ final class EditorModel: ObservableObject {
         let edited = editedPreview()
         if showsPreview { preview = renderer.uiImage(edited, hdr: isHDR) }
         pinRetouchSources()
+        writePresets()
     }
 
     /// Spots whose source the canvas picked keep it in the edit: it stays put when other spots change,
@@ -1275,6 +1337,8 @@ final class EditorModel: ObservableObject {
                 var text = "\(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))"
                 if id == "lensProfile", to != 0 { text += " (\(lensNote))" }
                 parts.append(text)
+            case .ran(let id) where Workspace.actions.contains(id):
+                break  // described by its .workflow outcome
             case .ran(let id):
                 parts.append(registry.control(id: id)?.label ?? id)
             case .unchanged(let id, let value):
@@ -1289,6 +1353,10 @@ final class EditorModel: ObservableObject {
             case .needsControl:
                 parts.append("Name a control first, e.g. “contrast more”")
                 problem = true
+            case .workflow(let event):
+                let said = describe(event)
+                parts.append(said.text)
+                problem = problem || said.problem
             }
         }
         if parts.isEmpty { parts = ["Nothing to do"] }

@@ -91,6 +91,7 @@ func describe(_ outcome: CommandOutcome) -> String {
     case .changedInLayer(let layer, let id, let from, let to): return "layer \(layer) \(id) \(from) → \(to)"
     case .layered(let layer, let event): return "layer \(layer): \(event)"
     case .needsLayer(let id): return "\(id) needs a layer"
+    case .workflow(let event): return "workflow: \(event)"
     }
 }
 

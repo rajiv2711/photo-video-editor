@@ -119,6 +119,7 @@ enum RenderGallery {
             made.waitsForRetouch = true
             made.waitsForMerge = true
             made.showsPreview = false  // only the final picture of each case is saved
+            made.keepsPresets = false  // each case starts with no presets of its own
             models[key] = made
             return made
         }

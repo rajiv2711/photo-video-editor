@@ -3,8 +3,9 @@ import Foundation
 /// The current value of every control, the masks (local adjustments, see Masks.swift), the
 /// retouch steps (spots and strokes, see Retouch.swift) and what the Geometry panel's touch tools
 /// made (guides, perspective crop corners, warp handles; see Geometry.swift) and the layers above the
-/// photo (see Layers.swift). Missing entries are at their default.
-public struct EditState: Equatable {
+/// photo (see Layers.swift). Missing entries are at their default. Codable: history steps, snapshots
+/// and virtual copies keep whole states (see Workspace.swift).
+public struct EditState: Equatable, Codable {
     public internal(set) var values: [String: Double] = [:]
     /// Masks in the order they were made ("mask 2" is the second).
     public var masks: [Mask] = []
@@ -35,6 +36,16 @@ public struct EditState: Equatable {
 
     public func isDefault(_ control: Control) -> Bool {
         value(of: control) == control.defaultValue
+    }
+
+    /// The same edit with every value at its control's default left out: two edits that show the same
+    /// compare equal (a value set back to its default is still in `values`).
+    public func normalized(_ registry: ControlRegistry) -> EditState {
+        var out = self
+        for (id, v) in values {
+            if let control = registry.control(id: id), control.defaultValue == v { out.values[id] = nil }
+        }
+        return out
     }
 
     static func tidy(_ value: Double) -> Double {

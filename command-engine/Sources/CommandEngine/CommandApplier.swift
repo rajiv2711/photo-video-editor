@@ -31,6 +31,8 @@ public enum CommandOutcome: Equatable {
     case layered(layer: Int, event: LayerEvent)
     /// The control acts on a selected layer (of a kind that has it) and there is none.
     case needsLayer(controlID: String)
+    /// Something happened in the workspace: a preset applied or saved, … (see Workspace.swift).
+    case workflow(WorkflowEvent)
 }
 
 /// Applies commands to slider values: [Command] → new EditState + outcomes.
@@ -75,7 +77,8 @@ public struct CommandApplier {
             switch command.op {
             case .resetAll:
                 flush()
-                for control in registry.controls where !state.isDefault(control) {
+                // The View panel and the Include switches are how the user looks and works, not the edit.
+                for control in registry.controls where !state.isDefault(control) && !Workflow.isSetting(control) {
                     let from = state.value(of: control)
                     let to = state.set(control, to: control.defaultValue)
                     outcomes.append(.changed(controlID: control.id, from: from, to: to))
