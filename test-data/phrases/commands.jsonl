@@ -1272,3 +1272,28 @@
 {"group":"library","text":"previous picture","expect":[{"op":"run","control":"previousPhoto"}]}
 {"group":"library","text":"previous photo settings","expect":[{"op":"run","control":"previousSettings"}]}
 {"group":"library","text":"next photo exposure 0.5","expect":[{"op":"run","control":"nextPhoto"},{"op":"set","control":"exposure","value":0.5}]}
+{"group":"library","text":"rate 4","expect":[{"op":"run","control":"rate","value":4}]}
+{"group":"library","text":"rating 2","expect":[{"op":"run","control":"rate","value":2}]}
+{"group":"library","text":"rate 0","expect":[{"op":"run","control":"rate","value":0}]}
+{"group":"library","text":"flag pick","expect":[{"op":"run","control":"pick"}]}
+{"group":"library","text":"pick","expect":[{"op":"run","control":"pick"}]}
+{"group":"library","text":"reject","expect":[{"op":"run","control":"reject"}]}
+{"group":"library","text":"flag reject","expect":[{"op":"run","control":"reject"}]}
+{"group":"library","text":"unflag","expect":[{"op":"run","control":"unflag"}]}
+{"group":"library","text":"remove flag","expect":[{"op":"run","control":"unflag"}]}
+{"group":"library","text":"label red","expect":[{"op":"run","control":"colorLabel","value":0}]}
+{"group":"library","text":"label purple","expect":[{"op":"run","control":"colorLabel","value":4}]}
+{"group":"library","text":"label none","expect":[{"op":"run","control":"colorLabel","value":5}]}
+{"group":"library","text":"show rating 3","expect":[{"op":"run","control":"showRating","value":3}]}
+{"group":"library","text":"rating filter 4","expect":[{"op":"run","control":"showRating","value":4}]}
+{"group":"library","text":"show picks","expect":[{"op":"run","control":"showPicks"}]}
+{"group":"library","text":"picks only","expect":[{"op":"run","control":"showPicks"}]}
+{"group":"library","text":"show rejected","expect":[{"op":"run","control":"showRejects"}]}
+{"group":"library","text":"show rejects","expect":[{"op":"run","control":"showRejects"}]}
+{"group":"library","text":"show unflagged","expect":[{"op":"run","control":"showUnflagged"}]}
+{"group":"library","text":"unflagged only","expect":[{"op":"run","control":"showUnflagged"}]}
+{"group":"library","text":"show label green","expect":[{"op":"run","control":"showLabel","value":2}]}
+{"group":"library","text":"show label off","expect":[{"op":"run","control":"showLabel","value":5}]}
+{"group":"library","text":"show all photos","expect":[{"op":"run","control":"showAllPhotos"}]}
+{"group":"library","text":"clear filters","expect":[{"op":"run","control":"showAllPhotos"}]}
+{"group":"library","text":"rate 5 next photo","expect":[{"op":"run","control":"rate","value":5},{"op":"run","control":"nextPhoto"}]}

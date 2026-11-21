@@ -155,6 +155,16 @@ public enum LibraryEvent: Equatable {
     case end(next: Bool)
     /// The library panel was asked for: how many photos it shows and holds.
     case browsed(shown: Int, total: Int)
+    /// Rating, flag or colour label asked for while no library photo is being edited.
+    case notInLibrary
+    /// The photo being edited got this many stars (0…5).
+    case rated(Int)
+    /// …this flag (1 pick, −1 rejected, 0 none).
+    case flagged(Int)
+    /// …this colour label ("" none).
+    case labelled(String)
+    /// The filter changed: how many photos it shows of how many.
+    case filtered(shown: Int, total: Int)
 }
 
 /// The photos imported, the albums, the filter, and the photo being edited.
@@ -179,7 +189,35 @@ public struct Library: Codable, Equatable {
     }
 
     /// The library's actions (run by the workspace, in order with the other commands).
-    public static let actions: Set<String> = ["openPhoto", "nextPhoto", "previousPhoto", "browseLibrary"]
+    public static let actions: Set<String> = ["openPhoto", "nextPhoto", "previousPhoto", "browseLibrary",
+                                              "rate", "pick", "reject", "unflag", "colorLabel",
+                                              "showRating", "showPicks", "showRejects", "showUnflagged", "showLabel", "showAllPhotos"]
+
+    /// Colour labels, as the options of Label (controls.json; Show Label adds "any").
+    public static let labels = ["red", "yellow", "green", "blue", "purple"]
+
+    /// The flag filters ("show picks", …).
+    public static let flagFilters = ["all", "picks", "rejected", "unflagged"]
+
+    /// Whether a photo passes the filter.
+    public func matches(_ photo: LibraryPhoto) -> Bool {
+        guard photo.rating >= filter.minRating else { return false }
+        switch filter.flag {
+        case "picks": if photo.flag != 1 { return false }
+        case "rejected": if photo.flag != -1 { return false }
+        case "unflagged": if photo.flag != 0 { return false }
+        default: break
+        }
+        if !filter.label.isEmpty, photo.label != filter.label { return false }
+        if !filter.album.isEmpty {
+            guard let album = albums.first(where: { Presets.normalized($0.name) == Presets.normalized(filter.album) }),
+                  album.photos.contains(photo.id) else { return false }
+        }
+        if !filter.keyword.isEmpty, !photo.keywords.contains(where: { Presets.normalized($0) == Presets.normalized(filter.keyword) }) {
+            return false
+        }
+        return true
+    }
 
     public func photo(_ id: String?) -> LibraryPhoto? {
         guard let id else { return nil }
@@ -193,9 +231,9 @@ public struct Library: Codable, Equatable {
         }.map(\.element)
     }
 
-    /// The photos the library shows, in order.
+    /// The photos the library shows (those the filter lets through), in order.
     public var shown: [LibraryPhoto] {
-        ordered
+        ordered.filter(matches)
     }
 
     /// The photo being edited's place among those shown (from 1), or nil when it isn't shown.
@@ -245,9 +283,41 @@ public struct Library: Codable, Equatable {
             return ([.opened(id: target, index: index, count: list.count)], target)
         case "browseLibrary":
             return ([.browsed(shown: list.count, total: photos.count)], nil)
+        case "rate", "pick", "reject", "unflag", "colorLabel":
+            guard let i = photos.firstIndex(where: { $0.id == current }) else { return ([.notInLibrary], nil) }
+            switch id {
+            case "rate":
+                // "rate 4"; "rate" alone says the rating.
+                if let v = command.value { photos[i].rating = Swift.min(5, Swift.max(0, Int(v.rounded()))) }
+                return ([.rated(photos[i].rating)], nil)
+            case "colorLabel":
+                // An option of Label: a colour, or none (the last).
+                let n = command.value.map { Int($0) } ?? 0
+                photos[i].label = Self.labels.indices.contains(n) ? Self.labels[n] : ""
+                return ([.labelled(photos[i].label)], nil)
+            default:
+                photos[i].flag = id == "pick" ? 1 : id == "reject" ? -1 : 0
+                return ([.flagged(photos[i].flag)], nil)
+            }
+        case "showRating":
+            filter.minRating = Swift.min(5, Swift.max(0, Int((command.value ?? 0).rounded())))
+        case "showPicks":
+            filter.flag = "picks"
+        case "showRejects":
+            filter.flag = "rejected"
+        case "showUnflagged":
+            filter.flag = "unflagged"
+        case "showLabel":
+            // A colour, or any (the last option).
+            let n = command.value.map { Int($0) } ?? Self.labels.count
+            filter.label = Self.labels.indices.contains(n) ? Self.labels[n] : ""
+        case "showAllPhotos":
+            filter = LibraryFilter()
         default:
             return ([], nil)
         }
+        // A filter changed.
+        return ([.filtered(shown: shown.count, total: photos.count)], nil)
     }
 }
 

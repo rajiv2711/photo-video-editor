@@ -1130,7 +1130,28 @@ final class EditorModel: ObservableObject {
             return (next ? "That's the last photo" : "That's the first photo", true)
         case .browsed(let shown, let total):
             return ("Library: \(total) photo\(total == 1 ? "" : "s")" + (shown < total ? ", \(shown) shown" : ""), false)
+        case .notInLibrary:
+            return ("This photo isn't in the library: import it first (Library panel → Photos, Files or Card)", true)
+        case .rated(let stars):
+            return (stars == 0 ? "No stars" : String(repeating: "★", count: stars) + " (\(stars) star\(stars == 1 ? "" : "s"))", false)
+        case .flagged(let flag):
+            return (flag == 1 ? "Flagged as a pick" : flag == -1 ? "Rejected" : "Flag removed", false)
+        case .labelled(let label):
+            return (label.isEmpty ? "Label removed" : "Label: \(label.capitalized)", false)
+        case .filtered(let shown, let total):
+            return ("Showing \(shown) of \(total) photos" + (library.filter.isEmpty ? "" : ": " + Self.describe(library.filter)), false)
         }
+    }
+
+    /// The filter in words ("3+ stars · picks · red label").
+    static func describe(_ filter: LibraryFilter) -> String {
+        var parts: [String] = []
+        if filter.minRating > 0 { parts.append("\(filter.minRating)+ star\(filter.minRating == 1 ? "" : "s")") }
+        if filter.flag != "all" { parts.append(filter.flag) }
+        if !filter.label.isEmpty { parts.append(filter.label + " label") }
+        if !filter.album.isEmpty { parts.append("album “\(filter.album)”") }
+        if !filter.keyword.isEmpty { parts.append("keyword “\(filter.keyword)”") }
+        return parts.isEmpty ? "all photos" : parts.joined(separator: " · ")
     }
 
     /// For a raw photo: its camera's white balance (the presets are relative to it).
@@ -1146,7 +1167,13 @@ final class EditorModel: ObservableObject {
         out["library.count"] = String(lib.photos.count)
         out["library.shown"] = String(lib.shown.count)
         out["photo.index"] = String(lib.currentIndex ?? 0)
-        if let photo = lib.photo(lib.current) { out["photo.name"] = photo.name }
+        if let photo = lib.photo(lib.current) {
+            out["photo.name"] = photo.name
+            out["photo.rating"] = String(photo.rating)
+            out["photo.flag"] = String(photo.flag)
+            out["photo.label"] = photo.label
+        }
+        out["library.filter"] = Self.describe(lib.filter)
         if let info = pictureInfo {
             out["photo.type"] = info.type ?? ""
             out["photo.raw"] = info.isRaw ? "yes" : "no"

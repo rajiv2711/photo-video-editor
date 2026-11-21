@@ -198,4 +198,75 @@ final class LibraryTests: XCTestCase {
         // As Shot is as the camera set it, whatever that was.
         XCTAssertEqual(WhiteBalance.offset(preset: "asShot", asShot: 3000).temperature, 0)
     }
+
+    // MARK: - Rate, flag, label (#164)
+
+    func testRatingNamesReachTheirControls() {
+        XCTAssertEqual(parse("rate 4"), [.run("rate", value: 4)])
+        XCTAssertEqual(parse("flag pick"), [.run("pick")])
+        XCTAssertEqual(parse("reject"), [.run("reject")])
+        XCTAssertEqual(parse("flag off"), [.run("unflag")])
+        XCTAssertEqual(parse("label red"), [.run("colorLabel", value: 0)])
+        XCTAssertEqual(parse("show picks"), [.run("showPicks")])
+        XCTAssertEqual(parse("show rating 3"), [.run("showRating", value: 3)])
+        XCTAssertEqual(parse("show label blue"), [.run("showLabel", value: 3)])
+        XCTAssertEqual(parse("show all"), [.run("showAllPhotos")])
+        // "show" before other names still switches them on.
+        XCTAssertEqual(parse("show clipping"), [.set("clippingWarning", 1)])
+    }
+
+    func testLabelsMatchTheirControls() {
+        let label = registry.control(id: "colorLabel")!
+        XCTAssertEqual(label.options.map(\.id), Library.labels + ["none"])
+        XCTAssertEqual(registry.control(id: "showLabel")!.options.map(\.id), Library.labels + ["any"])
+    }
+
+    func testRatingsFlagsAndLabelsStayWithTheirPhoto() {
+        makeLibrary()
+        XCTAssertEqual(events(run("rate 4")), [.notInLibrary], "no library photo open")
+        run("photo 1")
+        XCTAssertEqual(events(run("rate 4")), [.rated(4)])
+        XCTAssertEqual(events(run("rate 9")), [.rated(5)], "at most 5 stars")
+        XCTAssertEqual(events(run("flag pick label red")), [.flagged(1), .labelled("red")])
+        run("next photo reject label none")
+        let lib = interpreter.workspace.library
+        XCTAssertEqual(lib.photo("a")?.rating, 5)
+        XCTAssertEqual(lib.photo("a")?.flag, 1)
+        XCTAssertEqual(lib.photo("a")?.label, "red")
+        XCTAssertEqual(lib.photo("b")?.flag, -1)
+        XCTAssertEqual(lib.photo("b")?.label, "")
+        // Rating is no edit: nothing to undo.
+        XCTAssertFalse(interpreter.workspace.history.canUndo)
+    }
+
+    func testFiltersNarrowWhatIsShown() {
+        makeLibrary()
+        run("photo 1 rate 3 pick label green")   // a
+        run("next rate 5 reject")               // b
+        run("next rate 1")                      // c
+        XCTAssertEqual(events(run("show rating 3")), [.filtered(shown: 2, total: 3)])
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["a", "b"])
+        XCTAssertEqual(events(run("show picks")), [.filtered(shown: 1, total: 3)])
+        run("show all photos")
+        run("show rejected")
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["b"])
+        run("show unflagged")
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["c"])
+        run("clear filters show label green")
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["a"])
+        run("show label off")
+        XCTAssertEqual(interpreter.workspace.library.filter, LibraryFilter())
+    }
+
+    func testNextMovesThroughWhatIsShown() {
+        makeLibrary()
+        run("photo 1 pick")                     // a
+        run("next photo")                       // b
+        run("next photo pick")                  // c
+        run("show picks")
+        run("photo 1")
+        XCTAssertEqual(interpreter.workspace.library.current, "a")
+        run("next photo")
+        XCTAssertEqual(interpreter.workspace.library.current, "c", "b isn't shown: skipped")
+    }
 }
