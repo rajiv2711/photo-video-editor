@@ -12,10 +12,12 @@ final class ViewRenderer {
     }
 
     /// `edited`: the edited preview; `before`: the photo before its edit; `value`: the controls by id.
-    func apply(_ edited: CIImage, before: CIImage, value: (String) -> Double?) -> CIImage {
+    /// `samplers`: the colour samplers' points (0…1 from the top-left of the edited picture).
+    func apply(_ edited: CIImage, before: CIImage, value: (String) -> Double?, samplers: [MaskPoint] = []) -> CIImage {
         var after = Self.atOrigin(edited)
         if (value("showBefore") ?? 0) != 0 { return Self.atOrigin(before) }
         if (value("clippingWarning") ?? 0) != 0 { after = clippingWarning(after) }
+        if !samplers.isEmpty { after = markers(after, at: samplers) }
         let i = Int(value("compare") ?? 0)
         let mode = CompareLayout.modes.indices.contains(i) ? CompareLayout.modes[i] : "off"
         guard mode != "off" else { return after }
@@ -52,6 +54,35 @@ final class ViewRenderer {
         let red = CIImage(color: CIColor(red: 1, green: 0, blue: 0)).cropped(to: image.extent)
         let blue = CIImage(color: CIColor(red: 0, green: 0.2, blue: 1)).cropped(to: image.extent)
         return Filters.blend(blue, over: Filters.blend(red, over: image, mask: highlights), mask: shadows).cropped(to: image.extent)
+    }
+
+    /// Colour samplers: a white ring with a dark edge and its number at each point.
+    private func markers(_ image: CIImage, at points: [MaskPoint]) -> CIImage {
+        let size = image.extent.size
+        guard size.width >= 1, size.height >= 1 else { return image }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = false
+        format.preferredRange = .standard
+        let picture = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            let r = max(4, 0.012 * max(size.width, size.height))
+            for (i, p) in points.enumerated() {
+                let c = CGPoint(x: CGFloat(p.x) * size.width, y: CGFloat(p.y) * size.height)
+                let ring = CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)
+                ctx.cgContext.setLineWidth(max(2, r / 3))
+                UIColor.black.setStroke()
+                ctx.cgContext.strokeEllipse(in: ring.insetBy(dx: -max(1, r / 4), dy: -max(1, r / 4)))
+                UIColor.white.setStroke()
+                ctx.cgContext.strokeEllipse(in: ring)
+                let number = "\(i + 1)" as NSString
+                number.draw(at: CGPoint(x: c.x + r + 2, y: c.y - 2.6 * r), withAttributes: [
+                    .font: UIFont.boldSystemFont(ofSize: 1.8 * r), .foregroundColor: UIColor.white,
+                    .strokeColor: UIColor.black, .strokeWidth: -3,
+                ])
+            }
+        }
+        guard let cg = picture.cgImage else { return image }
+        return CIImage(cgImage: cg).composited(over: image)
     }
 
     /// The picture moved so its frame starts at 0, 0.

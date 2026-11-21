@@ -150,6 +150,17 @@ public enum Scopes {
         return cells.map { log(1 + Double($0)) / top }
     }
 
+    /// Colour sampler: a colour on sRGB levels (0…1) as the readout shows it: red, green and blue
+    /// 0…255, and CIE L*a*b* (D65; L 0…100).
+    public static func readout(_ r: Double, _ g: Double, _ b: Double) -> (rgb: [Int], lab: [Double]) {
+        func level(_ v: Double) -> Int { Int((Swift.min(1, Swift.max(0, v)) * 255).rounded()) }
+        let lab = MaskRaster.lab(Float(Swift.min(1, Swift.max(0, r))), Float(Swift.min(1, Swift.max(0, g))), Float(Swift.min(1, Swift.max(0, b))))
+        return ([level(r), level(g), level(b)], [Double(lab.l), Double(lab.a), Double(lab.b)])
+    }
+
+    /// At most this many colour samplers at once (the oldest goes).
+    public static let maxSamplers = 4
+
     /// Bar heights 0…1 to draw: each bin over a reference height, the tallest bin but one in a hundred
     /// (so a spike of clipped pixels doesn't flatten the rest; spikes are cut at the top).
     public static func heights(_ bins: [Int]) -> [Double] {

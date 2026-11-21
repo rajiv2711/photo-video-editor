@@ -50,6 +50,13 @@ struct ScopesView: View {
                 .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
                 .accessibilityLabel("Vectorscope")
             }
+            ForEach(scopes.samples, id: \.self) { line in
+                Text(line)
+                    .font(.caption.monospacedDigit())
+                    .padding(6)
+                    .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
+                    .foregroundStyle(.white)
+            }
             if let clip = scopes.clipping {
                 Text(String(format: "Highlights clipped %.1f %% · shadows %.1f %%", 100 * clip.highlights, 100 * clip.shadows))
                     .font(.caption.monospacedDigit())

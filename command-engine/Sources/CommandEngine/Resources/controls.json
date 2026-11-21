@@ -1641,6 +1641,10 @@
     {"id": "clippingWarning", "label": "Clipping Warning", "group": "view", "section": "Scopes", "kind": "toggle",
       "synonyms": ["clipping", "clipping warnings", "show clipping", "clip warning", "highlight clipping", "shadow clipping", "clipping indicator", "clipped areas"]},
     {"id": "vectorscope", "label": "Vectorscope", "group": "view", "section": "Scopes", "kind": "toggle",
-      "synonyms": ["vector scope", "chroma scope", "hue scope", "skin tone line", "skin line", "skin tone scope"]}
+      "synonyms": ["vector scope", "chroma scope", "hue scope", "skin tone line", "skin line", "skin tone scope"]},
+    {"id": "colorSampler", "label": "Color Sampler", "group": "view", "section": "Scopes", "kind": "action",
+      "synonyms": ["colour sampler", "sampler", "sample colour", "sample color", "read colour", "read color", "rgb readout", "lab readout", "add sampler", "colour readout", "color readout"]},
+    {"id": "clearSamplers", "label": "Clear Samplers", "group": "view", "section": "Scopes", "kind": "action",
+      "synonyms": ["remove samplers", "delete samplers", "no samplers", "clear samples", "clear colour samplers", "clear color samplers"]}
   ]
 }

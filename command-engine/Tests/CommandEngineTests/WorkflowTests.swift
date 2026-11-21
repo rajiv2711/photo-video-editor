@@ -511,6 +511,23 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(Scopes.intensities([0, 1, 100]).last, 1)
     }
 
+    func testColorSamplerReadouts() {
+        XCTAssertEqual(parse("color sampler"), [.run("colorSampler")])
+        XCTAssertEqual(parse("sample colour"), [.run("colorSampler")])
+        XCTAssertEqual(parse("clear samplers"), [.run("clearSamplers")])
+        let white = Scopes.readout(1, 1, 1)
+        XCTAssertEqual(white.rgb, [255, 255, 255])
+        XCTAssertEqual(white.lab[0], 100, accuracy: 0.1)
+        XCTAssertEqual(white.lab[1], 0, accuracy: 0.1)
+        XCTAssertEqual(white.lab[2], 0, accuracy: 0.1)
+        let red = Scopes.readout(1, 0, 0)
+        XCTAssertEqual(red.rgb, [255, 0, 0])
+        XCTAssertEqual(red.lab[0], 53.2, accuracy: 0.2)
+        XCTAssertEqual(red.lab[1], 80.1, accuracy: 0.5)
+        XCTAssertEqual(red.lab[2], 67.2, accuracy: 0.5)
+        XCTAssertEqual(Scopes.readout(0.5, 0.5, 0.5).lab[0], 53.4, accuracy: 0.2)
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

@@ -33,6 +33,8 @@ final class EditorModel: ObservableObject {
     @Published private(set) var revealedPanel: String?
     /// The scopes of the preview as shown (View panel), while one is on.
     @Published private(set) var scopes: ScopeReadings?
+    /// Colour samplers: points on the shown picture (0…1 from the top-left), oldest first.
+    @Published private(set) var samplers: [MaskPoint] = []
 
     /// What the View panel's scopes show.
     struct ScopeReadings: Equatable {
@@ -42,12 +44,14 @@ final class EditorModel: ObservableObject {
         var clipping: (highlights: Double, shadows: Double)?
         /// Vectorscope: cell brightness 0…1, `size` × `size`, row by row from the top (nil while it is off).
         var vectorscope: (size: Int, cells: [Double])?
+        /// Colour samplers' readouts, one line each ("R 120 G 80 B 60 · L 40 a 12 b 20").
+        var samples: [String] = []
 
         static func == (a: ScopeReadings, b: ScopeReadings) -> Bool {
             a.histogram?.luma == b.histogram?.luma && a.histogram?.red == b.histogram?.red
                 && a.histogram?.green == b.histogram?.green && a.histogram?.blue == b.histogram?.blue
                 && a.clipping?.highlights == b.clipping?.highlights && a.clipping?.shadows == b.clipping?.shadows
-                && a.vectorscope?.cells == b.vectorscope?.cells
+                && a.vectorscope?.cells == b.vectorscope?.cells && a.samples == b.samples
         }
     }
 
@@ -198,6 +202,7 @@ final class EditorModel: ObservableObject {
         watermarkLogo = nil
         mergePhotos = []
         lastBatch = []
+        samplers = []
         livePhoto = nil
         if merged != nil {
             merged = nil
@@ -747,6 +752,7 @@ final class EditorModel: ObservableObject {
         "spotSource": "Tap where the selected spot should copy from.",
         "portraitFocus": "Tap what should be sharp: the depth there becomes the Focus Depth.",
         CreativeFilters.centerPicker: centerHint,
+        "colorSampler": "Tap the photo where to read the colour (RGB and L*a*b*; up to 4 samplers).",
     ]
 
     /// What the Effect Center picker asks.
@@ -762,6 +768,10 @@ final class EditorModel: ObservableObject {
         armLayerTools(outcomes)
         noteMissingInputs(outcomes)
         for case .ran(let id) in outcomes {
+            if id == "clearSamplers" {
+                samplers = []
+                feedback = Feedback(text: "Colour samplers cleared")
+            }
             if let kind = MergeTools.actions[id] { merge(kind) }
             if id == "batchEdit" { batchEdit() }
             if id == "matchExposures" { batchEdit(matching: true) }
@@ -788,6 +798,14 @@ final class EditorModel: ObservableObject {
             return
         }
         armedPicker = nil
+        if picker == "colorSampler" {
+            // Samplers read the picture as shown, where it was tapped.
+            samplers.append(MaskPoint(min(max(shownX, 0), 1), min(max(shownY, 0), 1)))
+            if samplers.count > Scopes.maxSamplers { samplers.removeFirst() }
+            feedback = Feedback(text: "Sampler \(samplers.count): " + sample(editedPreview(), at: samplers[samplers.count - 1]))
+            render()
+            return
+        }
         // Pickers read the photo itself: the point on the (cropped, turned) preview maps back.
         let onPhoto = toPhoto(MaskPoint(shownX, shownY))
         let x = onPhoto.x, y = onPhoto.y
@@ -1452,7 +1470,8 @@ final class EditorModel: ObservableObject {
     }
 
     private func shown(_ edited: CIImage) -> CIImage {
-        viewRenderer.apply(edited, before: isHDR ? previewSource : previewSource.applyingFilter("CIColorClamp"), value: currentValue)
+        viewRenderer.apply(edited, before: isHDR ? previewSource : previewSource.applyingFilter("CIColorClamp"), value: currentValue,
+                           samplers: samplers)
     }
 
     /// Whether a View panel switch is on.
@@ -1462,12 +1481,17 @@ final class EditorModel: ObservableObject {
 
     /// The scopes that are on, from a small copy of the edited preview as sRGB levels.
     private func readScopes(_ edited: CIImage) {
-        guard isOn("histogram") || isOn("clippingWarning") || isOn("vectorscope") else {
+        guard isOn("histogram") || isOn("clippingWarning") || isOn("vectorscope") || !samplers.isEmpty else {
             scopes = nil
             return
         }
-        let bytes = ImageStats.srgbBytes(of: edited, context: renderer.context)
         var readings = ScopeReadings()
+        readings.samples = samplers.enumerated().map { "\($0.offset + 1): " + sample(edited, at: $0.element) }
+        guard isOn("histogram") || isOn("clippingWarning") || isOn("vectorscope") else {
+            scopes = readings
+            return
+        }
+        let bytes = ImageStats.srgbBytes(of: edited, context: renderer.context)
         if isOn("histogram") {
             let h = Scopes.histogram(rgba: bytes)
             readings.histogram = (Scopes.heights(h.red), Scopes.heights(h.green), Scopes.heights(h.blue), Scopes.heights(h.luma))
@@ -1475,6 +1499,13 @@ final class EditorModel: ObservableObject {
         if isOn("clippingWarning") { readings.clipping = Scopes.clippedShares(rgba: bytes) }
         if isOn("vectorscope") { readings.vectorscope = (64, Scopes.intensities(Scopes.vectorscope(rgba: bytes, size: 64))) }
         scopes = readings
+    }
+
+    /// A colour sampler's readout at a point of the edited picture (a small square's average).
+    private func sample(_ edited: CIImage, at p: MaskPoint) -> String {
+        let color = ImageStats.averageColor(of: edited, in: Self.spot(p.x, p.y, in: edited.extent), context: renderer.context).encoded
+        let read = Scopes.readout(color.r, color.g, color.b)
+        return String(format: "R %d G %d B %d · L %.0f a %.0f b %.0f", read.rgb[0], read.rgb[1], read.rgb[2], read.lab[0], read.lab[1], read.lab[2])
     }
 
     /// Before / after is on: touches on the photo do nothing (it isn't the picture being edited).

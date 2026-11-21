@@ -621,6 +621,8 @@
     {"id": "histogram", "command": "histogram", "control": "histogram", "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
     {"id": "clip-source", "command": "exposure 2 blacks -100", "expect": [{"metric": "p95_luma", "dir": "up"}]},
     {"id": "clipping-warning", "command": "exposure 2 blacks -100 clipping warning", "control": "clippingWarning", "view": "overlay", "expect": [{"metric": "mean_sat", "dir": "up", "vs": "clip-source", "min": 3}, {"metric": "mean_g", "dir": "down", "vs": "clip-source", "min": 3}]},
-    {"id": "vectorscope", "command": "vectorscope", "control": "vectorscope", "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]}
+    {"id": "vectorscope", "command": "vectorscope", "control": "vectorscope", "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "color-sampler", "command": "color sampler", "control": "colorSampler", "tap": [0.3, 0.3], "view": "overlay", "expect": [{"metric": "diff", "dir": "changed", "region": [0.27, 0.27, 0.33, 0.33], "min": 3}, {"metric": "diff", "dir": "same", "region": [0.45, 0.45, 1, 1], "min": 0.5}]},
+    {"id": "clear-samplers", "command": "color sampler", "control": "clearSamplers", "steps": [{"tap": [0.3, 0.3]}, {"command": "clear samplers"}], "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]}
   ]
 }
