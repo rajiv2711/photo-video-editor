@@ -34,6 +34,8 @@ final class EditorModel: ObservableObject {
 
     private var interpreter: CommandInterpreter
     private var original: CIImage
+    /// The photo as opened (a merge replaces the photo being edited; start over goes back to it).
+    private var opened: CIImage
     private var previewSource: CIImage
     private let previewSide: CGFloat
     let renderer = PhotoRenderer()
@@ -60,6 +62,7 @@ final class EditorModel: ObservableObject {
             start = PhotoRenderer.sample()
         }
         self.original = start
+        self.opened = start
         self.previewSide = previewSide
         self.previewSource = PhotoRenderer.downscaled(start, maxSide: previewSide)
         renderer.lens = Self.lens(of: start)
@@ -108,6 +111,13 @@ final class EditorModel: ObservableObject {
         cropDrag = nil
         quadDrag = nil
         pinDrag = nil
+        mergePhotos = []
+        if merged != nil {
+            merged = nil
+            mergeJob += 1
+            isMerging = false
+            replacePhoto(opened, lens: Self.lens(of: opened))
+        }
         render()
     }
 
@@ -485,6 +495,9 @@ final class EditorModel: ObservableObject {
     private func armPickers(_ outcomes: [CommandInterpreter.Outcome]) {
         armGeometryTools(outcomes)
         for case .ran(let id) in outcomes {
+            if let kind = MergeTools.actions[id] { merge(kind) }
+        }
+        for case .ran(let id) in outcomes {
             if let hint = Self.pickers[id] {
                 armedPicker = id
                 feedback = Feedback(text: hint)
@@ -621,11 +634,110 @@ final class EditorModel: ObservableObject {
             feedback = Feedback(text: "That file couldn't be opened as a photo.", isProblem: true)
             return
         }
+        opened = image
+        merged = nil
+        mergeJob += 1
+        isMerging = false
+        replacePhoto(image, lens: Self.lens(of: image))
+        render()
+    }
+
+    /// Edits another picture (a photo opened, or a merge's result); the sliders stay as they are.
+    private func replacePhoto(_ image: CIImage, lens: PhotoLens) {
         original = image
         previewSource = PhotoRenderer.downscaled(image, maxSide: previewSide)
         renderer.geometry.photoGeneration += 1
-        renderer.lens = Self.lens(of: image)
+        renderer.lens = lens
         installActions()
+    }
+
+    // MARK: - Merge (HDR, …)
+
+    /// Photos picked for merging, in the order they were picked.
+    @Published private(set) var mergePhotos: [CIImage] = []
+    /// A merge is being worked out (in the background).
+    @Published private(set) var isMerging = false
+    /// Work out merges before showing the preview (the render gallery), instead of in the background.
+    var waitsForMerge = false
+    /// The merge that made the photo being edited and the settings it used (nil: the photo as opened).
+    private var merged: (kind: String, key: [Double])?
+    /// Counts merge jobs, so only the newest one's result is used.
+    private var mergeJob = 0
+    private lazy var merger = MergeRenderer(context: renderer.context)
+    private let mergeQueue = DispatchQueue(label: "merge", qos: .userInitiated)
+
+    /// Photos picked for merging (the Merge panel's photo picker, or the render gallery).
+    func pickForMerge(_ photos: [CIImage]) {
+        mergePhotos = photos
+        feedback = Feedback(text: photos.count == 1 ? "1 photo picked for merging"
+                            : "\(photos.count) photos picked for merging: say or tap a merge, e.g. “HDR Merge”")
+    }
+
+    /// Photos picked in the photo library for merging (their files), in the order picked.
+    func pickForMerge(files: [Data]) {
+        let photos = files.compactMap { CIImage(data: $0, options: [.applyOrientationProperty: true]) }
+        guard !photos.isEmpty else {
+            feedback = Feedback(text: "Those files couldn't be opened as photos.", isProblem: true)
+            return
+        }
+        pickForMerge(photos)
+    }
+
+    /// The fewest photos a kind of merge needs.
+    private static func minimumPhotos(_ kind: String) -> Int {
+        2
+    }
+
+    /// The settings a kind of merge reads, as numbers (when they change, the photo it made is merged again).
+    private func mergeKey(_ kind: String) -> [Double] {
+        MergeTools.settings(for: kind).map { id in registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+    }
+
+    /// Merges the photos picked (the last "Photos to Merge" of them) and edits the result; every other
+    /// panel then works on it. Runs in the background (the gallery waits).
+    private func merge(_ kind: String) {
+        let count = registry.control(id: MergeTools.countID).map { state.value(of: $0) } ?? 0
+        let photos = MergeTools.chosen(mergePhotos, count: count)
+        let needed = Self.minimumPhotos(kind)
+        guard photos.count >= needed else {
+            // The photo stays as it is (a merge made before is no longer redone).
+            merged = nil
+            feedback = Feedback(text: "Pick at least \(needed) photos to merge first (Merge panel → Pick Photos to Merge).", isProblem: true)
+            return
+        }
+        merged = (kind, mergeKey(kind))
+        mergeJob += 1
+        let job = mergeJob
+        let value = currentValue
+        let merger = self.merger
+        let name = MergeTools.actions.first { $0.value == kind }.flatMap { registry.control(id: $0.key)?.label } ?? "Merge"
+        let lens = Self.lens(of: photos[0])
+        if waitsForMerge {
+            finishMerge(merger.merge(kind, photos: photos, value: value), name: name, count: photos.count, lens: lens, job: job)
+            return
+        }
+        isMerging = true
+        feedback = Feedback(text: "\(name): merging \(photos.count) photos…")
+        mergeQueue.async {
+            let result = merger.merge(kind, photos: photos, value: value)
+            Task { @MainActor in
+                self.finishMerge(result, name: name, count: photos.count, lens: lens, job: job)
+            }
+        }
+    }
+
+    /// A merge finished: its result becomes the photo being edited (only the newest job's), with the
+    /// lens of the first photo merged.
+    private func finishMerge(_ result: CIImage?, name: String, count: Int, lens: PhotoLens, job: Int) {
+        guard job == mergeJob else { return }
+        isMerging = false
+        guard let result, !result.extent.isEmpty else {
+            merged = nil
+            feedback = Feedback(text: "\(name): these photos couldn't be merged.", isProblem: true)
+            return
+        }
+        replacePhoto(result, lens: lens)
+        feedback = Feedback(text: "\(name): \(count) photos merged")
         render()
     }
 
@@ -734,6 +846,8 @@ final class EditorModel: ObservableObject {
     private func render() {
         // A selected mask or retouch tool takes the touches on the photo instead of a geometry tool.
         if geometryTool != nil, state.selectedMask != nil || state.retouchTool != nil { geometryTool = nil }
+        // A merge's setting changed ("deghost high"): merge again.
+        if let merged, mergeKey(merged.kind) != merged.key { merge(merged.kind) }
         let edited = editedPreview()
         if showsPreview { preview = renderer.uiImage(edited, hdr: isHDR) }
         pinRetouchSources()

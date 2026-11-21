@@ -94,6 +94,8 @@ struct EditorView: View {
                         RetouchPanel(model: model, expanded: $expanded)
                     } else if group == "geometry", model.state.selectedMask == nil {
                         GeometryPanel(model: model, expanded: $expanded)
+                    } else if group == "merge", model.state.selectedMask == nil {
+                        MergePanel(model: model, expanded: $expanded)
                     } else if model.state.selectedMask == nil {
                         // While a mask is selected only the Masks panel shows: its sliders are local.
                         GroupPanel(model: model, group: group, expanded: $expanded)

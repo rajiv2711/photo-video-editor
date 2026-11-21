@@ -1138,6 +1138,18 @@
     {"id": "puppetWarp", "label": "Puppet Warp", "group": "geometry", "section": "Warp", "kind": "action",
       "synonyms": ["puppet", "puppet pins", "pin warp", "warp pins", "puppet tool", "puppet warp tool"]},
     {"id": "resetWarp", "label": "Reset Warp", "group": "geometry", "section": "Warp", "kind": "action",
-      "synonyms": ["clear warp", "remove warp", "clear pins", "remove pins", "delete pins", "no warp", "warp reset", "unwarp"]}
+      "synonyms": ["clear warp", "remove warp", "clear pins", "remove pins", "delete pins", "no warp", "warp reset", "unwarp"]},
+    {"id": "mergeCount", "label": "Photos to Merge", "group": "merge", "min": 0, "max": 50, "default": 0, "step": 1,
+      "synonyms": ["merge count", "merge last", "photos to stack", "number of photos", "merge photos count", "use last"]},
+    {"id": "hdrMerge", "label": "HDR Merge", "group": "merge", "section": "HDR", "kind": "action",
+      "synonyms": ["merge hdr", "hdr merge photos", "merge exposures", "merge brackets", "bracket merge", "exposure merge", "merge to hdr", "photo merge hdr"]},
+    {"id": "deghost", "label": "Deghost", "group": "merge", "section": "HDR", "kind": "choice",
+      "synonyms": ["deghost amount", "deghosting", "ghost removal", "remove ghosts", "ghost reduction", "anti ghost", "anti-ghost"],
+      "options": [{"id": "off", "label": "Off", "synonyms": ["none", "no deghost"]}, {"id": "low", "label": "Low", "synonyms": ["light", "weak"]},
+                  {"id": "medium", "label": "Medium", "synonyms": ["mid", "normal", "moderate"]}, {"id": "high", "label": "High", "synonyms": ["strong", "heavy"]}]},
+    {"id": "hdrOutput", "label": "HDR Merge Output", "group": "merge", "section": "HDR", "kind": "choice",
+      "synonyms": ["hdr output", "merge output", "hdr merge mode", "hdr merge method", "hdr method"],
+      "options": [{"id": "fusion", "label": "Fusion", "synonyms": ["exposure fusion", "tone mapped", "blended", "sdr"]},
+                  {"id": "radiance", "label": "Radiance", "synonyms": ["extended", "extended range", "linear", "high dynamic range"]}]}
   ]
 }

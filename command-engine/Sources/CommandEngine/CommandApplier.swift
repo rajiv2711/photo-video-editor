@@ -118,6 +118,10 @@ public struct CommandApplier {
                     outcomes += done
                     continue
                 }
+                if let done = mergeAction(control, command, state: &state) {
+                    outcomes += done
+                    continue
+                }
                 // Any command on an action runs it; its own commands are applied right here, in order.
                 outcomes.append(.ran(controlID: control.id))
                 let produced = (actionHandler?(control.id) ?? []).filter { $0.op != .run }
@@ -326,6 +330,23 @@ public struct CommandApplier {
             set("rotation", Double(((Int(turns) + (control.id == "rotateRight" ? 1 : 3)) % 4)))
         default:
             break
+        }
+        return out
+    }
+
+    // MARK: - Merge panel actions
+
+    /// A merge action ("hdr merge"): reports `.ran` (the app merges the photos picked) after applying
+    /// what was said with it: an option sets its choice ("stack median"), a number how many of the
+    /// last photos picked to use ("hdr merge 3"). Nil for other actions.
+    private func mergeAction(_ control: Control, _ command: Command, state: inout EditState) -> [CommandOutcome]? {
+        guard control.group == "merge", MergeTools.actions[control.id] != nil else { return nil }
+        var out: [CommandOutcome] = [.ran(controlID: control.id)]
+        let setting = control.options.isEmpty ? MergeTools.countID : MergeTools.optionSetting[control.id]
+        if let v = command.value, let id = setting, let c = registry.control(id: id) {
+            let from = state.value(of: c)
+            let to = state.set(c, to: v)
+            if from != to { out.append(.changed(controlID: id, from: from, to: to)) }
         }
         return out
     }

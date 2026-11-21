@@ -42,6 +42,8 @@ enum RenderGallery {
         let strokes: [[[Double]]]?
         /// More commands, strokes and taps, in order, after the strokes ("eraser", then a stroke).
         let steps: [Step]?
+        /// Pictures picked for merging before the command (generated, see `sourceImage`), in order.
+        let photos: [String]?
     }
 
     /// One step: a command, a stroke or a tap.
@@ -112,6 +114,7 @@ enum RenderGallery {
             if let existing = models[key] { return existing }
             let made = EditorModel(image: sourceImage(source, photo: small), previewSide: longSide)
             made.waitsForRetouch = true
+            made.waitsForMerge = true
             made.showsPreview = false  // only the final picture of each case is saved
             models[key] = made
             return made
@@ -120,6 +123,9 @@ enum RenderGallery {
         for item in cases {
             let model = editor(for: item.source)
             model.startOver()
+            if let photos = item.photos {
+                model.pickForMerge(photos.map { sourceImage($0, photo: small) })
+            }
             if !item.command.isEmpty {
                 model.run(item.command)
             }
@@ -179,8 +185,26 @@ enum RenderGallery {
     /// - "building": the grid seen looking up, its upright lines leaning in towards the top (upright).
     /// - "skewed": the colour chart as a tilted page on a dark table (perspective crop), its corners at
     ///   `skewedCorners`.
+    /// - "bracket-dark", "bracket-mid", "bracket-bright": the test photo as the scene of an exposure
+    ///   bracket, at ½, 2 and 8 × its light (clipped at white), for HDR merge; "bracket-ghost": the dark
+    ///   one with a pale disc passing over the lens (at `ghostDisc`), for deghosting.
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "bracket-dark", "bracket-mid", "bracket-bright", "bracket-ghost":
+            let gains: [String: Double] = ["bracket-mid": 2, "bracket-bright": 8]
+            let gain = gains[source ?? ""] ?? 0.5
+            let bracket = Filters.affine(photo, scale: gain).applyingFilter("CIColorClamp").cropped(to: photo.extent)
+            guard source == "bracket-ghost" else { return bracket }
+            let size = photo.extent.size
+            let centre = CGPoint(x: ghostDisc.x * size.width, y: (1 - ghostDisc.y) * size.height)
+            let disc = CIFilter(name: "CIRadialGradient", parameters: [
+                "inputCenter": CIVector(cgPoint: centre),
+                "inputRadius0": ghostDisc.r * size.width,
+                "inputRadius1": ghostDisc.r * size.width + 1,
+                "inputColor0": CIColor(red: 0.75, green: 0.75, blue: 0.75, alpha: 1),
+                "inputColor1": CIColor(red: 0, green: 0, blue: 0, alpha: 0),
+            ])?.outputImage
+            return disc.map { $0.composited(over: bracket).cropped(to: photo.extent) } ?? bracket
         case "skewed":
             let size = photo.extent.integral.size
             func corner(_ i: Int) -> CIVector {
@@ -353,6 +377,9 @@ enum RenderGallery {
 
     /// The "skewed" page's corners (x, y from the top-left, 0…1): top-left, top-right, bottom-right, bottom-left.
     static let skewedCorners: [(x: CGFloat, y: CGFloat)] = [(0.18, 0.12), (0.86, 0.20), (0.80, 0.88), (0.12, 0.80)]
+
+    /// The pale disc in "bracket-ghost" (centre x, y from the top-left and radius, shares of the width and height).
+    static let ghostDisc: (x: CGFloat, y: CGFloat, r: CGFloat) = (0.45, 0.55, 0.06)
 
     /// Where the "dust" picture's spots are (x, y from the top-left, 0…1).
     static let dustSpots: [(x: CGFloat, y: CGFloat)] = [(0.12, 0.10), (0.85, 0.12), (0.88, 0.55), (0.10, 0.70), (0.75, 0.90)]

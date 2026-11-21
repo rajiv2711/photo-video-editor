@@ -860,3 +860,14 @@
 {"group":"geometry","text":"puppet pins","expect":[{"op":"run","control":"puppetWarp"}]}
 {"group":"geometry","text":"reset warp","expect":[{"op":"run","control":"resetWarp"}]}
 {"group":"geometry","text":"clear pins","expect":[{"op":"run","control":"resetWarp"}]}
+{"group":"merge","text":"hdr merge","expect":[{"op":"run","control":"hdrMerge"}]}
+{"group":"merge","text":"merge hdr","expect":[{"op":"run","control":"hdrMerge"}]}
+{"group":"merge","text":"merge exposures","expect":[{"op":"run","control":"hdrMerge"}]}
+{"group":"merge","text":"hdr merge 3","expect":[{"op":"run","control":"hdrMerge","value":3}]}
+{"group":"merge","text":"deghost medium","expect":[{"op":"set","control":"deghost","value":2}]}
+{"group":"merge","text":"deghost high","expect":[{"op":"set","control":"deghost","value":3}]}
+{"group":"merge","text":"ghost removal off","expect":[{"op":"set","control":"deghost","value":0}]}
+{"group":"merge","text":"hdr output radiance","expect":[{"op":"set","control":"hdrOutput","value":1}]}
+{"group":"merge","text":"hdr merge output fusion","expect":[{"op":"set","control":"hdrOutput","value":0}]}
+{"group":"merge","text":"photos to merge 3","expect":[{"op":"set","control":"mergeCount","value":3}]}
+{"group":"merge","text":"merge last 4","expect":[{"op":"set","control":"mergeCount","value":4}]}
