@@ -1239,3 +1239,8 @@
 {"group":"view","text":"zoom out","expect":[{"op":"nudge","control":"zoom","steps":-1}]}
 {"group":"view","text":"fit","expect":[{"op":"run","control":"zoomFit"}]}
 {"group":"view","text":"zoom to fit","expect":[{"op":"run","control":"zoomFit"}]}
+{"group":"view","text":"grid thirds","expect":[{"op":"set","control":"gridOverlay","value":1}]}
+{"group":"view","text":"golden ratio grid","expect":[{"op":"set","control":"gridOverlay","value":2}]}
+{"group":"view","text":"grid off","expect":[{"op":"set","control":"gridOverlay","value":0}]}
+{"group":"view","text":"guides diagonals","expect":[{"op":"set","control":"gridOverlay","value":4}]}
+{"group":"view","text":"grid","expect":[{"op":"select","control":"gridOverlay"}]}

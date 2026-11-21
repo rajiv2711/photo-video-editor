@@ -201,3 +201,38 @@ public enum Viewport {
         return ViewRect(place(center.x), place(center.y), size, size)
     }
 }
+
+/// Grid & guides over the photo (View panel): composition lines, shares of the picture from the top-left.
+public enum Guides {
+    /// "gridOverlay" option ids, in order; must match controls.json.
+    public static let kinds = ["off", "thirds", "goldenRatio", "grid", "diagonals", "center"]
+
+    /// A line from one point to another.
+    public typealias Line = (from: MaskPoint, to: MaskPoint)
+
+    /// The lines of a guide on a `width` × `height` picture: thirds (1/3, 2/3 each way), the golden
+    /// ratio (0.382, 0.618), a grid of square cells (8 along the long side), corner-to-corner diagonals,
+    /// or a cross through the middle.
+    public static func lines(_ kind: String, width: Double, height: Double) -> [Line] {
+        func vertical(_ x: Double) -> Line { (MaskPoint(x, 0), MaskPoint(x, 1)) }
+        func horizontal(_ y: Double) -> Line { (MaskPoint(0, y), MaskPoint(1, y)) }
+        switch kind {
+        case "thirds":
+            return [vertical(1.0 / 3), vertical(2.0 / 3), horizontal(1.0 / 3), horizontal(2.0 / 3)]
+        case "goldenRatio":
+            let a = 1 - 1 / 1.618033988749895
+            return [vertical(a), vertical(1 - a), horizontal(a), horizontal(1 - a)]
+        case "grid":
+            guard width > 0, height > 0 else { return [] }
+            let cell = Swift.max(width, height) / 8
+            let across = Swift.max(1, Int((width / cell).rounded())), down = Swift.max(1, Int((height / cell).rounded()))
+            return (1..<across).map { vertical(Double($0) / Double(across)) } + (1..<down).map { horizontal(Double($0) / Double(down)) }
+        case "diagonals":
+            return [(MaskPoint(0, 0), MaskPoint(1, 1)), (MaskPoint(1, 0), MaskPoint(0, 1))]
+        case "center":
+            return [vertical(0.5), horizontal(0.5)]
+        default:
+            return []
+        }
+    }
+}

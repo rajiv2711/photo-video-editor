@@ -1656,6 +1656,14 @@
                   {"id": "400", "label": "400 %", "synonyms": ["400", "400%"]},
                   {"id": "800", "label": "800 %", "synonyms": ["800", "800%"]}]},
     {"id": "zoomFit", "label": "Fit", "group": "view", "section": "Zoom", "kind": "action",
-      "synonyms": ["zoom to fit", "fit to screen", "fit view", "fit photo", "zoom fit", "fit the photo", "show whole photo", "zoom out fully"]}
+      "synonyms": ["zoom to fit", "fit to screen", "fit view", "fit photo", "zoom fit", "fit the photo", "show whole photo", "zoom out fully"]},
+    {"id": "gridOverlay", "label": "Grid", "group": "view", "section": "Guides", "kind": "choice", "on": 1,
+      "synonyms": ["grid overlay", "guides", "composition grid", "composition guides", "overlay grid", "guide lines"],
+      "options": [{"id": "off", "label": "Off", "synonyms": ["none", "no grid", "hide"]},
+                  {"id": "thirds", "label": "Thirds", "synonyms": ["rule of thirds", "third"]},
+                  {"id": "goldenRatio", "label": "Golden Ratio", "synonyms": ["golden", "phi", "phi grid", "golden section"]},
+                  {"id": "grid", "label": "Grid", "synonyms": ["square grid", "squares", "fine grid", "lines"]},
+                  {"id": "diagonals", "label": "Diagonals", "synonyms": ["diagonal", "diagonal lines"]},
+                  {"id": "center", "label": "Center", "synonyms": ["centre", "center lines", "centre lines", "cross", "middle"]}]}
   ]
 }

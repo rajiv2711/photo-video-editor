@@ -625,6 +625,8 @@
     {"id": "color-sampler", "command": "color sampler", "control": "colorSampler", "tap": [0.3, 0.3], "view": "overlay", "expect": [{"metric": "diff", "dir": "changed", "region": [0.27, 0.27, 0.33, 0.33], "min": 3}, {"metric": "diff", "dir": "same", "region": [0.45, 0.45, 1, 1], "min": 0.5}]},
     {"id": "clear-samplers", "command": "color sampler", "control": "clearSamplers", "steps": [{"tap": [0.3, 0.3]}, {"command": "clear samplers"}], "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
     {"id": "zoom-200", "command": "zoom 200", "control": "zoom", "view": "overlay", "expect": [{"metric": "diff", "dir": "changed", "min": 3}, {"metric": "edge", "dir": "down"}, {"metric": "width", "dir": "same", "min": 3}]},
-    {"id": "zoom-fit", "command": "zoom 400", "control": "zoomFit", "steps": [{"command": "fit"}], "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]}
+    {"id": "zoom-fit", "command": "zoom 400", "control": "zoomFit", "steps": [{"command": "fit"}], "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "grid-thirds", "command": "grid thirds", "control": "gridOverlay", "view": "overlay", "expect": [{"metric": "diff", "dir": "changed", "region": [0.32, 0.1, 0.345, 0.9], "min": 3}, {"metric": "diff", "dir": "same", "region": [0.4, 0.4, 0.6, 0.6], "min": 0.5}]},
+    {"id": "grid-golden", "command": "golden ratio grid", "control": "gridOverlay", "view": "overlay", "expect": [{"metric": "diff", "dir": "changed", "region": [0.37, 0.1, 0.395, 0.9], "min": 3}, {"metric": "diff", "dir": "same", "region": [0.45, 0.45, 0.55, 0.55], "min": 0.5}]}
   ]
 }

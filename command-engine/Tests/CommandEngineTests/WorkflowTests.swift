@@ -558,6 +558,29 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(Viewport.visible(magnification: 1, center: (0.9, 0.1)), ViewRect(0, 0, 1, 1))
     }
 
+    // MARK: - Grid & guides
+
+    func testGridNamesAndLines() {
+        XCTAssertEqual(parse("grid thirds"), [.set("gridOverlay", 1)])
+        XCTAssertEqual(parse("golden ratio grid"), [.set("gridOverlay", 2)])
+        XCTAssertEqual(parse("guides diagonals"), [.set("gridOverlay", 4)])
+        XCTAssertEqual(parse("grid off"), [.set("gridOverlay", 0)])
+        XCTAssertEqual(parse("clear guides"), [.run("clearGuides")], "upright's guides keep their names")
+        XCTAssertEqual(Guides.kinds, registry.control(id: "gridOverlay")!.options.map(\.id))
+        run("grid")
+        XCTAssertEqual(value("gridOverlay"), 1, "“grid” alone shows the thirds")
+        let thirds = Guides.lines("thirds", width: 600, height: 400)
+        XCTAssertEqual(thirds.count, 4)
+        XCTAssertEqual(thirds[0].from.x, 1.0 / 3, accuracy: 1e-9)
+        let golden = Guides.lines("goldenRatio", width: 600, height: 400)
+        XCTAssertEqual(golden[0].from.x, 0.382, accuracy: 0.001)
+        // Square cells: 8 along the long side, as many as fit along the short one.
+        let grid = Guides.lines("grid", width: 800, height: 400)
+        XCTAssertEqual(grid.filter { $0.from.x == $0.to.x }.count, 7)
+        XCTAssertEqual(grid.filter { $0.from.y == $0.to.y }.count, 3)
+        XCTAssertTrue(Guides.lines("off", width: 1, height: 1).isEmpty)
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

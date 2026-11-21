@@ -17,6 +17,8 @@ final class ViewRenderer {
         var after = Self.atOrigin(edited)
         if (value("showBefore") ?? 0) != 0 { return Self.atOrigin(before) }
         if (value("clippingWarning") ?? 0) != 0 { after = clippingWarning(after) }
+        let g = Int(value("gridOverlay") ?? 0)
+        if Guides.kinds.indices.contains(g), g > 0 { after = grid(after, kind: Guides.kinds[g]) }
         if !samplers.isEmpty { after = markers(after, at: samplers) }
         let i = Int(value("compare") ?? 0)
         let mode = CompareLayout.modes.indices.contains(i) ? CompareLayout.modes[i] : "off"
@@ -54,6 +56,38 @@ final class ViewRenderer {
         let red = CIImage(color: CIColor(red: 1, green: 0, blue: 0)).cropped(to: image.extent)
         let blue = CIImage(color: CIColor(red: 0, green: 0.2, blue: 1)).cropped(to: image.extent)
         return Filters.blend(blue, over: Filters.blend(red, over: image, mask: highlights), mask: shadows).cropped(to: image.extent)
+    }
+
+    /// The grid drawn last (its size and kind) and its picture: lines don't change while editing.
+    private var gridCache: (key: String, image: CIImage)?
+
+    /// Grid & guides (Guides.lines): thin white lines with a soft dark edge, so they show on light and dark parts.
+    private func grid(_ image: CIImage, kind: String) -> CIImage {
+        let size = image.extent.size
+        guard size.width >= 1, size.height >= 1 else { return image }
+        let key = "\(kind) \(Int(size.width)) \(Int(size.height))"
+        if let cached = gridCache, cached.key == key { return cached.image.composited(over: image) }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = false
+        format.preferredRange = .standard
+        let width = max(1, (max(size.width, size.height) / 800).rounded())
+        let picture = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            let cg = ctx.cgContext
+            for (stroke, color) in [(3 * width, UIColor(white: 0, alpha: 0.45)), (width, UIColor(white: 1, alpha: 0.85))] {
+                cg.setLineWidth(stroke)
+                cg.setStrokeColor(color.cgColor)
+                for line in Guides.lines(kind, width: Double(size.width), height: Double(size.height)) {
+                    cg.move(to: CGPoint(x: CGFloat(line.from.x) * size.width, y: CGFloat(line.from.y) * size.height))
+                    cg.addLine(to: CGPoint(x: CGFloat(line.to.x) * size.width, y: CGFloat(line.to.y) * size.height))
+                }
+                cg.strokePath()
+            }
+        }
+        guard let cg = picture.cgImage else { return image }
+        let lines = CIImage(cgImage: cg)
+        gridCache = (key, lines)
+        return lines.composited(over: image)
     }
 
     /// Colour samplers: a white ring with a dark edge and its number at each point.
