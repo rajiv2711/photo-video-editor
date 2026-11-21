@@ -3,8 +3,11 @@ import CoreImage
 
 /// The Creative panel (CreativeFilters in CommandEngine), after the crop and before the post-crop
 /// vignette and grain, so the filters see the picture as framed. Every filter is a slider, 0 = off;
-/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic → pixelate → lighting → lens flare → film. Sizes are shares of the picture's long side, so the
-/// preview and the saved photo look alike. The Effect Center and Angle (Placement) are shared.
+/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic →
+/// pixelate → lighting → lens flare → film. Frames (`frame`) come last of all, over the finished
+/// picture. Sizes are shares of the picture's long side, so the preview and the saved photo look
+/// alike. The Effect Center, Size and Angle (Placement) are shared. Perceptual looks work on sRGB
+/// levels, lights in linear light; small Core Image kernels do what no built-in filter does.
 final class CreativeRenderer {
     let context: CIContext
 

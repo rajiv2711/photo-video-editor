@@ -116,3 +116,11 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `double exposure` · `blend mode screen` · `blend amount 60` | Double exposure (one picked photo goes over the photo being edited) |
 | `live photo long exposure` · `live photo loop` · `live photo bounce` · `key frame 12` | Live Photo effects (Loop and Bounce save an animated GIF; key frame 0 is the photo) |
 | `portrait aperture f2.8` · `portrait focus` · `focus depth 40` · `portrait lighting stage` | Portrait depth editing of iPhone Portrait photos (`portrait focus`, then tap what should be sharp) |
+| `gaussian blur 20` · `blur more` · `motion blur 50` · `motion blur angle 45` · `zoom blur` · `spin blur 30` | Creative panel, blur filters: naming a filter alone turns it on, a number sets it, `reset` turns it off |
+| `tilt shift` · `iris blur` · `field blur 40` · `effect size 50` · `tilt shift angle 30` | Selective-focus blurs, sharp around the Effect Center |
+| `place center` · `center x 30` · `center y 70` | Where zoom and spin blur, tilt-shift, distortions, lights and the lens flare are centred (naming one of them also lets the next tap place it) |
+| `twirl 90` · `wave` · `ripple` · `pinch -30` · `spherize` · `polar coordinates` | Distort filters (`twirl 90`: a quarter turn) |
+| `oil paint` · `emboss` · `find edges` · `wind 80` · `mosaic 12` · `crystallize` · `halftone` | Stylize and pixelate filters |
+| `watercolour` · `sketch` · `cartoon` · `cutout` | Artistic filters (classical image processing, no AI) |
+| `lens flare` · `spotlight` · `omni light` · `light leak` · `dust and scratches` | Light and film effects (`lens flare`, then tap where the light comes from) |
+| `frame white` · `polaroid frame` · `film frame` · `frame width 8` · `frame off` | Frames over the finished picture's edge (`border` is Canvas Size) |
