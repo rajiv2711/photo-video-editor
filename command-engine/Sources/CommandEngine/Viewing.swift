@@ -115,6 +115,41 @@ public enum Scopes {
         return (Double(high) / Double(count), Double(low) / Double(count))
     }
 
+    /// A colour's place on the vectorscope: its blue and red colour differences (Rec. 709 Cb, Cr of the
+    /// sRGB levels, each −0.5…0.5; greys at 0, 0).
+    public static func chroma(_ r: Double, _ g: Double, _ b: Double) -> (cb: Double, cr: Double) {
+        let y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        return ((b - y) / 1.8556, (r - y) / 1.5748)
+    }
+
+    /// The skin-tone line: skin of every complexion lies close to this angle (degrees, counterclockwise
+    /// from the +Cb axis, as on broadcast vectorscopes).
+    public static let skinToneAngle = 123.0
+
+    /// The vectorscope: how many pixels fall in each cell of a `size` × `size` grid over Cb (left to
+    /// right) and Cr (bottom to top), −0.5…0.5 each; cells row by row from the top.
+    public static func vectorscope(rgba: [UInt8], size: Int = 128) -> [Int] {
+        var cells = [Int](repeating: 0, count: size * size)
+        var i = 0
+        while i + 3 < rgba.count {
+            if rgba[i + 3] >= 128 {
+                let c = chroma(Double(rgba[i]) / 255, Double(rgba[i + 1]) / 255, Double(rgba[i + 2]) / 255)
+                let x = Swift.min(size - 1, Swift.max(0, Int((c.cb + 0.5) * Double(size))))
+                let y = Swift.min(size - 1, Swift.max(0, Int((0.5 - c.cr) * Double(size))))
+                cells[y * size + x] += 1
+            }
+            i += 4
+        }
+        return cells
+    }
+
+    /// Cell brightness 0…1 to draw: the log of each count over the log of the largest, so faint colours show.
+    public static func intensities(_ cells: [Int]) -> [Double] {
+        let top = log(1 + Double(cells.max() ?? 0))
+        guard top > 0 else { return cells.map { _ in 0 } }
+        return cells.map { log(1 + Double($0)) / top }
+    }
+
     /// Bar heights 0…1 to draw: each bin over a reference height, the tallest bin but one in a hundred
     /// (so a spike of clipped pixels doesn't flatten the rest; spikes are cut at the top).
     public static func heights(_ bins: [Int]) -> [Double] {

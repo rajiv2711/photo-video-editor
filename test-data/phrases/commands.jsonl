@@ -1225,3 +1225,6 @@
 {"group":"view","text":"clipping warning","expect":[{"op":"set","control":"clippingWarning","value":1}]}
 {"group":"view","text":"show clipping","expect":[{"op":"set","control":"clippingWarning","value":1}]}
 {"group":"view","text":"clipping off","expect":[{"op":"set","control":"clippingWarning","value":0}]}
+{"group":"view","text":"vectorscope","expect":[{"op":"set","control":"vectorscope","value":1}]}
+{"group":"view","text":"show skin tone line","expect":[{"op":"set","control":"vectorscope","value":1}]}
+{"group":"view","text":"vector scope off","expect":[{"op":"set","control":"vectorscope","value":0}]}

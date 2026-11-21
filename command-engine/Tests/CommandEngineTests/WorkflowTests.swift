@@ -488,6 +488,29 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(shares.shadows, 0.25)
     }
 
+    func testVectorscopeBinsChroma() {
+        XCTAssertEqual(parse("vectorscope"), [.set("vectorscope", 1)])
+        XCTAssertEqual(parse("show skin tone line"), [.set("vectorscope", 1)])
+        XCTAssertEqual(parse("vectorscope off"), [.set("vectorscope", 0)])
+        // Greys sit in the middle; red up and to the left of it; blue to the right.
+        let grey = Scopes.chroma(0.5, 0.5, 0.5)
+        XCTAssertEqual(grey.cb, 0, accuracy: 1e-9)
+        XCTAssertEqual(grey.cr, 0, accuracy: 1e-9)
+        let red = Scopes.chroma(1, 0, 0), blue = Scopes.chroma(0, 0, 1)
+        XCTAssertEqual(red.cr, 0.5, accuracy: 1e-3)
+        XCTAssertEqual(blue.cb, 0.5, accuracy: 1e-3)
+        // Skin lies near the skin-tone line.
+        for skin in [(0.87, 0.68, 0.58), (0.55, 0.38, 0.28), (0.95, 0.80, 0.70)] {
+            let c = Scopes.chroma(skin.0, skin.1, skin.2)
+            XCTAssertEqual(atan2(c.cr, c.cb) * 180 / .pi, Scopes.skinToneAngle, accuracy: 8)
+        }
+        let cells = Scopes.vectorscope(rgba: [128, 128, 128, 255, 255, 0, 0, 255, 0, 0, 255, 255, 9, 9, 9, 0], size: 16)
+        XCTAssertEqual(cells.reduce(0, +), 3)
+        XCTAssertEqual(cells[8 * 16 + 8], 1, "grey in the middle")
+        XCTAssertEqual(cells[0 * 16 + 6], 1, "red at the top, left of the middle")
+        XCTAssertEqual(Scopes.intensities([0, 1, 100]).last, 1)
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

@@ -40,11 +40,14 @@ final class EditorModel: ObservableObject {
         var histogram: (red: [Double], green: [Double], blue: [Double], luma: [Double])?
         /// Clipping warning: the shares of pixels with lost highlights and shadows (nil while it is off).
         var clipping: (highlights: Double, shadows: Double)?
+        /// Vectorscope: cell brightness 0…1, `size` × `size`, row by row from the top (nil while it is off).
+        var vectorscope: (size: Int, cells: [Double])?
 
         static func == (a: ScopeReadings, b: ScopeReadings) -> Bool {
             a.histogram?.luma == b.histogram?.luma && a.histogram?.red == b.histogram?.red
                 && a.histogram?.green == b.histogram?.green && a.histogram?.blue == b.histogram?.blue
                 && a.clipping?.highlights == b.clipping?.highlights && a.clipping?.shadows == b.clipping?.shadows
+                && a.vectorscope?.cells == b.vectorscope?.cells
         }
     }
 
@@ -1459,7 +1462,7 @@ final class EditorModel: ObservableObject {
 
     /// The scopes that are on, from a small copy of the edited preview as sRGB levels.
     private func readScopes(_ edited: CIImage) {
-        guard isOn("histogram") || isOn("clippingWarning") else {
+        guard isOn("histogram") || isOn("clippingWarning") || isOn("vectorscope") else {
             scopes = nil
             return
         }
@@ -1470,6 +1473,7 @@ final class EditorModel: ObservableObject {
             readings.histogram = (Scopes.heights(h.red), Scopes.heights(h.green), Scopes.heights(h.blue), Scopes.heights(h.luma))
         }
         if isOn("clippingWarning") { readings.clipping = Scopes.clippedShares(rgba: bytes) }
+        if isOn("vectorscope") { readings.vectorscope = (64, Scopes.intensities(Scopes.vectorscope(rgba: bytes, size: 64))) }
         scopes = readings
     }
 

@@ -2,7 +2,9 @@ import CommandEngine
 import SwiftUI
 
 /// The View panel's scopes over the photo's corner: the histogram (luma in grey, red, green and blue
-/// as lines), darkest on the left; how much is clipped while the clipping warning is on.
+/// as lines), darkest on the left; the vectorscope (colours by hue around the circle and saturation
+/// out from its middle, red up-left, blue right, with the skin-tone line); how much is clipped while the
+/// clipping warning is on.
 struct ScopesView: View {
     let scopes: EditorModel.ScopeReadings
 
@@ -18,6 +20,35 @@ struct ScopesView: View {
                 .frame(width: 256, height: 100)
                 .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
                 .accessibilityLabel("Histogram")
+            }
+            if let v = scopes.vectorscope {
+                Canvas { context, size in
+                    let side = min(size.width, size.height)
+                    let circle = CGRect(x: (size.width - side) / 2, y: (size.height - side) / 2, width: side, height: side)
+                    context.stroke(Path(ellipseIn: circle), with: .color(.white.opacity(0.4)), lineWidth: 1)
+                    let centre = CGPoint(x: circle.midX, y: circle.midY)
+                    var cross = Path()
+                    cross.move(to: CGPoint(x: circle.minX, y: centre.y))
+                    cross.addLine(to: CGPoint(x: circle.maxX, y: centre.y))
+                    cross.move(to: CGPoint(x: centre.x, y: circle.minY))
+                    cross.addLine(to: CGPoint(x: centre.x, y: circle.maxY))
+                    context.stroke(cross, with: .color(.white.opacity(0.2)), lineWidth: 1)
+                    // The skin-tone line, from the middle out.
+                    let a = Scopes.skinToneAngle * .pi / 180
+                    var skin = Path()
+                    skin.move(to: centre)
+                    skin.addLine(to: CGPoint(x: centre.x + side / 2 * cos(a), y: centre.y - side / 2 * sin(a)))
+                    context.stroke(skin, with: .color(.orange.opacity(0.8)), lineWidth: 1)
+                    let cell = side / CGFloat(v.size)
+                    for (i, level) in v.cells.enumerated() where level > 0 {
+                        let rect = CGRect(x: circle.minX + CGFloat(i % v.size) * cell, y: circle.minY + CGFloat(i / v.size) * cell,
+                                          width: cell, height: cell)
+                        context.fill(Path(rect), with: .color(.white.opacity(0.15 + 0.85 * level)))
+                    }
+                }
+                .frame(width: 160, height: 160)
+                .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
+                .accessibilityLabel("Vectorscope")
             }
             if let clip = scopes.clipping {
                 Text(String(format: "Highlights clipped %.1f %% · shadows %.1f %%", 100 * clip.highlights, 100 * clip.shadows))

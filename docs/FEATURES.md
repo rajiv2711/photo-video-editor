@@ -207,7 +207,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 153. **Reset** — one slider, one panel, or everything
 - [x] 154. **Histogram** — live tone graph
 - [x] 155. **Clipping warnings** — show lost highlights and shadows
-- [ ] 156. **Vectorscope** — colour and skin-tone scope
+- [x] 156. **Vectorscope** — colour and skin-tone scope
 - [ ] 157. **Color sampler** — RGB/LAB readout at a point
 - [ ] 158. **Zoom / 1:1 loupe** — inspect fine detail
 - [ ] 159. **Grid & guides** — thirds, golden ratio, grid overlay

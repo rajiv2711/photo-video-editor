@@ -1639,6 +1639,8 @@
     {"id": "histogram", "label": "Histogram", "group": "view", "section": "Scopes", "kind": "toggle",
       "synonyms": ["histo", "tone graph", "levels graph", "rgb histogram", "show the histogram"]},
     {"id": "clippingWarning", "label": "Clipping Warning", "group": "view", "section": "Scopes", "kind": "toggle",
-      "synonyms": ["clipping", "clipping warnings", "show clipping", "clip warning", "highlight clipping", "shadow clipping", "clipping indicator", "clipped areas"]}
+      "synonyms": ["clipping", "clipping warnings", "show clipping", "clip warning", "highlight clipping", "shadow clipping", "clipping indicator", "clipped areas"]},
+    {"id": "vectorscope", "label": "Vectorscope", "group": "view", "section": "Scopes", "kind": "toggle",
+      "synonyms": ["vector scope", "chroma scope", "hue scope", "skin tone line", "skin line", "skin tone scope"]}
   ]
 }
