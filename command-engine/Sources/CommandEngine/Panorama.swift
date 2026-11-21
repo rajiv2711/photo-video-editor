@@ -34,7 +34,8 @@ public enum Panorama {
         }
     }
 
-    /// A stitched panorama: RGB on sRGB levels, and where a photo shows (1) or nothing does (0).
+    /// A stitched panorama: RGB on sRGB levels, and where a photo shows (1) or nothing does (0; the
+    /// app shows those parts white).
     public struct Result {
         public var image: FloatImage
         public var coverage: [Float]

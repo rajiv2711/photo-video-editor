@@ -62,7 +62,7 @@ final class MergeRenderer {
             }
             guard let result = Panorama.stitch(pictures, settings: panoramaSettings(value), focal: focal(of: photos[0], picture: pictures[0]),
                                                maxSide: Self.panoramaSide) else { return nil }
-            return Merged(image: picture(result.image, alpha: result.coverage), used: result.used)
+            return Merged(image: picture(result.image, coverage: result.coverage), used: result.used)
         case "hdrPanorama":
             // Each position's brackets share the first one's size.
             guard photos.count >= 4 else { return nil }
@@ -77,7 +77,7 @@ final class MergeRenderer {
             guard let merged = HDRPanorama.merge(pictures, deghost: Int(value("deghost") ?? 0), output: output,
                                                  settings: panoramaSettings(value), focal: focal(of: photos[0], picture: pictures[0]),
                                                  maxSide: Self.panoramaSide) else { return nil }
-            return Merged(image: picture(merged.result.image, linear: merged.linear, alpha: merged.result.coverage), used: merged.result.used)
+            return Merged(image: picture(merged.result.image, linear: merged.linear, coverage: merged.result.coverage), used: merged.result.used)
         default:
             return nil
         }
@@ -152,17 +152,17 @@ final class MergeRenderer {
         return out
     }
 
-    /// Floats back into a picture at the origin: sRGB levels, or linear light (levels above 1 kept);
-    /// `alpha` (one number per pixel) makes uncovered parts transparent.
-    func picture(_ image: FloatImage, linear: Bool = false, alpha: [Float]? = nil) -> CIImage {
+    /// Floats back into a picture at the origin: sRGB levels, or linear light (levels above 1 kept).
+    /// `coverage` (one number per pixel): where it is below 1 the picture fades to white, as Lightroom
+    /// shows a panorama's empty edges (the same in the preview and the saved photo).
+    func picture(_ image: FloatImage, linear: Bool = false, coverage: [Float]? = nil) -> CIImage {
         let name = linear ? CGColorSpace.extendedLinearSRGB : CGColorSpace.extendedSRGB
         guard image.width > 0, image.height > 0, let space = CGColorSpace(name: name) else { return CIImage.empty() }
         var rgba = image.rgb.rgba
-        if let alpha, alpha.count == image.width * image.height {
-            for i in alpha.indices where alpha[i] < 1 {
-                let a = max(0, alpha[i])
-                for c in 0..<3 { rgba[4 * i + c] *= a }
-                rgba[4 * i + 3] = a
+        if let coverage, coverage.count == image.width * image.height {
+            for i in coverage.indices where coverage[i] < 1 {
+                let a = max(0, coverage[i])
+                for c in 0..<3 { rgba[4 * i + c] = rgba[4 * i + c] * a + (1 - a) }
             }
         }
         let data = rgba.withUnsafeBufferPointer { Data(buffer: $0) }
