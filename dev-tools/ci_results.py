@@ -134,7 +134,7 @@ def edge_angles(L: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     upright = np.abs(gx) >= np.abs(gy)
     with np.errstate(divide="ignore", invalid="ignore"):
         dev = np.where(upright, np.degrees(np.arctan(gy / gx)), -np.degrees(np.arctan(gx / gy)))
-    keep = (mag > max(20.0, float(np.percentile(mag, 90)))) & np.isfinite(dev) & (np.abs(dev) < 30)
+    keep = (mag > max(3.0, float(np.percentile(mag, 90)))) & np.isfinite(dev) & (np.abs(dev) < 30)
     return dev[keep], mag[keep], upright[keep]
 
 
