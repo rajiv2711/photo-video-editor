@@ -408,7 +408,7 @@
     {"id": "offset-y", "command": "offset y 20", "control": "transformOffsetY", "expect": [{"metric": "height", "dir": "down", "min": 50}]},
 
     {"id": "skewed", "command": "", "source": "skewed", "expect": [{"metric": "corner_luma", "dir": "down", "min": 50}]},
-    {"id": "perspective-crop", "command": "perspective crop", "source": "skewed", "control": "perspectiveCrop", "steps": [{"command": "done"}], "expect": [{"metric": "corner_luma", "dir": "up", "vs": "skewed", "min": 15}, {"metric": "mean_sat", "dir": "up", "vs": "skewed", "min": 5}]},
+    {"id": "perspective-crop", "command": "perspective crop", "source": "skewed", "control": "perspectiveCrop", "steps": [{"command": "done"}], "expect": [{"metric": "corner_luma", "dir": "up", "vs": "skewed", "min": 15}, {"metric": "aspect", "dir": "same", "vs": "chart", "min": 0.05}, {"metric": "mean_sat", "dir": "same", "vs": "chart", "min": 5}]},
     {"id": "clear-perspective-crop", "command": "perspective crop", "source": "skewed", "control": "clearPerspectiveCrop", "steps": [{"command": "clear perspective crop"}, {"command": "done"}], "expect": [{"metric": "diff", "dir": "same", "vs": "skewed"}]},
 
     {"id": "resize", "command": "resize 50", "control": "resize", "expect": [{"metric": "width", "dir": "down", "min": 200}, {"metric": "aspect", "dir": "same"}, {"metric": "mean_luma", "dir": "same"}]},
