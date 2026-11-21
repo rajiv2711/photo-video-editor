@@ -141,6 +141,12 @@ public struct CommandApplier {
             focus = control.id
 
             let current = state.value(of: control, at: target)
+            defer {
+                // The crop box turns and flips with the photo.
+                if target == .global, control.group == "geometry" {
+                    GeometryTools.follow(control.id, from: current, to: state.value(of: control), state: &state, registry: registry)
+                }
+            }
             switch command.op {
             case .nudge: state.set(control, to: current + Double(command.steps ?? 0) * control.step, at: target)
             case .add: state.set(control, to: current + (command.value ?? 0), at: target)
@@ -292,6 +298,7 @@ public struct CommandApplier {
             let from = state.value(of: c)
             let to = state.set(c, to: value)
             if from != to { out.append(.changed(controlID: id, from: from, to: to)) }
+            GeometryTools.follow(id, from: from, to: to, state: &state, registry: registry)
         }
         if GeometryTools.actions[control.id] != nil {
             // A touch tool for the photo: masks and retouch tools are put away (the app arms the tool on .ran).
@@ -303,6 +310,9 @@ public struct CommandApplier {
             for id in GeometryTools.cropIDs {
                 if let c = registry.control(id: id) { set(id, c.defaultValue) }
             }
+        case "rotateLeft", "rotateRight":
+            let turns = registry.control(id: "rotation").map { state.value(of: $0) } ?? 0
+            set("rotation", Double(((Int(turns) + (control.id == "rotateRight" ? 1 : 3)) % 4)))
         default:
             break
         }

@@ -204,15 +204,23 @@ public struct GeometrySettings: Equatable {
     public var cropBottom: Double
     /// Straighten, degrees clockwise on screen (−45…45).
     public var straighten: Double
+    /// Quarter turns clockwise (0…3), then the flips (mirror left-right, top-bottom).
+    public var quarterTurns: Int
+    public var flipHorizontal: Bool
+    public var flipVertical: Bool
 
     public init(aspect: String = "free", cropLeft: Double = 0, cropTop: Double = 0, cropRight: Double = 0,
-                cropBottom: Double = 0, straighten: Double = 0) {
+                cropBottom: Double = 0, straighten: Double = 0, quarterTurns: Int = 0, flipHorizontal: Bool = false,
+                flipVertical: Bool = false) {
         self.aspect = aspect
         self.cropLeft = cropLeft
         self.cropTop = cropTop
         self.cropRight = cropRight
         self.cropBottom = cropBottom
         self.straighten = straighten
+        self.quarterTurns = ((quarterTurns % 4) + 4) % 4
+        self.flipHorizontal = flipHorizontal
+        self.flipVertical = flipVertical
     }
 
     public init(value: (String) -> Double?) {
@@ -224,6 +232,9 @@ public struct GeometrySettings: Equatable {
         cropRight = Swift.min(0.95, Swift.max(0, v("cropRight") / 100))
         cropBottom = Swift.min(0.95, Swift.max(0, v("cropBottom") / 100))
         straighten = Swift.min(45, Swift.max(-45, v("straighten")))
+        quarterTurns = ((Int(v("rotation")) % 4) + 4) % 4
+        flipHorizontal = v("flipHorizontal") != 0
+        flipVertical = v("flipVertical") != 0
     }
 }
 
@@ -251,19 +262,23 @@ public struct GeometryPlan: Equatable {
         self.stage = stage
         let corners = [Vec2(0, 0), Vec2(width, 0), Vec2(width, height), Vec2(0, height)]
         let pre = Homography.identity
-        // Straighten turns the picture about the frame's middle.
-        let turn = Homography.translation(width / 2, height / 2) * Homography.rotation(degrees: settings.straighten)
-            * Homography.translation(-width / 2, -height / 2)
+        // Straighten turns the picture about the frame's middle; then the quarter turns (which swap
+        // the frame's sides) and the flips, about the middle too.
+        let turned = settings.quarterTurns % 2 == 1 && stage != .source
+        let w3 = turned ? height : width, h3 = turned ? width : height
+        let flip = Homography.scale(settings.flipHorizontal ? -1 : 1, settings.flipVertical ? -1 : 1)
+        let turn = Homography.translation(w3 / 2, h3 / 2) * flip * Homography.rotation(degrees: Double(90 * settings.quarterTurns))
+            * Homography.rotation(degrees: settings.straighten) * Homography.translation(-width / 2, -height / 2)
         preStraighten = stage == .source ? .identity : pre
         let h = stage == .source ? Homography.identity : turn * pre
         transform = h
-        frameWidth = width
-        frameHeight = height
+        frameWidth = w3
+        frameHeight = h3
         photoCorners = corners.map { h.apply($0) }
         switch stage {
         case .full:
-            crop = Crop.rect(settings: settings, width: frameWidth, height: frameHeight, sourceAspect: width / Swift.max(height, 1),
-                             valid: photoCorners)
+            crop = Crop.rect(settings: settings, width: frameWidth, height: frameHeight,
+                             sourceAspect: frameWidth / Swift.max(frameHeight, 1), valid: photoCorners)
         case .frame, .source:
             crop = Crop.whole(width: frameWidth, height: frameHeight)
         }
@@ -510,4 +525,43 @@ public enum GeometryTools {
     public static let fromPhoto: Set<String> = ["autoStraighten"]
     /// The crop box's controls ("reset crop" puts them back).
     public static let cropIDs = ["cropAspect", "cropLeft", "cropTop", "cropRight", "cropBottom"]
+
+    /// After a geometry control changed from `from` to `to`: the crop box turns and flips with the
+    /// photo (a turned crop keeps covering the same part of it, its aspect turned too).
+    public static func follow(_ id: String, from: Double, to: Double, state: inout EditState, registry: ControlRegistry) {
+        guard from != to else { return }
+        func value(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+        func set(_ id: String, _ v: Double) {
+            if let c = registry.control(id: id) { state.set(c, to: v) }
+        }
+        switch id {
+        case "rotation":
+            let steps = ((Int(to) - Int(from)) % 4 + 4) % 4
+            for _ in 0..<steps {
+                // A clockwise quarter turn: what was cut on the left is now cut at the top, …
+                let l = value("cropLeft"), t = value("cropTop"), r = value("cropRight"), b = value("cropBottom")
+                set("cropTop", l)
+                set("cropRight", t)
+                set("cropBottom", r)
+                set("cropLeft", b)
+                let index = Int(value("cropAspect"))
+                if Crop.aspects.indices.contains(index) {
+                    let parts = Crop.aspects[index].split(separator: ":")
+                    if parts.count == 2, let turned = Crop.aspects.firstIndex(of: "\(parts[1]):\(parts[0])") {
+                        set("cropAspect", Double(turned))
+                    }
+                }
+            }
+        case "flipHorizontal":
+            let l = value("cropLeft")
+            set("cropLeft", value("cropRight"))
+            set("cropRight", l)
+        case "flipVertical":
+            let t = value("cropTop")
+            set("cropTop", value("cropBottom"))
+            set("cropBottom", t)
+        default:
+            break
+        }
+    }
 }

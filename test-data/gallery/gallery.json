@@ -385,6 +385,12 @@
     {"id": "tilted", "command": "", "source": "tilted", "expect": [{"metric": "diff", "dir": "changed"}]},
     {"id": "straighten", "command": "straighten 6", "source": "tilted", "control": "straighten", "expect": [{"metric": "tilt", "dir": "down", "vs": "tilted", "min": 4}, {"metric": "width", "dir": "down", "vs": "tilted"}]},
     {"id": "auto-straighten", "command": "auto straighten", "source": "tilted", "control": "autoStraighten", "expect": [{"metric": "tilt", "dir": "down", "vs": "tilted", "min": 4}]},
-    {"id": "straighten-tool", "command": "straighten tool", "source": "tilted", "control": "straightenTool", "strokes": [[[0.2, 0.521], [0.8, 0.479]]], "steps": [{"command": "done"}], "expect": [{"metric": "tilt", "dir": "down", "vs": "tilted", "min": 4}]}
+    {"id": "straighten-tool", "command": "straighten tool", "source": "tilted", "control": "straightenTool", "strokes": [[[0.2, 0.521], [0.8, 0.479]]], "steps": [{"command": "done"}], "expect": [{"metric": "tilt", "dir": "down", "vs": "tilted", "min": 4}]},
+
+    {"id": "rotation", "command": "rotation 180", "control": "rotation", "expect": [{"metric": "diff", "dir": "changed", "min": 10}, {"metric": "width", "dir": "same"}, {"metric": "mean_luma", "dir": "same"}]},
+    {"id": "rotate-right", "command": "rotate right", "control": "rotateRight", "expect": [{"metric": "width", "dir": "up", "min": 250}, {"metric": "height", "dir": "down", "min": 250}, {"metric": "mean_luma", "dir": "same"}]},
+    {"id": "rotate-left", "command": "rotate left rotate left", "control": "rotateLeft", "expect": [{"metric": "diff", "dir": "same", "vs": "rotation"}]},
+    {"id": "flip-horizontal", "command": "flip horizontal", "control": "flipHorizontal", "expect": [{"metric": "diff", "dir": "changed", "min": 5}, {"metric": "mean_luma", "dir": "same"}]},
+    {"id": "flip-vertical", "command": "flip vertical flip horizontal", "control": "flipVertical", "expect": [{"metric": "diff", "dir": "same", "vs": "rotation"}]}
   ]
 }

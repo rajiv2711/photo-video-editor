@@ -276,6 +276,65 @@ final class GeometryTests: XCTestCase {
                        [.ran(controlID: "autoStraighten"), .changed(controlID: "straighten", from: 0, to: 6)])
     }
 
+    // MARK: - Rotate and flip
+
+    func testQuarterTurnsSwapTheFrameAndFlipsMirror() {
+        let turned = GeometryPlan(settings: GeometrySettings(quarterTurns: 1), width: 400, height: 300)
+        XCTAssertEqual(turned.frameWidth, 300)
+        XCTAssertEqual(turned.frameHeight, 400)
+        XCTAssertEqual(turned.crop, GeoRect(x: 0, y: 0, width: 300, height: 400))
+        // Clockwise: the photo's top-left corner ends up top-right.
+        assertClose(turned.transform.apply(Vec2(0, 0)), Vec2(300, 0))
+        assertClose(turned.transform.apply(Vec2(400, 300)), Vec2(0, 400))
+        let mirrored = GeometryPlan(settings: GeometrySettings(flipHorizontal: true), width: 400, height: 300)
+        assertClose(mirrored.transform.apply(Vec2(10, 20)), Vec2(390, 20))
+        XCTAssertFalse(mirrored.isIdentity)
+        let flipped = GeometryPlan(settings: GeometrySettings(flipVertical: true), width: 400, height: 300)
+        assertClose(flipped.transform.apply(Vec2(10, 20)), Vec2(10, 280))
+        // Both flips are a half turn.
+        let both = GeometryPlan(settings: GeometrySettings(flipHorizontal: true, flipVertical: true), width: 400, height: 300)
+        let half = GeometryPlan(settings: GeometrySettings(quarterTurns: 2), width: 400, height: 300)
+        XCTAssertTrue(both.transform.isClose(to: half.transform))
+        // A tap on the turned picture lands on the right spot of the photo.
+        let p = turned.toSource(MaskPoint(1, 0))
+        XCTAssertEqual(p.x, 0, accuracy: 1e-9)
+        XCTAssertEqual(p.y, 0, accuracy: 1e-9)
+        // "Original" crop aspect follows the turned frame.
+        let original = GeometryPlan(settings: GeometrySettings(aspect: "original", quarterTurns: 1), width: 400, height: 300)
+        XCTAssertEqual(original.crop, GeoRect(x: 0, y: 0, width: 300, height: 400))
+    }
+
+    func testRotateActionsStepTheTurnAndTheCropFollows() {
+        var interpreter = CommandInterpreter(registry: registry)
+        var state = EditState()
+        _ = interpreter.interpret("crop left 10 crop 16 by 9", state: &state)
+        XCTAssertEqual(interpreter.interpret("rotate right", state: &state),
+                       [.ran(controlID: "rotateRight"), .changed(controlID: "rotation", from: 0, to: 1)])
+        XCTAssertEqual(state.value(of: control("cropTop")), 10, "what was cut on the left is now cut at the top")
+        XCTAssertEqual(state.value(of: control("cropLeft")), 0)
+        XCTAssertEqual(state.value(of: control("cropAspect")), Double(Crop.aspects.firstIndex(of: "9:16")!))
+        _ = interpreter.interpret("rotate left rotate left", state: &state)
+        XCTAssertEqual(state.value(of: control("rotation")), 3)
+        XCTAssertEqual(state.value(of: control("cropBottom")), 10)
+        _ = interpreter.interpret("rotation 0", state: &state)
+        XCTAssertEqual(state.value(of: control("cropLeft")), 10, "back where it was")
+        _ = interpreter.interpret("flip horizontal", state: &state)
+        XCTAssertEqual(state.value(of: control("cropRight")), 10)
+        XCTAssertEqual(state.value(of: control("cropLeft")), 0)
+        _ = interpreter.interpret("flip horizontal off", state: &state)
+        XCTAssertEqual(state.value(of: control("cropLeft")), 10)
+    }
+
+    func testRotateNames() {
+        XCTAssertEqual(parse("rotate left"), [.run("rotateLeft")])
+        XCTAssertEqual(parse("rotate 90"), [.run("rotateRight")])
+        XCTAssertEqual(parse("rotate 180"), [.set("rotation", 2)])
+        XCTAssertEqual(parse("rotation upside down"), [.set("rotation", 2)])
+        XCTAssertEqual(parse("flip"), [.set("flipHorizontal", 1)])
+        XCTAssertEqual(parse("flip vertical"), [.set("flipVertical", 1)])
+        XCTAssertFalse(parse("rotat left").contains(.run("rotateLeft")), "actions only by their exact name")
+    }
+
     // MARK: - Names and actions
 
     func testCropNames() {

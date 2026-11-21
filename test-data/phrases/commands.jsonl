@@ -123,7 +123,7 @@
 {"group":"out-of-scope","text":"make it warmer","expect":[{"op":"unknown","word":"warmer"}]}
 {"group":"out-of-scope","text":"sharpen","expect":[{"op":"select","control":"sharpening"}]}
 {"group":"out-of-scope","text":"add a vignette","expect":[{"op":"nudge","control":"vignette","steps":1}]}
-{"group":"out-of-scope","text":"rotate left","expect":[{"op":"unknown","word":"rotate"},{"op":"unknown","word":"left"}]}
+{"group":"out-of-scope","text":"rotate left","expect":[{"op":"run","control":"rotateLeft"}]}
 {"group":"out-of-scope","text":"undo","expect":[{"op":"unknown","word":"undo"}]}
 {"group":"out-of-scope","text":"hello","expect":[{"op":"unknown","word":"hello"}]}
 {"group":"out-of-scope","text":"blur more","expect":[{"op":"unknown","word":"blur"}]}
@@ -784,3 +784,16 @@
 {"group":"geometry","text":"auto level","expect":[{"op":"run","control":"autoStraighten"}]}
 {"group":"geometry","text":"straighten tool","expect":[{"op":"run","control":"straightenTool"}]}
 {"group":"geometry","text":"draw a horizon","expect":[{"op":"run","control":"straightenTool"}]}
+{"group":"geometry","text":"rotate right","expect":[{"op":"run","control":"rotateRight"}]}
+{"group":"geometry","text":"rotate 90","expect":[{"op":"run","control":"rotateRight"}]}
+{"group":"geometry","text":"rotate clockwise","expect":[{"op":"run","control":"rotateRight"}]}
+{"group":"geometry","text":"rotate counterclockwise","expect":[{"op":"run","control":"rotateLeft"}]}
+{"group":"geometry","text":"rotate 90 left","expect":[{"op":"run","control":"rotateLeft"}]}
+{"group":"geometry","text":"rotate 180","expect":[{"op":"set","control":"rotation","value":2}]}
+{"group":"geometry","text":"rotation 90","expect":[{"op":"set","control":"rotation","value":1}]}
+{"group":"geometry","text":"reset rotation","expect":[{"op":"reset","control":"rotation"}]}
+{"group":"geometry","text":"flip horizontal","expect":[{"op":"set","control":"flipHorizontal","value":1}]}
+{"group":"geometry","text":"mirror","expect":[{"op":"set","control":"flipHorizontal","value":1}]}
+{"group":"geometry","text":"flip horizontal off","expect":[{"op":"set","control":"flipHorizontal","value":0}]}
+{"group":"geometry","text":"flip vertical","expect":[{"op":"set","control":"flipVertical","value":1}]}
+{"group":"geometry","text":"flip upside down","expect":[{"op":"set","control":"flipVertical","value":1}]}
