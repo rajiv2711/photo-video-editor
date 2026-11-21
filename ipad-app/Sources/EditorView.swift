@@ -102,6 +102,9 @@ struct EditorView: View {
                                     }
                             }
                             .border(Color.accentColor, width: 2)
+                        } else if model.targetedMode != nil {
+                            // Targeted adjustment: drag up or down on a tone or colour.
+                            TargetedCanvas(model: model)
                         } else if let tool = model.geometryTool {
                             // The Geometry panel's tool (the crop box, …) takes the touches.
                             GeometryCanvas(model: model, tool: tool)
@@ -613,5 +616,26 @@ struct ZoomPan: ViewModifier {
     private func measured(_ new: CGSize) {
         size = new
         model.setFit(pixels: Double(max(new.width, new.height) * displayScale))
+    }
+}
+
+/// Targeted adjustment: a drag up or down on the photo changes the controls acting on the tone or
+/// colour where it began (the View panel's Targeted Adjustment mode).
+struct TargetedCanvas: View {
+    @ObservedObject var model: EditorModel
+
+    var body: some View {
+        GeometryReader { geo in
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(DragGesture(minimumDistance: 0)
+                    .onChanged { drag in
+                        model.draw([MaskCanvas.unit(drag.startLocation, in: geo.size), MaskCanvas.unit(drag.location, in: geo.size)], finished: false)
+                    }
+                    .onEnded { drag in
+                        model.draw([MaskCanvas.unit(drag.startLocation, in: geo.size), MaskCanvas.unit(drag.location, in: geo.size)])
+                    })
+        }
+        .border(Color.accentColor.opacity(0.6), width: 2)
     }
 }

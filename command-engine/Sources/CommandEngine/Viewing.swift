@@ -236,3 +236,45 @@ public enum Guides {
         }
     }
 }
+
+/// Targeted adjustment (View panel), as Lightroom's: with a mode on, dragging up or down on the photo
+/// changes the controls that act on the tone or colour under the finger where the drag began.
+public enum TargetedAdjustment {
+    /// "targetedAdjustment" option ids, in order; must match controls.json.
+    public static let modes = ["off", "toneCurve", "hue", "saturation", "luminance"]
+
+    /// A drag the whole picture's height moves the controls by this much (then they stop at their ends).
+    public static let unitsPerHeight = 200.0
+
+    /// The controls a drag changes for a colour (sRGB levels) and the share of the drag each gets (they
+    /// add up to 1): Tone curve: the two parametric curve regions nearest its brightness (shadows,
+    /// darks, lights, highlights, centred at 12.5, 37.5, 62.5, 87.5 %); Hue, Saturation, Luminance: the
+    /// colour mixer's two bands nearest its hue (none for a grey).
+    public static func targets(mode: String, color: RGB) -> [(id: String, weight: Double)] {
+        switch mode {
+        case "toneCurve":
+            let regions = ["curveShadows", "curveDarks", "curveLights", "curveHighlights"]
+            let t = Swift.min(3, Swift.max(0, color.luma * 4 - 0.5))
+            let i = Swift.min(2, Int(t))
+            let f = t - Double(i)
+            return [(regions[i], 1 - f), (regions[i + 1], f)].filter { $0.1 > 0 }
+        case "hue", "saturation", "luminance":
+            guard color.max - color.min > 0.04 else { return [] }
+            let property = mode.prefix(1).uppercased() + mode.dropFirst()
+            return ColorLook.bandWeights(hue: ColorLook.hsl(color).h).filter { $0.1 > 0 }
+                .map { (ColorLook.mixerID(ColorLook.mixerBands[$0.0], property), $0.1) }
+        default:
+            return []
+        }
+    }
+
+    /// The new values after a drag `rise` high (shares of the picture's height, up positive) from the
+    /// values `base` had when it began.
+    public static func values(mode: String, color: RGB, rise: Double, base: (String) -> Double) -> [String: Double] {
+        var out: [String: Double] = [:]
+        for target in targets(mode: mode, color: color) {
+            out[target.id] = (base(target.id) + target.weight * rise * unitsPerHeight).rounded()
+        }
+        return out
+    }
+}

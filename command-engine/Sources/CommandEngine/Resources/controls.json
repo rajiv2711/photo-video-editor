@@ -1664,6 +1664,13 @@
                   {"id": "goldenRatio", "label": "Golden Ratio", "synonyms": ["golden", "phi", "phi grid", "golden section"]},
                   {"id": "grid", "label": "Grid", "synonyms": ["square grid", "squares", "fine grid", "lines"]},
                   {"id": "diagonals", "label": "Diagonals", "synonyms": ["diagonal", "diagonal lines"]},
-                  {"id": "center", "label": "Center", "synonyms": ["centre", "center lines", "centre lines", "cross", "middle"]}]}
+                  {"id": "center", "label": "Center", "synonyms": ["centre", "center lines", "centre lines", "cross", "middle"]}]},
+    {"id": "targetedAdjustment", "label": "Targeted Adjustment", "group": "view", "section": "Targeted", "kind": "choice",
+      "synonyms": ["targeted", "target adjustment", "targeted adjustment tool", "target tool", "on image adjustment", "drag to adjust"],
+      "options": [{"id": "off", "label": "Off", "synonyms": ["none", "done", "stop"]},
+                  {"id": "toneCurve", "label": "Tone Curve", "synonyms": ["curve", "tone", "curves"]},
+                  {"id": "hue", "label": "Hue"},
+                  {"id": "saturation", "label": "Saturation", "synonyms": ["sat"]},
+                  {"id": "luminance", "label": "Luminance", "synonyms": ["lum", "brightness of colour", "brightness of color"]}]}
   ]
 }

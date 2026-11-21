@@ -1244,3 +1244,8 @@
 {"group":"view","text":"grid off","expect":[{"op":"set","control":"gridOverlay","value":0}]}
 {"group":"view","text":"guides diagonals","expect":[{"op":"set","control":"gridOverlay","value":4}]}
 {"group":"view","text":"grid","expect":[{"op":"select","control":"gridOverlay"}]}
+{"group":"view","text":"targeted saturation","expect":[{"op":"set","control":"targetedAdjustment","value":3}]}
+{"group":"view","text":"targeted tone curve","expect":[{"op":"set","control":"targetedAdjustment","value":1}]}
+{"group":"view","text":"targeted hue","expect":[{"op":"set","control":"targetedAdjustment","value":2}]}
+{"group":"view","text":"targeted luminance","expect":[{"op":"set","control":"targetedAdjustment","value":4}]}
+{"group":"view","text":"targeted off","expect":[{"op":"set","control":"targetedAdjustment","value":0}]}

@@ -163,6 +163,10 @@ final class EditorModel: ObservableObject {
 
     /// The history name of a touch on the photo with the tool in use.
     private var touchLabel: String {
+        if targetedMode != nil, let control = registry.control(id: "targetedAdjustment") {
+            let i = Int(state.value(of: control))
+            return "Targeted " + (control.options.indices.contains(i) ? control.options[i].label : "")
+        }
         if let tool = geometryTool {
             return registry.controls.first { GeometryTools.actions[$0.id] == tool }?.label ?? tool.capitalized
         }
@@ -329,6 +333,10 @@ final class EditorModel: ObservableObject {
         historyLabel = touchLabel
         historyKey = "draw"
         historySeal = finished
+        if let mode = targetedMode {
+            targetedDraw(mode, shown, finished: finished)
+            return
+        }
         if let tool = geometryTool {
             geometryDraw(tool, shown, finished: finished)
             return
@@ -1549,7 +1557,51 @@ final class EditorModel: ObservableObject {
 
     /// No tool, picker or comparison takes the touches on the photo (then they pan and zoom).
     var touchesFree: Bool {
-        armedPicker == nil && geometryTool == nil && retouchTool == nil && canvasTool == nil && layerCanvasTool == nil && !isComparing
+        armedPicker == nil && targetedMode == nil && geometryTool == nil && retouchTool == nil && canvasTool == nil && layerCanvasTool == nil
+            && !isComparing
+    }
+
+    // MARK: - Targeted adjustment (View panel)
+
+    /// The Targeted Adjustment mode in use ("saturation", …), or nil: then drags on the photo change it.
+    var targetedMode: String? {
+        guard armedPicker == nil, let control = registry.control(id: "targetedAdjustment") else { return nil }
+        let i = Int(state.value(of: control))
+        return i > 0 && TargetedAdjustment.modes.indices.contains(i) ? TargetedAdjustment.modes[i] : nil
+    }
+
+    /// Where the current targeted drag began: the colour there and the values it started from.
+    private var targetedBase: (color: RGB, values: [String: Double])?
+
+    /// A drag on the photo with Targeted Adjustment: up raises, down lowers the controls acting on the
+    /// tone or colour where it began (TargetedAdjustment), from their values then.
+    private func targetedDraw(_ mode: String, _ shown: [MaskPoint], finished: Bool) {
+        guard let start = shown.first, let end = shown.last else { return }
+        let base: (color: RGB, values: [String: Double])
+        if let began = targetedBase {
+            base = began
+        } else {
+            let edited = editedPreview()
+            let color = ImageStats.averageColor(of: edited, in: Self.spot(start.x, start.y, in: edited.extent), context: renderer.context).encoded
+            var values: [String: Double] = [:]
+            for target in TargetedAdjustment.targets(mode: mode, color: color) {
+                values[target.id] = registry.control(id: target.id).map { state.current($0) } ?? 0
+            }
+            base = (color, values)
+        }
+        targetedBase = finished ? nil : base
+        let new = TargetedAdjustment.values(mode: mode, color: base.color, rise: start.y - end.y) { base.values[$0] ?? 0 }
+        guard !new.isEmpty else {
+            feedback = Feedback(text: "That spot is grey: drag on a coloured part (or use Tone Curve)", isProblem: true)
+            return
+        }
+        var said: [String] = []
+        for id in new.keys.sorted() {
+            guard let control = registry.control(id: id), let target = state.target(for: control), let v = new[id] else { continue }
+            said.append("\(control.label) \(Self.format(state.set(control, to: v, at: target), control))")
+        }
+        feedback = Feedback(text: said.joined(separator: " · "))
+        render()
     }
 
     /// A drag pans the photo: zoomed in and no tool takes the touches.

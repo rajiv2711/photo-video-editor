@@ -581,6 +581,32 @@ final class WorkflowTests: XCTestCase {
         XCTAssertTrue(Guides.lines("off", width: 1, height: 1).isEmpty)
     }
 
+    // MARK: - Targeted adjustment
+
+    func testTargetedAdjustment() {
+        XCTAssertEqual(parse("targeted saturation"), [.set("targetedAdjustment", 3)])
+        XCTAssertEqual(parse("targeted tone curve"), [.set("targetedAdjustment", 1)])
+        XCTAssertEqual(parse("targeted adjustment hue"), [.set("targetedAdjustment", 2)])
+        XCTAssertEqual(parse("targeted off"), [.set("targetedAdjustment", 0)])
+        XCTAssertEqual(TargetedAdjustment.modes, registry.control(id: "targetedAdjustment")!.options.map(\.id))
+        // A red drags the red band only; an orange-red shares it with orange.
+        let red = TargetedAdjustment.targets(mode: "saturation", color: RGB(0.8, 0.1, 0.1))
+        XCTAssertEqual(red.map(\.id), ["mixerRedSaturation"])
+        let orangeRed = TargetedAdjustment.targets(mode: "hue", color: RGB(0.9, 0.3, 0.1))
+        XCTAssertEqual(orangeRed.map(\.id), ["mixerRedHue", "mixerOrangeHue"])
+        XCTAssertEqual(orangeRed.map(\.weight).reduce(0, +), 1, accuracy: 1e-9)
+        XCTAssertTrue(TargetedAdjustment.targets(mode: "saturation", color: RGB(0.5, 0.5, 0.5)).isEmpty, "greys have no band")
+        // Tone curve: the regions nearest the brightness.
+        XCTAssertEqual(TargetedAdjustment.targets(mode: "toneCurve", color: RGB(0.05, 0.05, 0.05)).map(\.id), ["curveShadows"])
+        let mid = TargetedAdjustment.targets(mode: "toneCurve", color: RGB(0.5, 0.5, 0.5))
+        XCTAssertEqual(mid.map(\.id), ["curveDarks", "curveLights"])
+        XCTAssertEqual(mid[0].weight, 0.5, accuracy: 1e-9)
+        XCTAssertEqual(TargetedAdjustment.targets(mode: "toneCurve", color: RGB(1, 1, 1)).map(\.id), ["curveHighlights"])
+        // A drag up a quarter of the picture: +50 split between the regions, from where they were.
+        let v = TargetedAdjustment.values(mode: "toneCurve", color: RGB(0.5, 0.5, 0.5), rise: 0.25) { $0 == "curveDarks" ? 10 : 0 }
+        XCTAssertEqual(v, ["curveDarks": 35, "curveLights": 25])
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {
