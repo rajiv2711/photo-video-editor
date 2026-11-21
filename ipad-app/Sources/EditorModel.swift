@@ -39,6 +39,8 @@ final class EditorModel: ObservableObject {
     let renderer = PhotoRenderer()
     /// Work out retouch steps before showing the preview (the render gallery), instead of in the background.
     var waitsForRetouch = false
+    /// Turn each render into the on-screen picture (the render gallery only saves the last one).
+    var showsPreview = true
     private let recorder = AudioRecorder()
 
     /// `image` replaces the bundled test photo (the render gallery passes a small copy);
@@ -732,7 +734,8 @@ final class EditorModel: ObservableObject {
     private func render() {
         // A selected mask or retouch tool takes the touches on the photo instead of a geometry tool.
         if geometryTool != nil, state.selectedMask != nil || state.retouchTool != nil { geometryTool = nil }
-        preview = renderer.uiImage(editedPreview(), hdr: isHDR)
+        let edited = editedPreview()
+        if showsPreview { preview = renderer.uiImage(edited, hdr: isHDR) }
         pinRetouchSources()
     }
 

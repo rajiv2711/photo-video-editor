@@ -112,6 +112,7 @@ enum RenderGallery {
             if let existing = models[key] { return existing }
             let made = EditorModel(image: sourceImage(source, photo: small), previewSide: longSide)
             made.waitsForRetouch = true
+            made.showsPreview = false  // only the final picture of each case is saved
             models[key] = made
             return made
         }
