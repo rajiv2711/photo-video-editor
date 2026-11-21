@@ -13,10 +13,15 @@ struct LayersPanel: View {
     private var controls: [Control] { model.registry.controls(inGroup: "layers") }
 
     /// Actions that make a layer (Place Photo, …).
-    private var makers: [Control] { controls.filter { $0.kind == .action && $0.layer != nil } }
+    private var makers: [Control] { controls.filter { $0.kind == .action && $0.layer != nil && $0.section == nil } }
 
     /// Sections shown for the whole panel, not for one layer.
     static let panelSections: Set<String> = ["Collage", "Watermark"]
+
+    /// The panel's own sections that have controls, in order.
+    private var shownSections: [String] {
+        Self.panelSections.sorted().filter { section in controls.contains { $0.section == section } }
+    }
 
     var body: some View {
         DisclosureGroup(isExpanded: isOpen("layers")) {
@@ -41,7 +46,7 @@ struct LayersPanel: View {
                     selected(model.state.layers[l])
                 }
                 // The whole panel's sections: the collage (the photo as opened and the photos picked), the watermark.
-                ForEach(Self.panelSections.sorted().filter { s in controls.contains { $0.section == s } }, id: \.self) { section in
+                ForEach(shownSections, id: \.self) { section in
                     DisclosureGroup(isExpanded: isOpen("layers/" + section)) {
                         VStack(alignment: .leading, spacing: 6) {
                             ForEach(controls.filter { $0.section == section }) { control in

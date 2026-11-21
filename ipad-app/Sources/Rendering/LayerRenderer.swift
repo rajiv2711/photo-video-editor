@@ -61,21 +61,21 @@ final class LayerRenderer {
         guard Watermark.styles.indices.contains(style), extent.width > 0 else { return image }
         let long = Double(max(extent.width, extent.height))
         let height = (value("watermarkSize") ?? 4) / 100 * long
-        var stamp: CIImage?
+        var made: CIImage?
         switch Watermark.styles[style] {
         case "text" where !text.isEmpty:
-            stamp = art.stamp(text, size: height)
+            made = art.stamp(text, size: height)
         case "logo":
             if let logo, logo.extent.height > 0 {
                 let k = height / Double(logo.extent.height)
                 let moved = logo.transformed(by: CGAffineTransform(translationX: -logo.extent.minX, y: -logo.extent.minY))
-                stamp = k < 0.9 ? moved.applyingFilter("CILanczosScaleTransform", parameters: [kCIInputScaleKey: k, kCIInputAspectRatioKey: 1])
+                made = k < 0.9 ? moved.applyingFilter("CILanczosScaleTransform", parameters: [kCIInputScaleKey: k, kCIInputAspectRatioKey: 1])
                     : moved.transformed(by: CGAffineTransform(scaleX: CGFloat(k), y: CGFloat(k)))
             }
         default:
             break
         }
-        guard let stamp, stamp.extent.width > 0 else { return image }
+        guard let stamp = made, stamp.extent.width > 0 else { return image }
         let i = Int(value("watermarkPosition") ?? 0)
         let position = Watermark.positions.indices.contains(i) ? Watermark.positions[i] : "bottomRight"
         let size = stamp.extent

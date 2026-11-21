@@ -572,8 +572,8 @@ final class EditorModel: ObservableObject {
     var penPoints: [MaskPoint] {
         guard layerMode == "pen", let l = state.selectedLayer, let plan = previewPlan else { return [] }
         let w = plan.outputWidth, h = plan.outputHeight, t = state.layers[l].transform
-        return state.layers[l].path.map {
-            let p = t.toCanvas(Vec2($0.point.x, $0.point.y), width: w, height: h)
+        return state.layers[l].path.map { node -> MaskPoint in
+            let p = t.toCanvas(Vec2(node.point.x, node.point.y), width: w, height: h)
             return MaskPoint(p.x / w, p.y / h)
         }
     }
