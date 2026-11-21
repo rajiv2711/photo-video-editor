@@ -356,12 +356,12 @@ final class CreativeRenderer {
     /// Wind: light parts streak downwind (along `direction`). Each pixel keeps the brightest of 24
     /// points upwind, faded with distance; bands across the wind get streaks of different lengths.
     private static let windKernel: CIKernel? = CIKernel(source: """
-        kernel vec4 wind(sampler image, vec2 direction, float len, float band) {
+        kernel vec4 wind(sampler image, vec2 direction, float longest, float band) {
             vec2 c = destCoord();
             vec4 here = sample(image, samplerCoord(image));
             float row = floor(dot(c, vec2(-direction.y, direction.x)) / band);
-            float random = fract(sin(row * 12.9898) * 43758.5453);
-            float reach = len * (0.3 + 0.7 * random);
+            float jitter = fract(sin(row * 12.9898) * 43758.5453);
+            float reach = longest * (0.3 + 0.7 * jitter);
             vec4 best = here;
             for (int i = 1; i <= 24; i++) {
                 float t = float(i) / 24.0;
