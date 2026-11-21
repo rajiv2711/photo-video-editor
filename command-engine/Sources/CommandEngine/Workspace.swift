@@ -41,6 +41,19 @@ public enum WorkflowEvent: Equatable {
     case historyShown(steps: Int)
     /// "history 40" when there are fewer steps.
     case noHistoryStep(Int)
+    case snapshotSaved(String)
+    case snapshotRestored(String)
+    case snapshotDeleted(String)
+    /// No snapshot has that name or number ("" when none was said).
+    case noSnapshot(String)
+    /// Several snapshots fit the words: their names.
+    case snapshotChoices(word: String, names: [String])
+}
+
+/// A named state of the edit, to come back to (Versions / snapshots).
+public struct Snapshot: Equatable {
+    public var name: String
+    public var state: EditState
 }
 
 /// The presets, and later the history, copies and snapshots of the photo being edited.
@@ -58,10 +71,12 @@ public struct Workspace {
     public var previous: Preset?
     /// This photo's edit, step by step (Undo, Redo, History).
     public var history: EditHistory
+    /// Named states of this photo's edit, oldest first.
+    public var snapshots: [Snapshot] = []
 
     /// The actions the workspace runs (the applier never sees them).
     public static let actions: Set<String> = ["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings",
-                                              "previousSettings", "undo", "redo", "history"]
+                                              "previousSettings", "undo", "redo", "history", "saveSnapshot", "restoreSnapshot", "deleteSnapshot"]
 
     /// Actions that move through the history: what was changed before them is recorded first.
     public static let historyActions: Set<String> = ["undo", "redo", "history"]
@@ -163,8 +178,46 @@ public struct Workspace {
             guard history.jump(to: Int(v)) else { return [ran, .workflow(.noHistoryStep(Int(v)))] }
             state = history.restored(keeping: state)
             return [ran, .workflow(.historyJumped(step: Int(v), label: history.current.label))]
+        case "saveSnapshot":
+            let name = words.isEmpty ? "Snapshot \(snapshots.count + 1)" : words
+            // A name already used is taken over by the new state.
+            if let i = snapshots.firstIndex(where: { Presets.normalized($0.name) == Presets.normalized(name) }) {
+                snapshots[i].state = state
+            } else {
+                snapshots.append(Snapshot(name: name, state: state))
+            }
+            return [ran, .workflow(.snapshotSaved(name))]
+        case "restoreSnapshot":
+            switch findSnapshot(words) {
+            case .index(let i):
+                let live = state
+                state = snapshots[i].state
+                for control in registry.controls where Workflow.isSetting(control) { state.values[control.id] = live.values[control.id] }
+                return [ran, .workflow(.snapshotRestored(snapshots[i].name))]
+            case .failed(let event):
+                return [ran, .workflow(event)]
+            }
+        case "deleteSnapshot":
+            switch findSnapshot(words) {
+            case .index(let i):
+                return [ran, .workflow(.snapshotDeleted(snapshots.remove(at: i).name))]
+            case .failed(let event):
+                return [ran, .workflow(event)]
+            }
         default:
             return [ran]
+        }
+    }
+
+    /// The snapshot `words` name, or number ("snapshot 2", when none is called "2").
+    private func findSnapshot(_ words: String) -> Found {
+        let names = snapshots.map(\.name)
+        switch Presets.find(words, names: names) {
+        case .found(let i): return .index(i)
+        case .ambiguous(let found): return .failed(.snapshotChoices(word: words, names: found.map { names[$0] }))
+        case .none:
+            if let n = Int(words.trimmingCharacters(in: .whitespaces)), snapshots.indices.contains(n - 1) { return .index(n - 1) }
+            return .failed(.noSnapshot(words))
         }
     }
 
@@ -189,8 +242,15 @@ public struct Workspace {
     /// (a preset's name, or its pack and name), and the words after it; nil when no name starts the
     /// text or nothing follows it.
     public func knownName(at text: String, for action: String) -> (name: String, rest: String)? {
-        guard action == "applyPreset" else { return nil }
-        let names = Set(allPresets.flatMap { p in [Presets.normalized(p.name)] + (p.pack.map { [Presets.normalized($0 + " " + p.name)] } ?? []) })
+        let names: Set<String>
+        switch action {
+        case "applyPreset":
+            names = Set(allPresets.flatMap { p in [Presets.normalized(p.name)] + (p.pack.map { [Presets.normalized($0 + " " + p.name)] } ?? []) })
+        case "restoreSnapshot":
+            names = Set(snapshots.map { Presets.normalized($0.name) } + snapshots.indices.map { String($0 + 1) })
+        default:
+            return nil
+        }
         let words = text.split(separator: " ").map(String.init)
         for count in stride(from: words.count - 1, through: 1, by: -1) {
             let head = words.prefix(count).joined(separator: " ")

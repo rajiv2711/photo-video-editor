@@ -1191,3 +1191,11 @@
 {"group":"history","text":"jump to step 4","expect":[{"op":"run","control":"history","value":4}]}
 {"group":"history","text":"show history","expect":[{"op":"run","control":"history"}]}
 {"group":"history","text":"history","expect":[{"op":"run","control":"history"}]}
+{"group":"history","text":"snapshot before crop","expect":[{"op":"run","control":"saveSnapshot","text":"before crop"}]}
+{"group":"history","text":"take a snapshot warm version","expect":[{"op":"run","control":"saveSnapshot","text":"warm version"}]}
+{"group":"history","text":"save version two","expect":[{"op":"run","control":"saveSnapshot","text":"two"}]}
+{"group":"history","text":"restore snapshot before crop","expect":[{"op":"run","control":"restoreSnapshot","text":"before crop"}]}
+{"group":"history","text":"version 2","expect":[{"op":"run","control":"restoreSnapshot","text":"2"}]}
+{"group":"history","text":"go back to snapshot warm","expect":[{"op":"run","control":"restoreSnapshot","text":"warm"}]}
+{"group":"history","text":"delete snapshot warm","expect":[{"op":"run","control":"deleteSnapshot","text":"warm"}]}
+{"group":"history","text":"remove version 2","expect":[{"op":"run","control":"deleteSnapshot","text":"2"}]}

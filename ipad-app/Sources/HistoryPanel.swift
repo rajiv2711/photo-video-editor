@@ -6,6 +6,7 @@ import SwiftUI
 struct HistoryPanel: View {
     @ObservedObject var model: EditorModel
     @Binding var expanded: Set<String>
+    @State private var snapshotName = ""
 
     var body: some View {
         DisclosureGroup(isExpanded: isOpen("history")) {
@@ -19,11 +20,40 @@ struct HistoryPanel: View {
                 ForEach(Array(model.historySteps.enumerated()).reversed(), id: \.offset) { item in
                     stepRow(item.offset, item.element)
                 }
+                DisclosureGroup(isExpanded: isOpen("history/Snapshots")) {
+                    snapshots
+                } label: {
+                    Text("Snapshots").font(.subheadline.weight(.semibold))
+                }
             }
             .padding(.top, 6)
         } label: {
             Text("History").font(.headline)
         }
+    }
+
+    /// Named states of the edit: save the current one, tap one to come back to it (a long press deletes it).
+    private var snapshots: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                TextField("Snapshot name", text: $snapshotName)
+                    .textFieldStyle(.roundedBorder)
+                Button("Save") {
+                    model.apply([.run("saveSnapshot", text: snapshotName.trimmingCharacters(in: .whitespaces))])
+                    snapshotName = ""
+                }
+                .buttonStyle(.bordered)
+            }
+            ForEach(Array(model.snapshots.enumerated()), id: \.offset) { item in
+                Button("\(item.offset + 1). \(item.element.name)") {
+                    model.apply([.run("restoreSnapshot", text: item.element.name)])
+                }
+                .contextMenu {
+                    Button("Delete", role: .destructive) { model.apply([.run("deleteSnapshot", text: item.element.name)]) }
+                }
+            }
+        }
+        .padding(.horizontal, 10)
     }
 
     private func stepRow(_ index: Int, _ step: EditHistory.Step) -> some View {

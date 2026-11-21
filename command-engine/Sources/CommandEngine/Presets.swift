@@ -241,13 +241,20 @@ public enum Presets {
     /// its pack and name ("film portra"), or a near-miss as the control names allow ("portr", "kodachrom").
     public static func find(_ words: String, in presets: [Preset]) -> Match {
         let phrase = normalized(words)
-        guard !phrase.isEmpty else { return .none }
-        if let i = presets.firstIndex(where: { normalized($0.name) == phrase }) { return .found(i) }
         if let i = presets.firstIndex(where: { p in p.pack.map { normalized($0 + " " + p.name) == phrase } ?? false }) { return .found(i) }
+        return find(words, names: presets.map(\.name))
+    }
+
+    /// The name `words` say among `names` (snapshots, copies, presets): exactly, or a near-miss as the
+    /// control names allow; the first of equal names.
+    public static func find(_ words: String, names: [String]) -> Match {
+        let phrase = normalized(words)
+        guard !phrase.isEmpty else { return .none }
+        if let i = names.firstIndex(where: { normalized($0) == phrase }) { return .found(i) }
         var best: [Int] = []
         var bestScore = Int.max
-        for (i, preset) in presets.enumerated() {
-            guard let score = NameMatcher.score(phrase, against: normalized(preset.name)) else { continue }
+        for (i, name) in names.enumerated() {
+            guard let score = NameMatcher.score(phrase, against: normalized(name)) else { continue }
             if score < bestScore {
                 best = [i]
                 bestScore = score

@@ -130,6 +130,8 @@ final class EditorModel: ObservableObject {
     /// The edit's steps, oldest first (step 0: the photo as opened), and the one it is at.
     var historySteps: [EditHistory.Step] { interpreter.workspace.history.steps }
     var historyPosition: Int { interpreter.workspace.history.position }
+    /// Named states of this photo's edit.
+    var snapshots: [Snapshot] { interpreter.workspace.snapshots }
 
     /// The history name of a touch on the photo with the tool in use.
     private var touchLabel: String {
@@ -1130,6 +1132,16 @@ final class EditorModel: ObservableObject {
             return ("History: \(steps) step\(steps == 1 ? "" : "s") · say “history 2” to go to step 2, “history 0” for the photo as opened", false)
         case .noHistoryStep(let n):
             return ("No step \(n): the history has \(historySteps.count - 1)", true)
+        case .snapshotSaved(let name):
+            return ("Snapshot “\(name)” saved (say “restore snapshot \(name)” to come back to it)", false)
+        case .snapshotRestored(let name):
+            return ("Snapshot “\(name)” restored", false)
+        case .snapshotDeleted(let name):
+            return ("Snapshot “\(name)” deleted", false)
+        case .noSnapshot(let word):
+            return (word.isEmpty ? "Say the snapshot's name or number, e.g. “restore snapshot 1”" : "No snapshot called “\(word)”", true)
+        case .snapshotChoices(let word, let names):
+            return ("“\(word)” could be: " + names.map { "“\($0)”" }.joined(separator: ", "), true)
         }
     }
 

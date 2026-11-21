@@ -322,6 +322,33 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(history.steps[0].label, "Opened", "the photo as opened is always kept")
     }
 
+    // MARK: - Snapshots
+
+    func testSnapshotsSaveAndRestoreNamedStates() {
+        XCTAssertEqual(parse("snapshot before crop"), [.run("saveSnapshot", text: "before crop")])
+        XCTAssertEqual(parse("restore snapshot before crop"), [.run("restoreSnapshot", text: "before crop")])
+        XCTAssertEqual(parse("version 2"), [.run("restoreSnapshot", text: "2")])
+        XCTAssertEqual(parse("delete snapshot warm"), [.run("deleteSnapshot", text: "warm")])
+        run("exposure 1 linear gradient from top exposure -1 done")
+        let saved = state!
+        XCTAssertEqual(events(run("snapshot before crop")), [.snapshotSaved("before crop")])
+        run("crop left 30 contrast 40")
+        // The words after a snapshot's name are commands again.
+        XCTAssertEqual(events(run("restore snapshot before crop vibrance 20")), [.snapshotRestored("before crop")])
+        XCTAssertEqual(value("cropLeft"), 0)
+        XCTAssertEqual(value("vibrance"), 20)
+        XCTAssertEqual(state.masks, saved.masks)
+        // Restoring is a step: undo goes back to the crop.
+        run("undo")
+        XCTAssertEqual(value("cropLeft"), 30)
+        run("snapshot")  // no name: numbered
+        XCTAssertEqual(interpreter.workspace.snapshots.map(\.name), ["before crop", "Snapshot 2"])
+        run("version 1")
+        XCTAssertEqual(value("cropLeft"), 0)
+        XCTAssertEqual(events(run("delete snapshot before crop")), [.snapshotDeleted("before crop")])
+        XCTAssertEqual(events(run("restore snapshot before crop")), [.noSnapshot("before crop")])
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

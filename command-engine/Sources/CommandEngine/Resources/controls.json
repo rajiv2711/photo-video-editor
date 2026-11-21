@@ -1604,6 +1604,12 @@
     {"id": "redo", "label": "Redo", "group": "history", "kind": "action",
       "synonyms": ["redo that", "redo last step", "step forward", "redo last change", "undo the undo"]},
     {"id": "history", "label": "History", "group": "history", "kind": "action",
-      "synonyms": ["history step", "jump to step", "back to step", "edit history", "show history", "history list"]}
+      "synonyms": ["history step", "jump to step", "back to step", "edit history", "show history", "history list"]},
+    {"id": "saveSnapshot", "label": "Snapshot", "group": "history", "section": "Snapshots", "kind": "action", "takesText": true,
+      "synonyms": ["save snapshot", "take snapshot", "take a snapshot", "new snapshot", "create snapshot", "make snapshot", "save version", "new version", "save a version"]},
+    {"id": "restoreSnapshot", "label": "Restore Snapshot", "group": "history", "section": "Snapshots", "kind": "action", "takesText": true,
+      "synonyms": ["back to snapshot", "go back to snapshot", "load snapshot", "open snapshot", "use snapshot", "restore version", "load version", "version", "go to snapshot"]},
+    {"id": "deleteSnapshot", "label": "Delete Snapshot", "group": "history", "section": "Snapshots", "kind": "action", "takesText": true,
+      "synonyms": ["remove snapshot", "forget snapshot", "delete version", "remove version"]}
   ]
 }

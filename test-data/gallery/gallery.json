@@ -606,6 +606,9 @@
     {"id": "undo", "command": "exposure 1", "control": "undo", "steps": [{"command": "contrast 60"}, {"command": "undo"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
     {"id": "undo-2", "command": "exposure 1", "control": "undo", "steps": [{"command": "contrast 60"}, {"command": "temperature 40"}, {"command": "undo 2"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
     {"id": "redo", "command": "exposure 1", "control": "redo", "steps": [{"command": "contrast 60"}, {"command": "undo"}, {"command": "redo"}], "expect": [{"metric": "diff", "dir": "changed", "vs": "history-source"}, {"metric": "p5_luma", "dir": "down", "vs": "history-source"}]},
-    {"id": "history-jump", "command": "exposure 1", "control": "history", "steps": [{"command": "contrast 60"}, {"command": "temperature 40"}, {"command": "history 1"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]}
+    {"id": "history-jump", "command": "exposure 1", "control": "history", "steps": [{"command": "contrast 60"}, {"command": "temperature 40"}, {"command": "history 1"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
+    {"id": "snapshot-save", "command": "exposure 1 snapshot \"s1\" contrast 60 temperature 40 restore snapshot 1", "control": "saveSnapshot", "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
+    {"id": "snapshot-restore", "command": "exposure 1", "control": "restoreSnapshot", "steps": [{"command": "snapshot bright"}, {"command": "crop left 30 contrast 60"}, {"command": "restore snapshot bright"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
+    {"id": "snapshot-delete", "command": "exposure 1 snapshot \"s2\" delete snapshot \"s2\" reset all restore snapshot s2", "control": "deleteSnapshot", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]}
   ]
 }
