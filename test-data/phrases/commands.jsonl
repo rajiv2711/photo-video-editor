@@ -840,3 +840,12 @@
 {"group":"geometry","text":"resolution 300","expect":[{"op":"set","control":"resolution","value":300}]}
 {"group":"geometry","text":"dpi 240","expect":[{"op":"set","control":"resolution","value":240}]}
 {"group":"geometry","text":"straighten 3 degrees","expect":[{"op":"set","control":"straighten","value":3}]}
+{"group":"geometry","text":"canvas size 10","expect":[{"op":"set","control":"canvasBorder","value":10}]}
+{"group":"geometry","text":"border 5","expect":[{"op":"set","control":"canvasBorder","value":5}]}
+{"group":"geometry","text":"border more","expect":[{"op":"nudge","control":"canvasBorder","steps":1}]}
+{"group":"geometry","text":"canvas aspect square","expect":[{"op":"set","control":"canvasAspect","value":1}]}
+{"group":"geometry","text":"canvas aspect 16 by 9","expect":[{"op":"set","control":"canvasAspect","value":7}]}
+{"group":"geometry","text":"canvas ratio 4 by 5","expect":[{"op":"set","control":"canvasAspect","value":2}]}
+{"group":"geometry","text":"canvas color black","expect":[{"op":"set","control":"canvasColor","value":1}]}
+{"group":"geometry","text":"border colour blur","expect":[{"op":"set","control":"canvasColor","value":3}]}
+{"group":"geometry","text":"border color white","expect":[{"op":"set","control":"canvasColor","value":0}]}

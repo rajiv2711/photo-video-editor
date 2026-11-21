@@ -1105,6 +1105,28 @@
       "synonyms": ["resize long edge", "long side", "longest side", "resize long side", "output long edge", "resize to long edge", "pixel size",
                    "output size", "longest edge"]},
     {"id": "resolution", "label": "Resolution", "group": "geometry", "section": "Resize", "min": 72, "max": 600, "default": 72, "step": 1,
-      "synonyms": ["dpi", "ppi", "pixels per inch", "dots per inch", "print resolution", "output resolution"]}
+      "synonyms": ["dpi", "ppi", "pixels per inch", "dots per inch", "print resolution", "output resolution"]},
+    {"id": "canvasBorder", "label": "Canvas Size", "group": "geometry", "section": "Canvas", "min": 0, "max": 50, "default": 0, "step": 1,
+      "synonyms": ["canvas", "canvas border", "border", "border size", "border width", "canvas space", "padding"]},
+    {"id": "canvasAspect", "label": "Canvas Aspect", "group": "geometry", "section": "Canvas", "kind": "choice",
+      "synonyms": ["canvas ratio", "canvas shape", "canvas aspect ratio", "pad to"],
+      "options": [
+        {"id": "free", "label": "Free", "synonyms": ["none", "as is", "no aspect"]},
+        {"id": "1:1", "label": "1:1", "synonyms": ["1 1", "1 by 1", "1 x 1", "1x1", "1 to 1", "square"]},
+        {"id": "4:5", "label": "4:5", "synonyms": ["4 5", "4 by 5", "4 x 5", "4x5", "4 to 5"]},
+        {"id": "5:4", "label": "5:4", "synonyms": ["5 4", "5 by 4", "5 x 4", "5x4", "5 to 4"]},
+        {"id": "2:3", "label": "2:3", "synonyms": ["2 3", "2 by 3", "2 x 3", "2x3", "2 to 3"]},
+        {"id": "3:2", "label": "3:2", "synonyms": ["3 2", "3 by 2", "3 x 2", "3x2", "3 to 2"]},
+        {"id": "9:16", "label": "9:16", "synonyms": ["9 16", "9 by 16", "9 x 16", "9x16", "9 to 16"]},
+        {"id": "16:9", "label": "16:9", "synonyms": ["16 9", "16 by 9", "16 x 9", "16x9", "16 to 9"]}
+      ]},
+    {"id": "canvasColor", "label": "Canvas Color", "group": "geometry", "section": "Canvas", "kind": "choice",
+      "synonyms": ["canvas colour", "border color", "border colour", "canvas fill", "border fill"],
+      "options": [
+        {"id": "white", "label": "White", "synonyms": ["light"]},
+        {"id": "black", "label": "Black", "synonyms": ["dark"]},
+        {"id": "grey", "label": "Grey", "synonyms": ["gray", "mid grey", "mid gray"]},
+        {"id": "blur", "label": "Blur", "synonyms": ["blurred", "blurred photo", "soft", "photo"]}
+      ]}
   ]
 }

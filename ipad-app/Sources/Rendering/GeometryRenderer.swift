@@ -51,19 +51,47 @@ final class GeometryRenderer {
                             edits: edits, previewScale: previewScale)
     }
 
-    /// The finished picture resized as the plan says (Lanczos), at the origin.
+    /// The finished picture on its canvas and resized (Lanczos) as the plan says, at the origin.
     func frame(_ image: CIImage, plan: GeometryPlan) -> CIImage {
         if plan.isFrameIdentity { return image }
         let e = image.extent
         var out = image.transformed(by: CGAffineTransform(translationX: -e.minX, y: -e.minY))
+        var area = CGRect(x: 0, y: 0, width: e.width, height: e.height)
+        if !plan.hasNoCanvas {
+            let canvas = CGRect(x: 0, y: 0, width: CGFloat(plan.canvasWidth), height: CGFloat(plan.canvasHeight))
+            let picture = out.cropped(to: CGRect(x: 0, y: 0, width: CGFloat(plan.shapedWidth), height: CGFloat(plan.shapedHeight)))
+            // Placed from the canvas's top-left (Core Image counts y from the bottom).
+            let y = plan.canvasHeight - plan.contentY - plan.shapedHeight
+            out = picture.transformed(by: CGAffineTransform(translationX: CGFloat(plan.contentX), y: CGFloat(y)))
+                .composited(over: background(picture, plan: plan, canvas: canvas))
+            area = canvas
+        }
         let k = plan.resizeFactor
         if abs(k - 1) > 1e-9 {
             // Edges repeated a little outwards, so the border pixels stay solid.
-            let area = CGRect(x: 0, y: 0, width: e.width, height: e.height)
             out = out.clampedToExtent().cropped(to: area.insetBy(dx: -4, dy: -4))
                 .applyingFilter("CILanczosScaleTransform", parameters: [kCIInputScaleKey: k, kCIInputAspectRatioKey: 1])
         }
         return out.cropped(to: CGRect(x: 0, y: 0, width: CGFloat(plan.outputWidth), height: CGFloat(plan.outputHeight)))
+    }
+
+    /// The canvas's colour, or the picture itself stretched to fill it and blurred (3 % of its long side).
+    private func background(_ picture: CIImage, plan: GeometryPlan, canvas: CGRect) -> CIImage {
+        switch plan.canvasColor {
+        case "black":
+            return CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: canvas)
+        case "grey":
+            return CIImage(color: CIColor(red: 0.21, green: 0.21, blue: 0.21)).cropped(to: canvas)  // mid-grey on sRGB levels
+        case "blur":
+            let p = picture.extent
+            let scale = max(canvas.width / max(p.width, 1), canvas.height / max(p.height, 1))
+            let filled = picture.clampedToExtent()
+                .transformed(by: CGAffineTransform(translationX: (canvas.width - p.width * scale) / 2, y: (canvas.height - p.height * scale) / 2)
+                    .scaledBy(x: scale, y: scale))
+            return filled.applyingGaussianBlur(sigma: Double(0.03 * max(canvas.width, canvas.height))).cropped(to: canvas)
+        default:
+            return CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: canvas)
+        }
     }
 
     /// The picture put into its frame and cropped, as the plan says; the result starts at the origin.

@@ -603,6 +603,40 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(parse("long edge 2000 pixels"), [.set("longEdge", 2000)])
     }
 
+    func testCanvasAddsSpaceAroundThePicture() {
+        XCTAssertEqual(control("canvasAspect").options.map(\.id), Canvas.aspects)
+        XCTAssertEqual(control("canvasColor").options.map(\.id), Canvas.colors)
+        var s = GeometrySettings()
+        s.canvasBorder = 0.1
+        let border = GeometryPlan(settings: s, width: 400, height: 300)
+        XCTAssertEqual(border.canvasWidth, 480)
+        XCTAssertEqual(border.canvasHeight, 380)
+        XCTAssertEqual(border.contentX, 40)
+        XCTAssertFalse(border.isIdentity)
+        XCTAssertEqual(border.savedWidth, 480, "the saved photo includes the canvas")
+        // A tap on the picture inside the border lands on the photo; one on the border at its edge.
+        let mid = border.toSource(MaskPoint(0.5, 0.5))
+        XCTAssertEqual(mid.x, 0.5, accuracy: 1e-9)
+        let corner = border.toSource(MaskPoint(40.0 / 480, 40.0 / 380))
+        XCTAssertEqual(corner.x, 0, accuracy: 1e-9)
+        XCTAssertEqual(corner.y, 0, accuracy: 1e-9)
+        let shown = border.toShown(MaskPoint(1, 1))
+        XCTAssertEqual(shown.x, 440.0 / 480, accuracy: 1e-9)
+        // Padded to a square.
+        s.canvasAspect = "1:1"
+        let square = GeometryPlan(settings: s, width: 400, height: 300)
+        XCTAssertEqual(square.canvasWidth, square.canvasHeight)
+        XCTAssertEqual(square.canvasWidth, 480)
+        // With a resize the canvas is resized too.
+        s.resize = 0.5
+        XCTAssertEqual(GeometryPlan(settings: s, width: 400, height: 300).outputWidth, 240)
+        let values: [String: Double] = ["canvasBorder": 5, "canvasAspect": 7, "canvasColor": 3]
+        let read = GeometrySettings(value: { values[$0] })
+        XCTAssertEqual(read.canvasBorder, 0.05)
+        XCTAssertEqual(read.canvasAspect, "16:9")
+        XCTAssertEqual(read.canvasColor, "blur")
+    }
+
     func testUprightNames() {
         XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
         XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])

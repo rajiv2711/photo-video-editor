@@ -224,6 +224,12 @@ public struct GeometrySettings: Equatable {
     public var resize = 1.0
     public var longEdge = 0.0
     public var resolution = 72.0
+    /// Canvas size: a border on every side (share of the picture's long side, 0…0.5), then more
+    /// space to reach an aspect (an option id of Canvas.aspects; "free" = none), in a colour
+    /// (Canvas.colors: white, black, grey or a blurred copy of the picture).
+    public var canvasBorder = 0.0
+    public var canvasAspect = "free"
+    public var canvasColor = "white"
 
     public init(aspect: String = "free", cropLeft: Double = 0, cropTop: Double = 0, cropRight: Double = 0,
                 cropBottom: Double = 0, straighten: Double = 0, quarterTurns: Int = 0, flipHorizontal: Bool = false,
@@ -264,6 +270,10 @@ public struct GeometrySettings: Equatable {
         resize = Swift.max(0.01, (value("resize") ?? 100) / 100)
         longEdge = Swift.max(0, v("longEdge"))
         resolution = value("resolution") ?? 72
+        canvasBorder = Swift.min(0.5, Swift.max(0, v("canvasBorder") / 100))
+        let aspect = Int(v("canvasAspect")), color = Int(v("canvasColor"))
+        canvasAspect = Canvas.aspects.indices.contains(aspect) ? Canvas.aspects[aspect] : "free"
+        canvasColor = Canvas.colors.indices.contains(color) ? Canvas.colors[color] : "white"
     }
 
     /// The manual transform in pixels of a `width` × `height` photo (the frame keeps its size): a camera
@@ -304,6 +314,15 @@ public struct GeometryPlan: Equatable {
     public let crop: GeoRect
     /// Where the photo lies in the frame (its corners: top-left, top-right, bottom-right, bottom-left).
     public let photoCorners: [Vec2]
+    /// The picture after the crop (vignette and grain are laid over this).
+    public let shapedWidth: Double
+    public let shapedHeight: Double
+    /// Canvas size: the canvas and where the picture lies on it (from its top-left), and its colour.
+    public let canvasWidth: Double
+    public let canvasHeight: Double
+    public let contentX: Double
+    public let contentY: Double
+    public let canvasColor: String
     /// Resize: the scale this render applies at the end, the size it puts out, and the size of the
     /// saved photo (pixels of the full-size photo).
     public let resizeFactor: Double
@@ -355,17 +374,27 @@ public struct GeometryPlan: Equatable {
         case .frame, .source:
             crop = Crop.whole(width: frameWidth, height: frameHeight)
         }
+        shapedWidth = crop.width
+        shapedHeight = crop.height
+        // The canvas around the finished picture (whole pixels).
+        let canvas: (width: Double, height: Double) = stage == .full
+            ? Canvas.size(width: shapedWidth, height: shapedHeight, border: settings.canvasBorder, aspect: settings.canvasAspect)
+            : (shapedWidth, shapedHeight)
+        canvasWidth = canvas.width
+        canvasHeight = canvas.height
+        contentX = ((canvas.width - shapedWidth) / 2).rounded(.down)
+        contentY = ((canvas.height - shapedHeight) / 2).rounded(.down)
+        canvasColor = settings.canvasColor
         // Resize, on what the edit gives (in this render's pixels; the full photo's is that ÷ the preview scale).
         let scale = previewScale ?? 1
-        let shapedW = crop.width, shapedH = crop.height
-        let full = Swift.max(shapedW, shapedH) / scale
+        let full = Swift.max(canvas.width, canvas.height) / scale
         let r = stage == .full ? (settings.longEdge > 0 ? settings.longEdge / full : settings.resize) : 1
-        savedWidth = Swift.max(1, (shapedW / scale * r).rounded())
-        savedHeight = Swift.max(1, (shapedH / scale * r).rounded())
+        savedWidth = Swift.max(1, (canvas.width / scale * r).rounded())
+        savedHeight = Swift.max(1, (canvas.height / scale * r).rounded())
         resolution = settings.resolution
         resizeFactor = previewScale == nil ? r : Swift.min(1, r / scale)
-        outputWidth = abs(resizeFactor - 1) < 1e-9 ? shapedW : Swift.max(1, (shapedW * resizeFactor).rounded())
-        outputHeight = abs(resizeFactor - 1) < 1e-9 ? shapedH : Swift.max(1, (shapedH * resizeFactor).rounded())
+        outputWidth = abs(resizeFactor - 1) < 1e-9 ? canvas.width : Swift.max(1, (canvas.width * resizeFactor).rounded())
+        outputHeight = abs(resizeFactor - 1) < 1e-9 ? canvas.height : Swift.max(1, (canvas.height * resizeFactor).rounded())
     }
 
     /// Nothing changes the picture: the pipeline can skip the geometry.
@@ -381,16 +410,20 @@ public struct GeometryPlan: Equatable {
 
     /// No canvas and no resize at the end.
     public var isFrameIdentity: Bool {
-        abs(resizeFactor - 1) < 1e-9
+        abs(resizeFactor - 1) < 1e-9 && hasNoCanvas
     }
 
-    /// The size of the picture after the crop (before vignette and grain).
-    public var shapedWidth: Double { crop.width }
-    public var shapedHeight: Double { crop.height }
+    /// The canvas is just the picture.
+    public var hasNoCanvas: Bool {
+        canvasWidth == shapedWidth && canvasHeight == shapedHeight
+    }
 
     /// A point on the shown picture (normalized) → the same point on the photo (normalized).
     public func toSource(_ p: MaskPoint) -> MaskPoint {
-        let framed = Vec2(crop.x + p.x * crop.width, crop.y + p.y * crop.height)
+        // Off the canvas border onto the picture, then back through the crop and H.
+        let onPicture = Vec2((p.x * canvasWidth - contentX) / Swift.max(shapedWidth, 1e-9),
+                             (p.y * canvasHeight - contentY) / Swift.max(shapedHeight, 1e-9))
+        let framed = Vec2(crop.x + onPicture.x * crop.width, crop.y + onPicture.y * crop.height)
         let q = transform.inverse.apply(framed)
         return MaskPoint(q.x / Swift.max(sourceWidth, 1e-9), q.y / Swift.max(sourceHeight, 1e-9))
     }
@@ -404,7 +437,8 @@ public struct GeometryPlan: Equatable {
     /// The photo (normalized) → the shown picture (normalized), as one projective transform: used to
     /// draw outlines made on the photo (mask handles, spots) over the edited picture.
     public var shownTransform: Homography {
-        Homography.scale(1 / Swift.max(crop.width, 1e-9), 1 / Swift.max(crop.height, 1e-9))
+        Homography.scale(1 / Swift.max(canvasWidth, 1e-9), 1 / Swift.max(canvasHeight, 1e-9)) * Homography.translation(contentX, contentY)
+            * Homography.scale(shapedWidth / Swift.max(crop.width, 1e-9), shapedHeight / Swift.max(crop.height, 1e-9))
             * Homography.translation(-crop.x, -crop.y) * transform * Homography.scale(sourceWidth, sourceHeight)
     }
 
@@ -667,5 +701,24 @@ public enum GeometryTools {
         default:
             break
         }
+    }
+}
+
+/// Canvas size: space around the finished picture.
+public enum Canvas {
+    /// Option ids of the "canvasAspect" choice; must match controls.json (unit-tested).
+    public static let aspects = ["free", "1:1", "4:5", "5:4", "2:3", "3:2", "9:16", "16:9"]
+    /// Option ids of the "canvasColor" choice; must match controls.json (unit-tested).
+    public static let colors = ["white", "black", "grey", "blur"]
+
+    /// The canvas for a `width` × `height` picture: a border of `border` × its long side on every side,
+    /// then widened or heightened to `aspect` (whole pixels).
+    public static func size(width: Double, height: Double, border: Double, aspect: String) -> (width: Double, height: Double) {
+        let b = (border * Swift.max(width, height)).rounded()
+        var w = width + 2 * b, h = height + 2 * b
+        if let a = Crop.ratio(aspect, original: w / h), aspect != "free", a > 0 {
+            if w / h < a { w = (h * a).rounded() } else { h = (w / a).rounded() }
+        }
+        return (w, h)
     }
 }

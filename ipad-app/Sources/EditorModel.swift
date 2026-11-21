@@ -345,7 +345,8 @@ final class EditorModel: ObservableObject {
         guard let plan = previewPlan, !plan.isIdentity, plan.shapedWidth > 0, shown.width > 0 else {
             return (shown, ProjectionTransform())
         }
-        let k = Double(shown.width) / plan.shapedWidth
+        // Screen points per pixel of the photo (about: the crop keeps the photo's scale).
+        let k = Double(shown.width) / plan.canvasWidth * plan.shapedWidth / max(plan.crop.width, 1)
         let size = CGSize(width: CGFloat(plan.sourceWidth * k), height: CGFloat(plan.sourceHeight * k))
         let h = (Homography.scale(Double(shown.width), Double(shown.height)) * plan.shownTransform
                  * Homography.scale(1 / Double(size.width), 1 / Double(size.height))).normalized
