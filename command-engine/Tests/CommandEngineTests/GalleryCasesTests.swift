@@ -24,6 +24,7 @@ final class GalleryCasesTests: XCTestCase {
         let steps: [Step]?
         let photos: [String]?
         let live: [String]?
+        let view: String?
     }
 
     struct Step: Decodable {
@@ -43,6 +44,8 @@ final class GalleryCasesTests: XCTestCase {
         "edge", "local_contrast", "fringe", "corner_luma", "center_luma", "width", "height", "aspect", "tilt", "vertical_spread", "flat",
     ]
     static let directions: Set = ["up", "down", "changed", "same"]
+    /// What a case may save instead of the edited photo; must match RenderGallery in the app.
+    static let views: Set = ["batch", "overlay"]
     /// Generated starting pictures; must match RenderGallery.sourceImage in the app.
     static let sources: Set = ["warm", "negative", "chart", "haze", "noise", "moire", "grid", "lens", "lateral-ca", "fringe", "fisheye",
                                "dust", "red-eye", "pet-eye", "tilted", "building", "skewed",
@@ -79,6 +82,8 @@ final class GalleryCasesTests: XCTestCase {
             if let source = c.source { XCTAssertTrue(Self.sources.contains(source), "\(c.id): unknown source \(source)") }
             for photo in (c.photos ?? []) + (c.live ?? []) { XCTAssertTrue(Self.sources.contains(photo), "\(c.id): unknown photo \(photo)") }
             if let live = c.live { XCTAssertGreaterThanOrEqual(live.count, 2, "\(c.id): a Live Photo is its photo and frames") }
+            if let view = c.view { XCTAssertTrue(Self.views.contains(view), "\(c.id): unknown view \(view)") }
+            if c.view == "batch" { XCTAssertFalse((c.photos ?? []).isEmpty, "\(c.id): a batch needs photos picked") }
             if let tap = c.tap {
                 XCTAssertTrue(tap.count == 2 && tap.allSatisfy { (0...1).contains($0) }, "\(c.id): tap is x, y in 0…1")
             }

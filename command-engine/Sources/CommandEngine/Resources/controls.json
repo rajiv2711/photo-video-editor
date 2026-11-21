@@ -1573,6 +1573,8 @@
       "synonyms": ["copy", "copy edits", "copy adjustments", "copy the edits", "copy the settings", "copy develop settings"]},
     {"id": "pasteSettings", "label": "Paste Settings", "group": "presets", "kind": "action",
       "synonyms": ["paste", "paste edits", "paste adjustments", "paste the edits", "paste the settings", "apply copied settings"]},
+    {"id": "batchEdit", "label": "Batch Edit", "group": "presets", "section": "Batch", "kind": "action",
+      "synonyms": ["batch", "edit picked photos", "apply to picked photos", "sync settings", "sync", "apply to all photos", "batch save", "save picked photos"]},
     {"id": "includeLight", "label": "Include Light", "group": "presets", "section": "Include", "kind": "toggle", "default": 1,
       "synonyms": ["include light panel", "include light settings"]},
     {"id": "includeColor", "label": "Include Color", "group": "presets", "section": "Include", "kind": "toggle", "default": 1,

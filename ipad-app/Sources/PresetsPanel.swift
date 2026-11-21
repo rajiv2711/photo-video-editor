@@ -1,4 +1,5 @@
 import CommandEngine
+import PhotosUI
 import SwiftUI
 
 /// The Presets panel: save the edit as a preset (the Include switches choose its panels), apply the
@@ -10,6 +11,7 @@ struct PresetsPanel: View {
     @State private var newName = ""
     @State private var renaming: String?
     @State private var renamedTo = ""
+    @State private var items: [PhotosPickerItem] = []
 
     private var controls: [Control] { model.registry.controls(inGroup: "presets") }
 
@@ -69,6 +71,18 @@ struct PresetsPanel: View {
                 ForEach(sections, id: \.self) { section in
                     DisclosureGroup(isExpanded: isOpen("presets/" + section)) {
                         VStack(alignment: .leading, spacing: 6) {
+                            if section == "Batch" {
+                                // The photos to edit: the same picker as the Merge panel's.
+                                PhotosPicker(selection: $items, selectionBehavior: .ordered, matching: .images, preferredItemEncoding: .current) {
+                                    Label("Pick Photos", systemImage: "photo.stack")
+                                }
+                                .buttonStyle(.bordered)
+                                .padding(.horizontal, 10)
+                                Text(model.mergePhotos.isEmpty ? "No photos picked yet." : "\(model.mergePhotos.count) photos picked.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 10)
+                            }
                             ForEach(controls.filter { $0.section == section }) { ControlRow(model: model, control: $0) }
                         }
                     } label: {
@@ -79,6 +93,16 @@ struct PresetsPanel: View {
             .padding(.top, 6)
         } label: {
             Text("Presets").font(.headline)
+        }
+        .onChange(of: items) { _, picked in
+            guard !picked.isEmpty else { return }
+            Task { @MainActor in
+                var files: [Data] = []
+                for item in picked {
+                    if let data = try? await item.loadTransferable(type: Data.self) { files.append(data) }
+                }
+                model.pickForMerge(files: files)
+            }
         }
         .alert("Rename preset", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
             TextField("Name", text: $renamedTo)

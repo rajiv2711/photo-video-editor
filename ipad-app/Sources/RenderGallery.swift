@@ -46,6 +46,8 @@ enum RenderGallery {
         let photos: [String]?
         /// A Live Photo to edit: its photo, then its video's frames (generated, see `sourceImage`).
         let live: [String]?
+        /// What to save instead of the edited photo: "batch", the first picture Batch Edit made.
+        let view: String?
     }
 
     /// One step: a command, a stroke or a tap.
@@ -148,7 +150,8 @@ enum RenderGallery {
             if let tap = item.tap, tap.count == 2 {
                 model.tap(atX: tap[0], y: tap[1])
             }
-            let edited = model.editedPreview()
+            var edited = model.editedPreview()
+            if item.view == "batch", let first = model.lastBatch.first { edited = first }
             let file = "\(item.id).jpg"
             if let jpeg = model.renderer.jpegData(edited) {
                 try? jpeg.write(to: folder.appendingPathComponent(file))

@@ -135,6 +135,7 @@ final class EditorModel: ObservableObject {
         layerPhotos = []
         watermarkLogo = nil
         mergePhotos = []
+        lastBatch = []
         livePhoto = nil
         if merged != nil {
             merged = nil
@@ -689,6 +690,7 @@ final class EditorModel: ObservableObject {
         noteMissingInputs(outcomes)
         for case .ran(let id) in outcomes {
             if let kind = MergeTools.actions[id] { merge(kind) }
+            if id == "batchEdit" { batchEdit() }
         }
         for case .ran(let id) in outcomes {
             if let hint = Self.pickers[id] {
@@ -981,7 +983,7 @@ final class EditorModel: ObservableObject {
                     self.feedback = Feedback(text: "Couldn't make the \(name).", isProblem: true)
                     return
                 }
-                self.saveToPhotos(data, done: "Saved the \(name) to Photos (an animated GIF).")
+                self.saveToPhotos([data], done: "Saved the \(name) to Photos (an animated GIF).")
             }
         }
     }
@@ -1046,6 +1048,66 @@ final class EditorModel: ObservableObject {
             return ("Pasted (\(changes) setting\(changes == 1 ? "" : "s") changed)", false)
         case .nothingCopied:
             return ("Nothing copied yet: say “copy settings” first", true)
+        }
+    }
+
+    // MARK: - Batch (the photos picked)
+
+    /// The pictures the last batch made (the render gallery shows the first one).
+    private(set) var lastBatch: [CIImage] = []
+
+    /// Batch Edit: the panels of this edit that the Include switches choose (as Copy Settings takes
+    /// them) on every photo picked (Merge or Layers panel), each saved to Photos as a JPEG; the photo
+    /// being edited stays as it is. Worked out in the background with a renderer of its own (the
+    /// render gallery waits and keeps the pictures instead of saving them).
+    private func batchEdit() {
+        let photos = mergePhotos
+        guard !photos.isEmpty else {
+            feedback = Feedback(text: "Pick the photos first (Merge or Layers panel → Pick Photos), then say “batch edit”.", isProblem: true)
+            return
+        }
+        let registry = self.registry
+        let bundle = Preset.capture(state, name: "Batch", groups: Presets.included(state, registry: registry), registry: registry)
+        let edits: [EditState] = photos.map { _ in
+            var edit = EditState()
+            bundle.apply(to: &edit, registry: registry)
+            return edit
+        }
+        let lenses = photos.map { Self.lens(of: $0) }
+        let layerPhotos = self.layerPhotos.map { $0.full }, logo = watermarkLogo?.full
+        let count = photos.count
+        if waitsForMerge {
+            lastBatch = Self.renderBatch(photos, edits: edits, lenses: lenses, registry: registry, layerPhotos: layerPhotos, logo: logo,
+                                    with: PhotoRenderer())
+            feedback = Feedback(text: "Batch Edit: \(count) photo\(count == 1 ? "" : "s") edited")
+            return
+        }
+        let ppis = edits.map { edit in registry.control(id: "resolution").map { edit.value(of: $0) } ?? 72 }
+        feedback = Feedback(text: "Batch Edit: editing \(count) photo\(count == 1 ? "" : "s")…")
+        mergeQueue.async {
+            let exporter = PhotoRenderer()
+            let pictures = Self.renderBatch(photos, edits: edits, lenses: lenses, registry: registry, layerPhotos: layerPhotos, logo: logo,
+                                       with: exporter)
+            let files = pictures.indices.compactMap { Self.jpeg(pictures[$0], context: exporter.context, ppi: ppis[$0]) }
+            Task { @MainActor in
+                guard !files.isEmpty else {
+                    self.feedback = Feedback(text: "Batch Edit: couldn't render the photos.", isProblem: true)
+                    return
+                }
+                self.saveToPhotos(files, done: "Batch Edit: saved \(files.count) edited photo\(files.count == 1 ? "" : "s") to Photos.")
+            }
+        }
+    }
+
+    /// Each photo with its own edit, by `exporter` (a renderer of the batch's own).
+    nonisolated private static func renderBatch(_ photos: [CIImage], edits: [EditState], lenses: [PhotoLens], registry: ControlRegistry,
+                                           layerPhotos: [CIImage], logo: CIImage?, with exporter: PhotoRenderer) -> [CIImage] {
+        photos.indices.map { i in
+            let edit = edits[i]
+            exporter.lens = lenses[i]
+            return exporter.apply(to: photos[i], value: { id in registry.control(id: id).map { edit.value(of: $0) } },
+                                  masks: edit.masks, retouches: edit.retouches, geometry: edit.geometry, layers: edit.layers,
+                                  layerPhotos: layerPhotos, watermark: edit.watermarkText, logo: logo)
         }
     }
 
@@ -1169,29 +1231,31 @@ final class EditorModel: ObservableObject {
                 feedback = Feedback(text: "Couldn't render the HDR photo.", isProblem: true)
                 return
             }
-            saveToPhotos(data, done: "Saved HDR photo to Photos.")
+            saveToPhotos([data], done: "Saved HDR photo to Photos.")
             return
         }
         // A JPEG with the Resolution (pixels per inch) written into it.
         let ppi = registry.control(id: "resolution").map { state.value(of: $0) } ?? 72
-        let data = NSMutableData()
-        guard let cg = renderer.context.createCGImage(edited, from: edited.extent),
-              let destination = CGImageDestinationCreateWithData(data, "public.jpeg" as CFString, 1, nil) else {
+        guard let data = Self.jpeg(edited, context: renderer.context, ppi: ppi) else {
             feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
             return
         }
+        saveToPhotos([data], done: "Saved to Photos.")
+    }
+
+    /// JPEG bytes (quality 0.92) with the resolution (pixels per inch) written into them.
+    nonisolated static func jpeg(_ image: CIImage, context: CIContext, ppi: Double) -> Data? {
+        let data = NSMutableData()
+        guard let cg = context.createCGImage(image, from: image.extent),
+              let destination = CGImageDestinationCreateWithData(data, "public.jpeg" as CFString, 1, nil) else { return nil }
         let properties: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: 0.92,
                                            kCGImagePropertyDPIWidth: ppi, kCGImagePropertyDPIHeight: ppi]
         CGImageDestinationAddImage(destination, cg, properties as CFDictionary)
-        guard CGImageDestinationFinalize(destination) else {
-            feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
-            return
-        }
-        saveToPhotos(data as Data, done: "Saved to Photos.")
+        return CGImageDestinationFinalize(destination) ? data as Data : nil
     }
 
-    /// Adds a photo file to the photo library.
-    private func saveToPhotos(_ data: Data, done: String) {
+    /// Adds photo files to the photo library.
+    private func saveToPhotos(_ files: [Data], done: String) {
         // The model lives as long as the app, so these closures may hold it.
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
             guard status == .authorized || status == .limited else {
@@ -1201,7 +1265,7 @@ final class EditorModel: ObservableObject {
                 return
             }
             PHPhotoLibrary.shared().performChanges({
-                PHAssetCreationRequest.forAsset().addResource(with: .photo, data: data, options: nil)
+                for data in files { PHAssetCreationRequest.forAsset().addResource(with: .photo, data: data, options: nil) }
             }, completionHandler: { ok, _ in
                 Task { @MainActor in
                     self.feedback = Feedback(text: ok ? done : "Couldn't save to Photos.", isProblem: !ok)

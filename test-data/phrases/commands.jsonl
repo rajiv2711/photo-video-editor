@@ -1171,3 +1171,6 @@
 {"group":"presets","text":"paste settings","expect":[{"op":"run","control":"pasteSettings"}]}
 {"group":"presets","text":"paste","expect":[{"op":"run","control":"pasteSettings"}]}
 {"group":"presets","text":"paste the edits","expect":[{"op":"run","control":"pasteSettings"}]}
+{"group":"presets","text":"batch edit","expect":[{"op":"run","control":"batchEdit"}]}
+{"group":"presets","text":"sync settings","expect":[{"op":"run","control":"batchEdit"}]}
+{"group":"presets","text":"apply to picked photos","expect":[{"op":"run","control":"batchEdit"}]}
