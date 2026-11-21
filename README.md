@@ -124,3 +124,14 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `watercolour` · `sketch` · `cartoon` · `cutout` | Artistic filters (classical image processing, no AI) |
 | `lens flare` · `spotlight` · `omni light` · `light leak` · `dust and scratches` | Light and film effects (`lens flare`, then tap where the light comes from) |
 | `frame white` · `polaroid frame` · `film frame` · `frame width 8` · `frame off` | Frames over the finished picture's edge (`border` is Canvas Size) |
+| `place photo` · `layer 2` · `layer opacity 60` · `layer scale 150` · `layer position top left` · `move layer up` · `duplicate layer` · `hide layer` · `delete layer` | Layers on the finished picture (pick photos in the Layers panel; drag the selected layer to move it; `done` deselects it) |
+| `layer blend multiply` · `layer blend soft light` | Layer blend modes (`blend mode` is the double exposure's) |
+| `new adjustment layer` then `exposure -1` · `layer mask top` · `layer mask brush` · `invert layer mask` | Adjustment layers (the sliders a mask holds, on everything below) and layer masks |
+| `new text layer Happy birthday` · `add text “Sale” text size 80` · `text font script` · `text colour yellow` · `change text to Goodbye` | Text: the words after the name are the text, or only those in quotes |
+| `add rectangle` · `add ellipse` · `add line` · `add polygon` · `pen tool` · `shape fill red` · `line width 3` | Shapes (pen: tap corners, drag for curves, tap the first point to close; `rectangle` alone is the mask) |
+| `drop shadow` · `outer glow` · `stroke 4` · `stroke colour white` · `bevel` · `stroke off` | Layer styles |
+| `paint brush` · `brush colour blue` · `paint size 3` | Paint with a finger or the Pencil (pressure and tilt) |
+| `gradient fill` · `gradient fill radial` · `solid fill` · `fill colour red` · `fill angle 0` | Fill layers |
+| `sticker heart` · `add sticker speech bubble` | Stickers (simple vector pictures made by the app) |
+| `collage 2 by 2` · `collage spacing 4` · `collage background black` | Collage of the photo and the photos picked (it becomes the photo being edited) |
+| `watermark text © 2026` · `watermark logo` · `watermark opacity 30` · `watermark position top left` | Watermark, in the preview and the saved photo |
