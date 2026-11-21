@@ -181,4 +181,21 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(p.title, "Sunset")
         XCTAssertEqual(p.copyright, "© R")
     }
+
+    // MARK: - Raw support (#163)
+
+    func testRawPresetsAreRelativeToTheCamerasWhiteBalance() {
+        // A JPEG is taken as shot in daylight: Daylight changes nothing.
+        XCTAssertEqual(WhiteBalance.offset(preset: "daylight").temperature, 0, accuracy: 1e-9)
+        // A raw shot with the camera set to 6500 K: Daylight (5500 K) is about 28 mired cooler.
+        let daylight = WhiteBalance.offset(preset: "daylight", asShot: 6500)
+        XCTAssertEqual(daylight.temperature, 1e6 / 6500 - 1e6 / 5500, accuracy: 1e-9)
+        XCTAssertLessThan(daylight.temperature, -20)
+        let gains = WhiteBalance.gains(temperature: daylight.temperature, tint: 0)
+        XCTAssertGreaterThan(gains.b, gains.r, "cooler")
+        // Shot under tungsten-set white balance (3000 K): Daylight warms it up.
+        XCTAssertGreaterThan(WhiteBalance.offset(preset: "daylight", asShot: 3000).temperature, 100)
+        // As Shot is as the camera set it, whatever that was.
+        XCTAssertEqual(WhiteBalance.offset(preset: "asShot", asShot: 3000).temperature, 0)
+    }
 }

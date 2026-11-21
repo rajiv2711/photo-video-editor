@@ -206,6 +206,10 @@ enum RenderGallery {
     /// A generated picture as a JPEG file to import, with EXIF saying when it was taken (`libraryTimes`)
     /// and, for every other one (the 1st, 3rd, …), where: 51.50° N, 0.12° W, then 0.01° further north-west each.
     static func libraryImport(_ source: String, index: Int, photo: CIImage) -> LibraryImport? {
+        // The camera raw is imported as the file it is.
+        if source == "raw" {
+            return rawData.map { LibraryImport(data: $0, name: "test.dng", asset: nil) }
+        }
         let picture = sourceImage(source, photo: photo)
         let context = CIContext()
         guard let cg = context.createCGImage(picture, from: picture.extent.integral) else { return nil }
@@ -226,6 +230,12 @@ enum RenderGallery {
         CGImageDestinationAddImage(destination, cg, properties as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { return nil }
         return LibraryImport(data: data as Data, name: source + ".jpg", asset: nil)
+    }
+
+    /// The bundled camera raw (test-data/raw/test.dng, made by dev-tools/make_dng.py): 320 × 240, four
+    /// upright bands (red, green, blue, grey) darkening downwards, its camera's white balance D65 (≈ 6500 K).
+    static var rawData: Data? {
+        Bundle.main.url(forResource: "test", withExtension: "dng").flatMap { try? Data(contentsOf: $0) }
     }
 
     /// The picture a case starts from: the test photo, or one made from it so colour tools have
@@ -264,9 +274,13 @@ enum RenderGallery {
     ///   the top (stack averaging; see `burst`).
     /// - "live-0" … "live-7": a Live Photo's photo and frames: the test photo with a little camera
     ///   shake and a dark disc crossing the top (see `liveFrame`).
+    /// - "raw": the bundled camera raw (`rawData`), decoded as the library decodes raws.
     /// - "portrait": the lens of the test photo in front of the soft grid, with a made-up depth map
     ///   (`portraitDepth`: the lens near, the grid far, a little nearer towards the bottom).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
+        if source == "raw" {
+            return rawData.flatMap { LibraryStore.decode($0)?.image } ?? photo
+        }
         if let source, source.hasPrefix("hdrpano-") {
             let parts = source.split(separator: "-")
             guard parts.count == 3 else { return photo }

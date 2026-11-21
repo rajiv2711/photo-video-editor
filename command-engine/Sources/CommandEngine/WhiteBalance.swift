@@ -2,7 +2,8 @@ import Foundation
 
 /// White balance math for the Color panel, shared by the iPad renderer and the Linux tests.
 ///
-/// Everything is relative to the photo as shot (a JPEG is taken to be shot in 5500 K daylight).
+/// Everything is relative to the photo as shot (a JPEG is taken to be shot in 5500 K daylight; a raw file
+/// says what its camera's white balance was: its As Shot).
 /// Temperature is in mired (a step in mired looks the same anywhere on the scale): +100 makes the
 /// photo as much warmer as if it had been lit by 18 000 K light instead of 5500 K; −100 as much
 /// cooler as 3900 K. Tint +100 removes half a stop of green (magenta), −100 adds it.
@@ -22,11 +23,12 @@ public enum WhiteBalance {
     /// The light a JPEG is taken to be shot in.
     public static let referenceKelvin = 5500.0
 
-    /// What a preset adds to the Temperature and Tint sliders. As Shot adds nothing; Auto is
-    /// worked out from the photo by the renderer (`neutralize` on its average colour).
-    public static func offset(preset: String) -> (temperature: Double, tint: Double) {
+    /// What a preset adds to the Temperature and Tint sliders, for a photo whose white balance was set
+    /// for `asShot` K (a raw file's camera setting; a JPEG is taken to be 5500 K). As Shot adds nothing;
+    /// Auto is worked out from the photo by the renderer (`neutralize` on its average colour).
+    public static func offset(preset: String, asShot: Double = referenceKelvin) -> (temperature: Double, tint: Double) {
         guard let light = presetLights[preset] else { return (0, 0) }
-        return (1e6 / referenceKelvin - 1e6 / light.kelvin, light.tint)
+        return (1e6 / Swift.min(Swift.max(asShot, 1667), 25000) - 1e6 / light.kelvin, light.tint)
     }
 
     /// Linear-light multipliers for red, green and blue. Brightness (luma of white) stays the same.

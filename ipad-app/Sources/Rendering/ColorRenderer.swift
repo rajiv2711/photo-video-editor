@@ -15,6 +15,8 @@ final class ColorRenderer {
     /// LUT files read so far, and the last cube data made from one (LUT id and amount).
     private var luts: [String: CubeLUT] = [:]
     private var cachedLUT: (key: String, data: Data)?
+    /// A raw photo's As Shot white balance (kelvin): the presets are relative to it (nil: 5500 K, a JPEG's).
+    var asShotKelvin: Double?
 
     init(context: CIContext) {
         self.context = context
@@ -168,12 +170,12 @@ final class ColorRenderer {
     }
 
     /// White balance: the preset's light plus the Temperature and Tint sliders, as one multiplier
-    /// per channel in linear light (Core Image's working space). As Shot leaves a JPEG as it is;
-    /// Auto makes the photo's average colour neutral.
+    /// per channel in linear light (Core Image's working space). As Shot leaves the photo as the camera
+    /// set it (a raw's own setting; a JPEG as it is); Auto makes the photo's average colour neutral.
     func whiteBalance(_ image: CIImage, value: (String) -> Double?) -> CIImage {
         let index = Int(value("whiteBalance") ?? 0)
         let preset = WhiteBalance.presetIDs.indices.contains(index) ? WhiteBalance.presetIDs[index] : "asShot"
-        var offset = WhiteBalance.offset(preset: preset)
+        var offset = WhiteBalance.offset(preset: preset, asShot: asShotKelvin ?? WhiteBalance.referenceKelvin)
         if preset == "auto" {
             offset = WhiteBalance.neutralize(ImageStats.averageColor(of: image, context: context))
         }

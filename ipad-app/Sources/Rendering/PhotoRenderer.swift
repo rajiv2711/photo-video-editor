@@ -54,6 +54,12 @@ final class PhotoRenderer {
         set { optics.lens = newValue }
     }
 
+    /// A raw photo's As Shot white balance in kelvin (nil for other photos): the presets are relative to it.
+    var asShotKelvin: Double? {
+        get { color.asShotKelvin }
+        set { color.asShotKelvin = newValue }
+    }
+
     /// The bundled lens profile that fits the photo's lens, if any.
     var lensProfileName: String? {
         optics.profile?.profile.model

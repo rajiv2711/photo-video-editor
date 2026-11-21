@@ -48,12 +48,16 @@ final class LibraryStore {
 
     // MARK: - Decoding
 
-    /// A picture decoded for editing: upright, with its properties (EXIF, …).
+    /// A picture decoded for editing: upright, with its properties (EXIF, …) and, for a camera raw, the
+    /// colour temperature its camera's white balance was set to (As Shot).
     struct Decoded {
         let image: CIImage
         let properties: [String: Any]
-        /// The file's type ("public.jpeg", "public.heic", …).
+        /// The file's type ("public.jpeg", "com.adobe.raw-image", "com.sony.arw-raw-image", …).
         let type: String?
+        let isRaw: Bool
+        /// Raw files: the camera's white balance, in kelvin (the raw decoder's neutral temperature).
+        let asShotKelvin: Double?
     }
 
     /// The file's type, its properties, and whether it is a camera raw.
@@ -65,11 +69,17 @@ final class LibraryStore {
         return (type, properties, isRaw)
     }
 
-    /// The picture in a file's bytes, upright.
+    /// The picture in a file's bytes, upright. Camera raws (DNG, ProRAW, CR3, NEF, ARW and the others
+    /// iPadOS knows) go through Core Image's raw decoder (CIRAWFilter) at the camera's white balance, in
+    /// linear light, as the rest of the pipeline works; the decoder's other settings stay at its defaults.
     static func decode(_ data: Data) -> Decoded? {
         let info = describe(data)
+        if info.isRaw, let raw = CIRAWFilter(imageData: data, identifierHint: info.type), let image = raw.outputImage {
+            return Decoded(image: image, properties: info.properties, type: info.type, isRaw: true,
+                           asShotKelvin: Double(raw.neutralTemperature))
+        }
         guard let image = CIImage(data: data, options: [.applyOrientationProperty: true]) else { return nil }
-        return Decoded(image: image, properties: info.properties, type: info.type)
+        return Decoded(image: image, properties: info.properties, type: info.type, isRaw: false, asShotKelvin: nil)
     }
 
     // MARK: - Adding photos

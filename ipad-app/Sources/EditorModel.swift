@@ -790,7 +790,10 @@ final class EditorModel: ObservableObject {
             if case .historyShown = event { revealedPanel = "history" }
             if case .library(.browsed) = event { revealedPanel = "library" }
             // "next photo": the engine has put that photo's edit in place; its picture comes now.
-            if case .library(.opened(let id, _, _)) = event { showLibraryPhoto(id) }
+            if case .library(.opened(let id, _, _)) = event {
+                showLibraryPhoto(id)
+                feedback?.text += rawNote
+            }
         }
         if outcomes.contains(where: { if case .ran(let id) = $0 { return Library.actions.contains(id) } else { return false } }) {
             saveLibrary()
@@ -1001,7 +1004,7 @@ final class EditorModel: ObservableObject {
         openLibraryPhoto(first.id)
         let n = added.count
         feedback = Feedback(text: "Imported \(n) photo\(n == 1 ? "" : "s")" + (n < items.count ? " (\(items.count - n) couldn't be read)" : "")
-                            + " · the library has \(library.photos.count) · editing \(first.name)")
+                            + " · the library has \(library.photos.count) · editing \(first.name)" + rawNote)
         saveLibrary()
     }
 
@@ -1029,8 +1032,8 @@ final class EditorModel: ObservableObject {
         interpreter.workspace.openPhoto(id, state: &state)
         let shown = library.shown
         let index = (shown.firstIndex { $0.id == id } ?? 0) + 1
-        feedback = Feedback(text: describe(LibraryEvent.opened(id: id, index: index, count: shown.count)).text)
         showLibraryPhoto(id)
+        feedback = Feedback(text: describe(LibraryEvent.opened(id: id, index: index, count: shown.count)).text + rawNote)
         saveLibrary()
         render()
     }
@@ -1039,6 +1042,7 @@ final class EditorModel: ObservableObject {
     /// Photos asset when it has loaded.
     private func showLibraryPhoto(_ id: String) {
         guard let photo = library.photo(id) else { return }
+        pictureInfo = nil
         if let data = libraryStore.fileData(for: photo) {
             show(data)
             return
@@ -1069,7 +1073,9 @@ final class EditorModel: ObservableObject {
         mergeJob += 1
         isMerging = false
         replacePhoto(picture.image, lens: Self.lens(properties: picture.properties))
-        renderer.portrait.depth = Self.depth(in: data, context: renderer.context)
+        renderer.asShotKelvin = picture.asShotKelvin
+        pictureInfo = picture
+        renderer.portrait.depth = picture.isRaw ? nil : Self.depth(in: data, context: renderer.context)
         armedPicker = nil
         geometryTool = nil
         dragBase = nil
@@ -1085,6 +1091,9 @@ final class EditorModel: ObservableObject {
         viewCenter = MaskPoint(0.5, 0.5)
         loupe = nil
     }
+
+    /// The photo being edited as decoded (its type, raw or not, As Shot), when it came from the library.
+    private var pictureInfo: LibraryStore.Decoded?
 
     /// At launch: the photo being edited when the app was last used, with its edit.
     private func resumeLibrary() {
@@ -1124,6 +1133,12 @@ final class EditorModel: ObservableObject {
         }
     }
 
+    /// For a raw photo: its camera's white balance (the presets are relative to it).
+    private var rawNote: String {
+        guard let info = pictureInfo, info.isRaw else { return "" }
+        return " · raw" + (info.asShotKelvin.map { ", shot at \(Int($0.rounded())) K (As Shot)" } ?? "")
+    }
+
     /// Library and export details for the render gallery's manifest (checked as "field" expectations).
     func galleryFields() -> [String: String] {
         var out: [String: String] = [:]
@@ -1132,6 +1147,13 @@ final class EditorModel: ObservableObject {
         out["library.shown"] = String(lib.shown.count)
         out["photo.index"] = String(lib.currentIndex ?? 0)
         if let photo = lib.photo(lib.current) { out["photo.name"] = photo.name }
+        if let info = pictureInfo {
+            out["photo.type"] = info.type ?? ""
+            out["photo.raw"] = info.isRaw ? "yes" : "no"
+            out["photo.width"] = String(Int(info.image.extent.width))
+            out["photo.height"] = String(Int(info.image.extent.height))
+            if let kelvin = info.asShotKelvin { out["photo.asShot"] = String(Int(kelvin.rounded())) }
+        }
         if let importer { out["ui.importer"] = importer }
         if let revealedPanel { out["ui.panel"] = revealedPanel }
         return out
