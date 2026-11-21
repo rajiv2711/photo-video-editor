@@ -990,3 +990,8 @@
 {"group":"creative","text":"omni light less","expect":[{"op":"nudge","control":"omniLight","steps":-1}]}
 {"group":"creative","text":"light size 40","expect":[{"op":"set","control":"effectSize","value":40}]}
 {"group":"creative","text":"light y 20","expect":[{"op":"set","control":"effectCenterY","value":20}]}
+{"group":"creative","text":"light leak","expect":[{"op":"select","control":"lightLeak"}]}
+{"group":"creative","text":"light leaks 80","expect":[{"op":"set","control":"lightLeak","value":80}]}
+{"group":"creative","text":"dust and scratches","expect":[{"op":"select","control":"dustAndScratches"}]}
+{"group":"creative","text":"film scratches 30","expect":[{"op":"set","control":"dustAndScratches","value":30}]}
+{"group":"creative","text":"reset dust and scratches","expect":[{"op":"reset","control":"dustAndScratches"}]}

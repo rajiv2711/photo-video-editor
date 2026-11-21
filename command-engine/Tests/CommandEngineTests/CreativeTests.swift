@@ -338,4 +338,40 @@ final class CreativeTests: XCTestCase {
                              CreativeFilters.lightGain(Vec2(0, 150), beam: down, pool: spot), "brighter towards the light")
         XCTAssertEqual(CreativeFilters.lightPool(0, size: 0.3, longSide: 1000, spot: true).ambient, 1, "off: no change")
     }
+
+    // MARK: - Film effects
+
+    func testFilmNames() {
+        XCTAssertEqual(parse("light leak"), [.select("lightLeak")])
+        XCTAssertEqual(parse("light leaks 80"), [.set("lightLeak", 80)])
+        XCTAssertEqual(parse("dust and scratches"), [.select("dustAndScratches")])
+        XCTAssertEqual(parse("dust and scratches 30"), [.set("dustAndScratches", 30)])
+        XCTAssertEqual(parse("reset dust and scratches"), [.reset("dustAndScratches")])
+        // Older names keep their meaning.
+        XCTAssertEqual(parse("dust threshold 40"), [.set("visualizeThreshold", 40)])
+        XCTAssertEqual(parse("light up"), [.nudge("curveLights", 1)])
+    }
+
+    func testDustAndScratchesAreTheSameEveryTime() {
+        let a = CreativeFilters.dustAndScratches(100), b = CreativeFilters.dustAndScratches(100)
+        XCTAssertEqual(a.specks, b.specks)
+        XCTAssertEqual(a.scratches, b.scratches)
+        XCTAssertEqual(a.specks.count, 60)
+        XCTAssertEqual(a.hairs.count, 6)
+        XCTAssertEqual(a.scratches.count, 5)
+        XCTAssertTrue(a.specks.allSatisfy { (0...1).contains($0.x) && (0...1).contains($0.y) && $0.radius > 0 && $0.opacity <= 1 })
+        XCTAssertTrue(a.specks.contains { $0.light } && a.specks.contains { !$0.light }, "dirt and holes")
+        XCTAssertTrue(a.scratches.allSatisfy { $0.top < $0.bottom && $0.bottom <= 1 })
+        let half = CreativeFilters.dustAndScratches(50)
+        XCTAssertEqual(half.specks.count, 30, "half the amount, half the dust")
+        XCTAssertEqual(half.specks.first?.x, a.specks.first?.x, "the same specks, not new ones")
+        XCTAssertLessThan(half.specks[0].opacity, a.specks[0].opacity, "and fainter")
+        XCTAssertTrue(CreativeFilters.dustAndScratches(0).specks.isEmpty)
+    }
+
+    func testLightLeaksComeFromTheEdges() {
+        XCTAssertTrue(CreativeFilters.lightLeaks.allSatisfy { $0.x < 0.15 || $0.x > 0.85 })
+        XCTAssertTrue(CreativeFilters.lightLeaks.allSatisfy { $0.color.r >= $0.color.b }, "warm")
+        XCTAssertEqual(CreativeFilters.leakStrength(150), 1)
+    }
 }

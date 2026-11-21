@@ -323,4 +323,97 @@ public enum CreativeFilters {
         let inPool = exp(-2 * (along * along + across * across)) * (1 + pool.hot * min(max(-along, -1), 1))
         return pool.ambient + (1 + pool.boost - pool.ambient) * inPool
     }
+
+    // MARK: - Film effects
+
+    /// Light Leak's glows, the same every time: centre (0…1 from the top-left, may lie just off the
+    /// picture), radius (× the long side), colour and strength. Warm light bleeding in from the left
+    /// edge and a little at the top-right corner, as from a camera back that doesn't quite close.
+    public static let lightLeaks: [(x: Double, y: Double, radius: Double, color: RGB, strength: Double)] = [
+        (-0.05, 0.35, 0.45, RGB(1.0, 0.45, 0.1), 0.9),
+        (0.0, 0.8, 0.3, RGB(1.0, 0.2, 0.12), 0.7),
+        (0.1, 0.05, 0.25, RGB(1.0, 0.85, 0.4), 0.6),
+        (1.05, 0.1, 0.3, RGB(1.0, 0.35, 0.5), 0.5),
+    ]
+
+    /// Light Leak's strength (× the glows, screened on): up to 1.
+    public static func leakStrength(_ amount: Double) -> Double {
+        min(max(amount, 0), 100) / 100
+    }
+
+    /// A speck of dust, or one dot of a hair: where (0…1 from the top-left), how big (radius × the long
+    /// side), how strong (0…1), and whether it is light (a hole in the emulsion) or dark (dirt).
+    public struct Speck: Equatable {
+        public let x: Double
+        public let y: Double
+        public let radius: Double
+        public let opacity: Double
+        public let light: Bool
+    }
+
+    /// A scratch along the film: a thin light line from `top` to `bottom` (0…1) at `x`.
+    public struct Scratch: Equatable {
+        public let x: Double
+        public let top: Double
+        public let bottom: Double
+        public let width: Double
+        public let opacity: Double
+    }
+
+    /// Dust and Scratches, the same every time (a fixed seed): up to 60 specks, 6 hairs (curling chains
+    /// of small dark dots) and 5 scratches. `amount` (0…100) shows a matching share of them and makes
+    /// them stronger.
+    public static func dustAndScratches(_ amount: Double) -> (specks: [Speck], hairs: [[Speck]], scratches: [Scratch]) {
+        let a = min(max(amount, 0), 100) / 100
+        guard a > 0 else { return ([], [], []) }
+        var random = SplitMix(seed: 1977)
+        let strength = 0.5 + 0.5 * a
+        var specks: [Speck] = []
+        for _ in 0..<60 {
+            let speck = Speck(x: random.next(), y: random.next(), radius: 0.001 + 0.003 * random.next() * random.next(),
+                              opacity: (0.5 + 0.5 * random.next()) * strength, light: random.next() < 0.25)
+            specks.append(speck)
+        }
+        var hairs: [[Speck]] = []
+        for _ in 0..<6 {
+            var x = random.next(), y = random.next()
+            var heading = random.next() * 2 * .pi
+            let opacity = (0.6 + 0.4 * random.next()) * strength
+            var dots: [Speck] = []
+            for _ in 0..<16 {
+                dots.append(Speck(x: x, y: y, radius: 0.0007, opacity: opacity, light: false))
+                heading += (random.next() - 0.5) * 0.9
+                x += cos(heading) * 0.004
+                y += sin(heading) * 0.004
+            }
+            hairs.append(dots)
+        }
+        var scratches: [Scratch] = []
+        for _ in 0..<5 {
+            let top = random.next() * 0.5
+            scratches.append(Scratch(x: 0.05 + 0.9 * random.next(), top: top, bottom: min(1, top + 0.3 + 0.7 * random.next()),
+                                     width: 0.0006 + 0.0006 * random.next(), opacity: (0.4 + 0.4 * random.next()) * strength))
+        }
+        let count = { (n: Int) in Int((Double(n) * a).rounded(.up)) }
+        return (Array(specks.prefix(count(60))), Array(hairs.prefix(count(6))), Array(scratches.prefix(count(5))))
+    }
+}
+
+/// A small repeatable random number generator (SplitMix64): the same numbers on every device.
+struct SplitMix {
+    private var state: UInt64
+
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    /// The next number in 0…1.
+    mutating func next() -> Double {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        z ^= z >> 31
+        return Double(z >> 11) / Double(1 << 53)
+    }
 }

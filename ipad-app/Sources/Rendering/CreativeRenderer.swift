@@ -3,7 +3,7 @@ import CoreImage
 
 /// The Creative panel (CreativeFilters in CommandEngine), after the crop and before the post-crop
 /// vignette and grain, so the filters see the picture as framed. Every filter is a slider, 0 = off;
-/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic → pixelate → lighting → lens flare. Sizes are shares of the picture's long side, so the
+/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic → pixelate → lighting → lens flare → film. Sizes are shares of the picture's long side, so the
 /// preview and the saved photo look alike. The Effect Center and Angle (Placement) are shared.
 final class CreativeRenderer {
     let context: CIContext
@@ -205,6 +205,15 @@ final class CreativeRenderer {
         if flare > 0 {
             output = Filters.linear(flared(Filters.encoded(output), extent: extent, value: value, strength: flare))
         }
+
+        // Film effects (sRGB levels): warm light leaking in from the edges, then dust and scratches.
+        let leak = CreativeFilters.leakStrength(v("lightLeak"))
+        if leak > 0 {
+            output = Filters.linear(leaked(Filters.encoded(output), extent: extent, strength: leak))
+        }
+        if v("dustAndScratches") > 0 {
+            output = Filters.linear(dusty(Filters.encoded(output), extent: extent, amount: v("dustAndScratches")))
+        }
         return output
     }
 
@@ -368,7 +377,73 @@ final class CreativeRenderer {
                 light = disc.applyingFilter("CIAdditionCompositing", parameters: [kCIInputBackgroundImageKey: light])
             }
         }
-        return light.applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: image]).cropped(to: extent)
+        // Opaque again (added-up layers can carry more than full alpha).
+        return light.settingAlphaOne(in: extent).applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: image])
+            .cropped(to: extent)
+    }
+
+    // MARK: - Film effects
+
+    /// A soft disc of `color` (raw levels) fading to nothing at `radius`, inside its own box.
+    private static func glow(at p: CGPoint, radius: CGFloat, inner: CGFloat = 0, color: CIColor) -> CIImage? {
+        CIFilter(name: "CIRadialGradient", parameters: [
+            kCIInputCenterKey: CIVector(cgPoint: p),
+            "inputRadius0": inner,
+            "inputRadius1": radius,
+            "inputColor0": color,
+            "inputColor1": CIColor(red: 0, green: 0, blue: 0, alpha: 0),
+        ])?.outputImage?.cropped(to: CGRect(x: p.x - radius, y: p.y - radius, width: 2 * radius, height: 2 * radius))
+    }
+
+    /// Light Leak: the glows of CreativeFilters.lightLeaks added up and screened on.
+    private func leaked(_ image: CIImage, extent: CGRect, strength: Double) -> CIImage {
+        let side = max(extent.width, extent.height)
+        var light = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: extent)
+        for leak in CreativeFilters.lightLeaks {
+            let k = leak.strength * strength
+            let p = Self.point(MaskPoint(leak.x, leak.y), in: extent)
+            let color = CIColor(red: CGFloat(leak.color.r * k), green: CGFloat(leak.color.g * k), blue: CGFloat(leak.color.b * k))
+            if let disc = Self.glow(at: p, radius: CGFloat(leak.radius) * side, color: color) {
+                light = disc.applyingFilter("CIAdditionCompositing", parameters: [kCIInputBackgroundImageKey: light])
+            }
+        }
+        return light.cropped(to: extent).settingAlphaOne(in: extent).applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: image])
+    }
+
+    /// Dust and Scratches (CreativeFilters.dustAndScratches): dark specks and hairs darken the
+    /// picture, light specks and scratches lighten it; softened a little so they look like dust on film.
+    private func dusty(_ image: CIImage, extent: CGRect, amount: Double) -> CIImage {
+        let side = max(extent.width, extent.height)
+        let found = CreativeFilters.dustAndScratches(amount)
+        let black = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: extent)
+        var dark = black, light = black
+        func add(_ speck: CreativeFilters.Speck) {
+            let r = max(0.75, CGFloat(speck.radius) * side)
+            let o = CGFloat(speck.opacity)
+            guard let disc = Self.glow(at: Self.point(MaskPoint(speck.x, speck.y), in: extent), radius: r, inner: 0.6 * r,
+                                       color: CIColor(red: o, green: o, blue: o)) else { return }
+            if speck.light {
+                light = disc.applyingFilter("CIMaximumCompositing", parameters: [kCIInputBackgroundImageKey: light])
+            } else {
+                dark = disc.applyingFilter("CIMaximumCompositing", parameters: [kCIInputBackgroundImageKey: dark])
+            }
+        }
+        found.specks.forEach(add)
+        found.hairs.joined().forEach(add)
+        for scratch in found.scratches {
+            let width = max(0.75, CGFloat(scratch.width) * side)
+            let top = Self.point(MaskPoint(scratch.x, scratch.top), in: extent)
+            let bottom = Self.point(MaskPoint(scratch.x, scratch.bottom), in: extent)
+            let o = CGFloat(scratch.opacity)
+            let line = CIImage(color: CIColor(red: o, green: o, blue: o))
+                .cropped(to: CGRect(x: top.x - width / 2, y: bottom.y, width: width, height: top.y - bottom.y))
+            light = line.applyingFilter("CIMaximumCompositing", parameters: [kCIInputBackgroundImageKey: light])
+        }
+        let soft = Double(max(0.5, 0.0005 * side))
+        let keep = Filters.affine(Filters.blurred(dark, radius: soft, extent: extent), scale: -1, bias: 1)
+        let darkened = image.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: keep])
+        return Filters.blurred(light, radius: soft, extent: extent)
+            .applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: darkened]).cropped(to: extent)
     }
 
     // MARK: - Artistic
