@@ -42,7 +42,7 @@ final class CreativeTests: XCTestCase {
 
     func testOnlyCreativeSlidersTurnOnByName() {
         for control in registry.controls where control.on != nil {
-            XCTAssertEqual(control.group, "creative", control.id)
+            XCTAssertTrue(["creative", "layers"].contains(control.group), control.id)
             XCTAssertEqual(control.kind, .slider, control.id)
             XCTAssertNotEqual(control.on, control.defaultValue, control.id)
             XCTAssertEqual(control.clamp(control.on!), control.on, control.id)

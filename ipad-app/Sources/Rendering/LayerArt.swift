@@ -83,7 +83,7 @@ final class LayerArt {
     }
 
     /// A rectangle, ellipse, regular polygon or closed pen path filled with Shape Fill (or, with no
-    /// fill, outlined); a line or open path drawn Line Width wide.
+    /// fill, outlined in Stroke Colour); a line or open path drawn Line Width wide.
     private static func drawShape(_ layer: Layer, in context: CGContext, long: Double) {
         let size = Layers.shapeSize(layer)
         let w = CGFloat(size.width * long), h = CGFloat(size.height * long)
@@ -124,7 +124,8 @@ final class LayerArt {
             context.setFillColor(color(fill).cgColor)
             context.fillPath()
         } else {
-            context.setStrokeColor(color(fill ?? .white).cgColor)
+            // No fill: outlined in Stroke Colour.
+            context.setStrokeColor(color(fill ?? Layers.color(layer.value("strokeColor", 1)) ?? .white).cgColor)
             context.setLineWidth(line)
             context.setLineCap(.round)
             context.setLineJoin(.round)

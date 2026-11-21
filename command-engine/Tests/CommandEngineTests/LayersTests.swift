@@ -463,4 +463,34 @@ final class LayersTests: XCTestCase {
         run("pen tool")
         XCTAssertEqual(state.layers.count, 2, "a closed path done: a new one")
     }
+
+    // MARK: - Layer styles
+
+    func testStyleNames() {
+        XCTAssertEqual(parse("drop shadow on"), [.set("dropShadow", 1)], "not “drop” (less) shadows")
+        XCTAssertEqual(parse("drop shadow off"), [.set("dropShadow", 0)])
+        XCTAssertEqual(parse("drop shadow"), [.set("dropShadow", 1)])
+        XCTAssertEqual(parse("exposure drop"), [.nudge("exposure", -1)], "“drop” alone is still less")
+        XCTAssertEqual(parse("outer glow"), [.set("outerGlow", 1)])
+        XCTAssertEqual(parse("stroke 4"), [.set("layerStroke", 4)])
+        XCTAssertEqual(parse("stroke off"), [.set("layerStroke", 0)])
+        XCTAssertEqual(parse("stroke colour white"), [.set("strokeColor", 0)])
+        XCTAssertEqual(parse("bevel and emboss"), [.set("bevel", 1)])
+        XCTAssertEqual(parse("zoom blur off"), [.set("zoomBlur", 0)], "off turns off a slider that naming turns on")
+        XCTAssertEqual(parse("stroke opacity 50"), [.set("spotOpacity", 50)], "still the retouch step's")
+    }
+
+    func testStylesGoToTheSelectedLayer() {
+        run("new text layer Hi")
+        run("stroke")
+        XCTAssertEqual(state.layers[0].values["layerStroke"], 5, "naming it turns it on")
+        run("stroke 12 drop shadow outer glow bevel")
+        XCTAssertEqual(state.layers[0].values["layerStroke"], 12)
+        XCTAssertEqual(state.layers[0].values["dropShadow"], 1)
+        XCTAssertEqual(state.layers[0].values["outerGlow"], 1)
+        XCTAssertEqual(state.layers[0].values["bevel"], 1)
+        run("stroke off")
+        XCTAssertEqual(state.layers[0].values["layerStroke"], 0)
+        XCTAssertEqual(Layers.color(state.layers[0].values["strokeColor"]!), Layers.colors[1].rgb, "black by default")
+    }
 }

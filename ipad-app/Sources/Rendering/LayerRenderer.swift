@@ -5,7 +5,8 @@ import UIKit
 /// Layers (Layers panel) over the finished picture, the lowest first: each layer's content is made
 /// over the whole canvas (transparent around it), faded by its opacity and laid over everything below
 /// it with its blend mode, through its mask if it has one (worked out by MaskRaster, as the Masks
-/// panel's, on the canvas). An adjustment layer's content is everything below it with its own sliders.
+/// panel's, on the canvas), with its styles (drop shadow, outer glow, stroke, bevel) worked out from
+/// its shape. An adjustment layer's content is everything below it with its own sliders.
 /// Positions and sizes are shares of the canvas (see Layers.swift), so the preview and the saved photo agree.
 final class LayerRenderer {
     let context: CIContext
@@ -44,10 +45,75 @@ final class LayerRenderer {
                     kCIInputMaskImageKey: maskImage(mask, extent: extent),
                 ])
             }
+            if layer.kind != "adjustment" { drawn = styled(drawn, layer: layer, extent: extent) }
             out = composite(drawn, over: out, layer: layer, extent: extent)
         }
         return out.cropped(to: extent)
     }
+
+    // MARK: - Layer styles
+
+    /// The layer's styles, made from its shape (its coverage): the content bevelled, with a stroke
+    /// around it, a glow and a shadow beneath. Sizes are shares of the canvas's long side.
+    private func styled(_ content: CIImage, layer: Layer, extent: CGRect) -> CIImage {
+        let long = Double(max(extent.width, extent.height))
+        var top = content
+        if layer.value("bevel", 0) != 0 {
+            top = bevelled(top, reach: 0.004 * long, extent: extent)
+        }
+        let stroke = layer.value("layerStroke", 0) / 1000 * long
+        if stroke > 0.3 {
+            let ring = Self.tinted(content, Layers.color(layer.value("strokeColor", 1)) ?? RGB(0, 0, 0), extent: extent)
+                .applyingFilter("CIMorphologyMaximum", parameters: [kCIInputRadiusKey: min(stroke, 200)])
+            top = top.composited(over: ring.cropped(to: extent))
+        }
+        let shape = top
+        if layer.value("outerGlow", 0) != 0 {
+            let glow = Filters.blurred(Self.tinted(shape, RGB(1, 0.93, 0.7), extent: extent), radius: 0.012 * long, extent: extent)
+            top = top.composited(over: glow.composited(over: glow))
+        }
+        if layer.value("dropShadow", 0) != 0 {
+            // Down and to the right (Core Image's y is up), soft, 60 % black.
+            let d = CGFloat(0.012 * long)
+            let shadow = Filters.blurred(Self.tinted(shape, RGB(0, 0, 0), extent: extent), radius: 0.006 * long, extent: extent)
+                .transformed(by: CGAffineTransform(translationX: d, y: -d))
+            top = top.composited(over: Filters.mix(Self.clear(extent), shadow, 0.6))
+        }
+        return top.cropped(to: extent)
+    }
+
+    /// A colour (sRGB levels) where `shape` is, as much as it covers.
+    static func tinted(_ shape: CIImage, _ rgb: RGB, extent: CGRect) -> CIImage {
+        let color = CIImage(color: CIColor(red: CGFloat(rgb.r), green: CGFloat(rgb.g), blue: CGFloat(rgb.b))).cropped(to: extent)
+        return color.applyingFilter("CIBlendWithAlphaMask", parameters: [
+            kCIInputBackgroundImageKey: clear(extent),
+            kCIInputMaskImageKey: shape,
+        ])
+    }
+
+    /// Bevel: the content lit from the top-left as if its shape were raised, its edges rounded over
+    /// `reach` pixels (the slope of its blurred coverage).
+    private func bevelled(_ content: CIImage, reach: Double, extent: CGRect) -> CIImage {
+        guard let kernel = Self.bevelKernel else { return content }
+        let height = content.clampedToExtent().applyingGaussianBlur(sigma: reach).cropped(to: extent)
+        let r = CGFloat(reach) + 2
+        return kernel.apply(extent: extent, roiCallback: { _, rect in rect.insetBy(dx: -r, dy: -r) },
+                            arguments: [height, content, reach, 1.6] as [Any]) ?? content
+    }
+
+    /// Lights (towards white) the edges whose coverage rises to the bottom-right, darkens the others;
+    /// premultiplied colours, so only the content changes.
+    private static let bevelKernel: CIKernel? = CIKernel(source: """
+        kernel vec4 bevel(sampler height, sampler image, float reach, float strength) {
+            vec2 d = destCoord();
+            float a = sample(height, samplerTransform(height, d + vec2(-reach, reach))).a;
+            float b = sample(height, samplerTransform(height, d + vec2(reach, -reach))).a;
+            vec4 c = sample(image, samplerTransform(image, d));
+            float light = clamp((b - a) * strength, -0.6, 0.6);
+            vec3 rgb = c.rgb + max(light, 0.0) * (vec3(c.a) - c.rgb);
+            return vec4(rgb * (1.0 - max(-light, 0.0)), c.a);
+        }
+        """)
 
     /// A layer's mask as a grey picture over the canvas (white = the layer shows).
     private func maskImage(_ mask: Mask, extent: CGRect) -> CIImage {

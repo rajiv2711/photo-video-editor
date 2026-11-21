@@ -186,9 +186,16 @@ public struct CommandParser {
                 continue
             }
 
-            // "on"/"off" switch a toggle ("hdr on"); anywhere else they are filler.
+            // "on"/"off" switch a toggle ("hdr on"); "off" also turns off a slider that naming turns on
+            // ("stroke off", "zoom blur off"); anywhere else they are filler.
             if let on = Self.switchWord(token) {
-                if named()?.kind == .toggle { act(.set(on ? 1 : 0)) } else { pendingSwitch = on }
+                if named()?.kind == .toggle {
+                    act(.set(on ? 1 : 0))
+                } else if !on, let control = named(), control.kind == .slider, control.on != nil {
+                    act(.set(control.defaultValue))
+                } else {
+                    pendingSwitch = on
+                }
                 continue
             }
 

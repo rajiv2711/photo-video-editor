@@ -1077,3 +1077,15 @@
 {"group":"layers","text":"line thickness more","expect":[{"op":"nudge","control":"lineWidth","steps":1}]}
 {"group":"layers","text":"polygon sides 5","expect":[{"op":"set","control":"polygonSides","value":5}]}
 {"group":"layers","text":"number of sides 8","expect":[{"op":"set","control":"polygonSides","value":8}]}
+{"group":"layers","text":"drop shadow on","expect":[{"op":"set","control":"dropShadow","value":1}]}
+{"group":"layers","text":"drop shadow off","expect":[{"op":"set","control":"dropShadow","value":0}]}
+{"group":"layers","text":"add drop shadow","expect":[{"op":"set","control":"dropShadow","value":1}]}
+{"group":"layers","text":"outer glow","expect":[{"op":"set","control":"outerGlow","value":1}]}
+{"group":"layers","text":"layer glow off","expect":[{"op":"set","control":"outerGlow","value":0}]}
+{"group":"layers","text":"stroke 4","expect":[{"op":"set","control":"layerStroke","value":4}]}
+{"group":"layers","text":"outline more","expect":[{"op":"nudge","control":"layerStroke","steps":1}]}
+{"group":"layers","text":"stroke off","expect":[{"op":"set","control":"layerStroke","value":0}]}
+{"group":"layers","text":"stroke colour white","expect":[{"op":"set","control":"strokeColor","value":0}]}
+{"group":"layers","text":"outline color red","expect":[{"op":"set","control":"strokeColor","value":2}]}
+{"group":"layers","text":"bevel","expect":[{"op":"set","control":"bevel","value":1}]}
+{"group":"layers","text":"bevel and emboss off","expect":[{"op":"set","control":"bevel","value":0}]}

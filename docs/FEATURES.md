@@ -177,7 +177,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 131. **Adjustment layers** — non-destructive edits, each with its own mask
 - [x] 132. **Text** — add styled text
 - [x] 133. **Shapes & vectors** — rectangles, ellipses, pen paths
-- [ ] 134. **Layer styles** — shadow, glow, stroke, bevel
+- [x] 134. **Layer styles** — shadow, glow, stroke, bevel
 - [ ] 135. **Paint brush** — draw with Pencil pressure and tilt
 - [ ] 136. **Gradient & fill** — fill an area with colour or a gradient
 - [ ] 137. **Stickers / overlays** — place images or graphics on top

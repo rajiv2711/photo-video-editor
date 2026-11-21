@@ -543,6 +543,12 @@
     {"id": "shape-width", "command": "add rectangle shape width 80", "control": "shapeWidth", "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.08, 0.47, 0.18, 0.53], "min": 40}]},
     {"id": "shape-height", "command": "add rectangle shape height 60", "control": "shapeHeight", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.45, 0.24, 0.55, 0.3], "min": 60}]},
     {"id": "shape-fill", "command": "add rectangle shape fill red", "control": "shapeFill", "expect": [{"metric": "mean_r", "dir": "up", "vs": "add-rectangle", "region": [0.4, 0.45, 0.6, 0.55], "min": 100}, {"metric": "mean_b", "dir": "down", "vs": "add-rectangle", "region": [0.4, 0.45, 0.6, 0.55], "min": 100}]},
-    {"id": "line-width", "command": "add line line width 5", "control": "lineWidth", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.3, 0.478, 0.7, 0.488], "min": 40}]}
+    {"id": "line-width", "command": "add line line width 5", "control": "lineWidth", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.3, 0.478, 0.7, 0.488], "min": 40}]},
+
+    {"id": "drop-shadow", "command": "add rectangle layer position top right drop shadow", "control": "dropShadow", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.78, 0.2525, 0.95, 0.265], "min": 15}, {"metric": "diff", "dir": "same", "region": [0.6, 0.035, 0.95, 0.047], "min": 1.5}]},
+    {"id": "outer-glow", "command": "add rectangle layer position top right outer glow", "control": "outerGlow", "expect": [{"metric": "mean_r", "dir": "up", "region": [0.6, 0.03, 0.95, 0.047], "min": 5}, {"metric": "mean_b", "dir": "down", "region": [0.6, 0.03, 0.95, 0.047], "min": 3}]},
+    {"id": "layer-stroke", "command": "add rectangle layer position top right stroke 10", "control": "layerStroke", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.56, 0.08, 0.571, 0.2], "min": 50}]},
+    {"id": "stroke-colour", "command": "add rectangle layer position top right stroke 10 stroke colour red", "control": "strokeColor", "expect": [{"metric": "mean_r", "dir": "up", "vs": "layer-stroke", "region": [0.56, 0.08, 0.571, 0.2], "min": 50}]},
+    {"id": "bevel", "command": "add rectangle bevel", "control": "bevel", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "add-rectangle", "region": [0.3, 0.401, 0.7, 0.41], "min": 5}, {"metric": "mean_luma", "dir": "down", "vs": "add-rectangle", "region": [0.3, 0.59, 0.7, 0.599], "min": 5}, {"metric": "diff", "dir": "same", "vs": "add-rectangle", "region": [0.4, 0.45, 0.6, 0.55], "min": 1.5}]}
   ]
 }

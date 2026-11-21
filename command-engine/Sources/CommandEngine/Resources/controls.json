@@ -1418,6 +1418,27 @@
     {"id": "lineWidth", "label": "Line Width", "group": "layers", "section": "Shape", "scope": "layer", "layer": "shape", "min": 0.2, "max": 10, "default": 1, "step": 0.2,
       "synonyms": ["line thickness", "path width", "line size", "line weight", "path thickness"]},
     {"id": "polygonSides", "label": "Polygon Sides", "group": "layers", "section": "Shape", "scope": "layer", "layer": "shape", "min": 3, "max": 12, "default": 6, "step": 1,
-      "synonyms": ["sides", "polygon corners", "number of sides", "polygon points", "corners"]}
+      "synonyms": ["sides", "polygon corners", "number of sides", "polygon points", "corners"]},
+    {"id": "dropShadow", "label": "Drop Shadow", "group": "layers", "section": "Style", "kind": "toggle", "scope": "layer",
+      "synonyms": ["layer shadow", "shadow effect", "drop shadows", "cast shadow", "add drop shadow"]},
+    {"id": "outerGlow", "label": "Outer Glow", "group": "layers", "section": "Style", "kind": "toggle", "scope": "layer",
+      "synonyms": ["layer glow", "glow effect", "outer glows", "halo", "add outer glow"]},
+    {"id": "layerStroke", "label": "Stroke", "group": "layers", "section": "Style", "scope": "layer", "min": 0, "max": 50, "default": 0, "step": 1, "on": 5,
+      "synonyms": ["layer stroke", "outline", "stroke width", "stroke size", "outline width", "layer outline", "add stroke"]},
+    {"id": "strokeColor", "label": "Stroke Colour", "group": "layers", "section": "Style", "kind": "choice", "scope": "layer", "default": 1,
+      "synonyms": ["stroke color", "outline colour", "outline color"],
+      "options": [{"id": "white", "label": "White"},
+                  {"id": "black", "label": "Black"},
+                  {"id": "red", "label": "Red"},
+                  {"id": "orange", "label": "Orange"},
+                  {"id": "yellow", "label": "Yellow"},
+                  {"id": "green", "label": "Green"},
+                  {"id": "blue", "label": "Blue"},
+                  {"id": "purple", "label": "Purple", "synonyms": ["violet"]},
+                  {"id": "pink", "label": "Pink"},
+                  {"id": "grey", "label": "Grey", "synonyms": ["gray"]},
+                  {"id": "brown", "label": "Brown"}]},
+    {"id": "bevel", "label": "Bevel", "group": "layers", "section": "Style", "kind": "toggle", "scope": "layer",
+      "synonyms": ["bevel and emboss", "layer bevel", "bevel emboss", "bevelled", "beveled", "add bevel"]}
   ]
 }
