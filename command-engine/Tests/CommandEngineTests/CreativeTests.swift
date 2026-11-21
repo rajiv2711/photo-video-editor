@@ -42,8 +42,9 @@ final class CreativeTests: XCTestCase {
 
     func testOnlyCreativeSlidersTurnOnByName() {
         for control in registry.controls where control.on != nil {
-            XCTAssertTrue(["creative", "layers"].contains(control.group), control.id)
-            XCTAssertEqual(control.kind, .slider, control.id)
+            // Besides creative and layer sliders, the View panel's Compare choice ("compare" alone: split).
+            XCTAssertTrue(["creative", "layers"].contains(control.group) || control.id == "compare", control.id)
+            XCTAssertEqual(control.kind, control.id == "compare" ? .choice : .slider, control.id)
             XCTAssertNotEqual(control.on, control.defaultValue, control.id)
             XCTAssertEqual(control.clamp(control.on!), control.on, control.id)
         }

@@ -27,7 +27,8 @@ import Foundation
 /// when none is selected.
 ///
 /// Creative filters add `on`: the value a slider gets when it is named alone while at its default
-/// ("zoom blur" turns Zoom Blur on at 30; "zoom blur 60" sets it as any slider).
+/// ("zoom blur" turns Zoom Blur on at 30; "zoom blur 60" sets it as any slider); a choice can have
+/// one too ("compare" alone shows the split before/after).
 ///
 /// Layers add the scope "layer" (a setting of the selected layer, e.g. its opacity), `layer`: the
 /// layer kind an action makes or a setting belongs to ("text" for Text Size), and `takesText`: the
@@ -85,7 +86,7 @@ public struct Control: Codable, Equatable, Identifiable {
     public let component: String?
     /// The retouch tool this action picks ("remove", "heal", …).
     public let tool: String?
-    /// Sliders only: the value naming it alone gives it while it is at its default (nil: naming selects).
+    /// Sliders and choices: the value naming it alone gives it while it is at its default (nil: naming selects).
     public let on: Double?
     /// The layer kind this action makes or this setting belongs to ("text", "shape", …); nil: every layer.
     public let layer: String?

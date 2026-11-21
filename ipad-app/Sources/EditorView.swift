@@ -32,6 +32,11 @@ struct EditorView: View {
                     Button { showSettings = true } label: {
                         Label("Settings", systemImage: "gearshape")
                     }
+                    // Held down: the photo before its edit.
+                    Image(systemName: "rectangle.lefthalf.filled")
+                        .foregroundStyle(Color.accentColor)
+                        .accessibilityLabel("Hold to see the photo before its edit")
+                        .onLongPressGesture(minimumDuration: 0, maximumDistance: 60, perform: {}, onPressingChanged: { model.holdBefore($0) })
                     Button { model.apply([.run("undo")]) } label: {
                         Label("Undo", systemImage: "arrow.uturn.backward")
                     }
@@ -71,8 +76,11 @@ struct EditorView: View {
                     .allowedDynamicRange(model.isHDR ? Image.DynamicRange.high : Image.DynamicRange.standard)
                     .scaledToFit()
                     .overlay {
-                        // A picker tool (e.g. white balance) waits for a tap on the photo.
-                        if model.armedPicker != nil {
+                        if model.isComparing {
+                            // Before / after: nothing to touch.
+                            EmptyView()
+                        } else if model.armedPicker != nil {
+                            // A picker tool (e.g. white balance) waits for a tap on the photo.
                             GeometryReader { geo in
                                 Color.clear
                                     .contentShape(Rectangle())

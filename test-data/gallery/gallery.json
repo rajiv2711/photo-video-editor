@@ -612,6 +612,9 @@
     {"id": "snapshot-delete", "command": "exposure 1 snapshot \"s2\" delete snapshot \"s2\" reset all restore snapshot s2", "control": "deleteSnapshot", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
     {"id": "virtual-copy", "command": "exposure 1", "control": "virtualCopy", "steps": [{"command": "virtual copy mono"}, {"command": "black and white"}], "expect": [{"metric": "mean_sat", "dir": "down", "vs": "history-source", "min": 5}]},
     {"id": "switch-copy", "command": "exposure 1", "control": "switchCopy", "steps": [{"command": "virtual copy mono"}, {"command": "black and white"}, {"command": "go to copy original"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
-    {"id": "delete-copy", "command": "exposure 1", "control": "deleteCopy", "steps": [{"command": "virtual copy mono"}, {"command": "black and white"}, {"command": "delete copy mono"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]}
+    {"id": "delete-copy", "command": "exposure 1", "control": "deleteCopy", "steps": [{"command": "virtual copy mono"}, {"command": "black and white"}, {"command": "delete copy mono"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
+    {"id": "show-before", "command": "exposure 1 before", "control": "showBefore", "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "compare-split", "command": "exposure 1 compare split", "control": "compare", "view": "overlay", "expect": [{"metric": "diff", "dir": "same", "region": [0.02, 0.02, 0.46, 0.98], "min": 1}, {"metric": "diff", "dir": "same", "vs": "history-source", "region": [0.54, 0.02, 0.98, 0.98], "min": 1}]},
+    {"id": "compare-side", "command": "exposure 1 compare side by side", "control": "compare", "view": "overlay", "expect": [{"metric": "width", "dir": "up", "min": 400}, {"metric": "height", "dir": "same"}, {"metric": "aspect", "dir": "up"}]}
   ]
 }

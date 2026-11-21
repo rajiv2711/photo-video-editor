@@ -43,6 +43,8 @@ final class EditorModel: ObservableObject {
     private var previewSource: CIImage
     private let previewSide: CGFloat
     let renderer = PhotoRenderer()
+    /// The View panel's overlays (before / after, …), on the preview only.
+    private lazy var viewRenderer = ViewRenderer(context: renderer.context)
     /// Work out retouch steps before showing the preview (the render gallery), instead of in the background.
     var waitsForRetouch = false
     /// Turn each render into the on-screen picture (the render gallery only saves the last one).
@@ -1425,6 +1427,26 @@ final class EditorModel: ObservableObject {
         return edited
     }
 
+    /// What the screen shows: the edited preview with the View panel's overlays (before / after, …).
+    func shownPreview() -> CIImage {
+        shown(editedPreview())
+    }
+
+    private func shown(_ edited: CIImage) -> CIImage {
+        viewRenderer.apply(edited, before: isHDR ? previewSource : previewSource.applyingFilter("CIColorClamp"), value: currentValue)
+    }
+
+    /// Before / after is on: touches on the photo do nothing (it isn't the picture being edited).
+    var isComparing: Bool {
+        ["showBefore", "compare"].contains { id in registry.control(id: id).map { state.value(of: $0) != 0 } ?? false }
+    }
+
+    /// The Before button is held down (or let go).
+    func holdBefore(_ held: Bool) {
+        guard let before = registry.control(id: "showBefore") else { return }
+        setFromSlider(before, to: held ? 1 : 0)
+    }
+
     /// Visualize Spots' threshold while it is on (the preview only shows it).
     private var visualizeThreshold: Double? {
         guard let on = registry.control(id: "visualizeSpots"), state.value(of: on) != 0 else { return nil }
@@ -1462,7 +1484,7 @@ final class EditorModel: ObservableObject {
         historyKey = nil
         historySeal = false
         let edited = editedPreview()
-        if showsPreview { preview = renderer.uiImage(edited, hdr: isHDR) }
+        if showsPreview { preview = renderer.uiImage(shown(edited), hdr: isHDR) }
         pinRetouchSources()
         writePresets()
     }

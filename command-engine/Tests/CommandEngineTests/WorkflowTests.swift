@@ -380,6 +380,40 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(events(run("delete copy original")), [.noCopy("original")])
     }
 
+    // MARK: - Before / after
+
+    func testBeforeAndAfterNames() {
+        XCTAssertEqual(parse("before"), [.set("showBefore", 1)])
+        XCTAssertEqual(parse("before off"), [.set("showBefore", 0)])
+        XCTAssertEqual(parse("compare split"), [.set("compare", 1)])
+        XCTAssertEqual(parse("compare side by side"), [.set("compare", 2)])
+        XCTAssertEqual(parse("before and after"), [.select("compare")])
+        XCTAssertEqual(parse("compare off"), [.set("compare", 0)])
+        XCTAssertEqual(CompareLayout.modes, registry.control(id: "compare")!.options.map(\.id))
+        run("compare")
+        XCTAssertEqual(value("compare"), 1, "“compare” alone shows the split")
+        // The view is not part of the edit: reset all and undo leave it.
+        run("exposure 1")
+        run("reset all")
+        XCTAssertEqual(value("compare"), 1)
+        XCTAssertEqual(interpreter.workspace.history.steps.count, 3)
+    }
+
+    func testCompareLayouts() {
+        // Split: the photo before (uncropped, wider) fitted into the edited frame.
+        let split = CompareLayout.place(mode: "split", before: (800, 600), after: (400, 600))
+        XCTAssertEqual(split.before, ViewRect(0, 150, 400, 300))
+        XCTAssertEqual(split.after, ViewRect(0, 0, 400, 600))
+        XCTAssertEqual(split.divider, 200)
+        // Side by side: the one before at the edited one's height, a gap, then the edited one.
+        let side = CompareLayout.place(mode: "sideBySide", before: (800, 600), after: (800, 600))
+        XCTAssertEqual(side.before, ViewRect(0, 0, 800, 600))
+        XCTAssertEqual(side.after, ViewRect(816, 0, 800, 600))
+        XCTAssertEqual(side.size.width, 1616)
+        XCTAssertEqual(side.size.height, 600)
+        XCTAssertNil(side.divider)
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

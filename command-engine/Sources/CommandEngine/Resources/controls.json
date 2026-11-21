@@ -1616,6 +1616,13 @@
     {"id": "switchCopy", "label": "Go To Copy", "group": "history", "section": "Virtual copies", "kind": "action", "takesText": true,
       "synonyms": ["switch to copy", "switch copy", "open copy", "show copy", "use copy", "go to virtual copy", "switch to virtual copy"]},
     {"id": "deleteCopy", "label": "Delete Copy", "group": "history", "section": "Virtual copies", "kind": "action", "takesText": true,
-      "synonyms": ["remove copy", "delete virtual copy", "remove virtual copy"]}
+      "synonyms": ["remove copy", "delete virtual copy", "remove virtual copy"]},
+    {"id": "showBefore", "label": "Before", "group": "view", "kind": "toggle",
+      "synonyms": ["show before", "show the original", "show original", "original view", "before view", "hold before", "see before"]},
+    {"id": "compare", "label": "Compare", "group": "view", "kind": "choice", "on": 1,
+      "synonyms": ["before after", "before and after", "before/after", "compare view", "comparison", "compare before and after"],
+      "options": [{"id": "off", "label": "Off", "synonyms": ["after", "none", "done", "stop"]},
+                  {"id": "split", "label": "Split", "synonyms": ["split screen", "split view", "wipe", "half and half"]},
+                  {"id": "sideBySide", "label": "Side by Side", "synonyms": ["side-by-side", "two up", "left and right", "side"]}]}
   ]
 }

@@ -46,7 +46,8 @@ enum RenderGallery {
         let photos: [String]?
         /// A Live Photo to edit: its photo, then its video's frames (generated, see `sourceImage`).
         let live: [String]?
-        /// What to save instead of the edited photo: "batch", the first picture Batch Edit made.
+        /// What to save instead of the edited photo: "overlay", the preview with the View panel's
+        /// overlays, as the screen shows it; "batch", the first picture Batch Edit made.
         let view: String?
     }
 
@@ -160,7 +161,8 @@ enum RenderGallery {
             if let tap = item.tap, tap.count == 2 {
                 model.tap(atX: tap[0], y: tap[1])
             }
-            var edited = model.editedPreview()
+            // "overlay": what the screen shows (before / after, warnings, grids…); "batch": a batch picture.
+            var edited = item.view == "overlay" ? model.shownPreview() : model.editedPreview()
             if item.view == "batch", let first = model.lastBatch.first { edited = first }
             let file = "\(item.id).jpg"
             if let jpeg = model.renderer.jpegData(edited) {

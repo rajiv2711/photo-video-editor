@@ -1205,3 +1205,10 @@
 {"group":"history","text":"switch to copy 2","expect":[{"op":"run","control":"switchCopy","text":"2"}]}
 {"group":"history","text":"delete copy mono","expect":[{"op":"run","control":"deleteCopy","text":"mono"}]}
 {"group":"history","text":"remove virtual copy 2","expect":[{"op":"run","control":"deleteCopy","text":"2"}]}
+{"group":"view","text":"before","expect":[{"op":"set","control":"showBefore","value":1}]}
+{"group":"view","text":"show original","expect":[{"op":"set","control":"showBefore","value":1}]}
+{"group":"view","text":"before off","expect":[{"op":"set","control":"showBefore","value":0}]}
+{"group":"view","text":"compare split","expect":[{"op":"set","control":"compare","value":1}]}
+{"group":"view","text":"compare side by side","expect":[{"op":"set","control":"compare","value":2}]}
+{"group":"view","text":"before and after split screen","expect":[{"op":"set","control":"compare","value":1}]}
+{"group":"view","text":"compare off","expect":[{"op":"set","control":"compare","value":0}]}
