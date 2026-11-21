@@ -1205,6 +1205,22 @@
                   {"id": "contour", "label": "Contour", "synonyms": ["contour light"]},
                   {"id": "stage", "label": "Stage", "synonyms": ["stage light"]},
                   {"id": "stageMono", "label": "Stage Mono", "synonyms": ["stage light mono", "stage black and white"]},
-                  {"id": "highKeyMono", "label": "High-Key Mono", "synonyms": ["high key mono", "high-key", "high key", "high key light mono"]}]}
+                  {"id": "highKeyMono", "label": "High-Key Mono", "synonyms": ["high key mono", "high-key", "high key", "high key light mono"]}]},
+    {"id": "gaussianBlur", "label": "Gaussian Blur", "group": "creative", "section": "Blur", "min": 0, "max": 100, "default": 0, "step": 5, "on": 30,
+      "synonyms": ["blur", "gaussian", "gauss blur", "gaussian blur amount", "blur amount", "blur radius", "blur filter", "blur photo"]},
+    {"id": "motionBlur", "label": "Motion Blur", "group": "creative", "section": "Blur", "min": 0, "max": 100, "default": 0, "step": 5, "on": 40,
+      "synonyms": ["motion", "directional blur", "linear blur", "motion blur amount", "streak blur", "speed blur"]},
+    {"id": "zoomBlur", "label": "Zoom Blur", "group": "creative", "section": "Blur", "min": 0, "max": 100, "default": 0, "step": 5, "on": 40,
+      "synonyms": ["radial blur", "zoom blur amount", "radial zoom blur", "burst blur", "zoom burst"]},
+    {"id": "spinBlur", "label": "Spin Blur", "group": "creative", "section": "Blur", "min": 0, "max": 100, "default": 0, "step": 5, "on": 40,
+      "synonyms": ["spin", "rotational blur", "rotation blur", "circular blur", "spin blur amount", "radial spin blur"]},
+    {"id": "effectCenterX", "label": "Effect Center X", "group": "creative", "section": "Placement", "min": 0, "max": 100, "default": 50, "step": 5,
+      "synonyms": ["center x", "centre x", "effect centre x", "filter center x", "blur center x", "zoom center x", "spin center x"]},
+    {"id": "effectCenterY", "label": "Effect Center Y", "group": "creative", "section": "Placement", "min": 0, "max": 100, "default": 50, "step": 5,
+      "synonyms": ["center y", "centre y", "effect centre y", "filter center y", "blur center y", "zoom center y", "spin center y"]},
+    {"id": "effectAngle", "label": "Effect Angle", "group": "creative", "section": "Placement", "min": -180, "max": 180, "default": 0, "step": 15,
+      "synonyms": ["motion blur angle", "motion angle", "blur angle", "motion direction", "blur direction", "motion blur direction", "effect direction"]},
+    {"id": "placeCenter", "label": "Place Center", "group": "creative", "section": "Placement", "kind": "action",
+      "synonyms": ["place centre", "center picker", "centre picker", "pick center", "tap center", "move center", "effect center"]}
   ]
 }

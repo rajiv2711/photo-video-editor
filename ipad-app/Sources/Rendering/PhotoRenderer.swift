@@ -8,7 +8,8 @@ import UIKit
 /// retouching (spots and brush strokes, early as Lightroom's spot removal) → portrait depth (blur and
 /// lighting of iPhone Portrait photos) → white balance → light
 /// (exposure, tone) → color → effects → detail → masks (local adjustments) → geometry (crop, turns,
-/// transforms) → vignette and grain (after the crop, as Lightroom's post-crop vignette).
+/// transforms) → creative filters (blur, distort, …, on the picture as framed) → vignette and grain
+/// (after the crop, as Lightroom's post-crop vignette).
 /// Each panel has its own file in Rendering/ (LightRenderer.swift, …).
 final class PhotoRenderer {
     let context: CIContext
@@ -21,6 +22,7 @@ final class PhotoRenderer {
     let retouch: RetouchRenderer
     let geometry: GeometryRenderer
     let portrait: PortraitRenderer
+    private let creative: CreativeRenderer
     /// The geometry of the last render (the editor maps touches on the preview back through it).
     private(set) var lastPlan: GeometryPlan?
     /// Every control by id (a mask's local pass leaves all but its own sliders at their defaults).
@@ -38,6 +40,7 @@ final class PhotoRenderer {
         self.retouch = RetouchRenderer(context: context)
         self.geometry = GeometryRenderer(context: context)
         self.portrait = PortraitRenderer(context: context)
+        self.creative = CreativeRenderer(context: context)
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
         self.controls = Dictionary(registry.controls.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     }
@@ -86,6 +89,7 @@ final class PhotoRenderer {
         lastPlan = plan
         output = geometry.shape(output, plan: plan, clampEdges: stage == .full)
         let shaped = plan.isShapeIdentity ? extent : output.extent
+        output = creative.apply(output, extent: shaped, value: value)  // blur, distort, … filters
         output = effects.finish(output, extent: shaped, value: value)  // vignette, grain
         if !hdr {
             output = output.applyingFilter("CIColorClamp")

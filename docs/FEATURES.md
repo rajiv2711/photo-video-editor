@@ -159,7 +159,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 ### Creative filters
 
-- [ ] 119. **Blur filters** — Gaussian, motion, radial / zoom / spin
+- [x] 119. **Blur filters** — Gaussian, motion, radial / zoom / spin
 - [ ] 120. **Tilt-shift / iris / field blur** — miniature and selective-focus effects
 - [ ] 121. **Distort filters** — twirl, wave, ripple, pinch, spherize, polar
 - [ ] 122. **Stylize filters** — oil paint, emboss, find edges, wind

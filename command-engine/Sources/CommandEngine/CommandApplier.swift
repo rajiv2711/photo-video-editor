@@ -159,6 +159,10 @@ public struct CommandApplier {
             case .max: state.set(control, to: control.max, at: target)
             case .min: state.set(control, to: control.min, at: target)
             case .select:
+                // "zoom blur": naming a creative filter that is off turns it on.
+                if let on = control.on, current == control.defaultValue {
+                    state.set(control, to: on, at: target)
+                }
                 // "mask exposure more": a bare "mask" picks the newest mask when none is selected.
                 if control.id == EditState.maskSelectorID, state.selectedMask == nil, !state.masks.isEmpty {
                     state.selectMask(state.masks.count - 1)

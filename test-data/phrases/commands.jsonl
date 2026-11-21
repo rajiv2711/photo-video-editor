@@ -126,7 +126,7 @@
 {"group":"out-of-scope","text":"rotate left","expect":[{"op":"run","control":"rotateLeft"}]}
 {"group":"out-of-scope","text":"undo","expect":[{"op":"unknown","word":"undo"}]}
 {"group":"out-of-scope","text":"hello","expect":[{"op":"unknown","word":"hello"}]}
-{"group":"out-of-scope","text":"blur more","expect":[{"op":"unknown","word":"blur"}]}
+{"group":"creative","text":"blur more","expect":[{"op":"nudge","control":"gaussianBlur","steps":1}]}
 {"group":"color","text":"temperature more","expect":[{"op":"nudge","control":"temperature","steps":1}]}
 {"group":"out-of-scope","text":"clarity up","expect":[{"op":"nudge","control":"clarity","steps":1}]}
 {"group":"out-of-scope","text":"noise reduction more","expect":[{"op":"nudge","control":"noiseReduction","steps":1}]}
@@ -918,3 +918,19 @@
 {"group":"merge","text":"portrait lighting stage","expect":[{"op":"set","control":"portraitLighting","value":3}]}
 {"group":"merge","text":"portrait lighting high key mono","expect":[{"op":"set","control":"portraitLighting","value":5}]}
 {"group":"merge","text":"portrait lighting studio","expect":[{"op":"set","control":"portraitLighting","value":1}]}
+{"group":"creative","text":"gaussian blur 20","expect":[{"op":"set","control":"gaussianBlur","value":20}]}
+{"group":"creative","text":"blur 30","expect":[{"op":"set","control":"gaussianBlur","value":30}]}
+{"group":"creative","text":"motion blur 50","expect":[{"op":"set","control":"motionBlur","value":50}]}
+{"group":"creative","text":"motion blur less","expect":[{"op":"nudge","control":"motionBlur","steps":-1}]}
+{"group":"creative","text":"zoom blur","expect":[{"op":"select","control":"zoomBlur"}]}
+{"group":"creative","text":"radial blur 60","expect":[{"op":"set","control":"zoomBlur","value":60}]}
+{"group":"creative","text":"spin blur","expect":[{"op":"select","control":"spinBlur"}]}
+{"group":"creative","text":"spin blur 30","expect":[{"op":"set","control":"spinBlur","value":30}]}
+{"group":"creative","text":"effect center x 30","expect":[{"op":"set","control":"effectCenterX","value":30}]}
+{"group":"creative","text":"center x 20","expect":[{"op":"set","control":"effectCenterX","value":20}]}
+{"group":"creative","text":"center y 70","expect":[{"op":"set","control":"effectCenterY","value":70}]}
+{"group":"creative","text":"effect centre y less","expect":[{"op":"nudge","control":"effectCenterY","steps":-1}]}
+{"group":"creative","text":"motion blur angle 45","expect":[{"op":"set","control":"effectAngle","value":45}]}
+{"group":"creative","text":"effect angle -30","expect":[{"op":"set","control":"effectAngle","value":-30}]}
+{"group":"creative","text":"place center","expect":[{"op":"run","control":"placeCenter"}]}
+{"group":"creative","text":"pick center","expect":[{"op":"run","control":"placeCenter"}]}

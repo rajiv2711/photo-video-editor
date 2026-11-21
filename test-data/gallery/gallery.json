@@ -463,6 +463,15 @@
     {"id": "portrait-aperture", "command": "portrait aperture f2.8", "source": "portrait", "control": "portraitAperture", "expect": [{"metric": "edge", "dir": "down", "vs": "portrait", "region": [0, 0, 0.15, 0.3], "min": 2}, {"metric": "edge", "dir": "same", "vs": "portrait", "region": [0.35, 0.5, 0.65, 0.7], "min": 1.5}]},
     {"id": "portrait-focus", "command": "portrait aperture f2 portrait focus", "source": "portrait", "control": "portraitFocus", "tap": [0.05, 0.05], "expect": [{"metric": "edge", "dir": "down", "vs": "portrait", "region": [0.35, 0.5, 0.65, 0.7], "min": 1.5}, {"metric": "edge", "dir": "same", "vs": "portrait", "region": [0, 0, 0.15, 0.15], "min": 1.5}]},
     {"id": "focus-depth", "command": "focus depth 0 portrait aperture f2", "source": "portrait", "control": "focusDepth", "expect": [{"metric": "edge", "dir": "down", "vs": "portrait", "region": [0.35, 0.5, 0.65, 0.7], "min": 1.5}]},
-    {"id": "portrait-lighting", "command": "portrait lighting stage", "source": "portrait", "control": "portraitLighting", "expect": [{"metric": "corner_luma", "dir": "down", "vs": "portrait", "min": 50}, {"metric": "mean_luma", "dir": "same", "vs": "portrait", "region": [0.4, 0.55, 0.6, 0.65], "min": 12}]}
+    {"id": "portrait-lighting", "command": "portrait lighting stage", "source": "portrait", "control": "portraitLighting", "expect": [{"metric": "corner_luma", "dir": "down", "vs": "portrait", "min": 50}, {"metric": "mean_luma", "dir": "same", "vs": "portrait", "region": [0.4, 0.55, 0.6, 0.65], "min": 12}]},
+
+    {"id": "gaussian-blur", "command": "gaussian blur 40", "control": "gaussianBlur", "expect": [{"metric": "edge", "dir": "down", "min": 3}, {"metric": "local_contrast", "dir": "down", "min": 2}]},
+    {"id": "motion-blur", "command": "motion blur 60", "control": "motionBlur", "expect": [{"metric": "edge", "dir": "down", "min": 3}]},
+    {"id": "zoom-blur", "command": "zoom blur 60", "control": "zoomBlur", "expect": [{"metric": "edge", "dir": "down", "region": [0.2, 0.65, 0.75, 0.78], "min": 3}]},
+    {"id": "spin-blur", "command": "spin blur 60", "control": "spinBlur", "expect": [{"metric": "edge", "dir": "down", "region": [0.2, 0.65, 0.75, 0.78], "min": 3}]},
+    {"id": "effect-center-x", "command": "zoom blur 60 effect center x 20", "control": "effectCenterX", "expect": [{"metric": "diff", "dir": "changed", "vs": "zoom-blur", "min": 1}]},
+    {"id": "effect-center-y", "command": "spin blur 60 center y 20", "control": "effectCenterY", "expect": [{"metric": "diff", "dir": "changed", "vs": "spin-blur", "min": 1}]},
+    {"id": "effect-angle", "command": "motion blur 60 motion blur angle 90", "control": "effectAngle", "expect": [{"metric": "diff", "dir": "changed", "vs": "motion-blur", "min": 1}]},
+    {"id": "place-center", "command": "zoom blur 60 place center", "control": "placeCenter", "tap": [0.2, 0.2], "expect": [{"metric": "diff", "dir": "changed", "vs": "zoom-blur", "min": 1}]}
   ]
 }

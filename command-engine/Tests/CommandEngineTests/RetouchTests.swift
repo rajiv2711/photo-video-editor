@@ -116,7 +116,7 @@ final class RetouchTests: XCTestCase {
         XCTAssertEqual(parse("remove haze up"), [.nudge("dehaze", 1)])
         XCTAssertEqual(parse("brush size 20"), [.set("brushSize", 20)])
         XCTAssertEqual(parse("undo"), [.unknown("undo")], "Undo (history) is a later feature")
-        XCTAssertEqual(parse("blur more"), [.unknown("blur")])
+        XCTAssertEqual(parse("blur more"), [.nudge("gaussianBlur", 1)], "“blur” alone is the Gaussian blur filter")
     }
 
     // MARK: - Steps in the edit
@@ -642,7 +642,7 @@ final class RetouchTests: XCTestCase {
         XCTAssertEqual(parse("sharpen more more"), [.nudge("sharpening", 2)], "“sharpen” alone is still Sharpening")
         XCTAssertEqual(parse("smudge"), [.run("smudge")])
         XCTAssertEqual(parse("smudge strength 70"), [.set("toolStrength", 70)])
-        XCTAssertEqual(parse("blur more"), [.unknown("blur")], "“blur” alone is kept for the blur filters")
+        XCTAssertEqual(parse("blur more"), [.nudge("gaussianBlur", 1)], "“blur” alone is the Gaussian blur filter")
     }
 
     func testBlurAndSharpenBrushesChangeDetailWherePainted() {

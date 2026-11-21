@@ -491,7 +491,11 @@ final class EditorModel: ObservableObject {
         "pointColorPicker": "Tap the colour on the photo you want to change.",
         "spotSource": "Tap where the selected spot should copy from.",
         "portraitFocus": "Tap what should be sharp: the depth there becomes the Focus Depth.",
+        CreativeFilters.centerPicker: centerHint,
     ]
+
+    /// What the Effect Center picker asks.
+    static let centerHint = "Tap the photo where the effect's centre should be."
 
     /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
     private func armPickers(_ outcomes: [CommandInterpreter.Outcome]) {
@@ -505,6 +509,12 @@ final class EditorModel: ObservableObject {
                 armedPicker = id
                 feedback = Feedback(text: hint)
             }
+        }
+        // Naming a filter that works around a point ("zoom blur") lets the next tap place it.
+        for case .changed(let id, let from, let to) in outcomes
+        where CreativeFilters.centered.contains(id) && from == 0 && to != 0 && armedPicker == nil {
+            armedPicker = CreativeFilters.centerPicker
+            feedback?.text += " · " + Self.centerHint
         }
     }
 
@@ -550,6 +560,13 @@ final class EditorModel: ObservableObject {
                 break
             }
             let outcomes = interpreter.apply([.set("focusDepth", (Double(depth.depth(at: MaskPoint(x, y))) * 100).rounded())], state: &state)
+            focusedControlID = interpreter.lastControlID
+            feedback = describe(outcomes)
+        case CreativeFilters.centerPicker:
+            // The creative filters work on the picture as framed: the point on it, not on the photo.
+            let shown = MaskPoint(shownX, shownY)
+            let c = CreativeFilters.centerValues(previewPlan?.toWarpSpace(shown) ?? shown)
+            let outcomes = interpreter.apply([.set("effectCenterX", c.x), .set("effectCenterY", c.y)], state: &state)
             focusedControlID = interpreter.lastControlID
             feedback = describe(outcomes)
         case "spotSource":
