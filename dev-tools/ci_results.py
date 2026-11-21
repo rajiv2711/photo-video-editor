@@ -11,7 +11,8 @@ build-errors.txt. This script fetches that branch into reports/ci/, measures eac
 reference (the "base" case, or the case named in "vs"), checks the expectation (e.g. Highlights -100 ->
 p95 luma down) and writes "reports/Operation test report.html". An expectation with "region": [x0, y0, x1, y1]
 (fractions of the width and height, from the top-left) measures only that box of both pictures (masks).
-Geometry: width, height (pixels) and aspect (width / height) of the picture.
+Geometry: width, height (pixels) and aspect (width / height) of the picture; tilt: how far its strong
+straight edges are from level or upright (degrees, weighted median).
 
 Exit code: 0 all passed · 1 a build step or a case failed · 3 no results for this commit yet.
 """
@@ -37,7 +38,7 @@ BRANCH = "origin/ci-renders"
 
 # Smallest change that counts, per metric (luma and RGB on 0-255, saturation on 0-100, peak in linear light;
 # edge, local_contrast and fringe are small averages on 0-255).
-THRESHOLDS = {"mean_sat": 0.5, "peak": 0.02, "edge": 0.3, "local_contrast": 0.3, "fringe": 0.5, "aspect": 0.01}
+THRESHOLDS = {"mean_sat": 0.5, "peak": 0.02, "edge": 0.3, "local_contrast": 0.3, "fringe": 0.5, "aspect": 0.01, "tilt": 0.5}
 DEFAULT_THRESHOLD = 1.0
 METRIC_NAMES = {
     "mean_luma": "mean luma", "p5_luma": "p5 luma", "p25_luma": "p25 luma", "p50_luma": "median luma",
@@ -45,7 +46,7 @@ METRIC_NAMES = {
     "mean_g": "mean green", "mean_b": "mean blue", "diff": "pixel change", "peak": "peak (linear)",
     "edge": "fine detail", "local_contrast": "local contrast", "fringe": "edge colour",
     "corner_luma": "corner luma", "center_luma": "centre luma",
-    "width": "width (px)", "height": "height (px)", "aspect": "aspect (w/h)",
+    "width": "width (px)", "height": "height (px)", "aspect": "aspect (w/h)", "tilt": "tilt (°)",
 }
 STEPS = [("linux_tests", "Linux tests"), ("generate", "Xcode project"), ("build", "Build"),
          ("install", "Install"), ("gallery", "Gallery"), ("screenshots", "Screenshots")]
@@ -99,13 +100,34 @@ def detail_stats(a: np.ndarray, luma: np.ndarray) -> dict:
     h, w = L.shape
     ch, cw = max(1, int(h * 0.15)), max(1, int(w * 0.15))
     corners = np.concatenate([L[:ch, :cw].ravel(), L[:ch, -cw:].ravel(), L[-ch:, :cw].ravel(), L[-ch:, -cw:].ravel()])
+    dev, weight, _ = edge_angles(L)
     return {
+        "tilt": abs(weighted_median(dev, weight)) if dev.size else 0.0,
         "edge": lap[2:-2, 2:-2].mean(),
         "local_contrast": np.abs(L - smooth)[8:-8, 8:-8].mean(),
         "fringe": chroma[near].mean() if near.any() else 0.0,
         "corner_luma": corners.mean(),
         "center_luma": L[int(h * 0.35):int(h * 0.65), int(w * 0.35):int(w * 0.65)].mean(),
     }
+
+
+def weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
+    order = np.argsort(values)
+    cum = np.cumsum(weights[order])
+    return float(values[order][np.searchsorted(cum, cum[-1] / 2)])
+
+
+def edge_angles(L: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Strong edges (away from the border): how far each is turned from level or upright (degrees,
+    + clockwise), its strength, and whether it runs up and down."""
+    gy, gx = np.gradient(box(box(box(L, 1), 1), 1))  # smoothed: thin lines would bias the angles
+    gy, gx = gy[4:-4, 4:-4], gx[4:-4, 4:-4]
+    mag = np.hypot(gx, gy)
+    upright = np.abs(gx) >= np.abs(gy)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        dev = np.where(upright, np.degrees(np.arctan(gy / gx)), -np.degrees(np.arctan(gx / gy)))
+    keep = (mag > max(20.0, float(np.percentile(mag, 90)))) & np.isfinite(dev) & (np.abs(dev) < 30)
+    return dev[keep], mag[keep], upright[keep]
 
 
 def measure(path: Path) -> tuple[dict, np.ndarray]:

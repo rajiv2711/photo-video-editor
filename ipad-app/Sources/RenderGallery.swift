@@ -174,8 +174,17 @@ enum RenderGallery {
     ///   `dustSpots`) and a thin dark wire across the top (retouching).
     /// - "red-eye": two eyes on skin, their pupils flash-red (red eye).
     /// - "pet-eye": two animal eyes on dark fur, their pupils glowing pale green (pet eye).
+    /// - "tilted": the grid turned 6° anticlockwise, filling the frame (straighten).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "tilted":
+            let size = photo.extent.integral.size
+            guard let grid = softGrid(size: size) else { return photo }
+            let image = CIImage(cgImage: grid)
+            let c = CGPoint(x: size.width / 2, y: size.height / 2)
+            let turn = CGAffineTransform(translationX: c.x, y: c.y).rotated(by: 6 * .pi / 180).scaledBy(x: 1.3, y: 1.3)
+                .translatedBy(x: -c.x, y: -c.y)
+            return image.clampedToExtent().transformed(by: turn).cropped(to: image.extent)
         case "dust":
             return dusty(photo)
         case "red-eye", "pet-eye":

@@ -170,6 +170,112 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(Crop.edges(of: (0.1, 0.2, 0.75, 1)), ["cropLeft": 10, "cropTop": 20, "cropRight": 25, "cropBottom": 0])
     }
 
+    // MARK: - Straighten
+
+    /// A light grey picture with dark lines (2 px wide, soft-edged) between the given ends, in pixels.
+    static func picture(width: Int, height: Int, lines: [(Vec2, Vec2)]) -> [Float] {
+        var pixels = [Float](repeating: 0.8, count: width * height)
+        for y in 0..<height {
+            for x in 0..<width {
+                let p = Vec2(Double(x) + 0.5, Double(y) + 0.5)
+                var near = Double.infinity
+                for (a, b) in lines {
+                    let ab = b - a, ap = p - a
+                    let t = Swift.min(1, Swift.max(0, (ap.x * ab.x + ap.y * ab.y) / (ab.x * ab.x + ab.y * ab.y)))
+                    near = Swift.min(near, (p - (a + ab * t)).length)
+                }
+                let ink = Swift.min(1, Swift.max(0, 1.5 - near))
+                pixels[y * width + x] = Float(0.8 - 0.65 * ink)
+            }
+        }
+        return pixels
+    }
+
+    /// Lines of a grid turned `degrees` clockwise about the middle of a `width` × `height` picture.
+    static func turnedGrid(width: Double, height: Double, degrees: Double, spacing: Double = 40) -> [(Vec2, Vec2)] {
+        let turn = Homography.translation(width / 2, height / 2) * Homography.rotation(degrees: degrees)
+            * Homography.translation(-width / 2, -height / 2)
+        var lines: [(Vec2, Vec2)] = []
+        var v = -width
+        while v <= 2 * width {
+            lines.append((turn.apply(Vec2(v, -height)), turn.apply(Vec2(v, 2 * height))))
+            lines.append((turn.apply(Vec2(-width, v)), turn.apply(Vec2(2 * width, v))))
+            v += spacing
+        }
+        return lines
+    }
+
+    func testLineDetectorFindsLinesAndTheirAngles() {
+        let w = 320, h = 240
+        let lines = [(Vec2(20, 40), Vec2(300, 70)), (Vec2(160, 100), Vec2(150, 230)), (Vec2(30, 200), Vec2(120, 120))]
+        let found = LineDetector.detect(Self.picture(width: w, height: h, lines: lines), width: w, height: h)
+        XCTAssertGreaterThanOrEqual(found.count, 3)
+        for (a, b) in lines {
+            let want = atan2(b.y - a.y, b.x - a.x)
+            let hit = found.contains { s in
+                let (p, q) = s.ends(width: Double(w), height: Double(h))
+                var diff = abs(atan2(q.y - p.y, q.x - p.x) - want).truncatingRemainder(dividingBy: .pi)
+                diff = Swift.min(diff, .pi - diff)
+                return diff < 0.6 * .pi / 180 && s.length > 0.5 * (b - a).length
+            }
+            XCTAssertTrue(hit, "no segment along \(a) → \(b)")
+        }
+        XCTAssertTrue(LineDetector.detect([Float](repeating: 0.5, count: w * h), width: w, height: h).isEmpty, "a flat picture has no lines")
+    }
+
+    func testAutoStraightenLevelsATurnedGrid() throws {
+        let w = 400, h = 300
+        let pixels = Self.picture(width: w, height: h, lines: Self.turnedGrid(width: Double(w), height: Double(h), degrees: -6))
+        let segments = LineDetector.detect(pixels, width: w, height: h)
+        let angle = try XCTUnwrap(Straighten.autoAngle(segments, width: Double(w), height: Double(h)))
+        XCTAssertEqual(angle, 6, accuracy: 0.3, "turned 6° anticlockwise: straighten 6° clockwise")
+        XCTAssertNil(Straighten.autoAngle([], width: 10, height: 10))
+    }
+
+    func testDrawnLineGivesTheAngleThatLevelsIt() {
+        XCTAssertEqual(Straighten.angle(levelling: Vec2(0, 0), Vec2(100, 10)), -atan(0.1) * 180 / .pi, accuracy: 1e-9)
+        XCTAssertEqual(Straighten.angle(levelling: Vec2(100, 10), Vec2(0, 0)), -atan(0.1) * 180 / .pi, accuracy: 1e-9, "either way")
+        XCTAssertEqual(Straighten.angle(levelling: Vec2(0, 0), Vec2(5, 100)), atan(0.05) * 180 / .pi, accuracy: 1e-9, "near upright")
+        // A line drawn on the straightened frame: measured before the turn, so it gives the whole angle.
+        let s = GeometrySettings(straighten: 4)
+        let plan = GeometryPlan(settings: s, width: 400, height: 300, stage: .frame)
+        let turn = Homography.translation(200, 150) * Homography.rotation(degrees: 4 + 3) * Homography.translation(-200, -150)
+        let a = turn.apply(Vec2(50, 150)), b = turn.apply(Vec2(350, 150))
+        let p = plan.frameToPreStraighten(MaskPoint(a.x / 400, a.y / 300)), q = plan.frameToPreStraighten(MaskPoint(b.x / 400, b.y / 300))
+        XCTAssertEqual(Straighten.angle(levelling: p, q), -3, accuracy: 1e-6, "a line 3° past level → straighten −3")
+    }
+
+    func testStraightenTurnsTheFrameAndShrinksTheCrop() {
+        let plan = GeometryPlan(settings: GeometrySettings(straighten: 10), width: 400, height: 300)
+        XCTAssertFalse(plan.isIdentity)
+        XCTAssertLessThan(plan.crop.width, 400)
+        XCTAssertEqual(plan.crop.width / plan.crop.height, 4.0 / 3, accuracy: 0.02, "keeps the box's shape")
+        for c in [Vec2(plan.crop.x, plan.crop.y), Vec2(plan.crop.maxX, plan.crop.maxY)] { XCTAssertTrue(Crop.inside(c, plan.photoCorners)) }
+        // The middle stays the middle; a point maps back through the turn.
+        let mid = plan.toSource(MaskPoint(0.5, 0.5))
+        XCTAssertEqual(mid.x, 0.5, accuracy: 0.01)
+        XCTAssertEqual(mid.y, 0.5, accuracy: 0.01)
+        let shown = plan.toShown(MaskPoint(0.3, 0.4))
+        let back = plan.toSource(shown)
+        XCTAssertEqual(back.x, 0.3, accuracy: 1e-9)
+        XCTAssertEqual(back.y, 0.4, accuracy: 1e-9)
+        XCTAssertEqual(GeometrySettings(value: { $0 == "straighten" ? 60 : nil }).straighten, 45)
+    }
+
+    func testStraightenNames() {
+        XCTAssertEqual(parse("straighten 5"), [.set("straighten", 5)])
+        XCTAssertEqual(parse("auto straighten"), [.run("autoStraighten")])
+        XCTAssertEqual(parse("auto level"), [.run("autoStraighten")])
+        XCTAssertEqual(parse("auto"), [.run("auto")], "Auto alone is still Auto")
+        XCTAssertEqual(parse("straighten tool"), [.run("straightenTool")])
+        // Auto Straighten comes back from the app's handler as a Straighten value.
+        var interpreter = CommandInterpreter(registry: registry)
+        interpreter.actionHandler = { id in id == "autoStraighten" ? [.set("straighten", 6)] : [] }
+        var state = EditState()
+        XCTAssertEqual(interpreter.interpret("auto straighten", state: &state),
+                       [.ran(controlID: "autoStraighten"), .changed(controlID: "straighten", from: 0, to: 6)])
+    }
+
     // MARK: - Names and actions
 
     func testCropNames() {

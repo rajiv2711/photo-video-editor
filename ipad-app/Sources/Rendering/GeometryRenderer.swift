@@ -9,8 +9,35 @@ import CoreImage.CIFilterBuiltins
 final class GeometryRenderer {
     let context: CIContext
 
+    /// Bumped by the editor when another photo is opened (the lines found are kept until then).
+    var photoGeneration = 0
+    /// The lines found on the photo, and for which photo and lens settings.
+    private var lineCache: (key: [Double], segments: [LineSegment])?
+
     init(context: CIContext) {
         self.context = context
+    }
+
+    /// Straight lines on the photo (after lens corrections; `key`: the lens settings), found once on a
+    /// copy of at most 800 px (LineDetector in CommandEngine) and kept, so the preview and the saved
+    /// photo use the same lines.
+    func segments(of picture: CIImage, key: [Double]) -> [LineSegment] {
+        let fullKey = key + [Double(photoGeneration)]
+        if let lineCache, lineCache.key == fullKey { return lineCache.segments }
+        let small = PhotoRenderer.downscaled(picture, maxSide: 800)
+        let e = small.extent
+        let w = Int(e.width.rounded(.down)), h = Int(e.height.rounded(.down))
+        guard w > 8, h > 8, let space = CGColorSpace(name: CGColorSpace.sRGB) else { return [] }
+        var rgba = [Float](repeating: 0, count: w * h * 4)
+        context.render(small, toBitmap: &rgba, rowBytes: w * 16,
+                       bounds: CGRect(x: e.minX, y: e.minY, width: CGFloat(w), height: CGFloat(h)), format: .RGBAf, colorSpace: space)
+        var gray = [Float](repeating: 0, count: w * h)
+        for i in 0..<(w * h) {
+            gray[i] = 0.2126 * rgba[4 * i] + 0.7152 * rgba[4 * i + 1] + 0.0722 * rgba[4 * i + 2]
+        }
+        let found = LineDetector.detect(gray, width: w, height: h)
+        lineCache = (fullKey, found)
+        return found
     }
 
     /// The plan for a picture over `extent`.

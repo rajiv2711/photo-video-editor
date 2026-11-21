@@ -60,29 +60,48 @@ struct GeometryPanel: View {
 }
 
 /// Touches on the photo for the Geometry panel's tool. The crop tool shows the whole frame with the
-/// crop box on it: drag a corner or an edge, or inside the box to move it.
+/// crop box on it: drag a corner or an edge, or inside the box to move it. The straighten tool takes
+/// a line drawn along something that should be level or upright.
 struct GeometryCanvas: View {
     @ObservedObject var model: EditorModel
     let tool: String
+    /// A line being drawn (straighten), on screen.
+    @State private var line: (CGPoint, CGPoint)?
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 Color.clear.contentShape(Rectangle())
                 if tool == "crop" { cropBox(geo.size).allowsHitTesting(false) }
+                if let line {
+                    Path { path in
+                        path.move(to: line.0)
+                        path.addLine(to: line.1)
+                    }
+                    .stroke(Color.yellow, style: StrokeStyle(lineWidth: 2, dash: [8, 5]))
+                    .allowsHitTesting(false)
+                }
             }
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { drag in
-                        model.draw([MaskCanvas.unit(drag.startLocation, in: geo.size), MaskCanvas.unit(drag.location, in: geo.size)],
-                                   finished: false)
+                        if Self.lines.contains(tool) {
+                            line = (drag.startLocation, drag.location)
+                        } else {
+                            model.draw([MaskCanvas.unit(drag.startLocation, in: geo.size), MaskCanvas.unit(drag.location, in: geo.size)],
+                                       finished: false)
+                        }
                     }
                     .onEnded { drag in
+                        line = nil
                         model.draw([MaskCanvas.unit(drag.startLocation, in: geo.size), MaskCanvas.unit(drag.location, in: geo.size)])
                     }
             )
         }
     }
+
+    /// Tools that take a line drawn on the photo (handed over when the finger lifts).
+    static let lines: Set<String> = ["straighten"]
 
     /// The crop box: the outside dimmed, thirds lines inside, handles at the corners.
     private func cropBox(_ size: CGSize) -> some View {

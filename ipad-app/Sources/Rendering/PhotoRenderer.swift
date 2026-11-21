@@ -21,6 +21,9 @@ final class PhotoRenderer {
     let geometry: GeometryRenderer
     /// The geometry of the last render (the editor maps touches on the preview back through it).
     private(set) var lastPlan: GeometryPlan?
+    /// The photo after lens corrections in the last render, and the lens settings (Auto Straighten
+    /// reads its lines).
+    private var lastPhoto: (picture: CIImage, key: [Double])?
     /// Every control by id (a mask's local pass leaves all but its own sliders at their defaults).
     private let controls: [String: Control]
 
@@ -66,6 +69,7 @@ final class PhotoRenderer {
         // Lens corrections, then film negative conversion: the picture range masks and pickers look at.
         let lensFixed = color.filmNegative(optics.apply(image, value: value), value: value)
         let lensKey = Self.opticsIDs.map { value($0) ?? 0 }
+        lastPhoto = (lensFixed, lensKey)
         let retouched = retouch.apply(lensFixed, steps: retouches, source: image, key: lensKey, wait: waitForRetouch)
         var output = color.whiteBalance(retouched, value: value)
         output = light.apply(output, value: value, hdr: hdr)
@@ -93,6 +97,14 @@ final class PhotoRenderer {
             output = MaskRenderer.overlay(output, mask: geometry.shape(shape, plan: plan), extent: shaped)
         }
         return output.cropped(to: shaped)
+    }
+
+    /// Auto Straighten: the Straighten angle that levels the lines of the photo last rendered (nil
+    /// when it has none near level or upright).
+    func autoStraightenAngle() -> Double? {
+        guard let photo = lastPhoto, let plan = lastPlan else { return nil }
+        let found = geometry.segments(of: photo.picture, key: photo.key)
+        return Straighten.autoAngle(found, width: plan.sourceWidth, height: plan.sourceHeight, transform: plan.preStraighten)
     }
 
     /// A mask's local adjustments on the globally edited picture: the same panels in the same order,

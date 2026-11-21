@@ -38,12 +38,12 @@ final class GalleryCasesTests: XCTestCase {
     static let metrics: Set = [
         "mean_luma", "p5_luma", "p25_luma", "p50_luma", "p75_luma", "p95_luma",
         "mean_sat", "mean_r", "mean_g", "mean_b", "diff", "peak",
-        "edge", "local_contrast", "fringe", "corner_luma", "center_luma", "width", "height", "aspect",
+        "edge", "local_contrast", "fringe", "corner_luma", "center_luma", "width", "height", "aspect", "tilt",
     ]
     static let directions: Set = ["up", "down", "changed", "same"]
     /// Generated starting pictures; must match RenderGallery.sourceImage in the app.
     static let sources: Set = ["warm", "negative", "chart", "haze", "noise", "moire", "grid", "lens", "lateral-ca", "fringe", "fisheye",
-                               "dust", "red-eye", "pet-eye"]
+                               "dust", "red-eye", "pet-eye", "tilted"]
 
     private var registry: ControlRegistry!
     private var cases: [Case] = []

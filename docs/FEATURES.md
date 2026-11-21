@@ -135,7 +135,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 ### Geometry
 
 - [x] 100. **Crop** — free or fixed aspect ratio
-- [ ] 101. **Straighten** — level by angle, auto, or draw the horizon
+- [x] 101. **Straighten** — level by angle, auto, or draw the horizon
 - [ ] 102. **Rotate 90° / flip** — rotate; flip horizontal or vertical
 - [ ] 103. **Upright** — auto perspective: auto, level, vertical, full
 - [ ] 104. **Guided upright** — draw lines that should be straight

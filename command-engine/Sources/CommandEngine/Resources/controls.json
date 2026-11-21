@@ -1040,6 +1040,14 @@
     {"id": "resetCrop", "label": "Reset Crop", "group": "geometry", "section": "Crop", "kind": "action",
       "synonyms": ["clear crop", "remove crop", "uncrop", "no crop", "crop reset", "reset the crop"]},
     {"id": "cropTool", "label": "Crop Tool", "group": "geometry", "section": "Crop", "kind": "action",
-      "synonyms": ["crop mode", "edit crop", "crop handles", "crop overlay", "crop frame", "adjust crop"]}
+      "synonyms": ["crop mode", "edit crop", "crop handles", "crop overlay", "crop frame", "adjust crop"]},
+    {"id": "straighten", "label": "Straighten", "group": "geometry", "section": "Straighten", "min": -45, "max": 45, "default": 0, "step": 0.5,
+      "synonyms": ["straighten angle", "angle", "crop angle", "straightening", "horizon angle", "rotation angle", "level angle"]},
+    {"id": "autoStraighten", "label": "Auto Straighten", "group": "geometry", "section": "Straighten", "kind": "action",
+      "synonyms": ["auto level", "auto angle", "level horizon", "straighten horizon", "fix horizon", "auto horizon",
+                   "straighten automatically", "auto straighten horizon", "level the horizon"]},
+    {"id": "straightenTool", "label": "Straighten Tool", "group": "geometry", "section": "Straighten", "kind": "action",
+      "synonyms": ["draw horizon", "draw a horizon", "straighten line", "level tool", "horizon tool", "draw level line",
+                   "straighten by line", "draw a line to straighten"]}
   ]
 }

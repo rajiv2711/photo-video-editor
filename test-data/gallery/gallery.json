@@ -380,6 +380,11 @@
     {"id": "crop-right", "command": "crop right 30", "control": "cropRight", "expect": [{"metric": "width", "dir": "down", "min": 150}, {"metric": "height", "dir": "same"}]},
     {"id": "crop-bottom", "command": "crop bottom 25", "control": "cropBottom", "expect": [{"metric": "height", "dir": "down", "min": 190}, {"metric": "width", "dir": "same"}]},
     {"id": "reset-crop", "command": "crop square crop top 10", "control": "resetCrop", "steps": [{"command": "reset crop"}], "expect": [{"metric": "diff", "dir": "same"}]},
-    {"id": "crop-tool", "command": "crop original crop tool", "control": "cropTool", "strokes": [[[0.0, 0.0], [0.4, 0.3]]], "steps": [{"command": "done"}], "expect": [{"metric": "width", "dir": "down", "min": 100}, {"metric": "height", "dir": "down", "min": 100}, {"metric": "aspect", "dir": "same"}]}
+    {"id": "crop-tool", "command": "crop original crop tool", "control": "cropTool", "strokes": [[[0.0, 0.0], [0.4, 0.3]]], "steps": [{"command": "done"}], "expect": [{"metric": "width", "dir": "down", "min": 100}, {"metric": "height", "dir": "down", "min": 100}, {"metric": "aspect", "dir": "same"}]},
+
+    {"id": "tilted", "command": "", "source": "tilted", "expect": [{"metric": "diff", "dir": "changed"}]},
+    {"id": "straighten", "command": "straighten 6", "source": "tilted", "control": "straighten", "expect": [{"metric": "tilt", "dir": "down", "vs": "tilted", "min": 4}, {"metric": "width", "dir": "down", "vs": "tilted"}]},
+    {"id": "auto-straighten", "command": "auto straighten", "source": "tilted", "control": "autoStraighten", "expect": [{"metric": "tilt", "dir": "down", "vs": "tilted", "min": 4}]},
+    {"id": "straighten-tool", "command": "straighten tool", "source": "tilted", "control": "straightenTool", "strokes": [[[0.2, 0.521], [0.8, 0.479]]], "steps": [{"command": "done"}], "expect": [{"metric": "tilt", "dir": "down", "vs": "tilted", "min": 4}]}
   ]
 }

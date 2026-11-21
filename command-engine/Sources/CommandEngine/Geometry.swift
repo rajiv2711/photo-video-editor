@@ -202,14 +202,17 @@ public struct GeometrySettings: Equatable {
     public var cropTop: Double
     public var cropRight: Double
     public var cropBottom: Double
+    /// Straighten, degrees clockwise on screen (−45…45).
+    public var straighten: Double
 
     public init(aspect: String = "free", cropLeft: Double = 0, cropTop: Double = 0, cropRight: Double = 0,
-                cropBottom: Double = 0) {
+                cropBottom: Double = 0, straighten: Double = 0) {
         self.aspect = aspect
         self.cropLeft = cropLeft
         self.cropTop = cropTop
         self.cropRight = cropRight
         self.cropBottom = cropBottom
+        self.straighten = straighten
     }
 
     public init(value: (String) -> Double?) {
@@ -220,6 +223,7 @@ public struct GeometrySettings: Equatable {
         cropTop = Swift.min(0.95, Swift.max(0, v("cropTop") / 100))
         cropRight = Swift.min(0.95, Swift.max(0, v("cropRight") / 100))
         cropBottom = Swift.min(0.95, Swift.max(0, v("cropBottom") / 100))
+        straighten = Swift.min(45, Swift.max(-45, v("straighten")))
     }
 }
 
@@ -231,6 +235,9 @@ public struct GeometryPlan: Equatable {
     public let stage: GeometryStage
     /// Photo pixels → frame pixels.
     public let transform: Homography
+    /// Photo pixels → the photo before straightening (upright and the manual transform; frame pixels
+    /// before the straighten turn): where lines are measured for Straighten.
+    public let preStraighten: Homography
     public let frameWidth: Double
     public let frameHeight: Double
     /// The crop in frame pixels (whole pixels); the whole frame when the stage shows no crop.
@@ -243,10 +250,16 @@ public struct GeometryPlan: Equatable {
         sourceHeight = height
         self.stage = stage
         let corners = [Vec2(0, 0), Vec2(width, 0), Vec2(width, height), Vec2(0, height)]
-        transform = .identity
+        let pre = Homography.identity
+        // Straighten turns the picture about the frame's middle.
+        let turn = Homography.translation(width / 2, height / 2) * Homography.rotation(degrees: settings.straighten)
+            * Homography.translation(-width / 2, -height / 2)
+        preStraighten = stage == .source ? .identity : pre
+        let h = stage == .source ? Homography.identity : turn * pre
+        transform = h
         frameWidth = width
         frameHeight = height
-        photoCorners = corners.map { Homography.identity.apply($0) }
+        photoCorners = corners.map { h.apply($0) }
         switch stage {
         case .full:
             crop = Crop.rect(settings: settings, width: frameWidth, height: frameHeight, sourceAspect: width / Swift.max(height, 1),
@@ -284,6 +297,12 @@ public struct GeometryPlan: Equatable {
     public var shownTransform: Homography {
         Homography.scale(1 / Swift.max(crop.width, 1e-9), 1 / Swift.max(crop.height, 1e-9))
             * Homography.translation(-crop.x, -crop.y) * transform * Homography.scale(sourceWidth, sourceHeight)
+    }
+
+    /// A point on the frame (normalized, as the crop tool shows it) → the photo before straightening,
+    /// in pixels (where Straighten measures a drawn line).
+    public func frameToPreStraighten(_ p: MaskPoint) -> Vec2 {
+        (preStraighten * transform.inverse).apply(Vec2(p.x * frameWidth, p.y * frameHeight))
     }
 
     /// A point on the frame (normalized, as the crop tool shows it) → normalized on the photo.
@@ -486,9 +505,9 @@ public enum Crop {
 /// The Geometry panel's actions and the controls they act on.
 public enum GeometryTools {
     /// Actions that pick a touch tool for the photo, and the tool: "crop" (drag the crop box).
-    public static let actions: [String: String] = ["cropTool": "crop"]
+    public static let actions: [String: String] = ["cropTool": "crop", "straightenTool": "straighten"]
     /// Actions the app works out from the photo (they come back as commands from its action handler).
-    public static let fromPhoto: Set<String> = []
+    public static let fromPhoto: Set<String> = ["autoStraighten"]
     /// The crop box's controls ("reset crop" puts them back).
     public static let cropIDs = ["cropAspect", "cropLeft", "cropTop", "cropRight", "cropBottom"]
 }

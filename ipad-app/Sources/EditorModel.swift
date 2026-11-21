@@ -266,16 +266,25 @@ final class EditorModel: ObservableObject {
 
     /// Action controls look at the photo: Auto reads the unedited preview's brightness histogram and
     /// colour and sets the light sliders, Temperature, Tint and Vibrance (AutoTone in CommandEngine),
-    /// so its result stays editable.
+    /// so its result stays editable; Auto Straighten sets Straighten from the photo's lines.
     private func installActions() {
         let source = previewSource
         let context = renderer.context
+        let renderer = self.renderer
         interpreter.actionHandler = { id in
-            guard id == "auto" else { return [] }
-            let histogram = ImageStats.lumaHistogram(of: source, extent: source.extent, context: context)
-            return AutoTone.commands(lumaHistogram: histogram,
-                                     averageColor: ImageStats.averageColor(of: source, context: context),
-                                     meanChroma: ImageStats.meanChroma(of: source, context: context))
+            switch id {
+            case "auto":
+                let histogram = ImageStats.lumaHistogram(of: source, extent: source.extent, context: context)
+                return AutoTone.commands(lumaHistogram: histogram,
+                                         averageColor: ImageStats.averageColor(of: source, context: context),
+                                         meanChroma: ImageStats.meanChroma(of: source, context: context))
+            case "autoStraighten":
+                // The lines of the photo as last shown (LineDetector), levelled.
+                guard let angle = renderer.autoStraightenAngle() else { return [] }
+                return [.set("straighten", (angle * 10).rounded() / 10)]
+            default:
+                return []
+            }
         }
     }
 
@@ -299,7 +308,7 @@ final class EditorModel: ObservableObject {
 
     /// The geometry steps the preview shows: the crop tool shows the whole frame with the crop box on it.
     var geometryStage: GeometryStage {
-        geometryTool == "crop" ? .frame : .full
+        ["crop", "straighten"].contains(geometryTool ?? "") ? .frame : .full
     }
 
     /// The crop box as it is (after aspect and constrain), as shares of the frame, for the crop tool.
@@ -356,6 +365,16 @@ final class EditorModel: ObservableObject {
             for (id, value) in Crop.edges(of: box) {
                 if let control = registry.control(id: id) { state.set(control, to: value) }
             }
+        case "straighten":
+            // A line along something that should be level or upright, measured before the turn.
+            guard finished, let plan = previewPlan else { return }
+            let a = plan.frameToPreStraighten(start), b = plan.frameToPreStraighten(end)
+            guard (b - a).length > 4 else { return }
+            apply([.set("straighten", (Straighten.angle(levelling: a, b) * 10).rounded() / 10)])
+            // Then the crop box, as in Lightroom, to see what the turn leaves.
+            geometryTool = "crop"
+            render()
+            return
         default:
             return
         }
@@ -526,6 +545,7 @@ final class EditorModel: ObservableObject {
         }
         original = image
         previewSource = PhotoRenderer.downscaled(image, maxSide: previewSide)
+        renderer.geometry.photoGeneration += 1
         renderer.lens = Self.lens(of: image)
         installActions()
         render()
@@ -741,6 +761,7 @@ final class EditorModel: ObservableObject {
     /// What to do on the photo with a Geometry panel tool.
     static let geometryHints: [String: String] = [
         "crop": "drag a corner or edge, or inside the box to move it (it keeps the Crop Aspect); “done” when finished",
+        "straighten": "draw a line along something that should be level (a horizon) or upright; the photo turns to match",
     ]
 
     /// What to do on the photo after making a mask part.

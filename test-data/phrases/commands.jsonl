@@ -775,3 +775,12 @@
 {"group":"geometry","text":"uncrop","expect":[{"op":"run","control":"resetCrop"}]}
 {"group":"geometry","text":"crop tool","expect":[{"op":"run","control":"cropTool"}]}
 {"group":"geometry","text":"edit crop","expect":[{"op":"run","control":"cropTool"}]}
+{"group":"geometry","text":"straighten 5","expect":[{"op":"set","control":"straighten","value":5}]}
+{"group":"geometry","text":"straighten minus 3","expect":[{"op":"set","control":"straighten","value":-3}]}
+{"group":"geometry","text":"angle more","expect":[{"op":"nudge","control":"straighten","steps":1}]}
+{"group":"geometry","text":"reset straighten","expect":[{"op":"reset","control":"straighten"}]}
+{"group":"geometry","text":"auto straighten","expect":[{"op":"run","control":"autoStraighten"}]}
+{"group":"geometry","text":"level the horizon","expect":[{"op":"run","control":"autoStraighten"}]}
+{"group":"geometry","text":"auto level","expect":[{"op":"run","control":"autoStraighten"}]}
+{"group":"geometry","text":"straighten tool","expect":[{"op":"run","control":"straightenTool"}]}
+{"group":"geometry","text":"draw a horizon","expect":[{"op":"run","control":"straightenTool"}]}
