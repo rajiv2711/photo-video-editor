@@ -992,6 +992,7 @@ final class EditorModel: ObservableObject {
         switch kind {
         case "hdrPanorama": return 4
         case "double": return 1  // one picked photo goes over the photo as opened
+        case "collage": return 2  // the photo as opened and at least one picked
         default: return 2
         }
     }
@@ -1011,11 +1012,14 @@ final class EditorModel: ObservableObject {
         let count = registry.control(id: MergeTools.countID).map { state.value(of: $0) } ?? 0
         var photos = MergeTools.chosen(mergePhotos, count: count)
         if kind == "double", photos.count == 1 { photos.insert(opened, at: 0) }
+        // A collage starts with the photo as opened, then the photos picked.
+        if kind == "collage" { photos.insert(opened, at: 0) }
         let needed = Self.minimumPhotos(kind)
         guard photos.count >= needed else {
             // The photo stays as it is (a merge made before is no longer redone).
             merged = nil
-            feedback = Feedback(text: "Pick at least \(needed) photos to merge first (Merge panel → Pick Photos to Merge).", isProblem: true)
+            feedback = Feedback(text: kind == "collage" ? "Pick at least 1 photo for the collage first (Layers panel → Pick Photos)."
+                                : "Pick at least \(needed) photos to merge first (Merge panel → Pick Photos to Merge).", isProblem: true)
             return
         }
         merged = (kind, mergeKey(kind))
@@ -1025,8 +1029,8 @@ final class EditorModel: ObservableObject {
         let merger = self.merger
         let name = MergeTools.actions.first { $0.value == kind }.flatMap { registry.control(id: $0.key)?.label } ?? "Merge"
         // A panorama's photos point different ways: no lens correction fits the result.
-        let lens = kind == "panorama" || kind == "hdrPanorama" ? PhotoLens() : Self.lens(of: photos[0])
-        let done = "\(name): \(photos.count) photos merged"
+        let lens = ["panorama", "hdrPanorama", "collage"].contains(kind) ? PhotoLens() : Self.lens(of: photos[0])
+        let done = kind == "collage" ? "Collage of \(photos.count) photos: every panel now edits it" : "\(name): \(photos.count) photos merged"
         if waitsForMerge {
             finishMerge(merger.merge(kind, photos: photos, value: value), name: name, done: done, count: photos.count, lens: lens, job: job)
             return

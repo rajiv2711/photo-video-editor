@@ -706,3 +706,58 @@ public enum LayerBlend {
         return RGB(out[0], out[1], out[2])
     }
 }
+
+// MARK: - Collage
+
+/// Collage (Layers panel): the photo being edited and the photos picked laid out in a grid of cells
+/// with space between them and around them, on a background colour. The collage becomes the photo
+/// being edited (as a merge does), so every panel then works on it and layers go on top of it.
+public enum Collage {
+    /// "collageLayout" option ids: columns × rows ("2x1": two side by side).
+    public static let layouts = ["2x2", "2x1", "1x2", "3x1", "1x3", "3x2", "2x3", "3x3"]
+
+    /// The longest side a collage gets (pixels).
+    public static let maxSide = 3072.0
+
+    /// The columns and rows of a layout.
+    public static func grid(_ layout: String) -> (columns: Int, rows: Int) {
+        let parts = layout.split(separator: "x").compactMap { Int($0) }
+        return parts.count == 2 ? (Swift.max(1, parts[0]), Swift.max(1, parts[1])) : (2, 2)
+    }
+
+    /// The canvas and its cells (whole pixels from the top-left, row by row) for cells of `aspect`
+    /// (width ÷ height, the first photo's), the canvas's long side `long`, and `spacing` (Collage
+    /// Spacing: % of the long side between the cells and around them).
+    public static func layout(_ layout: String, aspect: Double, spacing: Double, long: Double) -> (width: Double, height: Double, cells: [GeoRect]) {
+        let (cols, rows) = grid(layout)
+        let a = Swift.max(0.05, aspect)
+        let g = (Swift.max(0, spacing) / 100 * long).rounded()
+        // The width sets the long side, unless that makes the collage taller than it is wide.
+        var cw = (long - Double(cols + 1) * g) / Double(cols)
+        if Double(rows) * cw / a + Double(rows + 1) * g > long {
+            cw = a * (long - Double(rows + 1) * g) / Double(rows)
+        }
+        cw = Swift.max(1, cw.rounded(.down))
+        let ch = Swift.max(1, (cw / a).rounded(.down))
+        let width = Double(cols) * cw + Double(cols + 1) * g, height = Double(rows) * ch + Double(rows + 1) * g
+        var cells: [GeoRect] = []
+        for r in 0..<rows {
+            for c in 0..<cols {
+                cells.append(GeoRect(x: g + Double(c) * (cw + g), y: g + Double(r) * (ch + g), width: cw, height: ch))
+            }
+        }
+        return (width, height, cells)
+    }
+
+    /// The part of a `width` × `height` photo a cell shows: the middle of it, cut to the cell's shape
+    /// (pixels from the photo's top-left).
+    public static func fill(width: Double, height: Double, cell: GeoRect) -> GeoRect {
+        let a = cell.width / Swift.max(cell.height, 1e-9)
+        if width / Swift.max(height, 1e-9) > a {
+            let w = height * a
+            return GeoRect(x: (width - w) / 2, y: 0, width: w, height: height)
+        }
+        let h = width / a
+        return GeoRect(x: 0, y: (height - h) / 2, width: width, height: h)
+    }
+}

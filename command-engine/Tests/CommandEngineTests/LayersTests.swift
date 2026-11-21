@@ -595,4 +595,49 @@ final class LayersTests: XCTestCase {
         XCTAssertFalse(Stickers.inside(Vec2(0, -0.3), heart), "the dip between its lobes is not")
         XCTAssertEqual(Stickers.star(points: 5, outer: 0.5, inner: 0.2).count, 10)
     }
+
+    // MARK: - Collage
+
+    func testCollageNames() {
+        XCTAssertEqual(parse("collage 2 by 2"), [.run("collage", value: 0)])
+        XCTAssertEqual(parse("collage 3 by 1"), [.run("collage", value: 3)])
+        XCTAssertEqual(parse("collage side by side"), [.run("collage", value: 1)])
+        XCTAssertEqual(parse("collage layout 1 by 2"), [.set("collageLayout", 2)])
+        XCTAssertEqual(parse("collage spacing 4"), [.set("collageSpacing", 4)])
+        XCTAssertEqual(parse("collage background black"), [.set("collageBackground", 1)])
+        XCTAssertEqual(registry.control(id: "collageLayout")!.options.map(\.id), Collage.layouts)
+        XCTAssertEqual(registry.control(id: "collage")!.options.map(\.id), Collage.layouts)
+        XCTAssertEqual(run("collage 3 by 2"), [.ran(controlID: "collage"), .changed(controlID: "collageLayout", from: 0, to: 5)],
+                       "the app makes the collage from the photos picked, as a merge")
+        XCTAssertEqual(MergeTools.actions["collage"], "collage")
+        XCTAssertTrue(MergeTools.settings(for: "collage").contains("collageSpacing"), "a new spacing makes it again")
+    }
+
+    func testCollageGrids() {
+        // Two portrait photos side by side, long side 1600, 2 % spacing (32 px).
+        let side = Collage.layout("2x1", aspect: 2.0 / 3, spacing: 2, long: 1600)
+        XCTAssertEqual(side.width, 1600)
+        XCTAssertEqual(side.cells.count, 2)
+        XCTAssertEqual(side.cells[0], GeoRect(x: 32, y: 32, width: 752, height: 1128))
+        XCTAssertEqual(side.cells[1].x, 32 + 752 + 32)
+        XCTAssertEqual(side.height, 1128 + 64)
+        // Stacked: the height is the long side.
+        let stacked = Collage.layout("1x2", aspect: 1.5, spacing: 0, long: 1200)
+        XCTAssertEqual(stacked.height, 1200)
+        XCTAssertEqual(stacked.cells[1].y, 600)
+        XCTAssertLessThanOrEqual(stacked.width, 1200)
+        // Every cell inside the canvas, none overlapping, row by row.
+        let nine = Collage.layout("3x3", aspect: 1, spacing: 3, long: 3000)
+        XCTAssertEqual(nine.cells.count, 9)
+        for cell in nine.cells {
+            XCTAssertTrue(cell.x >= 0 && cell.maxX <= nine.width && cell.y >= 0 && cell.maxY <= nine.height)
+        }
+        XCTAssertLessThan(nine.cells[0].maxX, nine.cells[1].x)
+        XCTAssertLessThan(nine.cells[2].maxY, nine.cells[3].y)
+        // A wide photo in a square cell: its middle.
+        let part = Collage.fill(width: 400, height: 200, cell: GeoRect(x: 0, y: 0, width: 100, height: 100))
+        XCTAssertEqual(part, GeoRect(x: 100, y: 0, width: 200, height: 200))
+        let tall = Collage.fill(width: 200, height: 400, cell: GeoRect(x: 0, y: 0, width: 100, height: 50))
+        XCTAssertEqual(tall, GeoRect(x: 0, y: 150, width: 200, height: 100))
+    }
 }

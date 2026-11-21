@@ -1111,3 +1111,12 @@
 {"group":"layers","text":"add sticker smiley face","expect":[{"op":"run","control":"addSticker","value":2}]}
 {"group":"layers","text":"emoji sun","expect":[{"op":"run","control":"addSticker","value":3}]}
 {"group":"layers","text":"sticker speech bubble","expect":[{"op":"run","control":"addSticker","value":9}]}
+{"group":"layers","text":"collage 2 by 2","expect":[{"op":"run","control":"collage","value":0}]}
+{"group":"layers","text":"make a collage 3 by 1","expect":[{"op":"run","control":"collage","value":3}]}
+{"group":"layers","text":"photo grid 3 by 3","expect":[{"op":"run","control":"collage","value":7}]}
+{"group":"layers","text":"collage layout side by side","expect":[{"op":"set","control":"collageLayout","value":1}]}
+{"group":"layers","text":"collage grid 2 by 3","expect":[{"op":"set","control":"collageLayout","value":6}]}
+{"group":"layers","text":"collage spacing 5","expect":[{"op":"set","control":"collageSpacing","value":5}]}
+{"group":"layers","text":"collage border more","expect":[{"op":"nudge","control":"collageSpacing","steps":1}]}
+{"group":"layers","text":"collage background black","expect":[{"op":"set","control":"collageBackground","value":1}]}
+{"group":"layers","text":"collage colour grey","expect":[{"op":"set","control":"collageBackground","value":9}]}

@@ -54,6 +54,8 @@ final class MergeRenderer {
             let mode = DoubleExposure.Mode(rawValue: option(value("blendMode"), DoubleExposure.modes)) ?? .screen
             let merged = DoubleExposure.merge(layers, mode: mode, amount: Float((value("blendAmount") ?? 100) / 100))
             return Merged(image: picture(merged), used: photos.count)
+        case "collage":
+            return collage(photos, value: value)
         case "panorama":
             guard photos.count >= 2 else { return nil }
             let pictures = photos.map { photo -> FloatImage in
@@ -119,6 +121,40 @@ final class MergeRenderer {
     }
 
     /// The option id a choice's value stands for.
+    /// Collage: the photos in a grid's cells (each cut to its cell's shape, from its middle) with space
+    /// around them on the background colour, at most Collage.maxSide on the long side; worked out by
+    /// Collage in CommandEngine, made by Core Image and kept as pixels.
+    private func collage(_ photos: [CIImage], value: (String) -> Double?) -> Merged? {
+        guard let first = photos.first, first.extent.width > 0, first.extent.height > 0 else { return nil }
+        let layout = option(value("collageLayout"), Collage.layouts)
+        let grid = Collage.grid(layout)
+        let e0 = first.extent
+        let long = min(Collage.maxSide, Double(max(e0.width, e0.height)) * Double(max(grid.columns, grid.rows)))
+        let plan = Collage.layout(layout, aspect: Double(e0.width / e0.height), spacing: value("collageSpacing") ?? 2, long: long)
+        let back = Layers.color(value("collageBackground") ?? 0) ?? RGB(1, 1, 1)
+        let canvas = CGRect(x: 0, y: 0, width: plan.width, height: plan.height)
+        var out = CIImage(color: CIColor(red: CGFloat(back.r), green: CGFloat(back.g), blue: CGFloat(back.b))).cropped(to: canvas)
+        for (photo, cell) in zip(photos, plan.cells) {
+            let e = photo.extent
+            let part = Collage.fill(width: Double(e.width), height: Double(e.height), cell: cell)
+            // Core Image's y is up: the part's top is that far below the photo's top.
+            let crop = CGRect(x: e.minX + CGFloat(part.x), y: e.maxY - CGFloat(part.maxY), width: CGFloat(part.width), height: CGFloat(part.height))
+            let k = cell.width / max(part.width, 1)
+            var piece = photo.cropped(to: crop).transformed(by: CGAffineTransform(translationX: -crop.minX, y: -crop.minY))
+            if k < 1 {
+                piece = piece.applyingFilter("CILanczosScaleTransform", parameters: [kCIInputScaleKey: k, kCIInputAspectRatioKey: 1])
+            } else {
+                piece = piece.transformed(by: CGAffineTransform(scaleX: CGFloat(k), y: CGFloat(k)))
+            }
+            let place = CGRect(x: cell.x, y: plan.height - cell.maxY, width: cell.width, height: cell.height)
+            piece = piece.transformed(by: CGAffineTransform(translationX: place.minX - piece.extent.minX, y: place.minY - piece.extent.minY))
+            out = piece.clampedToExtent().cropped(to: place).composited(over: out)
+        }
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let cg = context.createCGImage(out, from: canvas, format: .RGBA8, colorSpace: space) else { return nil }
+        return Merged(image: CIImage(cgImage: cg), used: min(photos.count, plan.cells.count))
+    }
+
     private func option(_ value: Double?, _ ids: [String]) -> String {
         let i = Int(value ?? 0)
         return ids.indices.contains(i) ? ids[i] : ids[0]

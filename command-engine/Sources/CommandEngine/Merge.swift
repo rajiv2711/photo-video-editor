@@ -6,11 +6,12 @@ import Foundation
 // pyramids, Burt & Adelson 1983). The app reads the photos into FloatImages, calls these, and the
 // result becomes the photo being edited; every other panel then works on it as usual.
 
-/// The Merge panel's actions and settings.
+/// The Merge panel's actions and settings (and the Layers panel's Collage, made the same way).
 public enum MergeTools {
     /// Merge actions and the kind of merge each makes.
     public static let actions: [String: String] = ["hdrMerge": "hdr", "panoramaMerge": "panorama", "hdrPanorama": "hdrPanorama",
-                                                   "focusStack": "focus", "stackAverage": "stack", "doubleExposure": "double"]
+                                                   "focusStack": "focus", "stackAverage": "stack", "doubleExposure": "double",
+                                                   "collage": "collage"]
 
     /// "Photos to Merge": how many of the last photos picked a merge uses (0 = all of them).
     public static let countID = "mergeCount"
@@ -25,12 +26,13 @@ public enum MergeTools {
         case "stack": return [countID, "stackMode"]
         case "double": return [countID, "blendMode", "blendAmount"]
         case "live": return ["livePhotoEffect", "keyFrame"]
+        case "collage": return [countID, "collageLayout", "collageSpacing", "collageBackground"]
         default: return [countID]
         }
     }
 
     /// The choice an action's option sets ("stack median" → Stack Mode).
-    public static let optionSetting: [String: String] = ["stackAverage": "stackMode"]
+    public static let optionSetting: [String: String] = ["stackAverage": "stackMode", "collage": "collageLayout"]
 
     /// The last `count` photos of `picked` (all of them for 0 or more than there are).
     public static func chosen<T>(_ picked: [T], count: Double) -> [T] {

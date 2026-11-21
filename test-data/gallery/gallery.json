@@ -563,6 +563,13 @@
     {"id": "fill-angle", "command": "gradient fill fill angle 0", "control": "fillAngle", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.0, 0.3, 0.05, 0.7], "min": 80}, {"metric": "diff", "dir": "same", "region": [0.95, 0.3, 1.0, 0.7], "min": 8}]},
 
     {"id": "sticker-heart", "command": "sticker heart", "control": "addSticker", "expect": [{"metric": "mean_r", "dir": "up", "region": [0.45, 0.45, 0.55, 0.55], "min": 60}, {"metric": "diff", "dir": "same", "region": [0.1, 0.05, 0.9, 0.3], "min": 0.5}]},
-    {"id": "sticker-star", "command": "sticker star layer position top left", "control": "addSticker", "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.17, 0.13, 0.23, 0.17], "min": 40}, {"metric": "mean_b", "dir": "down", "region": [0.17, 0.13, 0.23, 0.17], "min": 60}]}
+    {"id": "sticker-star", "command": "sticker star layer position top left", "control": "addSticker", "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.17, 0.13, 0.23, 0.17], "min": 40}, {"metric": "mean_b", "dir": "down", "region": [0.17, 0.13, 0.23, 0.17], "min": 60}]},
+
+    {"id": "collage", "command": "collage 2 by 1", "control": "collage", "photos": ["chart"], "expect": [{"metric": "width", "dir": "up", "min": 100}, {"metric": "aspect", "dir": "up", "min": 0.3}]},
+    {"id": "collage-cells", "command": "collage 2 by 1", "control": "collage", "photos": ["chart"], "expect": [{"metric": "mean_sat", "dir": "up", "vs": "collage-left", "region": [0.6, 0.2, 0.9, 0.8], "min": 30}, {"metric": "diff", "dir": "same", "vs": "collage-left", "region": [0.05, 0.1, 0.45, 0.9], "min": 2}]},
+    {"id": "collage-left", "command": "collage 2 by 1", "control": "collage", "photos": ["warm"], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "collage-background", "region": [0.493, 0.2, 0.507, 0.8], "min": 100}]},
+    {"id": "collage-layout", "command": "collage layout 1 by 2 collage", "control": "collageLayout", "photos": ["chart"], "expect": [{"metric": "aspect", "dir": "down", "min": 0.2}]},
+    {"id": "collage-spacing", "command": "collage 2 by 1 collage spacing 8", "control": "collageSpacing", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "collage", "region": [0.465, 0.3, 0.535, 0.7], "min": 60}]},
+    {"id": "collage-background", "command": "collage 2 by 1 collage background black", "control": "collageBackground", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "down", "vs": "collage", "region": [0.493, 0.2, 0.507, 0.8], "min": 100}]}
   ]
 }

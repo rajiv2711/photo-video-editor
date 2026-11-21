@@ -40,6 +40,22 @@ struct LayersPanel: View {
                 if let l = model.state.selectedLayer, model.state.layers.indices.contains(l) {
                     selected(model.state.layers[l])
                 }
+                // The whole panel's sections: the collage (the photo as opened and the photos picked).
+                ForEach(Self.panelSections.sorted().filter { s in controls.contains { $0.section == s } }, id: \.self) { section in
+                    DisclosureGroup(isExpanded: isOpen("layers/" + section)) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(controls.filter { $0.section == section }) { control in
+                                if control.kind == .action {
+                                    makerButton(control).buttonStyle(.bordered).padding(.horizontal, 10)
+                                } else {
+                                    ControlRow(model: model, control: control)
+                                }
+                            }
+                        }
+                    } label: {
+                        Text(section).font(.subheadline.weight(.semibold))
+                    }
+                }
             }
             .padding(.top, 6)
         } label: {

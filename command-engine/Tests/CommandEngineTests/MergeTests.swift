@@ -118,7 +118,7 @@ final class MergeTests: XCTestCase {
         XCTAssertEqual(parser.parse("live photo long exposure"), [.set("livePhotoEffect", 3)])
         XCTAssertEqual(parser.parse("key frame 12"), [.set("keyFrame", 12)])
         for (id, _) in MergeTools.actions {
-            XCTAssertEqual(registry.control(id: id)?.group, "merge", id)
+            XCTAssertEqual(registry.control(id: id)?.group, id == "collage" ? "layers" : "merge", id)
             for setting in MergeTools.settings(for: MergeTools.actions[id]!) { XCTAssertNotNil(registry.control(id: setting), setting) }
         }
     }
