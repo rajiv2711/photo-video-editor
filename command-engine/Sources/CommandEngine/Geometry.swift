@@ -210,6 +210,15 @@ public struct GeometrySettings: Equatable {
     public var flipVertical: Bool
     /// Upright mode (an option id of Upright.modes: "off", "auto", "level", "vertical", "full", "guided").
     public var upright: String
+    /// The manual transform (Lightroom's Transform sliders): vertical and horizontal perspective
+    /// (−100…100), rotate (degrees), aspect (−100…100), scale (1 = 100 %), offsets (−100…100).
+    public var transformVertical = 0.0
+    public var transformHorizontal = 0.0
+    public var transformRotate = 0.0
+    public var transformAspect = 0.0
+    public var transformScale = 1.0
+    public var offsetX = 0.0
+    public var offsetY = 0.0
 
     public init(aspect: String = "free", cropLeft: Double = 0, cropTop: Double = 0, cropRight: Double = 0,
                 cropBottom: Double = 0, straighten: Double = 0, quarterTurns: Int = 0, flipHorizontal: Bool = false,
@@ -240,6 +249,33 @@ public struct GeometrySettings: Equatable {
         flipVertical = v("flipVertical") != 0
         let mode = Int(v("upright"))
         upright = Upright.modes.indices.contains(mode) ? Upright.modes[mode] : "off"
+        transformVertical = v("transformVertical")
+        transformHorizontal = v("transformHorizontal")
+        transformRotate = v("transformRotate")
+        transformAspect = v("transformAspect")
+        transformScale = Swift.max(0.1, (value("transformScale") ?? 100) / 100)
+        offsetX = v("transformOffsetX")
+        offsetY = v("transformOffsetY")
+    }
+
+    /// The manual transform in pixels of a `width` × `height` photo (the frame keeps its size): a camera
+    /// turn for Vertical (pitch, up to 25°: + widens the top), Horizontal (yaw, up to 25°: + makes the
+    /// right side taller) and Rotate, keeping the middle in place; then Aspect (+ wider, up to 1.41×),
+    /// Scale and the offsets (up to half the frame), about the middle.
+    public func manualTransform(width: Double, height: Double) -> Homography {
+        guard transformVertical != 0 || transformHorizontal != 0 || transformRotate != 0 || transformAspect != 0
+            || transformScale != 1 || offsetX != 0 || offsetY != 0 else { return .identity }
+        let camera = Upright.Camera(f: Upright.defaultFocal(width: width, height: height), cx: width / 2, cy: height / 2)
+        let p = transformVertical / 100 * 25 * Double.pi / 180, y = transformHorizontal / 100 * 25 * Double.pi / 180
+        let r = transformRotate * Double.pi / 180
+        let rx = Homography([1, 0, 0, 0, cos(p), -sin(p), 0, sin(p), cos(p)])
+        let ry = Homography([cos(y), 0, sin(y), 0, 1, 0, -sin(y), 0, cos(y)])
+        let rz = Homography([cos(r), -sin(r), 0, sin(r), cos(r), 0, 0, 0, 1])
+        let turned = Upright.centred(camera.transform((rz * ry * rx).m), width: width, height: height)
+        let stretch = pow(2, transformAspect / 200)
+        let around = Homography.translation(width / 2 + offsetX / 200 * width, height / 2 + offsetY / 200 * height)
+            * Homography.scale(transformScale * stretch, transformScale / stretch) * Homography.translation(-width / 2, -height / 2)
+        return around * turned
     }
 }
 
@@ -270,7 +306,8 @@ public struct GeometryPlan: Equatable {
         self.stage = stage
         let corners = [Vec2(0, 0), Vec2(width, 0), Vec2(width, height), Vec2(0, height)]
         // Upright: the perspective correction the photo's lines ask for.
-        let pre = Upright.transform(mode: settings.upright, segments: segments, width: width, height: height, guides: edits.guides)
+        let pre = settings.manualTransform(width: width, height: height)
+            * Upright.transform(mode: settings.upright, segments: segments, width: width, height: height, guides: edits.guides)
         // Straighten turns the picture about the frame's middle; then the quarter turns (which swap
         // the frame's sides) and the flips, about the middle too.
         let turned = settings.quarterTurns % 2 == 1 && stage != .source

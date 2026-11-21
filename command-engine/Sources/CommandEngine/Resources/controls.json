@@ -1080,6 +1080,20 @@
     {"id": "guidedUpright", "label": "Guided Upright", "group": "geometry", "section": "Upright", "kind": "action",
       "synonyms": ["guided", "draw guides", "guide tool", "guides tool", "upright guides", "guided perspective", "draw upright guides"]},
     {"id": "clearGuides", "label": "Clear Guides", "group": "geometry", "section": "Upright", "kind": "action",
-      "synonyms": ["delete guides", "remove guides", "reset guides", "erase guides", "clear the guides", "no guides"]}
+      "synonyms": ["delete guides", "remove guides", "reset guides", "erase guides", "clear the guides", "no guides"]},
+    {"id": "transformVertical", "label": "Transform Vertical", "group": "geometry", "section": "Transform", "min": -100, "max": 100, "default": 0, "step": 5,
+      "synonyms": ["vertical", "vertical perspective", "keystone", "vertical keystone", "keystone vertical", "vertical transform"]},
+    {"id": "transformHorizontal", "label": "Transform Horizontal", "group": "geometry", "section": "Transform", "min": -100, "max": 100, "default": 0, "step": 5,
+      "synonyms": ["horizontal", "horizontal perspective", "horizontal keystone", "keystone horizontal", "horizontal transform"]},
+    {"id": "transformRotate", "label": "Transform Rotate", "group": "geometry", "section": "Transform", "min": -10, "max": 10, "default": 0, "step": 0.5,
+      "synonyms": ["transform rotation", "rotate transform", "fine rotate", "fine rotation"]},
+    {"id": "transformAspect", "label": "Transform Aspect", "group": "geometry", "section": "Transform", "min": -100, "max": 100, "default": 0, "step": 5,
+      "synonyms": ["aspect", "stretch", "transform stretch", "aspect stretch"]},
+    {"id": "transformScale", "label": "Transform Scale", "group": "geometry", "section": "Transform", "min": 50, "max": 150, "default": 100, "step": 5,
+      "synonyms": ["scale", "image scale", "transform size", "scale image"]},
+    {"id": "transformOffsetX", "label": "Offset X", "group": "geometry", "section": "Transform", "min": -100, "max": 100, "default": 0, "step": 5,
+      "synonyms": ["x offset", "horizontal offset", "transform x offset", "offset horizontal", "shift x", "transform offset x"]},
+    {"id": "transformOffsetY", "label": "Offset Y", "group": "geometry", "section": "Transform", "min": -100, "max": 100, "default": 0, "step": 5,
+      "synonyms": ["y offset", "vertical offset", "transform y offset", "offset vertical", "shift y", "transform offset y"]}
   ]
 }

@@ -397,6 +397,14 @@
     {"id": "upright", "command": "upright vertical", "source": "building", "control": "upright", "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}, {"metric": "tilt", "dir": "same", "vs": "building"}]},
     {"id": "upright-auto", "command": "auto upright", "source": "building", "control": "upright", "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}]},
     {"id": "guided-upright", "command": "guided upright upright off", "source": "building", "control": "guidedUpright", "strokes": [[[0.2893, 0.1], [0.2021, 0.9]], [[0.7238, 0.1], [0.8163, 0.9]]], "steps": [{"command": "upright guided"}, {"command": "done"}], "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}]},
-    {"id": "clear-guides", "command": "guided upright", "source": "building", "control": "clearGuides", "strokes": [[[0.2893, 0.1], [0.2021, 0.9]]], "steps": [{"command": "clear guides"}, {"command": "done"}], "expect": [{"metric": "diff", "dir": "same", "vs": "building"}]}
+    {"id": "clear-guides", "command": "guided upright", "source": "building", "control": "clearGuides", "strokes": [[[0.2893, 0.1], [0.2021, 0.9]]], "steps": [{"command": "clear guides"}, {"command": "done"}], "expect": [{"metric": "diff", "dir": "same", "vs": "building"}]},
+
+    {"id": "transform-vertical", "command": "vertical 50", "source": "grid", "control": "transformVertical", "expect": [{"metric": "vertical_spread", "dir": "up", "vs": "grid", "min": 1.5}]},
+    {"id": "transform-horizontal", "command": "horizontal 50", "source": "grid", "control": "transformHorizontal", "expect": [{"metric": "diff", "dir": "changed", "vs": "grid", "min": 5}, {"metric": "vertical_spread", "dir": "same", "vs": "grid"}]},
+    {"id": "transform-rotate", "command": "transform rotate 5", "source": "grid", "control": "transformRotate", "expect": [{"metric": "tilt", "dir": "up", "vs": "grid", "min": 3}]},
+    {"id": "transform-aspect", "command": "aspect 50", "control": "transformAspect", "expect": [{"metric": "height", "dir": "down", "min": 50}, {"metric": "aspect", "dir": "same"}]},
+    {"id": "transform-scale", "command": "scale 120", "control": "transformScale", "expect": [{"metric": "width", "dir": "same"}, {"metric": "diff", "dir": "changed", "min": 5}]},
+    {"id": "offset-x", "command": "offset x 20", "control": "transformOffsetX", "expect": [{"metric": "width", "dir": "down", "min": 50}]},
+    {"id": "offset-y", "command": "offset y 20", "control": "transformOffsetY", "expect": [{"metric": "height", "dir": "down", "min": 50}]}
   ]
 }

@@ -483,6 +483,43 @@ final class GeometryTests: XCTestCase {
         XCTAssertTrue(state.geometry.guides.isEmpty)
     }
 
+    func testManualTransformSliders() {
+        let w = 600.0, h = 400.0
+        func plan(_ s: GeometrySettings) -> GeometryPlan { GeometryPlan(settings: s, width: w, height: h) }
+        func edge(_ p: GeometryPlan, _ i: Int, _ j: Int) -> Double { (p.photoCorners[j] - p.photoCorners[i]).length }
+        var s = GeometrySettings()
+        s.transformVertical = 50
+        let vertical = plan(s)
+        XCTAssertGreaterThan(edge(vertical, 0, 1), edge(vertical, 3, 2) + 10, "+ widens the top")
+        assertClose(vertical.transform.apply(Vec2(w / 2, h / 2)), Vec2(w / 2, h / 2), 1e-6)
+        s = GeometrySettings()
+        s.transformHorizontal = 50
+        let horizontal = plan(s)
+        XCTAssertGreaterThan(edge(horizontal, 1, 2), edge(horizontal, 0, 3) + 10, "+ makes the right side taller")
+        // A pure yaw keeps upright lines upright.
+        let a = horizontal.transform.apply(Vec2(100, 50)), b = horizontal.transform.apply(Vec2(100, 350))
+        XCTAssertEqual(a.x, b.x, accuracy: 1e-6)
+        s = GeometrySettings()
+        s.transformRotate = 5
+        XCTAssertTrue(plan(s).transform.isClose(to: GeometryPlan(settings: GeometrySettings(straighten: 5), width: w, height: h).transform, tolerance: 1e-9))
+        s = GeometrySettings()
+        s.transformScale = 0.8
+        XCTAssertEqual(plan(s).crop.width, 480, accuracy: 1, "a smaller photo: the crop shrinks inside it")
+        s.transformScale = 1.2
+        XCTAssertEqual(plan(s).crop.width, 600, "a larger photo fills the frame")
+        s = GeometrySettings()
+        s.offsetX = 20
+        XCTAssertEqual(plan(s).photoCorners[0].x, 60, accuracy: 1e-9, "20 moves a tenth of the width")
+        XCTAssertLessThan(plan(s).crop.width, 600)
+        s = GeometrySettings()
+        s.transformAspect = 100
+        XCTAssertEqual(edge(plan(s), 0, 1) / edge(plan(s), 1, 2), 1.5 * 2, accuracy: 1e-6, "+100: twice as wide for its height")
+        let values: [String: Double] = ["transformScale": 120, "transformOffsetY": -10]
+        let read = GeometrySettings(value: { values[$0] })
+        XCTAssertEqual(read.transformScale, 1.2)
+        XCTAssertEqual(read.offsetY, -10)
+    }
+
     func testUprightNames() {
         XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
         XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])

@@ -812,3 +812,18 @@
 {"group":"geometry","text":"clear guides","expect":[{"op":"run","control":"clearGuides"}]}
 {"group":"geometry","text":"reset guides","expect":[{"op":"run","control":"clearGuides"}]}
 {"group":"geometry","text":"remove guides","expect":[{"op":"run","control":"clearGuides"}]}
+{"group":"geometry","text":"vertical 30","expect":[{"op":"set","control":"transformVertical","value":30}]}
+{"group":"geometry","text":"keystone more","expect":[{"op":"nudge","control":"transformVertical","steps":1}]}
+{"group":"geometry","text":"horizontal -20","expect":[{"op":"set","control":"transformHorizontal","value":-20}]}
+{"group":"geometry","text":"horizontal perspective 15","expect":[{"op":"set","control":"transformHorizontal","value":15}]}
+{"group":"geometry","text":"transform rotate 2","expect":[{"op":"set","control":"transformRotate","value":2}]}
+{"group":"geometry","text":"fine rotate minus 1.5","expect":[{"op":"set","control":"transformRotate","value":-1.5}]}
+{"group":"geometry","text":"aspect 20","expect":[{"op":"set","control":"transformAspect","value":20}]}
+{"group":"geometry","text":"stretch less","expect":[{"op":"nudge","control":"transformAspect","steps":-1}]}
+{"group":"geometry","text":"scale 110","expect":[{"op":"set","control":"transformScale","value":110}]}
+{"group":"geometry","text":"reset scale","expect":[{"op":"reset","control":"transformScale"}]}
+{"group":"geometry","text":"offset x 10","expect":[{"op":"set","control":"transformOffsetX","value":10}]}
+{"group":"geometry","text":"x offset minus 10","expect":[{"op":"set","control":"transformOffsetX","value":-10}]}
+{"group":"geometry","text":"offset y 15","expect":[{"op":"set","control":"transformOffsetY","value":15}]}
+{"group":"geometry","text":"vertical offset more","expect":[{"op":"nudge","control":"transformOffsetY","steps":1}]}
+{"group":"geometry","text":"vertical upright","expect":[{"op":"set","control":"upright","value":3}]}
