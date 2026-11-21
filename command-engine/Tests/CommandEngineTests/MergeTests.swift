@@ -573,3 +573,69 @@ final class LivePhotoTests: XCTestCase {
         XCTAssertLessThan(place, 0.25)
     }
 }
+
+/// Portrait depth: depth maps, the subject, blur amounts.
+final class PortraitTests: XCTestCase {
+    /// A disparity map: a near disc (subject) in the middle of a far, slightly sloping background.
+    static func disparity(width: Int = 40, height: Int = 30) -> [Float] {
+        (0..<(width * height)).map { i in
+            let x = Float(i % width), y = Float(i / width)
+            let inside = hypotf(x - Float(width) / 2, y - Float(height) / 2) < Float(height) / 4
+            return inside ? 2.0 : 0.3 + 0.2 * y / Float(height)
+        }
+    }
+
+    func testDepthMapIsStretchedAndSplitIntoSubjectAndBackground() {
+        let map = Portrait.DepthMap(disparity: Self.disparity(), width: 40, height: 30)
+        XCTAssertEqual(map.depth(at: MaskPoint(0.5, 0.5)), 1, accuracy: 0.01, "the subject is nearest")
+        XCTAssertLessThan(map.depth(at: MaskPoint(0.05, 0.05)), 0.1)
+        XCTAssertGreaterThan(map.threshold, 0.2)
+        XCTAssertLessThan(map.threshold, 0.95)
+        let subject = map.subject
+        XCTAssertGreaterThan(subject[15 * 40 + 20], 0.99)
+        XCTAssertLessThan(subject[2 * 40 + 2], 0.01)
+    }
+
+    func testOtsuSplitsTwoGroups() {
+        let values = [Float](repeating: 0.2, count: 100) + [Float](repeating: 0.8, count: 50)
+        let t = Portrait.otsu(values)
+        XCTAssertGreaterThan(t, 0.2)
+        XCTAssertLessThanOrEqual(t, 0.8)
+    }
+
+    func testBlurGrowsWithTheApertureAndAwayFromFocus() {
+        XCTAssertEqual(Portrait.blurRadius(aperture: 16, longSide: 1000), 0, accuracy: 1e-9)
+        XCTAssertEqual(Portrait.blurRadius(aperture: 1.4, longSide: 1000), 20, accuracy: 1e-9)
+        XCTAssertGreaterThan(Portrait.blurRadius(aperture: 2.8, longSide: 1000), Portrait.blurRadius(aperture: 5.6, longSide: 1000))
+        let map = Portrait.DepthMap(disparity: Self.disparity(), width: 40, height: 30)
+        let onSubject = Portrait.blurMask(map, focus: 1)
+        XCTAssertEqual(onSubject[15 * 40 + 20], 0, "the focus stays sharp")
+        XCTAssertGreaterThan(onSubject[2 * 40 + 2], 0.9, "the far background blurs")
+        let onBackground = Portrait.blurMask(map, focus: map.depth(at: MaskPoint(0.05, 0.05)))
+        XCTAssertGreaterThan(onBackground[15 * 40 + 20], 0.9)
+        XCTAssertLessThan(onBackground[2 * 40 + 2], 0.05)
+    }
+
+    func testMatteKeepsTheSubjectSharp() {
+        var matte = [Float](repeating: 0, count: 1200)
+        matte[15 * 40 + 20] = 1
+        // A subject whose depth reads as mid-far (a wrong depth): the matte still keeps it sharp.
+        var raw = Self.disparity()
+        raw[15 * 40 + 20] = 1.0
+        let map = Portrait.DepthMap(disparity: raw, width: 40, height: 30, matte: matte)
+        XCTAssertEqual(Portrait.blurMask(map, focus: 1)[15 * 40 + 20], 0)
+        XCTAssertEqual(map.subject, matte)
+    }
+
+    func testPortraitNamesAndOptions() throws {
+        let registry = try ControlRegistry.bundled()
+        let parser = CommandParser(registry: registry)
+        XCTAssertEqual(registry.control(id: "portraitLighting")!.options.map(\.id), Portrait.lightings)
+        XCTAssertEqual(parser.parse("portrait aperture f2.8"), [.set("portraitAperture", 2.8)])
+        XCTAssertEqual(parser.parse("portrait aperture f/4"), [.set("portraitAperture", 4)])
+        XCTAssertEqual(parser.parse("aperture f 5.6"), [.set("portraitAperture", 5.6)])
+        XCTAssertEqual(parser.parse("portrait focus"), [.run("portraitFocus")])
+        XCTAssertEqual(parser.parse("portrait lighting stage"), [.set("portraitLighting", 3)])
+        XCTAssertEqual(parser.parse("portrait lighting stage mono"), [.set("portraitLighting", 4)])
+    }
+}

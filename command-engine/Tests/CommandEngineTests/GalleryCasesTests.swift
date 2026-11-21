@@ -50,7 +50,7 @@ final class GalleryCasesTests: XCTestCase {
                                "hdrpano-left-dark", "hdrpano-left-mid", "hdrpano-left-bright",
                                "hdrpano-right-dark", "hdrpano-right-mid", "hdrpano-right-bright", "focus-top", "focus-bottom",
                                "burst-1", "burst-2", "burst-3", "burst-4",
-                               "live-0", "live-1", "live-2", "live-3", "live-4", "live-5", "live-6", "live-7"]
+                               "live-0", "live-1", "live-2", "live-3", "live-4", "live-5", "live-6", "live-7", "portrait"]
 
     private var registry: ControlRegistry!
     private var cases: [Case] = []

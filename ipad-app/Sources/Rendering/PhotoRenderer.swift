@@ -5,7 +5,8 @@ import UIKit
 
 /// Turns control values (see controls.json) into Core Image filters, one panel at a time in
 /// Lightroom's processing order: optics (lens fixes, on the photo as shot) → film negative →
-/// retouching (spots and brush strokes, early as Lightroom's spot removal) → white balance → light
+/// retouching (spots and brush strokes, early as Lightroom's spot removal) → portrait depth (blur and
+/// lighting of iPhone Portrait photos) → white balance → light
 /// (exposure, tone) → color → effects → detail → masks (local adjustments) → geometry (crop, turns,
 /// transforms) → vignette and grain (after the crop, as Lightroom's post-crop vignette).
 /// Each panel has its own file in Rendering/ (LightRenderer.swift, …).
@@ -19,6 +20,7 @@ final class PhotoRenderer {
     private let masks: MaskRenderer
     let retouch: RetouchRenderer
     let geometry: GeometryRenderer
+    let portrait: PortraitRenderer
     /// The geometry of the last render (the editor maps touches on the preview back through it).
     private(set) var lastPlan: GeometryPlan?
     /// Every control by id (a mask's local pass leaves all but its own sliders at their defaults).
@@ -35,6 +37,7 @@ final class PhotoRenderer {
         self.masks = MaskRenderer(context: context)
         self.retouch = RetouchRenderer(context: context)
         self.geometry = GeometryRenderer(context: context)
+        self.portrait = PortraitRenderer(context: context)
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
         self.controls = Dictionary(registry.controls.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     }
@@ -69,7 +72,7 @@ final class PhotoRenderer {
         let lensKey = Self.opticsIDs.map { value($0) ?? 0 }
         geometry.use(lensFixed, key: lensKey)  // what Upright, content-aware scale, … read
         let retouched = retouch.apply(lensFixed, steps: retouches, source: image, key: lensKey, wait: waitForRetouch)
-        var output = color.whiteBalance(retouched, value: value)
+        var output = color.whiteBalance(portrait.apply(retouched, value: value), value: value)
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: extent, value: value)
         output = effects.apply(output, extent: extent, value: value)

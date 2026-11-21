@@ -908,3 +908,13 @@
 {"group":"merge","text":"key frame 12","expect":[{"op":"set","control":"keyFrame","value":12}]}
 {"group":"merge","text":"keyframe more","expect":[{"op":"nudge","control":"keyFrame","steps":1}]}
 {"group":"merge","text":"reset key frame","expect":[{"op":"reset","control":"keyFrame"}]}
+{"group":"merge","text":"portrait aperture f2.8","expect":[{"op":"set","control":"portraitAperture","value":2.8}]}
+{"group":"merge","text":"aperture f/4","expect":[{"op":"set","control":"portraitAperture","value":4}]}
+{"group":"merge","text":"background blur more","expect":[{"op":"nudge","control":"portraitAperture","steps":1}]}
+{"group":"merge","text":"portrait focus","expect":[{"op":"run","control":"portraitFocus"}]}
+{"group":"merge","text":"tap to focus","expect":[{"op":"run","control":"portraitFocus"}]}
+{"group":"merge","text":"focus depth 40","expect":[{"op":"set","control":"focusDepth","value":40}]}
+{"group":"merge","text":"focus distance less","expect":[{"op":"nudge","control":"focusDepth","steps":-1}]}
+{"group":"merge","text":"portrait lighting stage","expect":[{"op":"set","control":"portraitLighting","value":3}]}
+{"group":"merge","text":"portrait lighting high key mono","expect":[{"op":"set","control":"portraitLighting","value":5}]}
+{"group":"merge","text":"portrait lighting studio","expect":[{"op":"set","control":"portraitLighting","value":1}]}

@@ -490,11 +490,13 @@ final class EditorModel: ObservableObject {
         "wbPicker": "Tap something on the photo that should be neutral grey.",
         "pointColorPicker": "Tap the colour on the photo you want to change.",
         "spotSource": "Tap where the selected spot should copy from.",
+        "portraitFocus": "Tap what should be sharp: the depth there becomes the Focus Depth.",
     ]
 
     /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
     private func armPickers(_ outcomes: [CommandInterpreter.Outcome]) {
         armGeometryTools(outcomes)
+        noteMissingInputs(outcomes)
         for case .ran(let id) in outcomes {
             if let kind = MergeTools.actions[id] { merge(kind) }
         }
@@ -541,6 +543,15 @@ final class EditorModel: ObservableObject {
             } else {
                 feedback = Feedback(text: "That spot is grey. Tap a coloured area.", isProblem: true)
             }
+        case "portraitFocus":
+            // The depth under the finger is kept sharp.
+            guard let depth = renderer.portrait.depth else {
+                feedback = Feedback(text: "This photo has no depth data (take it in Portrait mode on an iPhone).", isProblem: true)
+                break
+            }
+            let outcomes = interpreter.apply([.set("focusDepth", (Double(depth.depth(at: MaskPoint(x, y))) * 100).rounded())], state: &state)
+            focusedControlID = interpreter.lastControlID
+            feedback = describe(outcomes)
         case "spotSource":
             // The selected spot copies from around the tapped point.
             if let s = state.selectedRetouch {
@@ -641,7 +652,52 @@ final class EditorModel: ObservableObject {
         mergeJob += 1
         isMerging = false
         replacePhoto(image, lens: Self.lens(of: image))
+        renderer.portrait.depth = Self.depth(in: data, context: renderer.context)
         render()
+    }
+
+    // MARK: - Portrait depth
+
+    /// The depth map and portrait matte an iPhone Portrait photo keeps in its file (nil without them).
+    private static func depth(in data: Data, context: CIContext) -> Portrait.DepthMap? {
+        func aux(_ key: CIImageOption) -> CIImage? {
+            CIImage(data: data, options: [key: true, .applyOrientationProperty: true])
+        }
+        let matte = aux(.auxiliaryPortraitEffectsMatte)
+        if let disparity = aux(.auxiliaryDisparity) {
+            return PortraitRenderer.depthMap(disparity: disparity, isDepth: false, matte: matte, context: context)
+        }
+        if let depth = aux(.auxiliaryDepth) {
+            return PortraitRenderer.depthMap(disparity: depth, isDepth: true, matte: matte, context: context)
+        }
+        return nil
+    }
+
+    /// A depth (disparity) picture for the photo, and its matte (the render gallery's made-up portrait).
+    func useDepth(disparity: CIImage, matte: CIImage? = nil) {
+        renderer.portrait.depth = PortraitRenderer.depthMap(disparity: disparity, isDepth: false, matte: matte, context: renderer.context)
+        render()
+    }
+
+    /// Says so when a Portrait or Live Photo setting is used on a photo that has no depth or video.
+    private func noteMissingInputs(_ outcomes: [CommandInterpreter.Outcome]) {
+        var ids: [String] = []
+        for outcome in outcomes {
+            switch outcome {
+            case .changed(let id, _, _), .ran(let id), .unchanged(let id, _): ids.append(id)
+            default: break
+            }
+        }
+        let sections = Set(ids.compactMap { registry.control(id: $0) }.filter { $0.group == "merge" }.compactMap(\.section))
+        var note: String?
+        if sections.contains("Portrait"), renderer.portrait.depth == nil {
+            note = "this photo has no depth data (take it in Portrait mode on an iPhone)"
+        } else if sections.contains("Live Photo"), livePhoto == nil {
+            note = "open a Live Photo first"
+        }
+        if let note {
+            feedback = Feedback(text: (feedback.map { $0.text + " · " } ?? "") + note, isProblem: true)
+        }
     }
 
     // MARK: - Live Photo

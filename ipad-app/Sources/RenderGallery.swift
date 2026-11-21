@@ -115,6 +115,7 @@ enum RenderGallery {
             let key = source ?? "photo"
             if let existing = models[key] { return existing }
             let made = EditorModel(image: sourceImage(source, photo: small), previewSide: longSide)
+            if source == "portrait" { made.useDepth(disparity: portraitDepth(small)) }
             made.waitsForRetouch = true
             made.waitsForMerge = true
             made.showsPreview = false  // only the final picture of each case is saved
@@ -203,6 +204,8 @@ enum RenderGallery {
     ///   the top (stack averaging; see `burst`).
     /// - "live-0" … "live-7": a Live Photo's photo and frames: the test photo with a little camera
     ///   shake and a dark disc crossing the top (see `liveFrame`).
+    /// - "portrait": the lens of the test photo in front of the soft grid, with a made-up depth map
+    ///   (`portraitDepth`: the lens near, the grid far, a little nearer towards the bottom).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         if let source, source.hasPrefix("hdrpano-") {
             let parts = source.split(separator: "-")
@@ -217,6 +220,11 @@ enum RenderGallery {
             return liveFrame(photo, n)
         }
         switch source {
+        case "portrait":
+            // The lens (the subject) in front of the soft grid.
+            guard let grid = softGrid(size: photo.extent.integral.size) else { return photo }
+            let background = CIImage(cgImage: grid).transformed(by: CGAffineTransform(translationX: photo.extent.minX, y: photo.extent.minY))
+            return Filters.blend(photo, over: background, mask: portraitSubject(photo)).cropped(to: photo.extent)
         case "focus-top", "focus-bottom":
             // Sharp above or below the middle, blurred (3 px) on the other side, with a soft change.
             let e = photo.extent
@@ -427,6 +435,27 @@ enum RenderGallery {
 
     /// The "skewed" page's corners (x, y from the top-left, 0…1): top-left, top-right, bottom-right, bottom-left.
     static let skewedCorners: [(x: CGFloat, y: CGFloat)] = [(0.18, 0.12), (0.86, 0.20), (0.80, 0.88), (0.12, 0.80)]
+
+    /// Where the lens is in the test photo: its dark body, with the holes (bright glass, lettering) closed.
+    static func portraitSubject(_ photo: CIImage) -> CIImage {
+        let e = photo.extent
+        let dark = Filters.lookup(Filters.luma(Filters.encoded(photo)), table: Effects.table(count: 256) { $0 < 0.35 ? 1 : 0 })
+        let closed = Filters.lookup(Filters.blurred(dark, radius: 10, extent: e), table: Effects.table(count: 256) { $0 > 0.25 ? 1 : 0 })
+        return Filters.blurred(closed, radius: 1.5, extent: e)
+    }
+
+    /// The "portrait" picture's disparity (bigger = nearer): the lens 1, the grid 0.1 at the top to 0.3 at the bottom.
+    static func portraitDepth(_ photo: CIImage) -> CIImage {
+        let e = photo.extent
+        let floor = CIFilter(name: "CILinearGradient", parameters: [
+            "inputPoint0": CIVector(x: e.midX, y: e.maxY),
+            "inputPoint1": CIVector(x: e.midX, y: e.minY),
+            "inputColor0": CIColor(red: 0.1, green: 0.1, blue: 0.1),
+            "inputColor1": CIColor(red: 0.3, green: 0.3, blue: 0.3),
+        ])?.outputImage?.cropped(to: e) ?? CIImage(color: CIColor(red: 0.2, green: 0.2, blue: 0.2)).cropped(to: e)
+        let near = CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: e)
+        return Filters.blend(near, over: floor, mask: portraitSubject(photo))
+    }
 
     /// The camera shake of "live-0" … "live-7" (pixels right and down).
     static let liveShake: [(x: CGFloat, y: CGFloat)] = [(0, 0), (1, -1), (2, 0), (-1, 1), (2, 2), (0, -2), (-2, 1), (1, 1)]

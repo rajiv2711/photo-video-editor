@@ -1191,6 +1191,20 @@
                   {"id": "bounce", "label": "Bounce", "synonyms": ["boomerang", "back and forth"]},
                   {"id": "longExposure", "label": "Long Exposure", "synonyms": ["long-exposure", "slow shutter", "motion blur"]}]},
     {"id": "keyFrame", "label": "Key Frame", "group": "merge", "section": "Live Photo", "min": 0, "max": 150, "default": 0, "step": 1,
-      "synonyms": ["keyframe", "key photo", "cover frame", "live photo frame", "key image"]}
+      "synonyms": ["keyframe", "key photo", "cover frame", "live photo frame", "key image"]},
+    {"id": "portraitAperture", "label": "Portrait Aperture", "group": "merge", "section": "Portrait", "min": 1.4, "max": 16, "default": 16, "step": 0.5,
+      "synonyms": ["aperture", "f stop", "f-stop", "f number", "depth effect", "portrait depth", "background blur", "portrait blur"]},
+    {"id": "portraitFocus", "label": "Portrait Focus", "group": "merge", "section": "Portrait", "kind": "action",
+      "synonyms": ["focus point", "tap to focus", "focus picker", "set focus", "pick focus", "portrait focus point"]},
+    {"id": "focusDepth", "label": "Focus Depth", "group": "merge", "section": "Portrait", "min": 0, "max": 100, "default": 100, "step": 5,
+      "synonyms": ["focus distance", "focal plane", "focus plane", "portrait focus depth"]},
+    {"id": "portraitLighting", "label": "Portrait Lighting", "group": "merge", "section": "Portrait", "kind": "choice",
+      "synonyms": ["portrait light", "portrait lighting effect", "portrait lights", "portrait lighting preset"],
+      "options": [{"id": "natural", "label": "Natural", "synonyms": ["natural light", "none", "off"]},
+                  {"id": "studio", "label": "Studio", "synonyms": ["studio light"]},
+                  {"id": "contour", "label": "Contour", "synonyms": ["contour light"]},
+                  {"id": "stage", "label": "Stage", "synonyms": ["stage light"]},
+                  {"id": "stageMono", "label": "Stage Mono", "synonyms": ["stage light mono", "stage black and white"]},
+                  {"id": "highKeyMono", "label": "High-Key Mono", "synonyms": ["high key mono", "high-key", "high key", "high key light mono"]}]}
   ]
 }

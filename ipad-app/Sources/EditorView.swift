@@ -23,7 +23,8 @@ struct EditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    PhotosPicker(selection: $pickerItem, matching: .images) {
+                    // The original file (.current), so a Portrait photo keeps its depth map.
+                    PhotosPicker(selection: $pickerItem, matching: .images, preferredItemEncoding: .current) {
                         Label("Open Photo", systemImage: "photo.on.rectangle")
                     }
                 }

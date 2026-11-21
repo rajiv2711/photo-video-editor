@@ -73,6 +73,8 @@ public struct CommandParser {
 
         while let token = tokens.popFirst() {
             if Self.fillers.contains(token) { continue }
+            // "aperture f 5.6": an f-number said as "f" then the number.
+            if token == "f", let next = tokens.first, Self.number(next) != nil { continue }
 
             // A choice's option ("white balance cloudy") comes before every other reading:
             // option names may also be words like "auto". Actions may have options too
@@ -289,6 +291,12 @@ public struct CommandParser {
 
     static func number(_ token: String) -> Double? {
         if token == "zero" { return 0 }
+        // f-numbers: "f2.8", "f/4".
+        if token.hasPrefix("f") {
+            let rest = token.hasPrefix("f/") ? token.dropFirst(2) : token.dropFirst()
+            guard let first = rest.first, first.isNumber else { return nil }
+            return Double(rest)
+        }
         return Double(token.replacingOccurrences(of: "%", with: ""))
     }
 
