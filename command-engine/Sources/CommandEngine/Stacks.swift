@@ -3,14 +3,16 @@ import Foundation
 /// Lines photos of one scene up with the middle one (Align), as focus stacking and stack averaging do.
 enum Lineup {
     /// The photos moved onto the middle one (the reference), and which pixels of each are its own (1)
-    /// or repeated edge (0).
-    static func aligned(_ photos: [FloatImage]) -> (photos: [FloatImage], valid: [[Float]], reference: Int) {
+    /// or repeated edge (0). `blur`: a share of the small side both are blurred by while lining up
+    /// (photos sharp in different places, or noisy).
+    static func aligned(_ photos: [FloatImage], blur: Double = 0) -> (photos: [FloatImage], valid: [[Float]], reference: Int) {
         let ref = photos.count / 2
         let refLuma = photos[ref].luma
+        let radius = blur > 0 ? max(1, Int(blur * Double(min(refLuma.width, refLuma.height)))) : 0
         var out = photos
         var valid = [[Float]](repeating: [Float](repeating: 1, count: photos[ref].count), count: photos.count)
         for k in photos.indices where k != ref {
-            let shift = Align.translation(reference: refLuma, image: photos[k].luma)
+            let shift = Align.translation(reference: refLuma, image: photos[k].luma, blur: radius)
             (out[k], valid[k]) = Align.shifted(photos[k], by: shift)
         }
         return (out, valid, ref)
@@ -26,7 +28,8 @@ public enum FocusStack {
     public static func merge(_ slices: [FloatImage]) -> FloatImage {
         guard let first = slices.first else { return FloatImage(width: 0, height: 0, channels: 3) }
         guard slices.count > 1 else { return first }
-        let (photos, valid, _) = Lineup.aligned(slices)
+        // Blurred alike while lining up (1.5 % of the small side), so their sharpness doesn't matter.
+        let (photos, valid, _) = Lineup.aligned(slices, blur: 0.015)
         let w = first.width, h = first.height
         let measures = photos.indices.map { k in zip(sharpness(photos[k]), valid[k]).map { $0 * $1 } }
         // Each pixel: the sharpest photo.
@@ -66,8 +69,9 @@ public enum Stack {
     public static func merge(_ photos: [FloatImage], mode: Mode, align: Bool = true) -> FloatImage {
         guard let first = photos.first else { return FloatImage(width: 0, height: 0, channels: 3) }
         guard photos.count > 1 else { return first }
+        // (A light blur while lining up keeps noise out of it.)
         let lined: (photos: [FloatImage], valid: [[Float]], reference: Int) =
-            align ? Lineup.aligned(photos) : (photos, [[Float]](repeating: [], count: photos.count), 0)
+            align ? Lineup.aligned(photos, blur: 0.004) : (photos, [[Float]](repeating: [], count: photos.count), 0)
         let n = photos.count, count = first.count, channels = first.channels
         var out = first
         var values = [Float](repeating: 0, count: n)

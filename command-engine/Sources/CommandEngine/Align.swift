@@ -24,9 +24,18 @@ public enum Align {
     }
 
     /// The shift that lines `image` up with `reference` (one-channel pictures of one size), up to
-    /// about `maxShare` of the small side.
-    public static func translation(reference: FloatImage, image: FloatImage, maxShare: Double = 0.06) -> Shift {
+    /// about `maxShare` of the small side. `blur` (pixels): both are blurred alike first, for pictures
+    /// whose sharpness differs (focus slices: a sharp and a blurred edge cross the threshold at
+    /// different places, which would pull the shift off by a few pixels).
+    public static func translation(reference: FloatImage, image: FloatImage, maxShare: Double = 0.06, blur: Int = 0) -> Shift {
         guard reference.width == image.width, reference.height == image.height, reference.count > 0 else { return .zero }
+        if blur > 0 {
+            func soft(_ g: FloatImage) -> FloatImage {
+                let l = g.luma
+                return FloatImage(width: l.width, height: l.height, channels: 1, data: Grid.blur(l.data, width: l.width, height: l.height, radius: blur))
+            }
+            return translation(reference: soft(reference), image: soft(image), maxShare: maxShare)
+        }
         let side = Double(min(reference.width, reference.height))
         // Levels: each doubles the reach; the coarsest level stays at least 24 pixels across.
         var levels = 1
@@ -40,15 +49,23 @@ public enum Align {
         // The thresholds come from the part both pictures show, so they mark the same scene
         // brightness: first the whole pictures, then the overlap the shift found leaves (twice at most).
         var shift = Shift.zero
+        var thresholds: (Float, Float) = (0.5, 0.5)
         for pass in 0..<3 {
-            let ta = threshold(a[0], quantile: q, overlap: shift, moved: false)
-            let tb = threshold(b[0], quantile: q, overlap: shift, moved: true)
-            let found = search(a, b, thresholds: (ta, tb))
+            thresholds = (threshold(a[0], quantile: q, overlap: shift, moved: false), threshold(b[0], quantile: q, overlap: shift, moved: true))
+            let found = search(a, b, thresholds: thresholds)
             if pass > 0, found == shift { break }
             shift = found
         }
-        return shift
+        // A shift that hardly beats none is a bias (pictures blurred differently, say), not a move.
+        guard shift != .zero else { return shift }
+        let ta = bitmaps(a[0], threshold: thresholds.0), tb = bitmaps(b[0], threshold: thresholds.1)
+        let moved = disagreement(ta, tb, width: a[0].width, height: a[0].height, shift: shift)
+        let still = disagreement(ta, tb, width: a[0].width, height: a[0].height, shift: .zero)
+        return Double(moved) < minimumGain * Double(still) ? shift : .zero
     }
+
+    /// A found shift must leave at most this share of the disagreement no shift leaves.
+    static let minimumGain = 0.8
 
     /// Coarse to fine: ±1 pixel per level around the shift found on the level above.
     static func search(_ a: [FloatImage], _ b: [FloatImage], thresholds: (Float, Float)) -> Shift {
