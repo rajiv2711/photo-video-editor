@@ -27,6 +27,9 @@ final class RetouchRenderer {
         let extent: CGRect
         /// Used on the queue only.
         var canvas: RetouchCanvas?
+        /// The picture's alpha (a downscaled photo's border pixels are partly covered): retouching
+        /// works on the colours, and the alpha goes back unchanged. Set once, when the slot is made.
+        var alpha: [Float] = []
         /// The last finished picture, the steps it shows and the sources picked for them (main thread).
         var finished: (steps: [Retouch], image: CIImage, sources: [Int: MaskPoint])?
         /// Steps a background job is drawing (main thread).
@@ -54,25 +57,23 @@ final class RetouchRenderer {
     func apply(_ image: CIImage, steps: [Retouch], source: CIImage, key: [Double], wait: Bool) -> CIImage {
         guard !steps.isEmpty else { return image }
         let slot = self.slot(for: image, source: source, key: key)
-        // The retouched picture covers whole pixels: a part-pixel edge (a downscaled photo's) stays as it was.
-        func over(_ retouched: CIImage) -> CIImage { retouched.composited(over: image) }
         if let finished = slot.finished {
-            if finished.steps == steps { return over(finished.image) }
+            if finished.steps == steps { return finished.image }
             // The same steps with the sources picked for them now kept in the edit: the same picture.
             if !finished.sources.isEmpty, Self.pinned(finished.steps, finished.sources) == steps {
                 slot.finished = (steps: steps, image: finished.image, sources: [:])
-                return over(finished.image)
+                return finished.image
             }
         }
-        let extent = slot.extent
+        let extent = slot.extent, alpha = slot.alpha
         if wait {
             var result: RetouchResult?
             queue.sync { result = slot.canvas?.render(steps) }
             guard let result else { return image }
-            let picture = Self.picture(result.image, extent: extent)
+            let picture = Self.picture(result.image, alpha: alpha, extent: extent)
             slot.finished = (steps: steps, image: picture, sources: result.sources)
             slot.pending = nil
-            return over(picture)
+            return picture
         }
         lock.lock()
         wanted = steps
@@ -90,7 +91,7 @@ final class RetouchRenderer {
                     }
                     return
                 }
-                let picture = Self.picture(result.image, extent: extent)
+                let picture = Self.picture(result.image, alpha: alpha, extent: extent)
                 DispatchQueue.main.async {
                     guard slot.pending == steps else { return }
                     slot.pending = nil
@@ -99,7 +100,7 @@ final class RetouchRenderer {
                 }
             }
         }
-        return slot.finished.map { over($0.image) } ?? image
+        return slot.finished?.image ?? image
     }
 
     /// Where points on the preview were before its liquify strokes (spots made after liquifying are
@@ -137,36 +138,53 @@ final class RetouchRenderer {
         if let old = slots.first(where: { $0.extent == extent })?.finished {
             slot.finished = (steps: [], image: old.image, sources: [:])
         }
-        let base = read(image)
+        let (base, alpha) = read(image)
+        slot.alpha = alpha
         queue.async { slot.canvas = RetouchCanvas(base: base) }
         slots.insert(slot, at: 0)
         if slots.count > 2 { slots.removeLast() }
         return slot
     }
 
-    /// The picture as numbers on sRGB levels (HDR levels kept above 1).
-    private func read(_ image: CIImage) -> RGBBuffer {
+    /// The picture as numbers on sRGB levels (HDR levels kept above 1), colours not premultiplied by
+    /// alpha, and the alpha.
+    private func read(_ image: CIImage) -> (RGBBuffer, [Float]) {
         let extent = image.extent
         let width = Int(extent.width.rounded(.up)), height = Int(extent.height.rounded(.up))
         guard width > 0, height > 0, let space = CGColorSpace(name: CGColorSpace.extendedSRGB) else {
-            return RGBBuffer(width: 0, height: 0, pixels: [])
+            return (RGBBuffer(width: 0, height: 0, pixels: []), [])
         }
         var rgba = [Float](repeating: 0, count: width * height * 4)
-        context.render(image.clampedToExtent(), toBitmap: &rgba, rowBytes: width * 16,
+        context.render(image, toBitmap: &rgba, rowBytes: width * 16,
                        bounds: CGRect(x: extent.minX, y: extent.minY, width: CGFloat(width), height: CGFloat(height)),
                        format: .RGBAf, colorSpace: space)
-        return RGBBuffer(width: width, height: height, rgba: rgba)
+        var alpha = [Float](repeating: 1, count: width * height)
+        for i in 0..<(width * height) {
+            let a = rgba[4 * i + 3]
+            alpha[i] = a
+            if a > 0, a < 1 {
+                for c in 0..<3 { rgba[4 * i + c] /= a }
+            }
+        }
+        return (RGBBuffer(width: width, height: height, rgba: rgba), alpha)
     }
 
-    /// Numbers back into a picture over the whole pixels of `extent`.
-    static func picture(_ buffer: RGBBuffer, extent: CGRect) -> CIImage {
+    /// Numbers back into a picture over `extent`, premultiplied by the alpha they were read with.
+    static func picture(_ buffer: RGBBuffer, alpha: [Float], extent: CGRect) -> CIImage {
         guard buffer.width > 0, buffer.height > 0, let space = CGColorSpace(name: CGColorSpace.extendedSRGB) else {
             return CIImage.empty()
         }
-        let data = buffer.rgba.withUnsafeBufferPointer { Data(buffer: $0) }
+        var rgba = buffer.rgba
+        if alpha.count == buffer.width * buffer.height {
+            for i in alpha.indices where alpha[i] < 1 {
+                for c in 0..<3 { rgba[4 * i + c] *= alpha[i] }
+                rgba[4 * i + 3] = alpha[i]
+            }
+        }
+        let data = rgba.withUnsafeBufferPointer { Data(buffer: $0) }
         return CIImage(bitmapData: data, bytesPerRow: buffer.width * 16, size: CGSize(width: buffer.width, height: buffer.height),
                        format: .RGBAf, colorSpace: space)
             .transformed(by: CGAffineTransform(translationX: extent.minX, y: extent.minY))
-            .cropped(to: CGRect(x: extent.minX, y: extent.minY, width: extent.width.rounded(.down), height: extent.height.rounded(.down)))
+            .cropped(to: extent)
     }
 }
