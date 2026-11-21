@@ -1351,3 +1351,18 @@
 {"group":"camera","text":"tethered capture off","expect":[{"op":"set","control":"tetheredCapture","value":0}]}
 {"group":"camera","text":"tethered shot","expect":[{"op":"run","control":"tetheredShot"}]}
 {"group":"camera","text":"fire shutter","expect":[{"op":"run","control":"tetheredShot"}]}
+{"group":"camera","text":"pro camera","expect":[{"op":"run","control":"proCamera"}]}
+{"group":"camera","text":"camera","expect":[{"op":"run","control":"proCamera"}]}
+{"group":"camera","text":"iso 400","expect":[{"op":"set","control":"cameraISO","value":400}]}
+{"group":"camera","text":"camera iso 800","expect":[{"op":"set","control":"cameraISO","value":800}]}
+{"group":"camera","text":"shutter 250","expect":[{"op":"set","control":"shutterSpeed","value":250}]}
+{"group":"camera","text":"shutter speed 1000","expect":[{"op":"set","control":"shutterSpeed","value":1000}]}
+{"group":"camera","text":"manual focus 40","expect":[{"op":"set","control":"focusDistance","value":40}]}
+{"group":"camera","text":"camera focus 80","expect":[{"op":"set","control":"focusDistance","value":80}]}
+{"group":"camera","text":"camera white balance 5600","expect":[{"op":"set","control":"cameraKelvin","value":5600}]}
+{"group":"camera","text":"camera kelvin 3200","expect":[{"op":"set","control":"cameraKelvin","value":3200}]}
+{"group":"camera","text":"capture raw","expect":[{"op":"set","control":"captureRaw","value":1}]}
+{"group":"camera","text":"shoot raw off","expect":[{"op":"set","control":"captureRaw","value":0}]}
+{"group":"camera","text":"take photo","expect":[{"op":"run","control":"takePhoto"}]}
+{"group":"camera","text":"snap","expect":[{"op":"run","control":"takePhoto"}]}
+{"group":"camera","text":"camera profile","expect":[{"op":"select","control":"profile"}]}

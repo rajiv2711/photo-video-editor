@@ -676,6 +676,13 @@
     {"id": "stack-collapse", "command": "auto stack", "control": "collapseStacks", "library": ["chart", "warm", "grid", "haze", "noise"], "steps": [{"command": "expand stacks"}, {"command": "collapse stacks"}], "expect": [{"metric": "field", "dir": "is", "field": "library.shown", "value": "2"}]},
     {"id": "library-map", "command": "show map", "control": "showMap", "library": ["chart", "warm", "grid"], "expect": [{"metric": "field", "dir": "is", "field": "ui.map", "value": "shown"}, {"metric": "field", "dir": "is", "field": "library.located", "value": "2"}]},
     {"id": "camera-tethered", "command": "tethered capture", "control": "tetheredCapture", "expect": [{"metric": "field", "dir": "is", "field": "camera.tethered", "value": "on"}, {"metric": "field", "dir": "is", "field": "camera.devices", "value": "0"}, {"metric": "diff", "dir": "same", "min": 0.5}]},
-    {"id": "camera-tethered-shot", "command": "tethered shot", "control": "tetheredShot", "expect": [{"metric": "field", "dir": "is", "field": "camera.shot", "value": "no camera"}, {"metric": "diff", "dir": "same", "min": 0.5}]}
+    {"id": "camera-tethered-shot", "command": "tethered shot", "control": "tetheredShot", "expect": [{"metric": "field", "dir": "is", "field": "camera.shot", "value": "no camera"}, {"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "camera-open", "command": "pro camera", "control": "proCamera", "expect": [{"metric": "field", "dir": "is", "field": "ui.camera", "value": "shown"}, {"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "camera-iso", "command": "iso 400", "control": "cameraISO", "expect": [{"metric": "field", "dir": "is", "field": "cameraISO", "value": "400"}, {"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "camera-shutter", "command": "shutter 250", "control": "shutterSpeed", "expect": [{"metric": "field", "dir": "is", "field": "shutterSpeed", "value": "250"}, {"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "camera-focus", "command": "camera focus 30", "control": "focusDistance", "expect": [{"metric": "field", "dir": "is", "field": "focusDistance", "value": "30"}, {"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "camera-kelvin", "command": "camera white balance 5600", "control": "cameraKelvin", "expect": [{"metric": "field", "dir": "is", "field": "cameraKelvin", "value": "5600"}, {"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "camera-raw", "command": "capture raw", "control": "captureRaw", "expect": [{"metric": "field", "dir": "is", "field": "captureRaw", "value": "1"}, {"metric": "diff", "dir": "same", "min": 0.5}]},
+    {"id": "camera-take", "command": "take photo", "control": "takePhoto", "expect": [{"metric": "field", "dir": "is", "field": "camera.shots", "value": "1"}, {"metric": "field", "dir": "is", "field": "ui.camera", "value": "shown"}, {"metric": "diff", "dir": "same", "min": 0.5}]}
   ]
 }

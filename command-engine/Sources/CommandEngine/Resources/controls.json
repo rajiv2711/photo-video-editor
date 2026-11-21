@@ -1733,6 +1733,13 @@
     {"id": "collapseStacks", "label": "Collapse Stacks", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["collapse stack", "close stacks", "hide stacks", "collapse all stacks"]},
     {"id": "showMap", "label": "Map", "group": "library", "section": "Map", "kind": "action", "synonyms": ["show map", "photo map", "map view", "browse by location", "places", "where taken", "show places", "photos on map"]},
     {"id": "tetheredCapture", "label": "Tethered Capture", "group": "camera", "section": "Tethered", "kind": "toggle", "synonyms": ["tethered", "tether", "tethering", "tethered shooting", "shoot tethered", "tether camera", "live import"]},
-    {"id": "tetheredShot", "label": "Tethered Shot", "group": "camera", "section": "Tethered", "kind": "action", "synonyms": ["fire camera", "fire shutter", "trigger camera", "remote shutter", "release shutter", "trigger shutter"]}
+    {"id": "tetheredShot", "label": "Tethered Shot", "group": "camera", "section": "Tethered", "kind": "action", "synonyms": ["fire camera", "fire shutter", "trigger camera", "remote shutter", "release shutter", "trigger shutter"]},
+    {"id": "proCamera", "label": "Pro Camera", "group": "camera", "section": "Pro camera", "kind": "action", "synonyms": ["camera", "open camera", "manual camera", "pro mode", "camera mode", "start camera"]},
+    {"id": "cameraISO", "label": "Camera ISO", "group": "camera", "section": "Pro camera", "min": 0, "max": 3200, "default": 0, "step": 50, "synonyms": ["iso", "capture iso", "sensor iso", "iso speed"]},
+    {"id": "shutterSpeed", "label": "Shutter Speed", "group": "camera", "section": "Pro camera", "min": 0, "max": 8000, "default": 0, "step": 10, "synonyms": ["shutter", "exposure time", "camera shutter"]},
+    {"id": "focusDistance", "label": "Manual Focus", "group": "camera", "section": "Pro camera", "min": 0, "max": 100, "default": 0, "step": 5, "synonyms": ["lens position", "focus position", "camera focus", "focus lens"]},
+    {"id": "cameraKelvin", "label": "Camera White Balance", "group": "camera", "section": "Pro camera", "min": 0, "max": 9000, "default": 0, "step": 100, "synonyms": ["camera kelvin", "capture white balance", "camera wb", "camera temperature"]},
+    {"id": "captureRaw", "label": "Capture Raw", "group": "camera", "section": "Pro camera", "kind": "toggle", "synonyms": ["shoot raw", "raw capture", "camera raw", "proraw", "pro raw", "take raw"]},
+    {"id": "takePhoto", "label": "Take Photo", "group": "camera", "section": "Pro camera", "kind": "action", "synonyms": ["take picture", "take a photo", "take a picture", "capture", "snap", "shoot", "shutter release", "capture photo"]}
   ]
 }

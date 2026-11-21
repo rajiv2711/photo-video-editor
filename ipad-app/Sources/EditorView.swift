@@ -74,6 +74,7 @@ struct EditorView: View {
                 CameraImportView(importer: model.cameras) { urls in model.importFiles(urls) }
             }
             .sheet(isPresented: $model.showsMap) { LibraryMapView(model: model) }
+            .fullScreenCover(isPresented: $model.showsCamera) { ProCameraView(model: model, camera: model.proCamera) }
             .onChange(of: scenePhase) { _, phase in
                 // The edit of the photo being edited is kept with it in the library.
                 if phase != .active { model.saveLibrary() }

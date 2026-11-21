@@ -493,4 +493,28 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(value("tetheredCapture"), 1)
         XCTAssertFalse(interpreter.workspace.history.canUndo)
     }
+
+    // MARK: - Pro camera (#173)
+
+    func testCameraNamesReachTheirControls() {
+        XCTAssertEqual(parse("pro camera"), [.run("proCamera")])
+        XCTAssertEqual(parse("iso 400 shutter 250"), [.set("cameraISO", 400), .set("shutterSpeed", 250)])
+        XCTAssertEqual(parse("manual focus 40"), [.set("focusDistance", 40)])
+        XCTAssertEqual(parse("camera white balance 5600"), [.set("cameraKelvin", 5600)])
+        XCTAssertEqual(parse("capture raw"), [.set("captureRaw", 1)])
+        XCTAssertEqual(parse("take photo"), [.run("takePhoto")])
+        // Editing names keep their meaning.
+        XCTAssertEqual(parse("camera profile"), [.select("profile")])
+        XCTAssertEqual(parse("white balance cloudy"), [.set("whiteBalance", 3)])
+        XCTAssertEqual(parse("temperature 20"), [.set("temperature", 20)])
+    }
+
+    func testCameraSettingsAreNotTheEdit() {
+        run("iso 400 capture raw")
+        run("reset all")
+        XCTAssertEqual(value("cameraISO"), 400)
+        XCTAssertEqual(value("captureRaw"), 1)
+        let preset = Preset.capture(state, name: "p", groups: Presets.allGroups, registry: registry)
+        XCTAssertNil(preset.values["cameraISO"])
+    }
 }

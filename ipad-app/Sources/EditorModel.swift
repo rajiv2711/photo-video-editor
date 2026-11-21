@@ -42,6 +42,12 @@ final class EditorModel: ObservableObject {
     @Published var showsMap = false
     /// Cameras and SD cards connected (Import From Camera, Tethered Capture).
     let cameras = CameraImporter()
+    /// The iPad's own camera with manual settings (Pro Camera).
+    let proCamera = ProCamera()
+    /// The Pro camera is showing.
+    @Published var showsCamera = false
+    /// Photos asked for ("take photo"): the camera screen takes one each time this grows.
+    @Published private(set) var cameraShots = 0
 
     /// What the View panel's scopes show.
     struct ScopeReadings: Equatable {
@@ -121,6 +127,10 @@ final class EditorModel: ObservableObject {
         interpreter.workspace.presets = savedPresets
         interpreter.workspace.library = libraryStore.read()
         installActions()
+        // The Pro camera's photos join the library and open.
+        proCamera.onPhoto = { [weak self] data, ext in
+            Task { @MainActor in self?.importPictures([LibraryImport(data: data, name: "Camera \(EditorModel.stamp()).\(ext)", asset: nil)]) }
+        }
         // Tethered capture: each new shot joins the library and opens.
         cameras.onNewPhotos = { [weak self] urls in
             Task { @MainActor in self?.importFiles(urls) }
@@ -823,6 +833,11 @@ final class EditorModel: ObservableObject {
                 revealedPanel = "library"
             }
             if id == "tetheredShot" { tetheredShot() }
+            if id == "proCamera" { showsCamera = true }
+            if id == "takePhoto" {
+                showsCamera = true
+                cameraShots += 1
+            }
             if id == "batchEdit" { batchEdit() }
             if id == "matchExposures" { batchEdit(matching: true) }
         }
@@ -1116,6 +1131,23 @@ final class EditorModel: ObservableObject {
         render()
     }
 
+    // MARK: - Pro camera (Camera panel)
+
+    /// The manual settings, 0 = automatic: ISO, shutter speed (1/N s), focus (1…100), white balance (K).
+    var cameraSettings: [Double] {
+        ["cameraISO", "shutterSpeed", "focusDistance", "cameraKelvin"].map { id in registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+    }
+
+    /// Capture Raw is on.
+    var capturesRaw: Bool { isOn("captureRaw") }
+
+    /// "2026-11-21 10-00-05": names photos taken with the Pro camera.
+    static func stamp() -> String {
+        let format = DateFormatter()
+        format.dateFormat = "yyyy-MM-dd HH-mm-ss"
+        return format.string(from: Date())
+    }
+
     // MARK: - Tethered capture (Camera panel)
 
     /// What the last Tethered Shot did (the render gallery's manifest).
@@ -1276,6 +1308,8 @@ final class EditorModel: ObservableObject {
             if let lat = photo.latitude, let lon = photo.longitude { out["photo.gps"] = String(format: "%.2f,%.2f", lat, lon) }
         }
         out["camera.tethered"] = cameras.tethered ? "on" : "off"
+        if showsCamera { out["ui.camera"] = "shown" }
+        out["camera.shots"] = String(cameraShots)
         out["camera.devices"] = String(cameras.count)
         if !lastShot.isEmpty { out["camera.shot"] = lastShot }
         out["library.stacks"] = String(lib.stacks.count)
