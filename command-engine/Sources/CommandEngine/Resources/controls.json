@@ -1183,6 +1183,14 @@
                   {"id": "add", "label": "Add", "synonyms": ["linear dodge", "addition"]},
                   {"id": "difference", "label": "Difference", "synonyms": ["diff"]}]},
     {"id": "blendAmount", "label": "Blend Amount", "group": "merge", "section": "Double exposure", "min": 0, "max": 100, "default": 100, "step": 5,
-      "synonyms": ["blend opacity", "double exposure amount", "double exposure opacity", "top photo opacity"]}
+      "synonyms": ["blend opacity", "double exposure amount", "double exposure opacity", "top photo opacity"]},
+    {"id": "livePhotoEffect", "label": "Live Photo", "group": "merge", "section": "Live Photo", "kind": "choice",
+      "synonyms": ["live photo effect", "live effect", "live photos", "live photo mode"],
+      "options": [{"id": "live", "label": "Live", "synonyms": ["still", "photo", "none", "off"]},
+                  {"id": "loop", "label": "Loop", "synonyms": ["looping", "repeat"]},
+                  {"id": "bounce", "label": "Bounce", "synonyms": ["boomerang", "back and forth"]},
+                  {"id": "longExposure", "label": "Long Exposure", "synonyms": ["long-exposure", "slow shutter", "motion blur"]}]},
+    {"id": "keyFrame", "label": "Key Frame", "group": "merge", "section": "Live Photo", "min": 0, "max": 150, "default": 0, "step": 1,
+      "synonyms": ["keyframe", "key photo", "cover frame", "live photo frame", "key image"]}
   ]
 }

@@ -16,6 +16,7 @@ public enum MergeTools {
     public static let countID = "mergeCount"
 
     /// The settings each kind of merge reads: changing one merges again a photo that merge made.
+    /// ("live": the effects of a Live Photo opened, which works the same way on its video's frames.)
     public static func settings(for kind: String) -> [String] {
         switch kind {
         case "hdr": return [countID, "deghost", "hdrOutput"]
@@ -23,6 +24,7 @@ public enum MergeTools {
         case "hdrPanorama": return [countID, "deghost", "hdrOutput", "panoramaProjection", "boundaryWarp", "fillEdges"]
         case "stack": return [countID, "stackMode"]
         case "double": return [countID, "blendMode", "blendAmount"]
+        case "live": return ["livePhotoEffect", "keyFrame"]
         default: return [countID]
         }
     }

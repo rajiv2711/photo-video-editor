@@ -112,6 +112,7 @@ final class EditorModel: ObservableObject {
         quadDrag = nil
         pinDrag = nil
         mergePhotos = []
+        livePhoto = nil
         if merged != nil {
             merged = nil
             mergeJob += 1
@@ -636,10 +637,92 @@ final class EditorModel: ObservableObject {
         }
         opened = image
         merged = nil
+        livePhoto = nil
         mergeJob += 1
         isMerging = false
         replacePhoto(image, lens: Self.lens(of: image))
         render()
+    }
+
+    // MARK: - Live Photo
+
+    /// The Live Photo opened (its photo and video frames), or nil.
+    @Published private(set) var livePhoto: LiveFrames?
+
+    /// A Live Photo picked in the library: its video is read, and the Live Photo effects work on it.
+    func openLive(_ live: PHLivePhoto) async {
+        guard let url = await LiveFrames.pairedVideo(of: live), let frames = await LiveFrames.load(still: opened, video: url) else { return }
+        useLive(frames)
+    }
+
+    /// Edits a Live Photo: its effect and key frame (Merge panel) decide the photo being edited.
+    func useLive(_ frames: LiveFrames) {
+        livePhoto = frames
+        merged = ("live", [])  // worked out on the next render, with the current settings
+        render()
+        feedback = Feedback(text: "Live Photo: \(frames.count) frames · say “live photo loop”, “bounce”, “long exposure” or “key frame 12”")
+    }
+
+    /// A Live Photo effect, or the key frame, becomes the photo being edited.
+    private func mergeLive() {
+        guard let live = livePhoto else {
+            merged = nil
+            return
+        }
+        merged = ("live", mergeKey("live"))
+        mergeJob += 1
+        let job = mergeJob
+        let value = currentValue
+        let merger = self.merger
+        let lens = Self.lens(of: live.still)
+        let done = "Live Photo: " + optionLabel("livePhotoEffect")
+        if waitsForMerge {
+            finishMerge(merger.live(live, value: value), name: "Live Photo", done: done, count: 1, lens: lens, job: job)
+            return
+        }
+        isMerging = true
+        mergeQueue.async {
+            let result = merger.live(live, value: value)
+            Task { @MainActor in
+                self.finishMerge(result, name: "Live Photo", done: done, count: 1, lens: lens, job: job)
+            }
+        }
+    }
+
+    /// The label of a choice's current option.
+    private func optionLabel(_ id: String) -> String {
+        guard let control = registry.control(id: id) else { return "" }
+        let i = Int(state.value(of: control))
+        return control.options.indices.contains(i) ? control.options[i].label : ""
+    }
+
+    /// The Live Photo effect chosen (Live when no Live Photo is open).
+    private var liveEffect: LivePhoto.Effect {
+        guard livePhoto != nil, let control = registry.control(id: "livePhotoEffect") else { return .live }
+        let i = Int(state.value(of: control))
+        return LivePhoto.effects.indices.contains(i) ? LivePhoto.Effect(rawValue: LivePhoto.effects[i]) ?? .live : .live
+    }
+
+    /// Loop or Bounce: the Live Photo's video as an animated GIF with the edits (sliders, masks,
+    /// geometry; not retouching), saved to Photos. Made off the main thread with a renderer of its own.
+    private func saveAnimation(_ live: LiveFrames, _ effect: LivePhoto.Effect) {
+        let name = effect == .loop ? "loop" : "bounce"
+        feedback = Feedback(text: "Saving the \(name)…")
+        let value = currentValue, masks = state.masks, geometry = state.geometry, lens = renderer.lens
+        mergeQueue.async {
+            let exporter = PhotoRenderer()
+            exporter.lens = lens
+            let data = live.gif(effect, side: 720, context: exporter.context) { frame in
+                exporter.apply(to: frame, value: value, masks: masks, geometry: geometry)
+            }
+            Task { @MainActor in
+                guard let data else {
+                    self.feedback = Feedback(text: "Couldn't make the \(name).", isProblem: true)
+                    return
+                }
+                self.saveToPhotos(data, done: "Saved the \(name) to Photos (an animated GIF).")
+            }
+        }
     }
 
     /// Edits another picture (a photo opened, or a merge's result); the sliders stay as they are.
@@ -700,6 +783,10 @@ final class EditorModel: ObservableObject {
     /// Merges the photos picked (the last "Photos to Merge" of them) and edits the result; every other
     /// panel then works on it. Runs in the background (the gallery waits).
     private func merge(_ kind: String) {
+        if kind == "live" {
+            mergeLive()
+            return
+        }
         let count = registry.control(id: MergeTools.countID).map { state.value(of: $0) } ?? 0
         var photos = MergeTools.chosen(mergePhotos, count: count)
         if kind == "double", photos.count == 1 { photos.insert(opened, at: 0) }
@@ -718,8 +805,9 @@ final class EditorModel: ObservableObject {
         let name = MergeTools.actions.first { $0.value == kind }.flatMap { registry.control(id: $0.key)?.label } ?? "Merge"
         // A panorama's photos point different ways: no lens correction fits the result.
         let lens = kind == "panorama" || kind == "hdrPanorama" ? PhotoLens() : Self.lens(of: photos[0])
+        let done = "\(name): \(photos.count) photos merged"
         if waitsForMerge {
-            finishMerge(merger.merge(kind, photos: photos, value: value), name: name, count: photos.count, lens: lens, job: job)
+            finishMerge(merger.merge(kind, photos: photos, value: value), name: name, done: done, count: photos.count, lens: lens, job: job)
             return
         }
         isMerging = true
@@ -727,14 +815,14 @@ final class EditorModel: ObservableObject {
         mergeQueue.async {
             let result = merger.merge(kind, photos: photos, value: value)
             Task { @MainActor in
-                self.finishMerge(result, name: name, count: photos.count, lens: lens, job: job)
+                self.finishMerge(result, name: name, done: done, count: photos.count, lens: lens, job: job)
             }
         }
     }
 
     /// A merge finished: its result becomes the photo being edited (only the newest job's), with the
-    /// lens of the first photo merged.
-    private func finishMerge(_ result: MergeRenderer.Merged?, name: String, count: Int, lens: PhotoLens, job: Int) {
+    /// lens of the first photo merged; `done` is said when all `count` photos went in.
+    private func finishMerge(_ result: MergeRenderer.Merged?, name: String, done: String, count: Int, lens: PhotoLens, job: Int) {
         guard job == mergeJob else { return }
         isMerging = false
         guard let result, !result.image.extent.isEmpty else {
@@ -743,14 +831,17 @@ final class EditorModel: ObservableObject {
             return
         }
         replacePhoto(result.image, lens: lens)
-        feedback = Feedback(text: result.used < count ? "\(name): \(result.used) of \(count) photos fitted together"
-                            : "\(name): \(count) photos merged")
+        feedback = Feedback(text: result.used < count ? "\(name): \(result.used) of \(count) photos fitted together" : done)
         render()
     }
 
     /// Renders the full-resolution photo and saves it to the photo library.
     /// With HDR on it saves a 10-bit HEIF that keeps the brighter-than-white levels.
     func save() {
+        if let live = livePhoto, liveEffect == .loop || liveEffect == .bounce {
+            saveAnimation(live, liveEffect)
+            return
+        }
         let edited = renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches,
                                     geometry: state.geometry)
         if isHDR {

@@ -452,6 +452,11 @@
 
     {"id": "double-exposure", "command": "double exposure", "photos": ["chart"], "control": "doubleExposure", "expect": [{"metric": "mean_luma", "dir": "up", "min": 5}, {"metric": "mean_sat", "dir": "up", "min": 2}]},
     {"id": "blend-mode", "command": "blend mode multiply double exposure", "photos": ["chart"], "control": "blendMode", "expect": [{"metric": "mean_luma", "dir": "down", "min": 10}]},
-    {"id": "blend-amount", "command": "blend amount 30 double exposure", "photos": ["chart"], "control": "blendAmount", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "double-exposure", "min": 3}, {"metric": "mean_luma", "dir": "up", "min": 1}]}
+    {"id": "blend-amount", "command": "blend amount 30 double exposure", "photos": ["chart"], "control": "blendAmount", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "double-exposure", "min": 3}, {"metric": "mean_luma", "dir": "up", "min": 1}]},
+
+    {"id": "live-still", "command": "", "live": ["live-0", "live-1", "live-2", "live-3", "live-4", "live-5", "live-6", "live-7"], "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.07, 0.08, 0.13, 0.12], "min": 30}]},
+    {"id": "live-key-frame", "command": "key frame 6", "live": ["live-0", "live-1", "live-2", "live-3", "live-4", "live-5", "live-6", "live-7"], "control": "keyFrame", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.67, 0.08, 0.73, 0.12], "min": 30}, {"metric": "mean_luma", "dir": "same", "region": [0.07, 0.08, 0.13, 0.12], "min": 10}]},
+    {"id": "live-long-exposure", "command": "live photo long exposure", "live": ["live-0", "live-1", "live-2", "live-3", "live-4", "live-5", "live-6", "live-7"], "control": "livePhotoEffect", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.47, 0.08, 0.53, 0.12], "min": 10}, {"metric": "mean_luma", "dir": "up", "vs": "live-key-frame", "region": [0.67, 0.08, 0.73, 0.12], "min": 30}, {"metric": "edge", "dir": "same", "region": [0.25, 0.35, 0.75, 0.85], "min": 1}]},
+    {"id": "live-loop", "command": "live photo loop", "live": ["live-0", "live-1", "live-2", "live-3", "live-4", "live-5", "live-6", "live-7"], "control": "livePhotoEffect", "expect": [{"metric": "diff", "dir": "same", "vs": "live-still", "min": 1}]}
   ]
 }

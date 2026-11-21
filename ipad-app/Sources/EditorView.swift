@@ -1,4 +1,5 @@
 import CommandEngine
+import Photos
 import PhotosUI
 import SwiftUI
 
@@ -42,6 +43,10 @@ struct EditorView: View {
                 Task { @MainActor in
                     if let data = try? await item.loadTransferable(type: Data.self) {
                         model.load(data)
+                    }
+                    // A Live Photo: its video for the Live Photo effects (Merge panel).
+                    if let live = try? await item.loadTransferable(type: PHLivePhoto.self) {
+                        await model.openLive(live)
                     }
                 }
             }

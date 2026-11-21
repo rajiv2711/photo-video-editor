@@ -901,3 +901,10 @@
 {"group":"merge","text":"multiply blend mode","expect":[{"op":"set","control":"blendMode","value":1}]}
 {"group":"merge","text":"blend amount 60","expect":[{"op":"set","control":"blendAmount","value":60}]}
 {"group":"merge","text":"blend opacity less","expect":[{"op":"nudge","control":"blendAmount","steps":-1}]}
+{"group":"merge","text":"live photo long exposure","expect":[{"op":"set","control":"livePhotoEffect","value":3}]}
+{"group":"merge","text":"live photo loop","expect":[{"op":"set","control":"livePhotoEffect","value":1}]}
+{"group":"merge","text":"live photo bounce","expect":[{"op":"set","control":"livePhotoEffect","value":2}]}
+{"group":"merge","text":"live effect boomerang","expect":[{"op":"set","control":"livePhotoEffect","value":2}]}
+{"group":"merge","text":"key frame 12","expect":[{"op":"set","control":"keyFrame","value":12}]}
+{"group":"merge","text":"keyframe more","expect":[{"op":"nudge","control":"keyFrame","steps":1}]}
+{"group":"merge","text":"reset key frame","expect":[{"op":"reset","control":"keyFrame"}]}

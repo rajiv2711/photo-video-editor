@@ -114,6 +114,9 @@ final class MergeTests: XCTestCase {
         XCTAssertEqual(registry.control(id: "deghost")!.options.map(\.id), HDRMerge.deghostLevels)
         XCTAssertEqual(registry.control(id: "hdrOutput")!.options.map(\.id), HDRMerge.outputs)
         XCTAssertEqual(registry.control(id: "panoramaProjection")!.options.map(\.id), Panorama.projections)
+        XCTAssertEqual(registry.control(id: "livePhotoEffect")!.options.map(\.id), LivePhoto.effects)
+        XCTAssertEqual(parser.parse("live photo long exposure"), [.set("livePhotoEffect", 3)])
+        XCTAssertEqual(parser.parse("key frame 12"), [.set("keyFrame", 12)])
         for (id, _) in MergeTools.actions {
             XCTAssertEqual(registry.control(id: id)?.group, "merge", id)
             for setting in MergeTools.settings(for: MergeTools.actions[id]!) { XCTAssertNotNil(registry.control(id: setting), setting) }
@@ -521,5 +524,52 @@ final class DoubleExposureTests: XCTestCase {
         XCTAssertEqual(registry.control(id: "blendMode")!.options.map(\.id), DoubleExposure.modes)
         XCTAssertEqual(CommandParser(registry: registry).parse("blend mode screen"), [.set("blendMode", 0)])
         XCTAssertEqual(CommandParser(registry: registry).parse("blend less"), [.nudge("gradingBlending", -1)], "colour grading keeps blend")
+    }
+}
+
+/// Live Photo effects: animation orders, key frames, long exposure.
+final class LivePhotoTests: XCTestCase {
+    func testBounceGoesThereAndBack() {
+        XCTAssertEqual(LivePhoto.animation(.bounce, count: 4).map(\.a), [0, 1, 2, 3, 2, 1])
+    }
+
+    func testLoopFadesItsEndIntoItsStart() {
+        let steps = LivePhoto.animation(.loop, count: 12, fade: 3)
+        XCTAssertEqual(steps.count, 9)
+        XCTAssertEqual(steps[0].a, 0)
+        XCTAssertEqual(steps[0].b, 9)
+        XCTAssertEqual(steps[0].t, 0.75, accuracy: 1e-6, "mostly the end at first")
+        XCTAssertEqual(steps[2].b, 11)
+        XCTAssertEqual(steps[2].t, 0.25, accuracy: 1e-6)
+        XCTAssertEqual(steps[3], LivePhoto.Step(3))
+        // The last shown frame (8) leads into frame 9, which the first output shows most of.
+        XCTAssertEqual(steps.last?.a, 8)
+    }
+
+    func testKeyFrameNumbers() {
+        XCTAssertNil(LivePhoto.frame(forKey: 0, count: 45), "0 is the photo itself")
+        XCTAssertEqual(LivePhoto.frame(forKey: 1, count: 45), 0)
+        XCTAssertEqual(LivePhoto.frame(forKey: 12, count: 45), 11)
+        XCTAssertEqual(LivePhoto.frame(forKey: 99, count: 45), 44)
+    }
+
+    func testLongExposureAveragesLinedUpFrames() throws {
+        let scene = PanoramaTests.scene(width: 140, height: 90)
+        // A shaky camera (each frame moved a little) and a dark square moving along the top.
+        var exposure: LivePhoto.LongExposure?
+        let shifts = [(0, 0), (2, -1), (-1, 2), (3, 1), (1, -2)]
+        for (k, s) in shifts.enumerated() {
+            var frame = PanoramaTests.crop(scene, x: 5 + s.0, y: 5 + s.1, width: 120, height: 75)
+            for y in 5..<15 { for x in (10 + 20 * k)..<(20 + 20 * k) { for c in 0..<3 { frame[x, y, c] = 0.02 } } }
+            if exposure == nil { exposure = LivePhoto.LongExposure(reference: frame) } else { exposure!.add(frame) }
+        }
+        let result = try XCTUnwrap(exposure).result
+        // Still parts stay sharp (the frames were lined up): close to the scene itself.
+        let still = PanoramaTests.crop(scene, x: 5, y: 5, width: 120, height: 75)
+        XCTAssertLessThan(MergeTests.difference(result, still, x0: 6, y0: 25, x1: 114, y1: 69), 0.01)
+        // The moving square is smeared: in each place it is a fifth as dark.
+        let place = MergeTests.difference(result, still, x0: 31, y0: 6, x1: 39, y1: 14)
+        XCTAssertGreaterThan(place, 0.03)
+        XCTAssertLessThan(place, 0.25)
     }
 }

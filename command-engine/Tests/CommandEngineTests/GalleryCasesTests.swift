@@ -23,6 +23,7 @@ final class GalleryCasesTests: XCTestCase {
         let strokes: [[[Double]]]?
         let steps: [Step]?
         let photos: [String]?
+        let live: [String]?
     }
 
     struct Step: Decodable {
@@ -48,7 +49,8 @@ final class GalleryCasesTests: XCTestCase {
                                "bracket-dark", "bracket-mid", "bracket-bright", "bracket-ghost", "pano-left", "pano-middle", "pano-right",
                                "hdrpano-left-dark", "hdrpano-left-mid", "hdrpano-left-bright",
                                "hdrpano-right-dark", "hdrpano-right-mid", "hdrpano-right-bright", "focus-top", "focus-bottom",
-                               "burst-1", "burst-2", "burst-3", "burst-4"]
+                               "burst-1", "burst-2", "burst-3", "burst-4",
+                               "live-0", "live-1", "live-2", "live-3", "live-4", "live-5", "live-6", "live-7"]
 
     private var registry: ControlRegistry!
     private var cases: [Case] = []
@@ -75,7 +77,8 @@ final class GalleryCasesTests: XCTestCase {
             XCTAssertFalse(c.id.contains("/") || c.id.contains(" "), "\(c.id): use letters, digits and dashes")
             if c.id != "base" { XCTAssertFalse(c.expect.isEmpty, "\(c.id) has no expectation") }
             if let source = c.source { XCTAssertTrue(Self.sources.contains(source), "\(c.id): unknown source \(source)") }
-            for photo in c.photos ?? [] { XCTAssertTrue(Self.sources.contains(photo), "\(c.id): unknown photo \(photo)") }
+            for photo in (c.photos ?? []) + (c.live ?? []) { XCTAssertTrue(Self.sources.contains(photo), "\(c.id): unknown photo \(photo)") }
+            if let live = c.live { XCTAssertGreaterThanOrEqual(live.count, 2, "\(c.id): a Live Photo is its photo and frames") }
             if let tap = c.tap {
                 XCTAssertTrue(tap.count == 2 && tap.allSatisfy { (0...1).contains($0) }, "\(c.id): tap is x, y in 0…1")
             }

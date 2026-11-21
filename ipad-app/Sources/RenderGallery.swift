@@ -44,6 +44,8 @@ enum RenderGallery {
         let steps: [Step]?
         /// Pictures picked for merging before the command (generated, see `sourceImage`), in order.
         let photos: [String]?
+        /// A Live Photo to edit: its photo, then its video's frames (generated, see `sourceImage`).
+        let live: [String]?
     }
 
     /// One step: a command, a stroke or a tap.
@@ -126,6 +128,10 @@ enum RenderGallery {
             if let photos = item.photos {
                 model.pickForMerge(photos.map { sourceImage($0, photo: small) })
             }
+            if let live = item.live, live.count >= 2 {
+                let pictures = live.map { sourceImage($0, photo: small) }
+                model.useLive(LiveFrames(still: pictures[0], frames: Array(pictures.dropFirst())))
+            }
             if !item.command.isEmpty {
                 model.run(item.command)
             }
@@ -195,6 +201,8 @@ enum RenderGallery {
     /// - "focus-top", "focus-bottom": the test photo sharp in its top or bottom half only (focus stacking).
     /// - "burst-1" … "burst-4": the test photo with its own noise each and a dark disc passing along
     ///   the top (stack averaging; see `burst`).
+    /// - "live-0" … "live-7": a Live Photo's photo and frames: the test photo with a little camera
+    ///   shake and a dark disc crossing the top (see `liveFrame`).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         if let source, source.hasPrefix("hdrpano-") {
             let parts = source.split(separator: "-")
@@ -204,6 +212,9 @@ enum RenderGallery {
         }
         if let source, source.hasPrefix("burst-"), let n = Int(source.dropFirst(6)), (1...4).contains(n) {
             return burst(photo, frame: n)
+        }
+        if let source, source.hasPrefix("live-"), let n = Int(source.dropFirst(5)), liveShake.indices.contains(n) {
+            return liveFrame(photo, n)
         }
         switch source {
         case "focus-top", "focus-bottom":
@@ -416,6 +427,26 @@ enum RenderGallery {
 
     /// The "skewed" page's corners (x, y from the top-left, 0…1): top-left, top-right, bottom-right, bottom-left.
     static let skewedCorners: [(x: CGFloat, y: CGFloat)] = [(0.18, 0.12), (0.86, 0.20), (0.80, 0.88), (0.12, 0.80)]
+
+    /// The camera shake of "live-0" … "live-7" (pixels right and down).
+    static let liveShake: [(x: CGFloat, y: CGFloat)] = [(0, 0), (1, -1), (2, 0), (-1, 1), (2, 2), (0, -2), (-2, 1), (1, 1)]
+
+    /// Frame `n` of the generated Live Photo: the photo moved by `liveShake[n]` (edges repeated) with a
+    /// dark disc (radius 4 % of the width) at x = 0.1 + 0.1 n, y = 0.1 from the top-left.
+    static func liveFrame(_ photo: CIImage, _ n: Int) -> CIImage {
+        let area = photo.extent
+        let shake = liveShake[n]
+        let moved = photo.clampedToExtent().transformed(by: CGAffineTransform(translationX: shake.x, y: -shake.y)).cropped(to: area)
+        let centre = CGPoint(x: area.minX + (0.1 + 0.1 * CGFloat(n)) * area.width, y: area.minY + 0.9 * area.height)
+        let disc = CIFilter(name: "CIRadialGradient", parameters: [
+            "inputCenter": CIVector(cgPoint: centre),
+            "inputRadius0": 0.04 * area.width,
+            "inputRadius1": 0.04 * area.width + 1,
+            "inputColor0": CIColor(red: 0.05, green: 0.05, blue: 0.06, alpha: 1),
+            "inputColor1": CIColor(red: 0, green: 0, blue: 0, alpha: 0),
+        ])?.outputImage
+        return disc.map { $0.composited(over: moved).cropped(to: area) } ?? moved
+    }
 
     /// Where the dark disc of "burst-1" … "burst-4" is (x, y from the top-left; radius a share of the width).
     static let burstDiscs: [(x: CGFloat, y: CGFloat)] = [(0.15, 0.12), (0.4, 0.12), (0.6, 0.12), (0.85, 0.12)]

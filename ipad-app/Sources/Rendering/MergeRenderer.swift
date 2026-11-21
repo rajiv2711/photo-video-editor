@@ -83,6 +83,26 @@ final class MergeRenderer {
         }
     }
 
+    /// A Live Photo's effect: the key frame (or the photo itself) for Live, Loop and Bounce; for Long
+    /// Exposure every frame lined up with the key frame (or the middle one) and averaged.
+    func live(_ live: LiveFrames, value: (String) -> Double?) -> Merged? {
+        let effect = LivePhoto.Effect(rawValue: option(value("livePhotoEffect"), LivePhoto.effects)) ?? .live
+        let key = LivePhoto.frame(forKey: value("keyFrame") ?? 0, count: live.count)
+        guard effect == .longExposure else {
+            return Merged(image: key.flatMap { live.frame($0) } ?? live.still, used: 1)
+        }
+        let reference = key ?? live.count / 2
+        guard live.count >= 2, let first = live.frame(reference) else { return nil }
+        let size = Self.size(of: first, maxSide: Self.maxSide)
+        var exposure = LivePhoto.LongExposure(reference: floats(first, width: size.width, height: size.height))
+        for i in 0..<live.count where i != reference {
+            autoreleasepool {
+                if let frame = live.frame(i) { exposure.add(floats(frame, width: size.width, height: size.height)) }
+            }
+        }
+        return Merged(image: picture(exposure.result), used: 1)
+    }
+
     /// The Panorama section's settings.
     private func panoramaSettings(_ value: (String) -> Double?) -> Panorama.Settings {
         Panorama.Settings(projection: Panorama.Projection(rawValue: option(value("panoramaProjection"), Panorama.projections)) ?? .spherical,
