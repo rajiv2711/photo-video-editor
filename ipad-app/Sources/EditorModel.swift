@@ -1035,7 +1035,7 @@ final class EditorModel: ObservableObject {
         PanelInfo(group: "masks", title: "Masks", symbol: "circle.dashed"),
         PanelInfo(group: "retouch", title: "Retouch", symbol: "bandage"),
         PanelInfo(group: "geometry", title: "Geometry", symbol: "crop.rotate"),
-        PanelInfo(group: "merge", title: "Merge", symbol: "square.stack.3d.up"),
+        PanelInfo(group: "merge", title: "Merge", symbol: "camera.filters"),
         PanelInfo(group: "creative", title: "Creative", symbol: "wand.and.stars"),
         PanelInfo(group: "layers", title: "Layers", symbol: "square.3.stack.3d"),
         PanelInfo(group: "presets", title: "Presets", symbol: "rectangle.stack"),

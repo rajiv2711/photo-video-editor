@@ -201,7 +201,7 @@ struct EditorView: View {
                         }
                     }
                     .modifier(ZoomPan(model: model))
-                    .padding(24)
+                    .padding(16)
             }
             // The View panel's scopes, over the top-right corner.
             if let scopes = model.scopes {
@@ -222,17 +222,17 @@ struct EditorView: View {
     }
 
     /// The panel shown (one group of controls.json at a time) and the rail that picks it: a column at the
-    /// right edge in landscape (the panel 300 pt wide), a strip above the panel in portrait.
+    /// right edge in landscape (the panel 296 pt wide, 360 with the rail), a strip above the panel in portrait.
     private var panel: some View {
         Group {
             if landscape {
                 HStack(spacing: 0) {
                     Divider()
                     panelContent
-                        .frame(width: 300)
+                        .frame(width: 296)
                     Divider()
                     PanelRail(model: model, vertical: true)
-                        .frame(width: 60)
+                        .frame(width: 64)
                 }
             } else {
                 VStack(spacing: 0) {
@@ -677,7 +677,7 @@ struct ControlRow: View {
                 Text(control.label).font(.subheadline)
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .frame(minHeight: 44)
         case .action:
             Button(control.label) { model.runAction(control) }
                 .buttonStyle(.bordered)
@@ -714,7 +714,7 @@ struct ControlRow: View {
     }
 }
 
-/// A slider in about 48 points: its name and value on one line, the slider under them. Double-tap the
+/// A slider in about 50 points: its name and value on one line, the slider under them. Double-tap the
 /// row to reset it; tap the value to type an exact number. Dragging across the default taps lightly.
 struct SliderRow: View {
     let control: Control
@@ -750,10 +750,11 @@ struct SliderRow: View {
             Slider(value: Binding(get: { value }, set: { moved(to: $0) }), in: control.min...control.max, onEditingChanged: { editing in
                 if !editing { onEnd() }
             })
+            .frame(height: 26)
             .accessibilityLabel(control.label)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 3)
+        .padding(.vertical, 2)
         .background(
             isFocused ? Color.accentColor.opacity(0.15) : Color.clear,
             in: RoundedRectangle(cornerRadius: 8)
@@ -861,7 +862,7 @@ struct PanelRail: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
-                .frame(width: vertical ? 54 : 50, height: vertical ? 42 : 44)
+                .frame(width: vertical ? 60 : 50, height: vertical ? 42 : 44)
                 .foregroundStyle(shown ? Color.accentColor : available ? Color.primary : Color.secondary.opacity(0.5))
                 .background(shown ? Color.accentColor.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
                 .contentShape(Rectangle())
