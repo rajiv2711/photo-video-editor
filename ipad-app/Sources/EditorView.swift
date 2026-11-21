@@ -76,6 +76,19 @@ struct EditorView: View {
                     .allowedDynamicRange(model.isHDR ? Image.DynamicRange.high : Image.DynamicRange.standard)
                     .scaledToFit()
                     .overlay {
+                        // Zoomed in past the preview's own pixels: the part shown, rendered from the full-size photo.
+                        GeometryReader { geo in
+                            if let loupe = model.loupe {
+                                Image(uiImage: loupe.image)
+                                    .resizable()
+                                    .frame(width: CGFloat(loupe.rect.width) * geo.size.width, height: CGFloat(loupe.rect.height) * geo.size.height)
+                                    .position(x: CGFloat(loupe.rect.x + loupe.rect.width / 2) * geo.size.width,
+                                              y: CGFloat(loupe.rect.y + loupe.rect.height / 2) * geo.size.height)
+                            }
+                        }
+                        .allowsHitTesting(false)
+                    }
+                    .overlay {
                         if model.isComparing {
                             // Before / after: nothing to touch.
                             EmptyView()
@@ -103,6 +116,7 @@ struct EditorView: View {
                             LayerCanvas(model: model, tool: tool)
                         }
                     }
+                    .modifier(ZoomPan(model: model))
                     .padding(24)
             }
             // The View panel's scopes, over the top-right corner.
@@ -557,5 +571,47 @@ struct PanelTitle: View {
                 .accessibilityLabel("Reset the \(title) panel")
             }
         }
+    }
+}
+
+/// Zoom and pan of the photo on screen (View panel): the picture (with the tools over it, which keep
+/// working) is scaled from its top-left corner and moved so the part shown fills its frame. Pinch to
+/// zoom; when no tool takes the touches, drag to pan and double-tap to go between fit and 100 %.
+struct ZoomPan: ViewModifier {
+    @ObservedObject var model: EditorModel
+    @State private var size: CGSize = .zero
+    @Environment(\.displayScale) private var displayScale
+
+    func body(content: Content) -> some View {
+        let m = CGFloat(model.magnification)
+        let shown = model.visibleRect
+        return content
+            .background(GeometryReader { geo in
+                Color.clear
+                    .onAppear { measured(geo.size) }
+                    .onChange(of: geo.size) { _, new in measured(new) }
+            })
+            .scaleEffect(m, anchor: .topLeading)
+            .offset(x: -CGFloat(shown.x) * size.width * m, y: -CGFloat(shown.y) * size.height * m)
+            .frame(width: size.width > 0 ? size.width : nil, height: size.height > 0 ? size.height : nil, alignment: .topLeading)
+            .clipped()
+            .contentShape(Rectangle())
+            .simultaneousGesture(MagnifyGesture()
+                .onChanged { model.pinch(Double($0.magnification)) }
+                .onEnded { _ in model.endPinch() })
+            .simultaneousGesture(DragGesture(minimumDistance: 4)
+                .onChanged { model.pan(by: $0.translation, in: size) }
+                .onEnded { _ in model.endPan() }, including: model.canPan ? .all : .none)
+            .simultaneousGesture(SpatialTapGesture(count: 2)
+                .onEnded { tap in
+                    guard size.width > 0, size.height > 0 else { return }
+                    model.toggleLoupe(at: MaskPoint(Double(tap.location.x / size.width), Double(tap.location.y / size.height)))
+                }, including: model.touchesFree ? .all : .none)
+    }
+
+    /// The picture's frame when it fits: the model needs its size in pixels.
+    private func measured(_ new: CGSize) {
+        size = new
+        model.setFit(pixels: Double(max(new.width, new.height) * displayScale))
     }
 }

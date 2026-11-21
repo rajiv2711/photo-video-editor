@@ -169,3 +169,35 @@ public enum Scopes {
         return bins.map { Swift.min(1, Double($0) / reference) }
     }
 }
+
+/// Zoom and pan: how big the photo is shown and which part of it.
+public enum Viewport {
+    /// The Zoom choice's levels, in % of the photo's own pixels (100 = 1:1, each pixel of the photo on
+    /// one of the screen); 0 = fit the whole photo. Must match controls.json's option order.
+    public static let levels: [Double] = [0, 25, 50, 100, 200, 400, 800]
+
+    /// How many times larger than "fit" the photo shows at `percent` of its own pixels, when it is
+    /// `full` pixels long and fits the screen at `fit` pixels; never smaller than fit.
+    public static func magnification(percent: Double, full: Double, fit: Double) -> Double {
+        guard percent > 0, full > 0, fit > 0 else { return 1 }
+        return Swift.max(1, percent / 100 * full / fit)
+    }
+
+    /// The percent at which the photo just fits.
+    public static func fitPercent(full: Double, fit: Double) -> Double {
+        full > 0 ? fit / full * 100 : 100
+    }
+
+    /// The first level above fit ("zoom in" from fit goes there): its index in `levels`.
+    public static func firstLevel(above fitPercent: Double) -> Int {
+        levels.indices.first { levels[$0] > fitPercent + 0.5 } ?? levels.count - 1
+    }
+
+    /// The part of the photo shown (shares of its width and height, from the top-left) at a
+    /// magnification, around `center`, which is moved in so the view stays inside the photo.
+    public static func visible(magnification: Double, center: (x: Double, y: Double)) -> ViewRect {
+        let size = 1 / Swift.max(1, magnification)
+        func place(_ c: Double) -> Double { Swift.min(1 - size / 2, Swift.max(size / 2, c)) - size / 2 }
+        return ViewRect(place(center.x), place(center.y), size, size)
+    }
+}

@@ -203,6 +203,9 @@ final class EditorModel: ObservableObject {
         mergePhotos = []
         lastBatch = []
         samplers = []
+        zoomPercent = 0
+        viewCenter = MaskPoint(0.5, 0.5)
+        loupe = nil
         livePhoto = nil
         if merged != nil {
             merged = nil
@@ -760,6 +763,7 @@ final class EditorModel: ObservableObject {
 
     /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
     private func armPickers(_ outcomes: [CommandInterpreter.Outcome]) {
+        followZoom(outcomes)
         revealedPanel = nil
         for case .workflow(let event) in outcomes {
             if case .historyShown = event { revealedPanel = "history" }
@@ -1464,9 +1468,13 @@ final class EditorModel: ObservableObject {
         return edited
     }
 
-    /// What the screen shows: the edited preview with the View panel's overlays (before / after, …).
+    /// What the screen shows: the edited preview with the View panel's overlays (before / after, …),
+    /// and zoomed as on screen (the screen zooms the picture itself; the render gallery gets it here).
     func shownPreview() -> CIImage {
-        shown(editedPreview())
+        let edited = editedPreview()
+        previewLong = Double(max(edited.extent.width, edited.extent.height))
+        let shown = self.shown(edited)
+        return magnification > 1 ? ViewRenderer.zoomed(shown, to: visibleRect, magnification: magnification) : shown
     }
 
     private func shown(_ edited: CIImage) -> CIImage {
@@ -1506,6 +1514,155 @@ final class EditorModel: ObservableObject {
         let color = ImageStats.averageColor(of: edited, in: Self.spot(p.x, p.y, in: edited.extent), context: renderer.context).encoded
         let read = Scopes.readout(color.r, color.g, color.b)
         return String(format: "R %d G %d B %d · L %.0f a %.0f b %.0f", read.rgb[0], read.rgb[1], read.rgb[2], read.lab[0], read.lab[1], read.lab[2])
+    }
+
+    // MARK: - Zoom (View panel)
+
+    /// The zoom, in % of the photo's own pixels (0 = fit), and the middle of the part shown (0…1 from
+    /// the top-left of the picture).
+    @Published private(set) var zoomPercent: Double = 0
+    @Published private(set) var viewCenter = MaskPoint(0.5, 0.5)
+    /// The part shown rendered from the full-size photo, when zoomed in past the preview's own pixels.
+    @Published private(set) var loupe: (image: UIImage, rect: ViewRect)?
+    /// The picture's long side on screen when it fits, in pixels (the canvas measures it; 0: the preview's).
+    private(set) var fitPixels: Double = 0
+    /// The preview's long side in pixels, as last rendered.
+    private var previewLong: Double = 0
+    private var pinchBase: Double?
+    private var panBase: MaskPoint?
+    private var loupeJob = 0
+    private lazy var loupeRenderer = PhotoRenderer()
+    private let loupeQueue = DispatchQueue(label: "loupe", qos: .userInitiated)
+
+    /// The finished picture's long side at full size, in pixels.
+    private var fullLong: Double { previewLong / max(previewScale, 1e-6) }
+
+    /// How many times larger than fit the picture shows.
+    var magnification: Double {
+        Viewport.magnification(percent: zoomPercent, full: fullLong, fit: fitPixels > 0 ? fitPixels : previewLong)
+    }
+
+    /// The part of the picture shown (shares from the top-left).
+    var visibleRect: ViewRect {
+        Viewport.visible(magnification: magnification, center: (viewCenter.x, viewCenter.y))
+    }
+
+    /// No tool, picker or comparison takes the touches on the photo (then they pan and zoom).
+    var touchesFree: Bool {
+        armedPicker == nil && geometryTool == nil && retouchTool == nil && canvasTool == nil && layerCanvasTool == nil && !isComparing
+    }
+
+    /// A drag pans the photo: zoomed in and no tool takes the touches.
+    var canPan: Bool { touchesFree && magnification > 1 }
+
+    /// The canvas measured the fitted picture.
+    func setFit(pixels: Double) {
+        guard abs(pixels - fitPixels) > 0.5 else { return }
+        fitPixels = pixels
+        updateLoupe()
+    }
+
+    /// Two fingers pinching: `factor` since they touched.
+    func pinch(_ factor: Double) {
+        let base = pinchBase ?? magnification
+        pinchBase = base
+        let fit = Viewport.fitPercent(full: fullLong, fit: fitPixels > 0 ? fitPixels : previewLong)
+        let m = min(32, max(1, base * factor))
+        zoomPercent = m <= 1.001 ? 0 : m * fit
+        loupe = nil
+    }
+
+    func endPinch() {
+        pinchBase = nil
+        updateLoupe()
+    }
+
+    /// A finger dragging the zoomed photo by `translation` points over a picture `size` points big.
+    func pan(by translation: CGSize, in size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        let base = panBase ?? viewCenter
+        panBase = base
+        let m = magnification
+        viewCenter = MaskPoint(base.x - Double(translation.width / size.width) / m, base.y - Double(translation.height / size.height) / m)
+        loupe = nil
+    }
+
+    func endPan() {
+        panBase = nil
+        // Keep the middle where the view stopped (it can't leave the picture).
+        let r = visibleRect
+        viewCenter = MaskPoint(r.x + r.width / 2, r.y + r.height / 2)
+        updateLoupe()
+    }
+
+    /// A double tap: zoomed in, back to fit; at fit, 100 % (or the first level above fit) around the point.
+    func toggleLoupe(at point: MaskPoint) {
+        if magnification > 1 {
+            setZoom(0)
+        } else {
+            let fit = Viewport.fitPercent(full: fullLong, fit: fitPixels > 0 ? fitPixels : previewLong)
+            setZoom(100 > fit + 0.5 ? 3 : Viewport.firstLevel(above: fit), center: point)
+        }
+    }
+
+    /// Zoom to a level of the Zoom choice (0 = fit), around `center` when given; `rendering`: show it now
+    /// (after a command the render follows anyway).
+    private func setZoom(_ index: Int, center: MaskPoint? = nil, rendering: Bool = true) {
+        guard Viewport.levels.indices.contains(index) else { return }
+        if let zoom = registry.control(id: "zoom") { state.set(zoom, to: Double(index)) }
+        zoomPercent = Viewport.levels[index]
+        if let center { viewCenter = center }
+        if index == 0 { viewCenter = MaskPoint(0.5, 0.5) }
+        loupe = nil
+        if rendering { render() }
+    }
+
+    /// "zoom 200", "zoom in", "fit": the Zoom choice changed (zooming in from fit skips levels smaller than fit).
+    private func followZoom(_ outcomes: [CommandInterpreter.Outcome]) {
+        for outcome in outcomes {
+            switch outcome {
+            case .changed("zoom", let from, let to):
+                let fit = Viewport.fitPercent(full: fullLong, fit: fitPixels > 0 ? fitPixels : previewLong)
+                var index = Int(to)
+                if to > from, Viewport.levels.indices.contains(index), Viewport.levels[index] <= fit + 0.5 {
+                    index = Viewport.firstLevel(above: fit)
+                }
+                setZoom(index, rendering: false)
+            case .ran("zoomFit"):
+                setZoom(0, rendering: false)
+            default:
+                break
+            }
+        }
+    }
+
+    /// Zoomed in past the preview's own pixels: renders the part shown from the full-size photo, in the
+    /// background with a renderer of its own, a moment after the last change (pans and edits settle first).
+    private func updateLoupe() {
+        loupeJob += 1
+        let job = loupeJob
+        loupe = nil  // an older rendering would show an older edit or place
+        guard showsPreview, previewLong > 0, magnification * (fitPixels > 0 ? fitPixels : previewLong) > previewLong * 1.05 else { return }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard let self, job == self.loupeJob else { return }
+            let rect = self.visibleRect, value = self.currentValue, state = self.state, original = self.original
+            let photos = self.layerPhotos.map { $0.full }, logo = self.watermarkLogo?.full
+            let exporter = self.loupeRenderer
+            exporter.lens = self.renderer.lens
+            self.loupeQueue.async {
+                let output = exporter.apply(to: original, value: value, masks: state.masks, retouches: state.retouches, geometry: state.geometry,
+                                            layers: state.layers, layerPhotos: photos, watermark: state.watermarkText, logo: logo)
+                let e = output.extent
+                let area = CGRect(x: e.minX + CGFloat(rect.x) * e.width, y: e.minY + CGFloat(1 - rect.y - rect.height) * e.height,
+                                  width: CGFloat(rect.width) * e.width, height: CGFloat(rect.height) * e.height).integral.intersection(e)
+                let cg = exporter.context.createCGImage(output, from: area)
+                Task { @MainActor in
+                    guard job == self.loupeJob, let cg else { return }
+                    self.loupe = (UIImage(cgImage: cg), rect)
+                }
+            }
+        }
     }
 
     /// Before / after is on: touches on the photo do nothing (it isn't the picture being edited).
@@ -1556,9 +1713,11 @@ final class EditorModel: ObservableObject {
         historyKey = nil
         historySeal = false
         let edited = editedPreview()
+        previewLong = Double(max(edited.extent.width, edited.extent.height))
         if showsPreview {
             preview = renderer.uiImage(shown(edited), hdr: isHDR)
             readScopes(edited)
+            updateLoupe()
         }
         pinRetouchSources()
         writePresets()

@@ -85,6 +85,19 @@ final class ViewRenderer {
         return CIImage(cgImage: cg).composited(over: image)
     }
 
+    /// The part `rect` (shares from the top-left) of a picture, enlarged `magnification` times back to
+    /// about the picture's size (the render gallery's view of a zoom).
+    static func zoomed(_ image: CIImage, to rect: ViewRect, magnification: Double) -> CIImage {
+        let e = atOrigin(image).extent
+        let area = CGRect(x: CGFloat(rect.x) * e.width, y: CGFloat(1 - rect.y - rect.height) * e.height,
+                          width: CGFloat(rect.width) * e.width, height: CGFloat(rect.height) * e.height)
+        let k = CGFloat(magnification)
+        return atOrigin(image).clampedToExtent().cropped(to: area)
+            .transformed(by: CGAffineTransform(translationX: -area.minX, y: -area.minY))
+            .transformed(by: CGAffineTransform(scaleX: k, y: k))
+            .cropped(to: CGRect(x: 0, y: 0, width: (area.width * k).rounded(), height: (area.height * k).rounded()))
+    }
+
     /// The picture moved so its frame starts at 0, 0.
     static func atOrigin(_ image: CIImage) -> CIImage {
         let e = image.extent

@@ -400,8 +400,8 @@ public struct CommandParser {
 
     static func direction(of token: String) -> Int? {
         switch token {
-        case "more", "up", "increase", "higher", "plus", "raise", "add", "boost", "+": return 1
-        case "less", "down", "decrease", "lower", "reduce", "minus", "drop", "-": return -1
+        case "more", "up", "increase", "higher", "plus", "raise", "add", "boost", "+", "in": return 1
+        case "less", "down", "decrease", "lower", "reduce", "minus", "drop", "-", "out": return -1
         default: return nil
         }
     }

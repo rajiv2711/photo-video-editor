@@ -209,7 +209,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 155. **Clipping warnings** — show lost highlights and shadows
 - [x] 156. **Vectorscope** — colour and skin-tone scope
 - [x] 157. **Color sampler** — RGB/LAB readout at a point
-- [ ] 158. **Zoom / 1:1 loupe** — inspect fine detail
+- [x] 158. **Zoom / 1:1 loupe** — inspect fine detail
 - [ ] 159. **Grid & guides** — thirds, golden ratio, grid overlay
 - [ ] 160. **Targeted adjustment** — drag on the photo to change the tone/colour under your finger
 - [ ] 161. **Soft proofing** — preview print or web colour

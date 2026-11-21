@@ -1645,6 +1645,17 @@
     {"id": "colorSampler", "label": "Color Sampler", "group": "view", "section": "Scopes", "kind": "action",
       "synonyms": ["colour sampler", "sampler", "sample colour", "sample color", "read colour", "read color", "rgb readout", "lab readout", "add sampler", "colour readout", "color readout"]},
     {"id": "clearSamplers", "label": "Clear Samplers", "group": "view", "section": "Scopes", "kind": "action",
-      "synonyms": ["remove samplers", "delete samplers", "no samplers", "clear samples", "clear colour samplers", "clear color samplers"]}
+      "synonyms": ["remove samplers", "delete samplers", "no samplers", "clear samples", "clear colour samplers", "clear color samplers"]},
+    {"id": "zoom", "label": "Zoom", "group": "view", "section": "Zoom", "kind": "choice",
+      "synonyms": ["zoom level", "magnify", "magnification", "loupe", "zoom to"],
+      "options": [{"id": "fit", "label": "Fit", "synonyms": ["fit to screen", "whole photo", "0"]},
+                  {"id": "25", "label": "25 %", "synonyms": ["25", "25%", "quarter"]},
+                  {"id": "50", "label": "50 %", "synonyms": ["50", "50%", "half"]},
+                  {"id": "100", "label": "100 %", "synonyms": ["100", "100%", "1 to 1", "one to one", "actual size", "actual pixels", "full size"]},
+                  {"id": "200", "label": "200 %", "synonyms": ["200", "200%", "double"]},
+                  {"id": "400", "label": "400 %", "synonyms": ["400", "400%"]},
+                  {"id": "800", "label": "800 %", "synonyms": ["800", "800%"]}]},
+    {"id": "zoomFit", "label": "Fit", "group": "view", "section": "Zoom", "kind": "action",
+      "synonyms": ["zoom to fit", "fit to screen", "fit view", "fit photo", "zoom fit", "fit the photo", "show whole photo", "zoom out fully"]}
   ]
 }

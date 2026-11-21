@@ -528,6 +528,36 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(Scopes.readout(0.5, 0.5, 0.5).lab[0], 53.4, accuracy: 0.2)
     }
 
+    // MARK: - Zoom
+
+    func testZoomNamesAndLevels() {
+        XCTAssertEqual(parse("zoom 100"), [.set("zoom", 3)])
+        XCTAssertEqual(parse("zoom 1 to 1"), [.set("zoom", 3)])
+        XCTAssertEqual(parse("zoom 200%"), [.set("zoom", 4)])
+        XCTAssertEqual(parse("zoom in"), [.nudge("zoom", 1)])
+        XCTAssertEqual(parse("zoom out"), [.nudge("zoom", -1)])
+        XCTAssertEqual(parse("fit"), [.run("zoomFit")])
+        XCTAssertEqual(parse("zoom to fit"), [.run("zoomFit")])
+        XCTAssertEqual(parse("zoom blur"), [.select("zoomBlur")], "the creative filter keeps its name")
+        XCTAssertEqual(parse("cut out 70"), [.set("cutout", 70)])
+        XCTAssertEqual(Viewport.levels.count, registry.control(id: "zoom")!.options.count)
+        XCTAssertEqual(registry.control(id: "zoom")!.options.map(\.id).dropFirst().map { Double($0)! }, Array(Viewport.levels.dropFirst()))
+    }
+
+    func testViewportMaths() {
+        // A 4000 px photo fitted at 1000 px: 100 % is four times fit; 25 % is fit itself.
+        XCTAssertEqual(Viewport.magnification(percent: 100, full: 4000, fit: 1000), 4)
+        XCTAssertEqual(Viewport.magnification(percent: 10, full: 4000, fit: 1000), 1, "never smaller than fit")
+        XCTAssertEqual(Viewport.magnification(percent: 0, full: 4000, fit: 1000), 1)
+        XCTAssertEqual(Viewport.fitPercent(full: 4000, fit: 1000), 25)
+        XCTAssertEqual(Viewport.firstLevel(above: 25), 2, "zoom in from fit goes to 50 %")
+        XCTAssertEqual(Viewport.firstLevel(above: 60), 3)
+        // The view stays inside the photo.
+        XCTAssertEqual(Viewport.visible(magnification: 2, center: (0.5, 0.5)), ViewRect(0.25, 0.25, 0.5, 0.5))
+        XCTAssertEqual(Viewport.visible(magnification: 4, center: (0, 1)), ViewRect(0, 0.75, 0.25, 0.25))
+        XCTAssertEqual(Viewport.visible(magnification: 1, center: (0.9, 0.1)), ViewRect(0, 0, 1, 1))
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

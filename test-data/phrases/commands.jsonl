@@ -1232,3 +1232,10 @@
 {"group":"view","text":"sample colour","expect":[{"op":"run","control":"colorSampler"}]}
 {"group":"view","text":"clear samplers","expect":[{"op":"run","control":"clearSamplers"}]}
 {"group":"view","text":"remove samplers","expect":[{"op":"run","control":"clearSamplers"}]}
+{"group":"view","text":"zoom 100","expect":[{"op":"set","control":"zoom","value":3}]}
+{"group":"view","text":"zoom one to one","expect":[{"op":"set","control":"zoom","value":3}]}
+{"group":"view","text":"zoom 200","expect":[{"op":"set","control":"zoom","value":4}]}
+{"group":"view","text":"zoom in","expect":[{"op":"nudge","control":"zoom","steps":1}]}
+{"group":"view","text":"zoom out","expect":[{"op":"nudge","control":"zoom","steps":-1}]}
+{"group":"view","text":"fit","expect":[{"op":"run","control":"zoomFit"}]}
+{"group":"view","text":"zoom to fit","expect":[{"op":"run","control":"zoomFit"}]}
