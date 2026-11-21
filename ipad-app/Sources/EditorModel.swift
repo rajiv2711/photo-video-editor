@@ -38,6 +38,8 @@ final class EditorModel: ObservableObject {
     @Published private(set) var samplers: [MaskPoint] = []
     /// An import asked for by name or button ("photos", "files", "camera"): the view shows its picker.
     @Published var importer: String?
+    /// The library's map is showing (Map).
+    @Published var showsMap = false
 
     /// What the View panel's scopes show.
     struct ScopeReadings: Equatable {
@@ -791,6 +793,7 @@ final class EditorModel: ObservableObject {
             if case .historyShown = event { revealedPanel = "history" }
             if case .library(.browsed) = event { revealedPanel = "library" }
             if case .library(.info) = event { revealedPanel = "library/Info" }
+            if case .library(.mapShown) = event { showsMap = true }
             // "next photo": the engine has put that photo's edit in place; its picture comes now.
             if case .library(.opened(let id, _, _)) = event {
                 showLibraryPhoto(id)
@@ -1186,6 +1189,9 @@ final class EditorModel: ObservableObject {
             return (count == 0 ? "This photo isn't in a stack" : "Unstacked \(count) photos", count == 0)
         case .stacksExpanded(let open):
             return (open ? "Stacks expanded: every photo shows" : "Stacks collapsed: one photo of each shows", false)
+        case .mapShown(let located, let shown):
+            return (located == 0 ? "None of the \(shown) photos shown says where it was taken"
+                    : "Map: \(located) of \(shown) photos say where they were taken · tap one to edit it", located == 0)
         }
     }
 
@@ -1240,6 +1246,8 @@ final class EditorModel: ObservableObject {
             if let lat = photo.latitude, let lon = photo.longitude { out["photo.gps"] = String(format: "%.2f,%.2f", lat, lon) }
         }
         out["library.stacks"] = String(lib.stacks.count)
+        out["library.located"] = String(lib.located.count)
+        if showsMap { out["ui.map"] = "shown" }
         out["library.selected"] = String(lib.selected.count)
         if let id = lib.current { out["photo.stack"] = String(lib.stackCount(of: id)) }
         out["library.albums"] = lib.albums.map { "\($0.name):\($0.photos.count)" }.joined(separator: ", ")

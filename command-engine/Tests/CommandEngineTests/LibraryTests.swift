@@ -456,4 +456,28 @@ final class LibraryTests: XCTestCase {
         run("next photo")
         XCTAssertEqual(interpreter.workspace.library.current, "p3")
     }
+
+    // MARK: - Map (#171)
+
+    func testMapShowsThePhotosThatSayWhere() {
+        XCTAssertEqual(parse("show map"), [.run("showMap")])
+        XCTAssertEqual(parse("gradient map"), [.select("gradientMap")])
+        makeLibrary()
+        XCTAssertNil(interpreter.workspace.library.mapRegion)
+        interpreter.workspace.library.photos[0].latitude = 51.5      // c
+        interpreter.workspace.library.photos[0].longitude = -0.1
+        interpreter.workspace.library.photos[1].latitude = 51.7      // a
+        interpreter.workspace.library.photos[1].longitude = -0.3
+        XCTAssertEqual(events(run("map")), [.mapShown(located: 2, shown: 3)])
+        let region = interpreter.workspace.library.mapRegion!
+        XCTAssertEqual(region.latitude, 51.6, accuracy: 1e-9)
+        XCTAssertEqual(region.longitude, -0.2, accuracy: 1e-9)
+        XCTAssertEqual(region.latitudeSpan, 0.28, accuracy: 1e-9)
+        // One photo: a small region around it.
+        interpreter.workspace.library.photos[1].latitude = nil
+        XCTAssertEqual(interpreter.workspace.library.mapRegion?.latitudeSpan, 0.01)
+        // The filter decides which photos are on the map.
+        run("photo 1 pick show picks")
+        XCTAssertEqual(interpreter.workspace.library.located.count, 0)
+    }
 }

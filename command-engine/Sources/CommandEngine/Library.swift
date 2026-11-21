@@ -204,6 +204,16 @@ public enum LibraryEvent: Equatable {
     case unstacked(Int)
     /// Stacks show all their photos (true) or only the top one.
     case stacksExpanded(Bool)
+    /// The map: how many of the photos shown say where they were taken.
+    case mapShown(located: Int, shown: Int)
+}
+
+/// The part of the world a map shows: its middle and how far it reaches (degrees).
+public struct MapRegion: Equatable {
+    public var latitude: Double
+    public var longitude: Double
+    public var latitudeSpan: Double
+    public var longitudeSpan: Double
 }
 
 /// The photos imported, the albums, the filter, and the photo being edited.
@@ -239,7 +249,8 @@ public struct Library: Codable, Equatable {
                                               "showRating", "showPicks", "showRejects", "showUnflagged", "showLabel", "showAllPhotos",
                                               "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum",
                                               "addKeyword", "removeKeyword", "showKeyword", "photoTitle", "photoCaption", "photoCopyright", "photoInfo",
-                                              "selectPhoto", "clearSelection", "stackThese", "autoStack", "unstack", "expandStacks", "collapseStacks"]
+                                              "selectPhoto", "clearSelection", "stackThese", "autoStack", "unstack", "expandStacks", "collapseStacks",
+                                              "showMap"]
 
     /// Colour labels, as the options of Label (controls.json; Show Label adds "any").
     public static let labels = ["red", "yellow", "green", "blue", "purple"]
@@ -289,6 +300,26 @@ public struct Library: Codable, Equatable {
             if let stack = photo.stack, top[stack] == nil || photo.id == current { top[stack] = photo.id }
         }
         return passing.filter { photo in photo.stack.map { top[$0] == photo.id } ?? true }
+    }
+
+    /// The photos shown that say where they were taken (GPS), for the map.
+    public var located: [LibraryPhoto] {
+        shown.filter { $0.latitude != nil && $0.longitude != nil }
+    }
+
+    /// The region that holds every photo on the map, with a margin (at least about 1 km across); nil
+    /// when none says where it was taken.
+    public var mapRegion: MapRegion? {
+        let points = located.compactMap { p in p.latitude.flatMap { lat in p.longitude.map { (lat, $0) } } }
+        guard let first = points.first else { return nil }
+        var lat = (first.0, first.0), lon = (first.1, first.1)
+        for (a, b) in points {
+            lat = (Swift.min(lat.0, a), Swift.max(lat.1, a))
+            lon = (Swift.min(lon.0, b), Swift.max(lon.1, b))
+        }
+        return MapRegion(latitude: (lat.0 + lat.1) / 2, longitude: (lon.0 + lon.1) / 2,
+                         latitudeSpan: Swift.min(170, Swift.max(0.01, (lat.1 - lat.0) * 1.4)),
+                         longitudeSpan: Swift.min(360, Swift.max(0.01, (lon.1 - lon.0) * 1.4)))
     }
 
     /// How many photos are in the photo's stack (1: in none).
@@ -466,6 +497,8 @@ public struct Library: Codable, Equatable {
         case "expandStacks", "collapseStacks":
             stacksExpanded = id == "expandStacks"
             return ([.stacksExpanded(stacksExpanded)], nil)
+        case "showMap":
+            return ([.mapShown(located: located.count, shown: list.count)], nil)
         case "showKeyword":
             // No words: any keyword again.
             filter.keyword = (command.text ?? "").trimmingCharacters(in: .whitespaces)

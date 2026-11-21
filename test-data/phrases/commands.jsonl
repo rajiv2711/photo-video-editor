@@ -1342,3 +1342,7 @@
 {"group":"library","text":"select photo","expect":[{"op":"run","control":"selectPhoto"}]}
 {"group":"library","text":"clear selection","expect":[{"op":"run","control":"clearSelection"}]}
 {"group":"library","text":"deselect all","expect":[{"op":"run","control":"clearSelection"}]}
+{"group":"library","text":"map","expect":[{"op":"run","control":"showMap"}]}
+{"group":"library","text":"show map","expect":[{"op":"run","control":"showMap"}]}
+{"group":"library","text":"browse by location","expect":[{"op":"run","control":"showMap"}]}
+{"group":"library","text":"gradient map","expect":[{"op":"select","control":"gradientMap"}]}

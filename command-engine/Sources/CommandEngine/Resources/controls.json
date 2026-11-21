@@ -1730,6 +1730,7 @@
     {"id": "autoStack", "label": "Auto Stack", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["auto stack by time", "stack by capture time", "stack by time", "auto stack bursts", "stack bursts", "group bursts"]},
     {"id": "unstack", "label": "Unstack", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["unstack photos", "remove stack", "break stack", "undo stack", "ungroup stack"]},
     {"id": "expandStacks", "label": "Expand Stacks", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["expand stack", "open stacks", "show stacks", "show all in stacks", "expand all stacks"]},
-    {"id": "collapseStacks", "label": "Collapse Stacks", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["collapse stack", "close stacks", "hide stacks", "collapse all stacks"]}
+    {"id": "collapseStacks", "label": "Collapse Stacks", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["collapse stack", "close stacks", "hide stacks", "collapse all stacks"]},
+    {"id": "showMap", "label": "Map", "group": "library", "section": "Map", "kind": "action", "synonyms": ["show map", "photo map", "map view", "browse by location", "places", "where taken", "show places", "photos on map"]}
   ]
 }

@@ -75,6 +75,7 @@ struct EditorView: View {
             .sheet(isPresented: importer("camera")) {
                 CameraImportView(importer: cameras) { urls in model.importFiles(urls) }
             }
+            .sheet(isPresented: $model.showsMap) { LibraryMapView(model: model) }
             .onChange(of: scenePhase) { _, phase in
                 // The edit of the photo being edited is kept with it in the library.
                 if phase != .active { model.saveLibrary() }

@@ -225,7 +225,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [ ] 168. **People** — group photos by face **AI · later**
 - [ ] 169. **Assisted culling** — score sharpness, eyes open, duplicates **AI · later**
 - [x] 170. **Stacks** — group bursts and brackets
-- [ ] 171. **Map** — browse by location
+- [x] 171. **Map** — browse by location
 - [ ] 172. **Tethered capture** — shoot from a connected camera
 - [ ] 173. **Pro camera** — capture with manual controls and raw
 

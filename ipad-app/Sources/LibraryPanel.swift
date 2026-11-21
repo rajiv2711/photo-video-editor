@@ -20,6 +20,7 @@ struct LibraryPanel: View {
                     Button { model.apply([.run("importPhotos")]) } label: { Label("Photos", systemImage: "photo.on.rectangle") }
                     Button { model.apply([.run("importFiles")]) } label: { Label("Files", systemImage: "folder") }
                     Button { model.apply([.run("importCamera")]) } label: { Label("Card", systemImage: "sdcard") }
+                    Button { model.apply([.run("showMap")]) } label: { Label("Map", systemImage: "map") }
                 }
                 .buttonStyle(.bordered)
                 .font(.footnote)
