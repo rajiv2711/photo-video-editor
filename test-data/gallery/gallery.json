@@ -486,6 +486,9 @@
     {"id": "oil-paint", "command": "oil paint", "control": "oilPaint", "expect": [{"metric": "edge", "dir": "down", "min": 1}]},
     {"id": "emboss", "command": "emboss", "control": "emboss", "expect": [{"metric": "mean_sat", "dir": "down", "min": 3}, {"metric": "p5_luma", "dir": "up", "min": 30}]},
     {"id": "find-edges", "command": "find edges", "control": "findEdges", "expect": [{"metric": "mean_luma", "dir": "up", "min": 30}, {"metric": "p5_luma", "dir": "up", "min": 50}]},
-    {"id": "wind", "command": "wind", "control": "wind", "expect": [{"metric": "diff", "dir": "changed", "min": 2}]}
+    {"id": "wind", "command": "wind", "control": "wind", "expect": [{"metric": "diff", "dir": "changed", "min": 2}]},
+    {"id": "mosaic", "command": "mosaic 12", "control": "mosaic", "expect": [{"metric": "flat", "dir": "up", "region": [0.25, 0.3, 0.75, 0.75], "min": 15}]},
+    {"id": "crystallize", "command": "crystallize", "control": "crystallize", "expect": [{"metric": "flat", "dir": "up", "region": [0.25, 0.3, 0.75, 0.75], "min": 10}, {"metric": "diff", "dir": "changed", "min": 2}]},
+    {"id": "halftone", "command": "halftone", "control": "halftone", "expect": [{"metric": "edge", "dir": "up", "region": [0, 0, 1, 0.15], "min": 2}]}
   ]
 }

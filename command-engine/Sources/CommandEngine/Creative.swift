@@ -187,4 +187,21 @@ public enum CreativeFilters {
     public static func wind(_ amount: Double, longSide: Double) -> (length: Double, band: Double) {
         (max(0, amount) / 100 * 0.08 * longSide, max(1, 0.0012 * longSide))
     }
+
+    // MARK: - Pixelate
+
+    /// Mosaic's square cells (pixels): up to 8 % of the long side ("mosaic 12": about 1 %).
+    public static func mosaicCell(_ amount: Double, longSide: Double) -> Double {
+        max(0, amount) / 100 * 0.08 * longSide
+    }
+
+    /// Crystallize's cells (their radius, pixels): up to 6 % of the long side.
+    public static func crystalRadius(_ amount: Double, longSide: Double) -> Double {
+        max(0, amount) / 100 * 0.06 * longSide
+    }
+
+    /// Halftone's dot spacing (pixels): up to 4 % of the long side.
+    public static func halftoneSpacing(_ amount: Double, longSide: Double) -> Double {
+        max(0, amount) / 100 * 0.04 * longSide
+    }
 }

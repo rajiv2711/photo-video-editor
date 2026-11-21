@@ -3,7 +3,7 @@ import CoreImage
 
 /// The Creative panel (CreativeFilters in CommandEngine), after the crop and before the post-crop
 /// vignette and grain, so the filters see the picture as framed. Every filter is a slider, 0 = off;
-/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize. Sizes are shares of the picture's long side, so the
+/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → pixelate. Sizes are shares of the picture's long side, so the
 /// preview and the saved photo look alike. The Effect Center and Angle (Placement) are shared.
 final class CreativeRenderer {
     let context: CIContext
@@ -124,6 +124,35 @@ final class CreativeRenderer {
             let wind = CreativeFilters.wind(v("wind"), longSide: side)
             output = Filters.linear(apply(Self.windKernel, to: Filters.encoded(output), extent: extent, reach: wind.length,
                                           arguments: [CIVector(x: CGFloat(cos(angle)), y: CGFloat(sin(angle))), wind.length, wind.band]))
+        }
+
+        // Pixelate filters: square cells from the picture's top-left corner, crystal cells, or a
+        // colour halftone (CMYK dots on white, on sRGB levels so the midtones get mid-size dots).
+        let corner = CIVector(x: extent.minX, y: extent.maxY)
+        let cell = CreativeFilters.mosaicCell(v("mosaic"), longSide: side)
+        if cell >= 1 {
+            output = output.clampedToExtent().applyingFilter("CIPixellate", parameters: [
+                kCIInputCenterKey: corner,
+                kCIInputScaleKey: cell,
+            ]).cropped(to: extent)
+        }
+        let crystal = CreativeFilters.crystalRadius(v("crystallize"), longSide: side)
+        if crystal >= 1 {
+            output = output.clampedToExtent().applyingFilter("CICrystallize", parameters: [
+                kCIInputCenterKey: corner,
+                kCIInputRadiusKey: crystal,
+            ]).cropped(to: extent)
+        }
+        let dots = CreativeFilters.halftoneSpacing(v("halftone"), longSide: side)
+        if dots >= 2 {
+            output = Filters.linear(Filters.encoded(output).clampedToExtent().applyingFilter("CICMYKHalftone", parameters: [
+                kCIInputCenterKey: corner,
+                "inputWidth": dots,
+                kCIInputAngleKey: 0,
+                "inputSharpness": 0.7,
+                "inputGCR": 1,
+                "inputUCR": 0.5,
+            ]).cropped(to: extent))
         }
         return output
     }

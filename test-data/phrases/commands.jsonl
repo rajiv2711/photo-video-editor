@@ -965,3 +965,9 @@
 {"group":"creative","text":"wind","expect":[{"op":"select","control":"wind"}]}
 {"group":"creative","text":"wind 80","expect":[{"op":"set","control":"wind","value":80}]}
 {"group":"creative","text":"wind direction 180","expect":[{"op":"set","control":"effectAngle","value":180}]}
+{"group":"creative","text":"mosaic 12","expect":[{"op":"set","control":"mosaic","value":12}]}
+{"group":"creative","text":"pixelate","expect":[{"op":"select","control":"mosaic"}]}
+{"group":"creative","text":"crystallize","expect":[{"op":"select","control":"crystallize"}]}
+{"group":"creative","text":"crystallize 50","expect":[{"op":"set","control":"crystallize","value":50}]}
+{"group":"creative","text":"halftone","expect":[{"op":"select","control":"halftone"}]}
+{"group":"creative","text":"halftone more","expect":[{"op":"nudge","control":"halftone","steps":1}]}

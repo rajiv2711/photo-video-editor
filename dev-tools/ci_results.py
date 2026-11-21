@@ -14,6 +14,7 @@ p95 luma down) and writes "reports/Operation test report.html". An expectation w
 Geometry: width, height (pixels) and aspect (width / height) of the picture; tilt: how far its strong
 straight edges are from level or upright (degrees, weighted median); vertical_spread: how much the nearly
 upright edges disagree (degrees, weighted spread: converging verticals spread, parallel ones don't).
+flat: the share (%) of pixels whose 3 x 3 neighbourhood spans at most 3 luma levels (mosaic, cutout).
 
 Exit code: 0 all passed · 1 a build step or a case failed · 3 no results for this commit yet.
 """
@@ -48,6 +49,7 @@ METRIC_NAMES = {
     "edge": "fine detail", "local_contrast": "local contrast", "fringe": "edge colour",
     "corner_luma": "corner luma", "center_luma": "centre luma",
     "width": "width (px)", "height": "height (px)", "aspect": "aspect (w/h)", "tilt": "tilt (°)", "vertical_spread": "vertical spread (°)",
+    "flat": "flat share (%)",
 }
 STEPS = [("linux_tests", "Linux tests"), ("generate", "Xcode project"), ("build", "Build"),
          ("install", "Install"), ("gallery", "Gallery"), ("screenshots", "Screenshots")]
@@ -151,6 +153,15 @@ def crop(a: np.ndarray, region: list) -> np.ndarray:
     return a[y0:y1, x0:x1]
 
 
+def flat_share(luma: np.ndarray) -> float:
+    """Share (%) of pixels whose 3 x 3 neighbourhood spans at most 3 luma levels: flat patches (mosaic,
+    crystallize, cutout)."""
+    h, w = luma.shape
+    p = np.pad(luma, 1, mode="edge")
+    around = np.stack([p[dy:dy + h, dx:dx + w] for dy in range(3) for dx in range(3)])
+    return float((around.max(axis=0) - around.min(axis=0) <= 3).mean() * 100)
+
+
 def stats_of(a: np.ndarray) -> dict:
     luma = a @ np.array([0.2126, 0.7152, 0.0722])
     hi, lo = a.max(axis=2), a.min(axis=2)
@@ -161,6 +172,7 @@ def stats_of(a: np.ndarray) -> dict:
         "p95_luma": p95, "mean_sat": sat.mean(),
         "mean_r": a[..., 0].mean(), "mean_g": a[..., 1].mean(), "mean_b": a[..., 2].mean(),
         "width": float(a.shape[1]), "height": float(a.shape[0]), "aspect": a.shape[1] / a.shape[0],
+        "flat": flat_share(luma),
     }
     if min(a.shape[:2]) >= 40:  # the detail measures need room for their blurs
         stats.update(detail_stats(a, luma))

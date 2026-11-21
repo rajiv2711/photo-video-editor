@@ -223,4 +223,22 @@ final class CreativeTests: XCTestCase {
         XCTAssertEqual(CreativeFilters.wind(100, longSide: 1000).length, 80, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.edgeOffset(longSide: 400), 1)
     }
+
+    // MARK: - Pixelate
+
+    func testPixelateNames() {
+        XCTAssertEqual(parse("mosaic 12"), [.set("mosaic", 12)])
+        XCTAssertEqual(parse("pixelate"), [.select("mosaic")])
+        XCTAssertEqual(parse("crystallize"), [.select("crystallize")])
+        XCTAssertEqual(parse("halftone 40"), [.set("halftone", 40)])
+        // Older names keep their meaning.
+        XCTAssertEqual(parse("pixel size 2000"), [.set("longEdge", 2000)])
+        XCTAssertEqual(parse("colour more"), [.ambiguous("colour", ["vibrance", "saturation"])])
+    }
+
+    func testPixelateSizesFollowThePicture() {
+        XCTAssertEqual(CreativeFilters.mosaicCell(12, longSide: 1000), 9.6, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.crystalRadius(50, longSide: 800), 24, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.halftoneSpacing(30, longSide: 800), 9.6, accuracy: 1e-9)
+    }
 }

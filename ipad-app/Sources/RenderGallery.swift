@@ -610,7 +610,7 @@ enum RenderGallery {
     static let filtersToDescribe = ["CIHighlightShadowAdjust", "CIColorCurves", "CIAreaHistogram", "CIUnsharpMask",
                                     "CIVibrance", "CIHueAdjust", "CIColorCubeWithColorSpace", "CIMorphologyGradient",
                                     "CIMorphologyMinimum", "CIDissolveTransition", "CIBlendWithMask", "CIBloom",
-                                    "CIMedianFilter", "CIRandomGenerator", "CIMotionBlur", "CIZoomBlur"]
+                                    "CIMedianFilter", "CIRandomGenerator", "CIMotionBlur", "CIZoomBlur", "CIPixellate", "CICrystallize", "CICMYKHalftone"]
 
     private static func writeFilterAttributes(to folder: URL) {
         var text = ""
