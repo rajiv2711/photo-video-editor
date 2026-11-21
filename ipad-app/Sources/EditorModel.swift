@@ -114,9 +114,13 @@ final class EditorModel: ObservableObject {
     /// Back to the untouched photo: every control at its default, nothing focused, no feedback.
     func startOver() {
         state = EditState()
-        let presets = interpreter.workspace.presets
+        // The user's presets and copied settings outlive the edit (not in the render gallery).
+        let kept = interpreter.workspace
         interpreter = CommandInterpreter(registry: registry)
-        if keepsPresets { interpreter.workspace.presets = presets }
+        if keepsPresets {
+            interpreter.workspace.presets = kept.presets
+            interpreter.workspace.clipboard = kept.clipboard
+        }
         installActions()
         focusedControlID = nil
         feedback = nil
@@ -1036,6 +1040,12 @@ final class EditorModel: ObservableObject {
             return ("“\(word)” could be: " + names.map { "“\($0)”" }.joined(separator: ", "), true)
         case .builtInPreset(let name):
             return ("“\(name)” is a built-in preset: it can't be renamed or deleted", true)
+        case .copied(let groups):
+            return ("Copied: \(panels(groups)) (say “paste settings” on another photo)", false)
+        case .pasted(let changes):
+            return ("Pasted (\(changes) setting\(changes == 1 ? "" : "s") changed)", false)
+        case .nothingCopied:
+            return ("Nothing copied yet: say “copy settings” first", true)
         }
     }
 

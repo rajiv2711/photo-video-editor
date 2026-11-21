@@ -1165,3 +1165,9 @@
 {"group":"presets","text":"preset noir","expect":[{"op":"run","control":"applyPreset","text":"noir"}]}
 {"group":"presets","text":"preset golden hour","expect":[{"op":"run","control":"applyPreset","text":"golden hour"}]}
 {"group":"presets","text":"apply preset black and white infrared","expect":[{"op":"run","control":"applyPreset","text":"black and white infrared"}]}
+{"group":"presets","text":"copy settings","expect":[{"op":"run","control":"copySettings"}]}
+{"group":"presets","text":"copy edits","expect":[{"op":"run","control":"copySettings"}]}
+{"group":"presets","text":"copy","expect":[{"op":"run","control":"copySettings"}]}
+{"group":"presets","text":"paste settings","expect":[{"op":"run","control":"pasteSettings"}]}
+{"group":"presets","text":"paste","expect":[{"op":"run","control":"pasteSettings"}]}
+{"group":"presets","text":"paste the edits","expect":[{"op":"run","control":"pasteSettings"}]}

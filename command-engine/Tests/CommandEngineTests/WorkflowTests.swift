@@ -199,6 +199,21 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(value("toning"), 1)
     }
 
+    // MARK: - Copy / paste
+
+    func testCopyAndPasteTakeTheIncludedPanels() {
+        XCTAssertEqual(parse("copy settings"), [.run("copySettings")])
+        XCTAssertEqual(parse("paste"), [.run("pasteSettings")])
+        XCTAssertEqual(events(run("paste settings")), [.nothingCopied])
+        run("exposure 1 temperature 30 crop left 20 include light off")
+        XCTAssertEqual(events(run("copy settings")), [.copied(["color", "effects", "detail", "optics", "creative"])])
+        state = EditState()
+        run("exposure -1 paste settings")
+        XCTAssertEqual(value("temperature"), 30)
+        XCTAssertEqual(value("exposure"), -1, "light wasn't copied")
+        XCTAssertEqual(value("cropLeft"), 0, "the crop belongs to its own photo unless included")
+    }
+
     func testNoPresetSaysSo() {
         XCTAssertEqual(events(run("preset nothing like this")), [.noPreset("nothing like this")])
         XCTAssertEqual(value("exposure"), 0)

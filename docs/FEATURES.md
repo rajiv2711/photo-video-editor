@@ -192,7 +192,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 141. **Premium preset packs** — built-in looks: film, portrait, travel…
 - [ ] 142. **Adaptive presets** — presets that auto-mask sky, subject or portrait **AI · later**
 - [ ] 143. **Recommended presets** — AI suggests looks for this photo **AI · later**
-- [ ] 144. **Copy / paste edits** — choose which settings to copy
+- [x] 144. **Copy / paste edits** — choose which settings to copy
 - [ ] 145. **Batch edit** — apply edits to many photos at once
 - [ ] 146. **Match exposures** — even out brightness across a set
 - [ ] 147. **Previous** — apply the last photo's edits

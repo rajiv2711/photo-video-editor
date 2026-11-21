@@ -19,6 +19,12 @@ public enum WorkflowEvent: Equatable {
     case presetChoices(word: String, names: [String])
     /// Built-in presets can't be renamed or deleted.
     case builtInPreset(String)
+    /// The settings of these panels were copied.
+    case copied([String])
+    /// Copied settings were pasted: how many settings changed.
+    case pasted(changes: Int)
+    /// "paste" before anything was copied.
+    case nothingCopied
 }
 
 /// The presets, and later the history, copies and snapshots of the photo being edited.
@@ -30,9 +36,11 @@ public struct Workspace {
     public let packs: [Preset]
     /// The preset applied last: Preset Amount applies it again at the new strength.
     public private(set) var applied: Preset?
+    /// Settings copied (Copy Settings), for pasting on this photo or another.
+    public var clipboard: Preset?
 
     /// The actions the workspace runs (the applier never sees them).
-    public static let actions: Set<String> = ["applyPreset", "savePreset", "renamePreset", "deletePreset"]
+    public static let actions: Set<String> = ["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings"]
 
     public init(registry: ControlRegistry, packs: [Preset] = Presets.bundled()) {
         self.registry = registry
@@ -101,6 +109,14 @@ public struct Workspace {
             case .failed(let event):
                 return [ran, .workflow(event)]
             }
+        case "copySettings":
+            // The panels the Include switches choose now.
+            let groups = Presets.included(state, registry: registry)
+            clipboard = Preset.capture(state, name: "Copied settings", groups: groups, registry: registry)
+            return [ran, .workflow(.copied(groups))]
+        case "pasteSettings":
+            guard let clipboard else { return [ran, .workflow(.nothingCopied)] }
+            return [ran, .workflow(.pasted(changes: clipboard.apply(to: &state, registry: registry)))]
         default:
             return [ran]
         }
