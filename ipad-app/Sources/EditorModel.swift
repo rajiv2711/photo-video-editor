@@ -106,6 +106,10 @@ final class EditorModel: ObservableObject {
     var exportsFiles = true
     /// The name of the last file exported (the render gallery's manifest).
     private var lastExported = ""
+    /// Save To Files: the file the Files app's save dialog shows (nil: none).
+    @Published var fileToSave: (document: ExportDocument, type: UTType, name: String)?
+    /// Share: the exported file the share sheet sends (nil: none).
+    @Published var shareFile: URL?
 
     /// `image` replaces the bundled test photo (the render gallery passes a small copy);
     /// `previewSide` is the long side of the live preview; `libraryFolder` where the library is kept.
@@ -843,6 +847,8 @@ final class EditorModel: ObservableObject {
             }
             if id == "tetheredShot" { tetheredShot() }
             if id == "export" { save() }
+            if id == "saveToFiles" { saveToFiles() }
+            if id == "share" { share() }
             if id == "proCamera" { showsCamera = true }
             if id == "takePhoto" {
                 showsCamera = true
@@ -1320,6 +1326,8 @@ final class EditorModel: ObservableObject {
             if let lat = photo.latitude, let lon = photo.longitude { out["photo.gps"] = String(format: "%.2f,%.2f", lat, lon) }
         }
         if !lastExported.isEmpty { out["export.saved"] = lastExported }
+        if let url = shareFile { out["export.shared"] = url.lastPathComponent }
+        if let file = fileToSave { out["export.files"] = file.name }
         out["export.presets"] = interpreter.workspace.exportPresets.map(\.name).joined(separator: ", ")
         out["camera.tethered"] = cameras.tethered ? "on" : "off"
         if showsCamera { out["ui.camera"] = "shown" }
@@ -1810,6 +1818,47 @@ final class EditorModel: ObservableObject {
             return
         }
         saveToPhotos([file.data], names: [file.name], done: "Saved \(file.name) to Photos" + (file.note.map { " (\($0))" } ?? "") + ".")
+    }
+
+    /// Save To Files: the photo as the Export panel says, in the Files app's save dialog (where to keep it).
+    func saveToFiles() {
+        guard let file = exportFile() else {
+            feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
+            return
+        }
+        interpreter.workspace.library.exportCount += 1
+        saveLibrary()
+        lastExported = file.name
+        feedback = Feedback(text: "Save \(file.name): choose where in Files" + (file.note.map { " (\($0))" } ?? ""))
+        fileToSave = (ExportDocument(data: file.data), UTType(file.type) ?? .jpeg, file.name)
+    }
+
+    /// The Files app saved the export.
+    func saved(to url: URL) {
+        feedback = Feedback(text: "Saved \(url.lastPathComponent) in Files")
+    }
+
+    /// Share: the photo as the Export panel says, as a file named as it says, in the share sheet.
+    func share() {
+        guard let file = exportFile() else {
+            feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
+            return
+        }
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("share", isDirectory: true)
+        try? FileManager.default.removeItem(at: folder)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let url = folder.appendingPathComponent(file.name)
+        do {
+            try file.data.write(to: url, options: .atomic)
+        } catch {
+            feedback = Feedback(text: "Couldn't make the file to share.", isProblem: true)
+            return
+        }
+        interpreter.workspace.library.exportCount += 1
+        saveLibrary()
+        lastExported = file.name
+        feedback = Feedback(text: "Sharing \(file.name)" + (file.note.map { " (\($0))" } ?? ""))
+        shareFile = url
     }
 
     /// The full-size edited photo.

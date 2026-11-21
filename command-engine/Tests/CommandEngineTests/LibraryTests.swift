@@ -647,4 +647,16 @@ final class LibraryTests: XCTestCase {
         // An export preset is no edit: nothing to undo; the edit's presets don't take export settings.
         XCTAssertFalse(interpreter.workspace.history.canUndo)
     }
+
+    // MARK: - Save / share (#176)
+
+    func testSaveAndShareNamesReachTheirControls() {
+        XCTAssertEqual(parse("save to files"), [.run("saveToFiles")])
+        XCTAssertEqual(parse("share"), [.run("share")])
+        XCTAssertEqual(parse("save to photos"), [.run("export")])
+        // The words after a known export preset's name are commands again.
+        run("export preset web share")
+        XCTAssertEqual(interpreter.lastCommands, [.run("exportPreset", text: "web share")])
+        XCTAssertEqual(value("exportLongEdge"), 2048)
+    }
 }

@@ -1772,6 +1772,8 @@
     {"id": "exportName", "label": "Export Name", "group": "export", "section": "Naming", "kind": "action", "takesText": true, "synonyms": ["custom file name", "name exports", "export file name", "file name text"]},
     {"id": "exportPreset", "label": "Export Preset", "group": "export", "section": "Presets", "kind": "action", "takesText": true, "synonyms": ["use export preset", "apply export preset", "load export preset", "export settings", "export for"]},
     {"id": "saveExportPreset", "label": "Save Export Preset", "group": "export", "section": "Presets", "kind": "action", "takesText": true, "synonyms": ["new export preset", "save export settings", "create export preset", "make export preset"]},
-    {"id": "deleteExportPreset", "label": "Delete Export Preset", "group": "export", "section": "Presets", "kind": "action", "takesText": true, "synonyms": ["remove export preset", "forget export preset"]}
+    {"id": "deleteExportPreset", "label": "Delete Export Preset", "group": "export", "section": "Presets", "kind": "action", "takesText": true, "synonyms": ["remove export preset", "forget export preset"]},
+    {"id": "saveToFiles", "label": "Save To Files", "group": "export", "kind": "action", "synonyms": ["export to files", "save to the files app", "save a copy", "save file", "save as file", "export a file", "save to icloud drive"]},
+    {"id": "share", "label": "Share", "group": "export", "kind": "action", "synonyms": ["share photo", "share sheet", "share the photo", "send photo", "send the photo", "airdrop", "share it"]}
   ]
 }

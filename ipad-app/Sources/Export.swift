@@ -1,6 +1,8 @@
 import CommandEngine
 import CoreImage
 import ImageIO
+import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 /// The Export panel's settings, read from its controls (see ExportSettings in CommandEngine).
@@ -112,4 +114,33 @@ enum Exporter {
             "export.writable": writableFormats.joined(separator: ","),
         ]
     }
+}
+
+/// An exported photo as a document, for Save To Files (the Files app's save dialog).
+struct ExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.image] }
+    let data: Data
+
+    init(data: Data) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data()
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
+    }
+}
+
+/// The system share sheet (AirDrop, Messages, Mail, other apps…) for an exported file.
+struct ShareSheet: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

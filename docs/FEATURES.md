@@ -233,6 +233,6 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 - [x] 174. **Export** — JPEG, PNG, HEIC, TIFF, DNG, AVIF; quality, size, metadata
 - [x] 175. **Export presets** — saved export settings
-- [ ] 176. **Save / share** — to Photos, Files, share sheet
+- [x] 176. **Save / share** — to Photos, Files, share sheet
 - [ ] 177. **Print** — AirPrint with layout
 - [ ] 178. **Color management** — sRGB, Display P3, ProPhoto, 16-bit

@@ -1393,3 +1393,9 @@
 {"group":"export","text":"save export settings print shop","expect":[{"op":"run","control":"saveExportPreset","text":"print shop"}]}
 {"group":"export","text":"delete export preset client proofs","expect":[{"op":"run","control":"deleteExportPreset","text":"client proofs"}]}
 {"group":"export","text":"remove export preset old","expect":[{"op":"run","control":"deleteExportPreset","text":"old"}]}
+{"group":"export","text":"save to files","expect":[{"op":"run","control":"saveToFiles"}]}
+{"group":"export","text":"export to files","expect":[{"op":"run","control":"saveToFiles"}]}
+{"group":"export","text":"share","expect":[{"op":"run","control":"share"}]}
+{"group":"export","text":"airdrop","expect":[{"op":"run","control":"share"}]}
+{"group":"export","text":"save to photos","expect":[{"op":"run","control":"export"}]}
+{"group":"export","text":"export preset web share","expect":[{"op":"run","control":"exportPreset","text":"web share"}]}

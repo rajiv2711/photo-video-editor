@@ -50,8 +50,15 @@ struct EditorView: View {
                     }
                     .disabled(!model.canRedo)
                     Button("Reset All") { model.run("reset all") }
-                    Button { model.save() } label: {
+                    // Export as the Export panel says: to Photos, to Files, or through the share sheet.
+                    Menu {
+                        Button { model.apply([.run("export")]) } label: { Label("Save to Photos", systemImage: "photo.on.rectangle") }
+                        Button { model.apply([.run("saveToFiles")]) } label: { Label("Save to Files", systemImage: "folder") }
+                        Button { model.apply([.run("share")]) } label: { Label("Share…", systemImage: "square.and.arrow.up") }
+                    } label: {
                         Label("Save", systemImage: "square.and.arrow.down")
+                    } primaryAction: {
+                        model.apply([.run("export")])
                     }
                 }
             }
@@ -75,6 +82,14 @@ struct EditorView: View {
             }
             .sheet(isPresented: $model.showsMap) { LibraryMapView(model: model) }
             .fullScreenCover(isPresented: $model.showsCamera) { ProCameraView(model: model, camera: model.proCamera) }
+            .fileExporter(isPresented: Binding(get: { model.fileToSave != nil }, set: { if !$0 { model.fileToSave = nil } }),
+                          document: model.fileToSave?.document, contentType: model.fileToSave?.type ?? .jpeg,
+                          defaultFilename: model.fileToSave?.name) { result in
+                if case .success(let url) = result { model.saved(to: url) }
+            }
+            .sheet(isPresented: Binding(get: { model.shareFile != nil }, set: { if !$0 { model.shareFile = nil } })) {
+                if let url = model.shareFile { ShareSheet(url: url) }
+            }
             .onChange(of: scenePhase) { _, phase in
                 // The edit of the photo being edited is kept with it in the library.
                 if phase != .active { model.saveLibrary() }

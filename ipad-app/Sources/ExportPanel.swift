@@ -16,9 +16,13 @@ struct ExportPanel: View {
         DisclosureGroup(isExpanded: isOpen("export")) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Button { model.apply([.run("export")]) } label: { Label("Export to Photos", systemImage: "square.and.arrow.down") }
+                    Button { model.apply([.run("export")]) } label: { Label("Photos", systemImage: "photo.on.rectangle") }
                         .buttonStyle(.borderedProminent)
+                    Button { model.apply([.run("saveToFiles")]) } label: { Label("Files", systemImage: "folder") }
+                    Button { model.apply([.run("share")]) } label: { Label("Share", systemImage: "square.and.arrow.up") }
                 }
+                .buttonStyle(.bordered)
+                .font(.footnote)
                 .padding(.horizontal, 10)
                 Text(summary)
                     .font(.footnote)
@@ -49,7 +53,7 @@ struct ExportPanel: View {
     }
 
     /// Controls shown in their own way (buttons above, the name field, the presets list).
-    static let shownApart: Set<String> = ["export", "exportName", "exportPreset", "saveExportPreset", "deleteExportPreset"]
+    static let shownApart: Set<String> = ["export", "saveToFiles", "share", "exportName", "exportPreset", "saveExportPreset", "deleteExportPreset"]
 
     /// Export presets: tap one to use its settings (a long press deletes one of yours); save the panel's
     /// settings under a name.
