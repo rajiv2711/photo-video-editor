@@ -208,6 +208,13 @@ public struct CommandParser {
                     begin(found.control)
                     continue
                 }
+                // "reset light panel", "reset the effects": a whole panel.
+                if let found = panelReset(after: tokens) {
+                    tokens.removeFirst(found.used)
+                    finish()
+                    commands.append(.run(found.control, value: Double(found.index)))
+                    continue
+                }
                 if let next = tokens.first, next == "all" || next == "everything" {
                     tokens.removeFirst()
                     finish()
@@ -321,6 +328,30 @@ public struct CommandParser {
         }
         guard let found, found.control.kind == .action, found.control.component != nil else { return nil }
         return (found.control, skipped + 1 + found.extra)
+    }
+
+    /// A panel named after "reset" (skipping "the"): one of Reset Panel's options, then "panel" (or
+    /// "settings"), which may be left out when the panel's word is no control's own name ("reset effects",
+    /// but "reset light panel": "light" alone is the Lights curve). The option's index and the tokens used.
+    private func panelReset(after rest: ArraySlice<String>) -> (control: String, index: Int, used: Int)? {
+        guard let control = registry.control(id: "resetPanel") else { return nil }
+        var words = Array(rest)
+        var skipped = 0
+        while words.first == "the" {
+            words.removeFirst()
+            skipped += 1
+        }
+        for count in stride(from: Swift.min(2, words.count), through: 1, by: -1) {
+            let phrase = words.prefix(count).joined(separator: " ")
+            guard let index = control.options.firstIndex(where: { $0.names.contains(phrase) }) else { continue }
+            if let next = words.dropFirst(count).first, ["panel", "settings", "tab"].contains(next) {
+                return (control.id, index, skipped + count + 1)
+            }
+            guard !registry.controls.contains(where: { $0.names.contains(phrase) }),
+                  longestName(words[0], ArraySlice(words.dropFirst())) == nil else { return nil }
+            return (control.id, index, skipped + count)
+        }
+        return nil
     }
 
     /// "new", "add", "subtract", "intersect" before a mask part.

@@ -1623,6 +1623,18 @@
       "synonyms": ["before after", "before and after", "before/after", "compare view", "comparison", "compare before and after"],
       "options": [{"id": "off", "label": "Off", "synonyms": ["after", "none", "done", "stop"]},
                   {"id": "split", "label": "Split", "synonyms": ["split screen", "split view", "wipe", "half and half"]},
-                  {"id": "sideBySide", "label": "Side by Side", "synonyms": ["side-by-side", "two up", "left and right", "side"]}]}
+                  {"id": "sideBySide", "label": "Side by Side", "synonyms": ["side-by-side", "two up", "left and right", "side"]}]},
+    {"id": "resetPanel", "label": "Reset Panel", "group": "history", "section": "Reset", "kind": "action",
+      "synonyms": ["panel reset", "reset the panel", "reset this panel", "reset group"],
+      "options": [{"id": "light", "label": "Light"},
+                  {"id": "color", "label": "Color", "synonyms": ["colour"]},
+                  {"id": "effects", "label": "Effects", "synonyms": ["effect"]},
+                  {"id": "detail", "label": "Detail", "synonyms": ["details"]},
+                  {"id": "optics", "label": "Optics", "synonyms": ["lens corrections", "lens"]},
+                  {"id": "geometry", "label": "Geometry", "synonyms": ["transform"]},
+                  {"id": "creative", "label": "Creative", "synonyms": ["creative filters", "filters"]},
+                  {"id": "masks", "label": "Masks", "synonyms": ["mask", "masking"]},
+                  {"id": "retouch", "label": "Retouch", "synonyms": ["retouching", "spots"]},
+                  {"id": "layers", "label": "Layers", "synonyms": ["layer"]}]}
   ]
 }

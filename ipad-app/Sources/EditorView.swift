@@ -242,7 +242,7 @@ private struct GroupPanel: View {
             }
             .padding(.top, 6)
         } label: {
-            Text(group.prefix(1).uppercased() + group.dropFirst()).font(.headline)
+            PanelTitle(model: model, title: group.prefix(1).uppercased() + group.dropFirst(), group: group)
         }
     }
 
@@ -528,5 +528,28 @@ struct SliderRow: View {
             isFocused ? Color.accentColor.opacity(0.15) : Color.clear,
             in: RoundedRectangle(cornerRadius: 10)
         )
+    }
+}
+
+/// A panel's title, with a button that resets the whole panel ("reset light panel") when it can be.
+struct PanelTitle: View {
+    @ObservedObject var model: EditorModel
+    let title: String
+    let group: String
+
+    var body: some View {
+        HStack {
+            Text(title).font(.headline)
+            Spacer()
+            if let reset = model.registry.control(id: "resetPanel"), let i = reset.options.firstIndex(where: { $0.id == group }) {
+                Button {
+                    model.apply([.run(reset.id, value: Double(i))])
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Reset the \(title) panel")
+            }
+        }
     }
 }

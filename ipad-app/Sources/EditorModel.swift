@@ -1499,6 +1499,14 @@ final class EditorModel: ObservableObject {
     }
 
     private func describe(_ outcomes: [CommandInterpreter.Outcome]) -> Feedback {
+        // A whole panel reset: one line, not every slider.
+        if outcomes.contains(.ran(controlID: "resetPanel")) {
+            let changed = outcomes.filter { if case .changed = $0 { return true } else { return false } }.count
+            let panel = registry.control(id: "resetPanel")?.options.first { option in
+                outcomes.contains { if case .changed(let id, _, _) = $0 { return registry.control(id: id)?.group == option.id } else { return false } }
+            }?.label
+            return Feedback(text: "\(panel.map { $0 + " panel" } ?? "Panel") reset (\(changed) setting\(changed == 1 ? "" : "s"))")
+        }
         var parts: [String] = []
         var choices: [Control] = []
         var problem = false

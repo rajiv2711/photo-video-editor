@@ -204,7 +204,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 150. **Versions / snapshots** — save named states of an edit
 - [x] 151. **Virtual copies** — several edits of one photo
 - [x] 152. **Before / after** — compare split, side-by-side, or hold
-- [ ] 153. **Reset** — one slider, one panel, or everything
+- [x] 153. **Reset** — one slider, one panel, or everything
 - [ ] 154. **Histogram** — live tone graph
 - [ ] 155. **Clipping warnings** — show lost highlights and shadows
 - [ ] 156. **Vectorscope** — colour and skin-tone scope

@@ -40,7 +40,7 @@ struct MasksPanel: View {
             }
             .padding(.top, 6)
         } label: {
-            Text("Masks").font(.headline)
+            PanelTitle(model: model, title: "Masks", group: "masks")
         }
     }
 

@@ -142,6 +142,10 @@ public struct CommandApplier {
                     outcomes += done
                     continue
                 }
+                if let done = resetPanel(control, command, focus: focus, state: &state) {
+                    outcomes += done
+                    continue
+                }
                 // Any command on an action runs it; its own commands are applied right here, in order.
                 outcomes.append(.ran(controlID: control.id))
                 let produced = (actionHandler?(control.id) ?? []).filter { $0.op != .run }
@@ -363,6 +367,49 @@ public struct CommandApplier {
         case "rotateLeft", "rotateRight":
             let turns = registry.control(id: "rotation").map { state.value(of: $0) } ?? 0
             set("rotation", Double(((Int(turns) + (control.id == "rotateRight" ? 1 : 3)) % 4)))
+        default:
+            break
+        }
+        return out
+    }
+
+    // MARK: - Reset a panel
+
+    /// "reset light panel": every control of a panel back to its default, and what its touch tools made
+    /// (masks, spots, guides and warp pins, layers) gone. Without a panel named, the focused control's.
+    private func resetPanel(_ control: Control, _ command: Command, focus: String?, state: inout EditState) -> [CommandOutcome]? {
+        guard control.id == "resetPanel" else { return nil }
+        var out: [CommandOutcome] = [.ran(controlID: control.id)]
+        let group: String
+        if let v = command.value, control.options.indices.contains(Int(v)) {
+            group = control.options[Int(v)].id
+        } else if let id = focus, let focused = registry.control(id: id), control.options.contains(where: { $0.id == focused.group }) {
+            group = focused.group
+        } else {
+            return [.needsControl]
+        }
+        for c in registry.controls(inGroup: group) where c.kind != .action && c.scope == nil && !Workflow.isSetting(c) && !state.isDefault(c) {
+            let from = state.value(of: c)
+            out.append(.changed(controlID: c.id, from: from, to: state.set(c, to: c.defaultValue)))
+        }
+        switch group {
+        case "masks" where !state.masks.isEmpty:
+            state.masks = []
+            state.selectMask(nil)
+            out.append(.masked(mask: 0, event: .allDeleted))
+        case "retouch" where !state.retouches.isEmpty:
+            state.retouches = []
+            state.selectRetouch(nil)
+            out.append(.retouched(spot: 0, event: .allDeleted))
+        case "geometry":
+            state.geometry = GeometryEdits()
+        case "layers":
+            if !state.layers.isEmpty {
+                state.layers = []
+                state.selectLayer(nil)
+                out.append(.layered(layer: 0, event: .allDeleted))
+            }
+            state.watermarkText = ""
         default:
             break
         }

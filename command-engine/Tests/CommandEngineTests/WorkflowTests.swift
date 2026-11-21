@@ -414,6 +414,39 @@ final class WorkflowTests: XCTestCase {
         XCTAssertNil(side.divider)
     }
 
+    // MARK: - Reset
+
+    func testResetAPanel() {
+        XCTAssertEqual(parse("reset light panel"), [.run("resetPanel", value: 0)])
+        XCTAssertEqual(parse("reset the colour panel"), [.run("resetPanel", value: 1)])
+        XCTAssertEqual(parse("reset effects"), [.run("resetPanel", value: 2)])
+        XCTAssertEqual(parse("reset geometry"), [.run("resetPanel", value: 5)])
+        XCTAssertEqual(parse("reset panel optics"), [.run("resetPanel", value: 4)])
+        XCTAssertEqual(parse("contrast 20 reset creative"), [.set("contrast", 20), .run("resetPanel", value: 6)])
+        XCTAssertEqual(parse("reset light"), [.run("resetPanel", value: 0)])
+        XCTAssertEqual(parse("reset colour"), [.run("resetPanel", value: 1)])
+        // A panel's word that is also a control's own name needs "panel" ("lights" is the Lights curve).
+        XCTAssertEqual(parse("reset lights"), [.reset("curveLights")])
+        XCTAssertEqual(parse("reset crop"), [.run("resetCrop")])
+        XCTAssertEqual(parse("reset contrast"), [.reset("contrast")])
+        XCTAssertEqual(parse("reset all"), [.resetAll])
+
+        run("exposure 1 temperature 30 clarity 40 crop left 20 linear gradient from top exposure -1 done")
+        run("reset light panel")
+        XCTAssertEqual(value("exposure"), 0)
+        XCTAssertEqual(value("temperature"), 30)
+        XCTAssertEqual(state.masks.count, 1)
+        run("reset masks panel")
+        XCTAssertTrue(state.masks.isEmpty)
+        // Without a panel named: the panel of the control used last.
+        run("clarity 50 reset panel")
+        XCTAssertEqual(value("clarity"), 0)
+        XCTAssertEqual(value("cropLeft"), 20)
+        run("reset geometry")
+        XCTAssertEqual(value("cropLeft"), 0)
+        XCTAssertEqual(value("temperature"), 30)
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

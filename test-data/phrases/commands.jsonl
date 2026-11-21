@@ -1212,3 +1212,10 @@
 {"group":"view","text":"compare side by side","expect":[{"op":"set","control":"compare","value":2}]}
 {"group":"view","text":"before and after split screen","expect":[{"op":"set","control":"compare","value":1}]}
 {"group":"view","text":"compare off","expect":[{"op":"set","control":"compare","value":0}]}
+{"group":"history","text":"reset light panel","expect":[{"op":"run","control":"resetPanel","value":0}]}
+{"group":"history","text":"reset the colour panel","expect":[{"op":"run","control":"resetPanel","value":1}]}
+{"group":"history","text":"reset effects","expect":[{"op":"run","control":"resetPanel","value":2}]}
+{"group":"history","text":"reset panel optics","expect":[{"op":"run","control":"resetPanel","value":4}]}
+{"group":"history","text":"reset geometry","expect":[{"op":"run","control":"resetPanel","value":5}]}
+{"group":"history","text":"reset masks panel","expect":[{"op":"run","control":"resetPanel","value":7}]}
+{"group":"history","text":"reset panel","expect":[{"op":"run","control":"resetPanel"}]}

@@ -51,7 +51,7 @@ struct RetouchPanel: View {
             }
             .padding(.top, 6)
         } label: {
-            Text("Retouch").font(.headline)
+            PanelTitle(model: model, title: "Retouch", group: "retouch")
         }
     }
 

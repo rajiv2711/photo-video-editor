@@ -42,7 +42,7 @@ struct GeometryPanel: View {
             }
             .padding(.top, 6)
         } label: {
-            Text("Geometry").font(.headline)
+            PanelTitle(model: model, title: "Geometry", group: "geometry")
         }
     }
 

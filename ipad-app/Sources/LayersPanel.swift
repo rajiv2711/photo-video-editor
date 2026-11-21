@@ -69,7 +69,7 @@ struct LayersPanel: View {
             }
             .padding(.top, 6)
         } label: {
-            Text("Layers").font(.headline)
+            PanelTitle(model: model, title: "Layers", group: "layers")
         }
         .onChange(of: items) { _, picked in
             guard !picked.isEmpty else { return }
