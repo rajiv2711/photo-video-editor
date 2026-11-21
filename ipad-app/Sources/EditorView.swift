@@ -19,19 +19,34 @@ struct EditorView: View {
     /// What the last command did shows for a few seconds (`toastHide` hides it).
     @State private var toastShown = false
     @State private var toastHide: Task<Void, Never>?
+    /// The screen is wider than tall (measured without the keyboard, so typing never turns the layout).
+    @State private var landscape = false
 
     var body: some View {
         NavigationStack {
-            HStack(spacing: 0) {
-                canvas
-                    // The command bar floats over the photo's area, never over the panel; what a command did
-                    // shows for a moment at the top.
-                    .safeAreaInset(edge: .bottom) { commandBar }
-                    .overlay(alignment: .top) { toast }
-                    .background(Color.black)
-                panel
+            Group {
+                if landscape {
+                    // The photo, then the panel and its rail at the right edge.
+                    HStack(spacing: 0) {
+                        photoArea
+                        panel
+                    }
+                } else {
+                    // The photo across the whole width, the panel below it.
+                    GeometryReader { geo in
+                        VStack(spacing: 0) {
+                            photoArea
+                            panel
+                                .frame(height: (geo.size.height * 0.4).rounded())
+                        }
+                    }
+                }
             }
-            .navigationTitle("Editor")
+            .background(GeometryReader { geo in
+                Color.clear
+                    .onAppear { landscape = geo.size.width > geo.size.height }
+                    .onChange(of: geo.size) { _, size in landscape = size.width > size.height }
+            }.ignoresSafeArea(.keyboard))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -197,14 +212,37 @@ struct EditorView: View {
         }
     }
 
-    /// The panel shown (one group of controls.json at a time) and the rail that picks it.
+    /// The photo with the command bar floating under it (never over the panel) and what a command did
+    /// showing for a moment over its top.
+    private var photoArea: some View {
+        canvas
+            .safeAreaInset(edge: .bottom) { commandBar }
+            .overlay(alignment: .top) { toast }
+            .background(Color.black)
+    }
+
+    /// The panel shown (one group of controls.json at a time) and the rail that picks it: a column at the
+    /// right edge in landscape (the panel 300 pt wide), a strip above the panel in portrait.
     private var panel: some View {
-        HStack(spacing: 0) {
-            panelContent
-                .frame(width: 320)
-            Divider()
-            PanelRail(model: model, vertical: true)
-                .frame(width: 60)
+        Group {
+            if landscape {
+                HStack(spacing: 0) {
+                    Divider()
+                    panelContent
+                        .frame(width: 300)
+                    Divider()
+                    PanelRail(model: model, vertical: true)
+                        .frame(width: 60)
+                }
+            } else {
+                VStack(spacing: 0) {
+                    Divider()
+                    PanelRail(model: model, vertical: false)
+                        .frame(height: 50)
+                    Divider()
+                    panelContent
+                }
+            }
         }
         .background(.regularMaterial)
         .onChange(of: model.focusedControlID) { _, id in
@@ -803,7 +841,7 @@ struct PanelRail: View {
             if vertical {
                 VStack(spacing: 2) { items }.padding(.vertical, 6)
             } else {
-                HStack(spacing: 2) { items }.padding(.horizontal, 6)
+                HStack(spacing: 1) { items }.padding(.horizontal, 6)
             }
         }
     }
@@ -823,7 +861,7 @@ struct PanelRail: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
-                .frame(width: 54, height: 44)
+                .frame(width: vertical ? 54 : 50, height: vertical ? 42 : 44)
                 .foregroundStyle(shown ? Color.accentColor : available ? Color.primary : Color.secondary.opacity(0.5))
                 .background(shown ? Color.accentColor.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
                 .contentShape(Rectangle())
