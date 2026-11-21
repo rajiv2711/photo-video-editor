@@ -19,7 +19,11 @@ final class EditorModel: ObservableObject {
     let registry: ControlRegistry
     @Published private(set) var state = EditState()
     @Published private(set) var preview: UIImage?
-    @Published private(set) var feedback: Feedback?
+    @Published private(set) var feedback: Feedback? {
+        didSet { feedbackCount += 1 }
+    }
+    /// Counts feedback given, so the same words said again show again.
+    @Published private(set) var feedbackCount = 0
     @Published private(set) var focusedControlID: String?
     @Published private(set) var voiceState: VoiceState = .idle
     /// A picker tool waiting for a tap on the photo (its control id, e.g. "wbPicker").

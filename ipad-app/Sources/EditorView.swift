@@ -16,14 +16,21 @@ struct EditorView: View {
     @FocusState private var commandFocused: Bool
     /// Open panels ("light") and sections ("light/Levels").
     @State private var expanded: Set<String> = ["light", "color"]
+    /// What the last command did shows for a few seconds (`toastHide` hides it).
+    @State private var toastShown = false
+    @State private var toastHide: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
             HStack(spacing: 0) {
                 canvas
+                    // The command bar floats over the photo's area, never over the panel; what a command did
+                    // shows for a moment at the top.
+                    .safeAreaInset(edge: .bottom) { commandBar }
+                    .overlay(alignment: .top) { toast }
+                    .background(Color.black)
                 panel
             }
-            .safeAreaInset(edge: .bottom) { commandBar }
             .navigationTitle("Editor")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -274,48 +281,96 @@ struct EditorView: View {
         }
     }
 
+    /// The microphone, the text field and Run, in a rounded bar over the bottom of the photo's area.
     private var commandBar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let feedback = model.feedback {
+        HStack(spacing: 10) {
+            micButton
+            TextField("Say or type: “contrast more”, “exposure 0.5”, “light panel”", text: $command)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.go)
+                .focused($commandFocused)
+                .onSubmit(submit)
+            Button("Run", action: submit)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .disabled(command.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
+        .padding(.leading, 6)
+        .padding(.trailing, 8)
+        .padding(.vertical, 6)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.1)))
+        .frame(maxWidth: 640)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+    }
+
+    /// What the last command did (and the choices when a word fits several controls), over the top of the
+    /// photo for a few seconds; tap it to hide it.
+    private var toast: some View {
+        VStack {
+            if toastShown, let feedback = model.feedback {
                 HStack(spacing: 8) {
-                    Image(systemName: feedback.isProblem ? "exclamationmark.circle" : "checkmark.circle")
+                    Image(systemName: feedback.isProblem ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
                         .foregroundStyle(feedback.isProblem ? .orange : .green)
                     Text(feedback.text)
+                        .lineLimit(3)
                     ForEach(feedback.choices) { control in
                         Button(control.label) { model.choose(control) }
                             .buttonStyle(.bordered)
                     }
                 }
                 .font(.callout)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .frame(maxWidth: 640)
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .onTapGesture { toastShown = false }
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
-            HStack(spacing: 10) {
-                micButton
-                TextField("Tap the mic, or type: “contrast more more”, “exposure 0.5”, “reset all”", text: $command)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .submitLabel(.go)
-                    .focused($commandFocused)
-                    .onSubmit(submit)
-                Button("Run", action: submit)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(command.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            .padding(12)
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
-        .padding()
+        .animation(.easeOut(duration: 0.2), value: toastShown)
+        .onChange(of: model.feedbackCount) { _, _ in showToast() }
+        .onChange(of: model.voiceState) { _, _ in showToast() }
+        .onAppear { showToast() }
     }
 
+    /// Shows the toast, and hides it after 4 seconds (7 for a problem). It stays while it offers choices
+    /// or the mic listens, and in the cloud build's screenshots of a command.
+    private func showToast() {
+        toastHide?.cancel()
+        guard let feedback = model.feedback else {
+            toastShown = false
+            return
+        }
+        toastShown = true
+        guard feedback.choices.isEmpty, model.voiceState == .idle,
+              UserDefaults.standard.string(forKey: "demoCommand") == nil else { return }
+        let seconds: Double = feedback.isProblem ? 7 : 4
+        toastHide = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(seconds))
+            if !Task.isCancelled { toastShown = false }
+        }
+    }
+
+    /// The microphone: tap to speak a command, tap again when done.
     private var micButton: some View {
         let listening = model.voiceState == .listening
         return Button { model.toggleListening() } label: {
-            if model.voiceState == .transcribing {
-                ProgressView().frame(width: 32, height: 32)
-            } else {
-                Image(systemName: listening ? "stop.circle.fill" : "mic.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundStyle(listening ? Color.red : Color.accentColor)
+            ZStack {
+                Circle().fill(listening ? Color.red : Color.accentColor)
+                if model.voiceState == .transcribing {
+                    ProgressView().tint(.white)
+                } else {
+                    Image(systemName: listening ? "stop.fill" : "mic.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
             }
+            .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
         .disabled(model.voiceState == .transcribing)
