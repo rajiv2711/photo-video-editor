@@ -1222,3 +1222,6 @@
 {"group":"view","text":"histogram","expect":[{"op":"set","control":"histogram","value":1}]}
 {"group":"view","text":"show histogram","expect":[{"op":"set","control":"histogram","value":1}]}
 {"group":"view","text":"histogram off","expect":[{"op":"set","control":"histogram","value":0}]}
+{"group":"view","text":"clipping warning","expect":[{"op":"set","control":"clippingWarning","value":1}]}
+{"group":"view","text":"show clipping","expect":[{"op":"set","control":"clippingWarning","value":1}]}
+{"group":"view","text":"clipping off","expect":[{"op":"set","control":"clippingWarning","value":0}]}

@@ -84,6 +84,37 @@ public enum Scopes {
         return h
     }
 
+    /// Clipping warnings: a pixel whose brightest channel is at white (254 or 255 of 255) has lost
+    /// highlight detail (shown red); one with every channel at black (0 or 1) has lost shadow detail
+    /// (shown blue). 1 = highlights, -1 = shadows, 0 = neither.
+    public static func clipping(_ r: UInt8, _ g: UInt8, _ b: UInt8) -> Int {
+        let top = Swift.max(r, g, b)
+        return top >= highlightLevel ? 1 : top <= shadowLevel ? -1 : 0
+    }
+
+    /// The levels that count as clipped (of 255), as the iPad's warning overlay uses them.
+    public static let highlightLevel: UInt8 = 254
+    public static let shadowLevel: UInt8 = 1
+
+    /// The shares (0…1) of opaque pixels with clipped highlights and clipped shadows.
+    public static func clippedShares(rgba: [UInt8]) -> (highlights: Double, shadows: Double) {
+        var high = 0, low = 0, count = 0
+        var i = 0
+        while i + 3 < rgba.count {
+            if rgba[i + 3] >= 128 {
+                switch clipping(rgba[i], rgba[i + 1], rgba[i + 2]) {
+                case 1: high += 1
+                case -1: low += 1
+                default: break
+                }
+                count += 1
+            }
+            i += 4
+        }
+        guard count > 0 else { return (0, 0) }
+        return (Double(high) / Double(count), Double(low) / Double(count))
+    }
+
     /// Bar heights 0…1 to draw: each bin over a reference height, the tallest bin but one in a hundred
     /// (so a spike of clipped pixels doesn't flatten the rest; spikes are cut at the top).
     public static func heights(_ bins: [Int]) -> [Double] {

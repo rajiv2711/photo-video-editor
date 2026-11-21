@@ -38,10 +38,13 @@ final class EditorModel: ObservableObject {
     struct ScopeReadings: Equatable {
         /// Histogram: per channel and luma, bar heights 0…1 (nil while it is off).
         var histogram: (red: [Double], green: [Double], blue: [Double], luma: [Double])?
+        /// Clipping warning: the shares of pixels with lost highlights and shadows (nil while it is off).
+        var clipping: (highlights: Double, shadows: Double)?
 
         static func == (a: ScopeReadings, b: ScopeReadings) -> Bool {
             a.histogram?.luma == b.histogram?.luma && a.histogram?.red == b.histogram?.red
                 && a.histogram?.green == b.histogram?.green && a.histogram?.blue == b.histogram?.blue
+                && a.clipping?.highlights == b.clipping?.highlights && a.clipping?.shadows == b.clipping?.shadows
         }
     }
 
@@ -1456,13 +1459,18 @@ final class EditorModel: ObservableObject {
 
     /// The scopes that are on, from a small copy of the edited preview as sRGB levels.
     private func readScopes(_ edited: CIImage) {
-        guard isOn("histogram") else {
+        guard isOn("histogram") || isOn("clippingWarning") else {
             scopes = nil
             return
         }
         let bytes = ImageStats.srgbBytes(of: edited, context: renderer.context)
-        let h = Scopes.histogram(rgba: bytes)
-        scopes = ScopeReadings(histogram: (Scopes.heights(h.red), Scopes.heights(h.green), Scopes.heights(h.blue), Scopes.heights(h.luma)))
+        var readings = ScopeReadings()
+        if isOn("histogram") {
+            let h = Scopes.histogram(rgba: bytes)
+            readings.histogram = (Scopes.heights(h.red), Scopes.heights(h.green), Scopes.heights(h.blue), Scopes.heights(h.luma))
+        }
+        if isOn("clippingWarning") { readings.clipping = Scopes.clippedShares(rgba: bytes) }
+        scopes = readings
     }
 
     /// Before / after is on: touches on the photo do nothing (it isn't the picture being edited).

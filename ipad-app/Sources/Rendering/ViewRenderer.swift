@@ -13,8 +13,9 @@ final class ViewRenderer {
 
     /// `edited`: the edited preview; `before`: the photo before its edit; `value`: the controls by id.
     func apply(_ edited: CIImage, before: CIImage, value: (String) -> Double?) -> CIImage {
-        let after = Self.atOrigin(edited)
+        var after = Self.atOrigin(edited)
         if (value("showBefore") ?? 0) != 0 { return Self.atOrigin(before) }
+        if (value("clippingWarning") ?? 0) != 0 { after = clippingWarning(after) }
         let i = Int(value("compare") ?? 0)
         let mode = CompareLayout.modes.indices.contains(i) ? CompareLayout.modes[i] : "off"
         guard mode != "off" else { return after }
@@ -37,6 +38,20 @@ final class ViewRenderer {
         let whole = CGRect(x: 0, y: 0, width: CGFloat(place.size.width), height: CGFloat(place.size.height))
         let placedAfter = after.transformed(by: CGAffineTransform(translationX: CGFloat(place.after.x), y: CGFloat(place.after.y)))
         return placedAfter.composited(over: placedBefore).composited(over: backdrop).cropped(to: whole)
+    }
+
+    /// Clipping warnings (Scopes.clipping): red where the brightest channel is at white, blue where
+    /// every channel is at black, on sRGB levels.
+    private func clippingWarning(_ image: CIImage) -> CIImage {
+        let top = image.applyingFilter("CILinearToSRGBToneCurve").applyingFilter("CIMaximumComponent")
+        // 0 half a level short of the limit, 1 at it: a steep ramp, clamped.
+        let k = 510.0
+        let high = Double(Scopes.highlightLevel) / 255, low = Double(Scopes.shadowLevel) / 255
+        let highlights = Filters.affine(top, scale: k, bias: -k * (high - 0.5 / 255)).applyingFilter("CIColorClamp")
+        let shadows = Filters.affine(top, scale: -k, bias: k * (low + 0.5 / 255)).applyingFilter("CIColorClamp")
+        let red = CIImage(color: CIColor(red: 1, green: 0, blue: 0)).cropped(to: image.extent)
+        let blue = CIImage(color: CIColor(red: 0, green: 0.2, blue: 1)).cropped(to: image.extent)
+        return Filters.blend(blue, over: Filters.blend(red, over: image, mask: highlights), mask: shadows).cropped(to: image.extent)
     }
 
     /// The picture moved so its frame starts at 0, 0.

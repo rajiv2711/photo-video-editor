@@ -473,6 +473,21 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(heights[255], 1)
     }
 
+    func testClippingWarnings() {
+        XCTAssertEqual(parse("clipping warning"), [.set("clippingWarning", 1)])
+        XCTAssertEqual(parse("show clipping"), [.set("clippingWarning", 1)])
+        XCTAssertEqual(parse("clipping off"), [.set("clippingWarning", 0)])
+        XCTAssertEqual(Scopes.clipping(255, 10, 10), 1, "one channel at white has lost detail")
+        XCTAssertEqual(Scopes.clipping(254, 254, 254), 1)
+        XCTAssertEqual(Scopes.clipping(253, 253, 253), 0)
+        XCTAssertEqual(Scopes.clipping(0, 1, 0), -1)
+        XCTAssertEqual(Scopes.clipping(0, 0, 2), 0, "a deep blue still has detail")
+        let pixels: [UInt8] = [255, 255, 255, 255, 0, 0, 0, 255, 120, 90, 60, 255, 255, 255, 255, 255]
+        let shares = Scopes.clippedShares(rgba: pixels)
+        XCTAssertEqual(shares.highlights, 0.5)
+        XCTAssertEqual(shares.shadows, 0.25)
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

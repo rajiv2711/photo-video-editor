@@ -1637,6 +1637,8 @@
                   {"id": "retouch", "label": "Retouch", "synonyms": ["retouching", "spots"]},
                   {"id": "layers", "label": "Layers", "synonyms": ["layer"]}]},
     {"id": "histogram", "label": "Histogram", "group": "view", "section": "Scopes", "kind": "toggle",
-      "synonyms": ["histo", "tone graph", "levels graph", "rgb histogram", "show the histogram"]}
+      "synonyms": ["histo", "tone graph", "levels graph", "rgb histogram", "show the histogram"]},
+    {"id": "clippingWarning", "label": "Clipping Warning", "group": "view", "section": "Scopes", "kind": "toggle",
+      "synonyms": ["clipping", "clipping warnings", "show clipping", "clip warning", "highlight clipping", "shadow clipping", "clipping indicator", "clipped areas"]}
   ]
 }

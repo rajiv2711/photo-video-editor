@@ -2,7 +2,7 @@ import CommandEngine
 import SwiftUI
 
 /// The View panel's scopes over the photo's corner: the histogram (luma in grey, red, green and blue
-/// as lines), darkest on the left.
+/// as lines), darkest on the left; how much is clipped while the clipping warning is on.
 struct ScopesView: View {
     let scopes: EditorModel.ScopeReadings
 
@@ -18,6 +18,13 @@ struct ScopesView: View {
                 .frame(width: 256, height: 100)
                 .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
                 .accessibilityLabel("Histogram")
+            }
+            if let clip = scopes.clipping {
+                Text(String(format: "Highlights clipped %.1f %% · shadows %.1f %%", 100 * clip.highlights, 100 * clip.shadows))
+                    .font(.caption.monospacedDigit())
+                    .padding(6)
+                    .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
+                    .foregroundStyle(.white)
             }
         }
         .allowsHitTesting(false)
