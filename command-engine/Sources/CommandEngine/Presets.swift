@@ -175,7 +175,7 @@ public enum Presets {
     /// Presets panel's own switches, or a merge's settings, which belong to the photos merged).
     public static func isSaved(_ control: Control) -> Bool {
         control.kind != .action && control.scope == nil && !selectors.contains(control.id)
-            && !["view", "presets", "history", "merge"].contains(control.group)
+            && !["view", "presets", "history", "merge", "library", "camera"].contains(control.group)
     }
 
     /// The "look" of a photo, which built-in presets set as a whole: the colour treatment (not white

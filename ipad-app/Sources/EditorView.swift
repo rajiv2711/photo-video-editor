@@ -228,8 +228,11 @@ struct EditorView: View {
             if layer != nil { expanded.insert("layers") }
         }
         .onChange(of: model.revealedPanel) { _, panel in
-            // "history", "presets": a command asked to see a panel.
-            if let panel { expanded.insert(panel) }
+            // "history", "presets": a command asked to see a panel ("library/Info": a section of one).
+            if let panel {
+                expanded.insert(panel)
+                if let slash = panel.firstIndex(of: "/") { expanded.insert(String(panel[..<slash])) }
+            }
         }
     }
 

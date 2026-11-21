@@ -1308,3 +1308,22 @@
 {"group":"library","text":"albums","expect":[{"op":"run","control":"album"}]}
 {"group":"library","text":"delete album trips","expect":[{"op":"run","control":"deleteAlbum","text":"trips"}]}
 {"group":"library","text":"remove album trips","expect":[{"op":"run","control":"deleteAlbum","text":"trips"}]}
+{"group":"library","text":"keyword beach","expect":[{"op":"run","control":"addKeyword","text":"beach"}]}
+{"group":"library","text":"add keywords sunset, sea","expect":[{"op":"run","control":"addKeyword","text":"sunset, sea"}]}
+{"group":"library","text":"keywords","expect":[{"op":"run","control":"addKeyword"}]}
+{"group":"library","text":"remove keyword beach","expect":[{"op":"run","control":"removeKeyword","text":"beach"}]}
+{"group":"library","text":"delete tag sea","expect":[{"op":"run","control":"removeKeyword","text":"sea"}]}
+{"group":"library","text":"show keyword beach","expect":[{"op":"run","control":"showKeyword","text":"beach"}]}
+{"group":"library","text":"find keyword sunset","expect":[{"op":"run","control":"showKeyword","text":"sunset"}]}
+{"group":"library","text":"title Sunset at the beach","expect":[{"op":"run","control":"photoTitle","text":"Sunset at the beach"}]}
+{"group":"library","text":"set title Lighthouse","expect":[{"op":"run","control":"photoTitle","text":"Lighthouse"}]}
+{"group":"library","text":"caption Taken on the way home","expect":[{"op":"run","control":"photoCaption","text":"Taken on the way home"}]}
+{"group":"library","text":"description A quiet morning","expect":[{"op":"run","control":"photoCaption","text":"A quiet morning"}]}
+{"group":"library","text":"copyright © Rajiv Sharma 2026","expect":[{"op":"run","control":"photoCopyright","text":"© Rajiv Sharma 2026"}]}
+{"group":"library","text":"copyright notice Rajiv","expect":[{"op":"run","control":"photoCopyright","text":"Rajiv"}]}
+{"group":"library","text":"photo info","expect":[{"op":"run","control":"photoInfo"}]}
+{"group":"library","text":"show exif","expect":[{"op":"run","control":"photoInfo"}]}
+{"group":"export","text":"remove location","expect":[{"op":"set","control":"removeLocation","value":1}]}
+{"group":"export","text":"strip gps","expect":[{"op":"set","control":"removeLocation","value":1}]}
+{"group":"export","text":"remove location off","expect":[{"op":"set","control":"removeLocation","value":0}]}
+{"group":"library","text":"add title Sale","expect":[{"op":"run","control":"newTextLayer","text":"Sale"}]}

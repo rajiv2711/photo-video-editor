@@ -9,6 +9,7 @@ struct LibraryPanel: View {
     @ObservedObject var model: EditorModel
     @Binding var expanded: Set<String>
     @State private var albumName = ""
+    @State private var keyword = ""
 
     private var library: Library { model.library }
 
@@ -53,6 +54,13 @@ struct LibraryPanel: View {
                     albumsSection
                 } label: {
                     Text("Albums").font(.subheadline.weight(.semibold))
+                }
+                if let photo = library.photo(library.current) {
+                    DisclosureGroup(isExpanded: isOpen("library/Info")) {
+                        infoSection(photo)
+                    } label: {
+                        Text("Keywords & info").font(.subheadline.weight(.semibold))
+                    }
                 }
             }
             .padding(.top, 6)
@@ -137,6 +145,49 @@ struct LibraryPanel: View {
             }
         }
         .padding(.horizontal, 10)
+    }
+
+    /// The photo being edited: its camera data, title, caption, copyright and keywords (tap one to take it
+    /// off), and whether exports leave out where it was taken.
+    private func infoSection(_ photo: LibraryPhoto) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(model.photoInfo)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            MetadataField(title: "Title", value: photo.title) { model.apply([.run("photoTitle", text: $0.isEmpty ? "none" : $0)]) }
+            MetadataField(title: "Caption", value: photo.caption) { model.apply([.run("photoCaption", text: $0.isEmpty ? "none" : $0)]) }
+            MetadataField(title: "Copyright", value: photo.copyright) { model.apply([.run("photoCopyright", text: $0.isEmpty ? "none" : $0)]) }
+            HStack {
+                TextField("Add keywords (comma between)", text: $keyword)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit(addKeyword)
+                Button("Add", action: addKeyword).buttonStyle(.bordered)
+            }
+            if !photo.keywords.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
+                        ForEach(photo.keywords, id: \.self) { word in
+                            Button { model.apply([.run("removeKeyword", text: word)]) } label: {
+                                Label(word, systemImage: "xmark")
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
+                        }
+                    }
+                }
+            }
+            if let strip = model.registry.control(id: "removeLocation") {
+                ControlRow(model: model, control: strip)
+            }
+        }
+        .padding(.horizontal, 10)
+    }
+
+    private func addKeyword() {
+        let words = keyword.trimmingCharacters(in: .whitespaces)
+        guard !words.isEmpty else { return }
+        model.apply([.run("addKeyword", text: words)])
+        keyword = ""
     }
 
     /// The filter: at least N stars, a flag, a colour label; Clear shows every photo.
@@ -239,5 +290,21 @@ struct LibraryThumb: View {
         case "purple": return .purple
         default: return .clear
         }
+    }
+}
+
+/// A title, caption or copyright: edited in place, applied when Return is pressed.
+private struct MetadataField: View {
+    let title: String
+    let value: String
+    let onCommit: (String) -> Void
+    @State private var text = ""
+
+    var body: some View {
+        TextField(title, text: $text)
+            .textFieldStyle(.roundedBorder)
+            .onAppear { text = value }
+            .onChange(of: value) { _, new in text = new }
+            .onSubmit { onCommit(text.trimmingCharacters(in: .whitespaces)) }
     }
 }

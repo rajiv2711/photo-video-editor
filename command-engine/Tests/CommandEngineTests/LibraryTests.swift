@@ -309,4 +309,91 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(interpreter.workspace.library.filter.album, "trips")
         XCTAssertEqual(value("exposure"), 0.5)
     }
+
+    // MARK: - Keywords & metadata (#166)
+
+    func testKeywordNamesReachTheirControls() {
+        XCTAssertEqual(parse("keyword beach"), [.run("addKeyword", text: "beach")])
+        XCTAssertEqual(parse("remove keyword beach"), [.run("removeKeyword", text: "beach")])
+        XCTAssertEqual(parse("show keyword beach"), [.run("showKeyword", text: "beach")])
+        XCTAssertEqual(parse("title Sunset at the beach"), [.run("photoTitle", text: "Sunset at the beach")])
+        XCTAssertEqual(parse("copyright © R 2026"), [.run("photoCopyright", text: "© R 2026")])
+        XCTAssertEqual(parse("photo info"), [.run("photoInfo")])
+        XCTAssertEqual(parse("strip location"), [.set("removeLocation", 1)])
+        // A text layer's names keep their words.
+        XCTAssertEqual(parse("add title Sale"), [.run("newTextLayer", text: "Sale")])
+        XCTAssertEqual(parse("add caption Hello"), [.run("newTextLayer", text: "Hello")])
+    }
+
+    func testKeywordsAndCaptionsStayWithTheirPhoto() {
+        makeLibrary()
+        run("photo 1")
+        XCTAssertEqual(events(run("keyword beach, sunset and sea")), [.keywordsAdded(["beach", "sunset", "sea"])])
+        XCTAssertEqual(events(run("keyword Beach")), [.keywordsAdded([])], "already has it")
+        XCTAssertEqual(events(run("remove keyword sea")), [.keywordRemoved("sea")])
+        XCTAssertEqual(events(run("remove keyword sea")), [.noKeyword("sea")])
+        XCTAssertEqual(events(run("keywords")), [.keywords(["beach", "sunset"])])
+        run("title Sunset")
+        run("caption On the way home")
+        XCTAssertEqual(events(run("copyright © R")), [.described(field: "copyright", value: "© R")])
+        XCTAssertEqual(events(run("title")), [.described(field: "title", value: "Sunset")], "no words: says it")
+        let a = interpreter.workspace.library.photo("a")!
+        XCTAssertEqual(a.keywords, ["beach", "sunset"])
+        XCTAssertEqual(a.title, "Sunset")
+        XCTAssertEqual(a.caption, "On the way home")
+        run("caption none")
+        XCTAssertEqual(interpreter.workspace.library.photo("a")?.caption, "")
+        run("next photo")
+        XCTAssertEqual(events(run("show keyword beach")), [.filtered(shown: 1, total: 3)])
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["a"])
+        run("show keyword")
+        XCTAssertEqual(interpreter.workspace.library.shown.count, 3, "no words: any keyword")
+        XCTAssertEqual(events(run("photo info")), [.info])
+    }
+
+    func testExportedMetadata() {
+        var photo = LibraryPhoto(id: "x", name: "X.JPG", added: Date())
+        photo.title = "Sunset"
+        photo.caption = "Home"
+        photo.copyright = "© R"
+        photo.keywords = ["beach"]
+        let original: [String: Any] = [
+            "Orientation": 6,
+            "{Exif}": ["DateTimeOriginal": "2026:11:21 10:00:05", "PixelXDimension": 4000, "FNumber": 2.8] as [String: Any],
+            "{TIFF}": ["Make": "FUJIFILM", "Orientation": 6] as [String: Any],
+            "{GPS}": ["Latitude": 51.5] as [String: Any],
+            "{MakerApple}": ["1": 2] as [String: Any],
+        ]
+        let out = PhotoMetadata.properties(for: photo, original: original, removeLocation: false, ppi: 300)
+        XCTAssertEqual(out["Orientation"] as? Int, 1, "the pixels are upright")
+        XCTAssertEqual((out["{TIFF}"] as? [String: Any])?["Orientation"] as? Int, 1)
+        XCTAssertEqual((out["{TIFF}"] as? [String: Any])?["Make"] as? String, "FUJIFILM")
+        XCTAssertEqual((out["{TIFF}"] as? [String: Any])?["Copyright"] as? String, "© R")
+        XCTAssertEqual((out["{Exif}"] as? [String: Any])?["DateTimeOriginal"] as? String, "2026:11:21 10:00:05")
+        XCTAssertNil((out["{Exif}"] as? [String: Any])?["PixelXDimension"])
+        let iptc = out["{IPTC}"] as? [String: Any]
+        XCTAssertEqual(iptc?["Keywords"] as? [String], ["beach"])
+        XCTAssertEqual(iptc?["ObjectName"] as? String, "Sunset")
+        XCTAssertEqual(iptc?["Caption/Abstract"] as? String, "Home")
+        XCTAssertNotNil(out["{GPS}"])
+        XCTAssertNil(out["{MakerApple}"])
+        XCTAssertEqual(out["DPIWidth"] as? Double, 300)
+        let stripped = PhotoMetadata.properties(for: photo, original: original, removeLocation: true, ppi: 72)
+        XCTAssertNil(stripped["{GPS}"])
+    }
+
+    func testCameraSummary() {
+        let camera = CameraInfo(make: "FUJIFILM", model: "X-T5", lens: "XF35mmF2 R WR", iso: 400, exposureTime: 0.004, aperture: 2.8,
+                                focalLength: 35, exposureBias: 1)
+        XCTAssertEqual(PhotoMetadata.summary(camera), "FUJIFILM X-T5 · XF35mmF2 R WR · ISO 400 · 1/250 s · f/2.8 · 35 mm · +1 EV")
+        XCTAssertEqual(PhotoMetadata.shutter(2), "2 s")
+        XCTAssertEqual(PhotoMetadata.shutter(1.0 / 60), "1/60 s")
+    }
+
+    func testLibraryAndExportSettingsAreNotTheEdit() {
+        run("remove location")
+        run("reset all")
+        XCTAssertEqual(value("removeLocation"), 1)
+        XCTAssertFalse(interpreter.workspace.history.canUndo)
+    }
 }

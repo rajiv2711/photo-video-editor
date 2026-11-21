@@ -413,9 +413,10 @@ public enum Workflow {
         v == v.rounded() ? String(Int(v)) : String((v * 100).rounded() / 100)
     }
 
-    /// How the user looks at the photo and works (the View panel, the Include switches), not the edit:
-    /// "reset all", undo and presets leave them as they are.
+    /// How the user looks at the photo and works (the View panel, the Include switches, the library, the
+    /// camera and the export settings), not the edit: "reset all", undo and presets leave them as they
+    /// are, and they stay when another photo is opened.
     public static func isSetting(_ control: Control) -> Bool {
-        control.group == "view" || Presets.includes.contains { $0.id == control.id }
+        ["view", "library", "camera", "export"].contains(control.group) || Presets.includes.contains { $0.id == control.id }
     }
 }

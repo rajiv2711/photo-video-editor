@@ -52,7 +52,8 @@ enum RenderGallery {
         /// A Live Photo to edit: its photo, then its video's frames (generated, see `sourceImage`).
         let live: [String]?
         /// What to save instead of the edited photo: "overlay", the preview with the View panel's
-        /// overlays, as the screen shows it; "batch", the first picture Batch Edit made.
+        /// overlays, as the screen shows it; "batch", the first picture Batch Edit made; "export", the
+        /// file the photo is exported as, read back (its details go into the manifest's fields).
         let view: String?
         /// Pictures imported into an empty library before the command (generated, see `sourceImage`),
         /// with the capture times and places of `libraryImport`; the first one is opened.
@@ -178,6 +179,18 @@ enum RenderGallery {
             // "overlay": what the screen shows (before / after, warnings, grids…); "batch": a batch picture.
             var edited = item.view == "overlay" ? model.shownPreview() : model.editedPreview()
             if item.view == "batch", let first = model.lastBatch.first { edited = first }
+            var fields = model.galleryFields()
+            if item.view == "export" {
+                // The exported file itself, and its pixels and details as read back.
+                if let exported = model.exportFile() {
+                    let ext = UTType(exported.type)?.preferredFilenameExtension ?? "bin"
+                    try? exported.data.write(to: folder.appendingPathComponent("\(item.id).export.\(ext)"))
+                    if let decoded = LibraryStore.decode(exported.data) { edited = decoded.image }
+                    fields.merge(Exporter.readBack(exported.data)) { _, new in new }
+                } else {
+                    fields["export.type"] = "failed"
+                }
+            }
             let file = "\(item.id).jpg"
             if let jpeg = model.renderer.jpegData(edited) {
                 try? jpeg.write(to: folder.appendingPathComponent(file))
@@ -191,7 +204,7 @@ enum RenderGallery {
                 feedback: model.feedback?.text ?? "",
                 values: model.changedValues(),
                 peak: model.renderer.peak(of: edited),
-                fields: model.galleryFields()
+                fields: fields
             ))
         }
         writeFilterAttributes(to: folder)

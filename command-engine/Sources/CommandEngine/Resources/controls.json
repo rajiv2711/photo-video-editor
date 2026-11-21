@@ -1715,6 +1715,14 @@
     {"id": "addToAlbum", "label": "Add To Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["add to the album", "put in album", "put in the album", "add photo to album", "add to collection", "put it in album"]},
     {"id": "removeFromAlbum", "label": "Remove From Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["remove from the album", "take out of album", "take out of the album", "remove from collection"]},
     {"id": "album", "label": "Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["show album", "open album", "go to album", "albums", "collection", "show collection"]},
-    {"id": "deleteAlbum", "label": "Delete Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["remove album", "delete collection", "delete the album"]}
+    {"id": "deleteAlbum", "label": "Delete Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["remove album", "delete collection", "delete the album"]},
+    {"id": "addKeyword", "label": "Keyword", "group": "library", "section": "Keywords & info", "kind": "action", "takesText": true, "synonyms": ["add keyword", "keywords", "add keywords", "tag", "add tag", "tag photo"]},
+    {"id": "removeKeyword", "label": "Remove Keyword", "group": "library", "section": "Keywords & info", "kind": "action", "takesText": true, "synonyms": ["delete keyword", "remove tag", "delete tag", "untag"]},
+    {"id": "showKeyword", "label": "Show Keyword", "group": "library", "section": "Keywords & info", "kind": "action", "takesText": true, "synonyms": ["find keyword", "keyword filter", "filter keyword", "show tag", "find tag", "photos with keyword", "search keyword"]},
+    {"id": "photoTitle", "label": "Title", "group": "library", "section": "Keywords & info", "kind": "action", "takesText": true, "synonyms": ["photo title", "set title", "headline", "name photo"]},
+    {"id": "photoCaption", "label": "Caption", "group": "library", "section": "Keywords & info", "kind": "action", "takesText": true, "synonyms": ["photo caption", "set caption", "description", "photo description"]},
+    {"id": "photoCopyright", "label": "Copyright", "group": "library", "section": "Keywords & info", "kind": "action", "takesText": true, "synonyms": ["copyright notice", "set copyright", "photo copyright", "rights"]},
+    {"id": "photoInfo", "label": "Photo Info", "group": "library", "section": "Keywords & info", "kind": "action", "synonyms": ["info", "show info", "camera data", "camera info", "exif", "show exif", "metadata", "show metadata", "photo details", "details"]},
+    {"id": "removeLocation", "label": "Remove Location", "group": "export", "section": "Metadata", "kind": "toggle", "synonyms": ["strip location", "remove gps", "strip gps", "no location", "hide location", "remove location data", "without location"]}
   ]
 }

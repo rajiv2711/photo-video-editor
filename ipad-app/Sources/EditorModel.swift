@@ -4,6 +4,7 @@ import ImageIO
 import Photos
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 /// Holds the photo, the slider values and the command interpreter. Sliders, typed commands and
 /// spoken commands all change the same `EditState`, so they always agree.
@@ -789,6 +790,7 @@ final class EditorModel: ObservableObject {
         for case .workflow(let event) in outcomes {
             if case .historyShown = event { revealedPanel = "history" }
             if case .library(.browsed) = event { revealedPanel = "library" }
+            if case .library(.info) = event { revealedPanel = "library/Info" }
             // "next photo": the engine has put that photo's edit in place; its picture comes now.
             if case .library(.opened(let id, _, _)) = event {
                 showLibraryPhoto(id)
@@ -1158,7 +1160,32 @@ final class EditorModel: ObservableObject {
             return ("“\(word)” could be: " + names.map { "“\($0)”" }.joined(separator: ", "), true)
         case .albums(let names):
             return (names.isEmpty ? "No albums yet: say “new album …”" : "Albums: " + names.joined(separator: ", "), false)
+        case .keywordsAdded(let words):
+            let all = library.photo(library.current)?.keywords ?? []
+            return ((words.isEmpty ? "Keywords unchanged" : "Keywords added: " + words.joined(separator: ", ")) + " · now: " + all.joined(separator: ", "), false)
+        case .keywordRemoved(let word):
+            return ("Keyword “\(word)” removed", false)
+        case .noKeyword(let word):
+            return ("This photo has no keyword “\(word)”", true)
+        case .keywords(let words):
+            return (words.isEmpty ? "No keywords yet: say “keyword beach”" : "Keywords: " + words.joined(separator: ", "), false)
+        case .described(let field, let value):
+            return (field.capitalized + (value.isEmpty ? ": none" : ": “\(value)”"), false)
+        case .info:
+            return ("Info: " + photoInfo, false)
         }
+    }
+
+    /// The camera data, when and where the photo being edited was taken.
+    var photoInfo: String {
+        guard let photo = library.photo(library.current) else { return "this photo isn't in the library" }
+        var parts = [photo.name]
+        let camera = PhotoMetadata.summary(photo.camera)
+        if !camera.isEmpty { parts.append(camera) }
+        if let w = photo.camera.width, let h = photo.camera.height { parts.append("\(w) × \(h)") }
+        if let date = photo.captured { parts.append("taken " + PhotoMetadata.exifText(date)) }
+        if let lat = photo.latitude, let lon = photo.longitude { parts.append(String(format: "%.4f, %.4f", lat, lon)) }
+        return parts.joined(separator: " · ")
     }
 
     /// The filter in words ("3+ stars · picks · red label").
@@ -1191,6 +1218,13 @@ final class EditorModel: ObservableObject {
             out["photo.flag"] = String(photo.flag)
             out["photo.label"] = photo.label
             out["photo.albums"] = lib.albums(of: photo.id).joined(separator: ", ")
+            out["photo.keywords"] = photo.keywords.joined(separator: ", ")
+            out["photo.title"] = photo.title
+            out["photo.caption"] = photo.caption
+            out["photo.copyright"] = photo.copyright
+            out["photo.camera"] = PhotoMetadata.summary(photo.camera)
+            out["photo.captured"] = photo.captured.map { PhotoMetadata.exifText($0) } ?? ""
+            if let lat = photo.latitude, let lon = photo.longitude { out["photo.gps"] = String(format: "%.2f,%.2f", lat, lon) }
         }
         out["library.albums"] = lib.albums.map { "\($0.name):\($0.photos.count)" }.joined(separator: ", ")
         out["library.filter"] = Self.describe(lib.filter)
@@ -1619,9 +1653,7 @@ final class EditorModel: ObservableObject {
             saveAnimation(live, liveEffect)
             return
         }
-        let edited = renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches,
-                                    geometry: state.geometry, layers: state.layers, layerPhotos: layerPhotos.map { $0.full },
-                                    watermark: state.watermarkText, logo: watermarkLogo?.full)
+        let edited = editedPhoto()
         if isHDR {
             guard let data = renderer.hdrHEIF(edited) else {
                 feedback = Feedback(text: "Couldn't render the HDR photo.", isProblem: true)
@@ -1630,12 +1662,31 @@ final class EditorModel: ObservableObject {
             saveToPhotos([data], done: "Saved HDR photo to Photos.")
             return
         }
-        // A JPEG with the Resolution (pixels per inch) written into it.
-        let ppi = registry.control(id: "resolution").map { state.value(of: $0) } ?? 72
-        guard let data = Self.jpeg(edited, context: renderer.context, ppi: ppi) else {
+        // A JPEG with the photo's metadata and the Resolution (pixels per inch) written into it.
+        guard let file = exportFile(edited) else {
             feedback = Feedback(text: "Couldn't render the photo.", isProblem: true)
             return
         }
+        saveToPhotos([file.data], done: "Saved to Photos.")
+    }
+
+    /// The full-size edited photo.
+    private func editedPhoto() -> CIImage {
+        renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches,
+                       geometry: state.geometry, layers: state.layers, layerPhotos: layerPhotos.map { $0.full },
+                       watermark: state.watermarkText, logo: watermarkLogo?.full)
+    }
+
+    /// The file the photo is saved or exported as, with its metadata: the camera data and date of the file
+    /// opened, its place (unless Remove Location), and the library's title, caption, keywords and copyright.
+    func exportFile(_ rendered: CIImage? = nil) -> (data: Data, type: String)? {
+        let edited = rendered ?? editedPhoto()
+        let ppi = registry.control(id: "resolution").map { state.value(of: $0) } ?? 72
+        let properties = PhotoMetadata.properties(for: library.photo(library.current), original: pictureInfo?.properties ?? original.properties,
+                                                  removeLocation: isOn("removeLocation"), ppi: ppi)
+        let type = UTType.jpeg.identifier
+        return Exporter.encode(edited, context: renderer.context, type: type, properties: properties).map { (data: $0, type: type) }
+    }
         saveToPhotos([data], done: "Saved to Photos.")
     }
 

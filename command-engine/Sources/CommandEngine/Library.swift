@@ -181,6 +181,17 @@ public enum LibraryEvent: Equatable {
     case albumChoices(word: String, names: [String])
     /// "album" alone: the albums' names.
     case albums([String])
+    /// Keywords given to the photo being edited (those it didn't have yet).
+    case keywordsAdded([String])
+    case keywordRemoved(String)
+    /// Remove Keyword: the photo hasn't that keyword.
+    case noKeyword(String)
+    /// "keywords" alone: the photo's keywords.
+    case keywords([String])
+    /// Title, Caption or Copyright ("title", "caption", "copyright") set (or said, when no words came).
+    case described(field: String, value: String)
+    /// Photo Info: the camera data of the photo being edited (the app says it).
+    case info
 }
 
 /// The photos imported, the albums, the filter, and the photo being edited.
@@ -208,7 +219,8 @@ public struct Library: Codable, Equatable {
     public static let actions: Set<String> = ["openPhoto", "nextPhoto", "previousPhoto", "browseLibrary",
                                               "rate", "pick", "reject", "unflag", "colorLabel",
                                               "showRating", "showPicks", "showRejects", "showUnflagged", "showLabel", "showAllPhotos",
-                                              "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum"]
+                                              "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum",
+                                              "addKeyword", "removeKeyword", "showKeyword", "photoTitle", "photoCaption", "photoCopyright", "photoInfo"]
 
     /// Colour labels, as the options of Label (controls.json; Show Label adds "any").
     public static let labels = ["red", "yellow", "green", "blue", "purple"]
@@ -332,6 +344,12 @@ public struct Library: Codable, Equatable {
             filter = LibraryFilter()
         case "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum":
             return (album(id, words: (command.text ?? "").trimmingCharacters(in: .whitespaces)), nil)
+        case "showKeyword":
+            // No words: any keyword again.
+            filter.keyword = (command.text ?? "").trimmingCharacters(in: .whitespaces)
+        case "addKeyword", "removeKeyword", "photoTitle", "photoCaption", "photoCopyright", "photoInfo":
+            guard let i = photos.firstIndex(where: { $0.id == current }) else { return ([.notInLibrary], nil) }
+            return (describe(id, photo: i, words: (command.text ?? "").trimmingCharacters(in: .whitespaces)), nil)
         default:
             return ([], nil)
         }
@@ -410,7 +428,51 @@ extension Library {
     }
 }
 
-/// Reading a photo's metadata (the properties ImageIO gives, as a dictionary) into the library's fields.
+extension Library {
+    /// Keywords said in one go: "beach, sunset and sea" → beach, sunset, sea.
+    public static func keywords(in words: String) -> [String] {
+        words.replacingOccurrences(of: " and ", with: ",").replacingOccurrences(of: ";", with: ",")
+            .split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    }
+
+    /// Keywords, title, caption, copyright and info of photo `i`. Title, Caption and Copyright take the
+    /// words said ("none" or "clear" clears them; no words: says what it is).
+    mutating func describe(_ id: String, photo i: Int, words: String) -> [LibraryEvent] {
+        switch id {
+        case "addKeyword":
+            guard !words.isEmpty else { return [.keywords(photos[i].keywords)] }
+            var added: [String] = []
+            for word in Self.keywords(in: words)
+            where !(photos[i].keywords + added).contains(where: { Presets.normalized($0) == Presets.normalized(word) }) {
+                added.append(word)
+            }
+            photos[i].keywords += added
+            return [.keywordsAdded(added)]
+        case "removeKeyword":
+            guard let k = photos[i].keywords.firstIndex(where: { Presets.normalized($0) == Presets.normalized(words) }) else {
+                return [.noKeyword(words)]
+            }
+            return [.keywordRemoved(photos[i].keywords.remove(at: k))]
+        case "photoInfo":
+            return [.info]
+        default:
+            let field = id == "photoTitle" ? "title" : id == "photoCaption" ? "caption" : "copyright"
+            if !words.isEmpty {
+                let value = ["none", "clear", "off", "nothing"].contains(words.lowercased()) ? "" : words
+                switch field {
+                case "title": photos[i].title = value
+                case "caption": photos[i].caption = value
+                default: photos[i].copyright = value
+                }
+            }
+            let now = field == "title" ? photos[i].title : field == "caption" ? photos[i].caption : photos[i].copyright
+            return [.described(field: field, value: now)]
+        }
+    }
+}
+
+/// Reading a photo's metadata (the properties ImageIO gives, as a dictionary) into the library's fields,
+/// and the metadata a saved or exported photo carries.
 public enum PhotoMetadata {
     /// EXIF dates: "2026:11:21 10:00:05" (local time, as cameras write it; read as UTC so it never shifts).
     public static func date(_ text: String?) -> Date? {
@@ -479,5 +541,62 @@ public enum PhotoMetadata {
         if let title = iptc["ObjectName"] as? String { photo.title = title }
         if let caption = (iptc["Caption/Abstract"] as? String) ?? (tiff["ImageDescription"] as? String) { photo.caption = caption }
         if let copyright = (iptc["CopyrightNotice"] as? String) ?? (tiff["Copyright"] as? String) { photo.copyright = copyright }
+    }
+
+    /// The metadata an exported photo carries: the original's camera data and date (EXIF, TIFF), its
+    /// place (GPS) unless `removeLocation`, and the library's title, caption, keywords and copyright
+    /// (IPTC, also the TIFF description and copyright); upright (orientation 1, as the pixels are), with
+    /// the resolution in pixels per inch. `original`: ImageIO's properties of the file opened.
+    public static func properties(for photo: LibraryPhoto?, original: [String: Any], removeLocation: Bool, ppi: Double) -> [String: Any] {
+        var out: [String: Any] = ["Orientation": 1, "DPIWidth": ppi, "DPIHeight": ppi]
+        var exif = original["{Exif}"] as? [String: Any] ?? [:]
+        // The new picture's own size is written by ImageIO.
+        exif["PixelXDimension"] = nil
+        exif["PixelYDimension"] = nil
+        exif["SubjectArea"] = nil
+        if !exif.isEmpty { out["{Exif}"] = exif }
+        if let aux = original["{ExifAux}"] { out["{ExifAux}"] = aux }
+        var tiff = original["{TIFF}"] as? [String: Any] ?? [:]
+        tiff["Orientation"] = 1
+        tiff["XResolution"] = ppi
+        tiff["YResolution"] = ppi
+        tiff["ResolutionUnit"] = 2
+        tiff["Software"] = "Editor"
+        var iptc = original["{IPTC}"] as? [String: Any] ?? [:]
+        if let photo {
+            func put(_ value: String, iptc key: String, tiff tiffKey: String? = nil) {
+                iptc[key] = value.isEmpty ? nil : value
+                if let tiffKey { tiff[tiffKey] = value.isEmpty ? nil : value }
+            }
+            put(photo.title, iptc: "ObjectName")
+            put(photo.caption, iptc: "Caption/Abstract", tiff: "ImageDescription")
+            put(photo.copyright, iptc: "CopyrightNotice", tiff: "Copyright")
+            iptc["Keywords"] = photo.keywords.isEmpty ? nil : photo.keywords
+        }
+        out["{TIFF}"] = tiff
+        if !iptc.isEmpty { out["{IPTC}"] = iptc }
+        if !removeLocation, let gps = original["{GPS}"] { out["{GPS}"] = gps }
+        return out
+    }
+
+    /// The camera data in one line: "FUJIFILM X-T5 · XF35mmF2 R WR · ISO 400 · 1/250 s · f/2.8 · 35 mm · +1 EV".
+    public static func summary(_ camera: CameraInfo) -> String {
+        var parts: [String] = []
+        let body = [camera.make, camera.model].compactMap { $0 }.joined(separator: " ")
+        if !body.isEmpty { parts.append(body) }
+        if let lens = camera.lens { parts.append(lens) }
+        if let iso = camera.iso { parts.append("ISO \(Int(iso))") }
+        if let t = camera.exposureTime { parts.append(shutter(t)) }
+        if let f = camera.aperture { parts.append("f/" + Workflow.number(f)) }
+        if let mm = camera.focalLength { parts.append(Workflow.number(mm) + " mm") }
+        if let ev = camera.exposureBias, ev != 0 { parts.append((ev > 0 ? "+" : "") + Workflow.number(ev) + " EV") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// An exposure time as cameras show it: 0.004 → "1/250 s", 2 → "2 s".
+    public static func shutter(_ seconds: Double) -> String {
+        guard seconds > 0 else { return "" }
+        if seconds >= 1 { return Workflow.number((seconds * 10).rounded() / 10) + " s" }
+        return "1/\(Int((1 / seconds).rounded())) s"
     }
 }
