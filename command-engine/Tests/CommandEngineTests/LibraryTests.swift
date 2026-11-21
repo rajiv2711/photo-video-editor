@@ -480,4 +480,17 @@ final class LibraryTests: XCTestCase {
         run("photo 1 pick show picks")
         XCTAssertEqual(interpreter.workspace.library.located.count, 0)
     }
+
+    // MARK: - Tethered capture (#172)
+
+    func testTetheredNamesReachTheirControls() {
+        XCTAssertEqual(parse("tethered capture"), [.set("tetheredCapture", 1)])
+        XCTAssertEqual(parse("tether off"), [.set("tetheredCapture", 0)])
+        XCTAssertEqual(parse("tethered shot"), [.run("tetheredShot")])
+        // A camera setting is no step of the edit and stays when another photo opens.
+        makeLibrary()
+        run("photo 1 tethered capture next photo")
+        XCTAssertEqual(value("tetheredCapture"), 1)
+        XCTAssertFalse(interpreter.workspace.history.canUndo)
+    }
 }

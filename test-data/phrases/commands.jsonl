@@ -1346,3 +1346,8 @@
 {"group":"library","text":"show map","expect":[{"op":"run","control":"showMap"}]}
 {"group":"library","text":"browse by location","expect":[{"op":"run","control":"showMap"}]}
 {"group":"library","text":"gradient map","expect":[{"op":"select","control":"gradientMap"}]}
+{"group":"camera","text":"tethered capture","expect":[{"op":"set","control":"tetheredCapture","value":1}]}
+{"group":"camera","text":"tether on","expect":[{"op":"set","control":"tetheredCapture","value":1}]}
+{"group":"camera","text":"tethered capture off","expect":[{"op":"set","control":"tetheredCapture","value":0}]}
+{"group":"camera","text":"tethered shot","expect":[{"op":"run","control":"tetheredShot"}]}
+{"group":"camera","text":"fire shutter","expect":[{"op":"run","control":"tetheredShot"}]}

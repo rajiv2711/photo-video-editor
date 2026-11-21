@@ -6,8 +6,6 @@ import UniformTypeIdentifiers
 
 struct EditorView: View {
     @StateObject private var model = EditorModel()
-    /// Connected cameras and SD cards (Import From Camera).
-    @StateObject private var cameras = CameraImporter()
     @Environment(\.scenePhase) private var scenePhase
     @State private var pickerItem: PhotosPickerItem?
     /// Photos picked with Import Photos (the Library panel's button, or said).
@@ -73,7 +71,7 @@ struct EditorView: View {
                 if case .success(let urls) = result { model.importFiles(urls) }
             }
             .sheet(isPresented: importer("camera")) {
-                CameraImportView(importer: cameras) { urls in model.importFiles(urls) }
+                CameraImportView(importer: model.cameras) { urls in model.importFiles(urls) }
             }
             .sheet(isPresented: $model.showsMap) { LibraryMapView(model: model) }
             .onChange(of: scenePhase) { _, phase in

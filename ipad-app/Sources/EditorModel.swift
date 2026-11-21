@@ -40,6 +40,8 @@ final class EditorModel: ObservableObject {
     @Published var importer: String?
     /// The library's map is showing (Map).
     @Published var showsMap = false
+    /// Cameras and SD cards connected (Import From Camera, Tethered Capture).
+    let cameras = CameraImporter()
 
     /// What the View panel's scopes show.
     struct ScopeReadings: Equatable {
@@ -119,6 +121,10 @@ final class EditorModel: ObservableObject {
         interpreter.workspace.presets = savedPresets
         interpreter.workspace.library = libraryStore.read()
         installActions()
+        // Tethered capture: each new shot joins the library and opens.
+        cameras.onNewPhotos = { [weak self] urls in
+            Task { @MainActor in self?.importFiles(urls) }
+        }
         // Retouch steps are worked out in the background: show them when they are ready.
         renderer.retouch.onFinish = { [weak self] in
             Task { @MainActor in self?.render() }
@@ -816,6 +822,7 @@ final class EditorModel: ObservableObject {
                 importer = kind
                 revealedPanel = "library"
             }
+            if id == "tetheredShot" { tetheredShot() }
             if id == "batchEdit" { batchEdit() }
             if id == "matchExposures" { batchEdit(matching: true) }
         }
@@ -1109,6 +1116,29 @@ final class EditorModel: ObservableObject {
         render()
     }
 
+    // MARK: - Tethered capture (Camera panel)
+
+    /// What the last Tethered Shot did (the render gallery's manifest).
+    private var lastShot = ""
+
+    /// Tethered Capture on or off: connected cameras' new shots come in while it is on.
+    private func syncTethering() {
+        let on = isOn("tetheredCapture")
+        if cameras.tethered != on { cameras.tethered = on }
+    }
+
+    /// Fires the connected camera's shutter; the shot comes in when Tethered Capture is on.
+    private func tetheredShot() {
+        let fired = cameras.takePicture { [weak self] problem in
+            guard let problem else { return }
+            Task { @MainActor in self?.feedback = Feedback(text: "The camera didn't take the shot: \(problem)", isProblem: true) }
+        }
+        lastShot = fired ? "fired" : "no camera"
+        feedback = fired
+            ? Feedback(text: "Shutter fired" + (isOn("tetheredCapture") ? ": the photo opens when the camera has it" : " · turn on Tethered Capture to bring it in"))
+            : Feedback(text: "No camera connected: connect one by USB (Tethered Capture brings in each shot taken on it)", isProblem: true)
+    }
+
     /// Writes the library (with the edit of the photo being edited) to its file.
     func saveLibrary() {
         guard keepsLibrary else { return }
@@ -1245,6 +1275,9 @@ final class EditorModel: ObservableObject {
             out["photo.captured"] = photo.captured.map { PhotoMetadata.exifText($0) } ?? ""
             if let lat = photo.latitude, let lon = photo.longitude { out["photo.gps"] = String(format: "%.2f,%.2f", lat, lon) }
         }
+        out["camera.tethered"] = cameras.tethered ? "on" : "off"
+        out["camera.devices"] = String(cameras.count)
+        if !lastShot.isEmpty { out["camera.shot"] = lastShot }
         out["library.stacks"] = String(lib.stacks.count)
         out["library.located"] = String(lib.located.count)
         if showsMap { out["ui.map"] = "shown" }
@@ -2071,6 +2104,7 @@ final class EditorModel: ObservableObject {
         historyLabel = nil
         historyKey = nil
         historySeal = false
+        syncTethering()
         let edited = editedPreview()
         previewLong = Double(max(edited.extent.width, edited.extent.height))
         if showsPreview {

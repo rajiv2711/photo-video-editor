@@ -3,7 +3,9 @@ import SwiftUI
 
 /// Cameras and SD cards connected to the iPad (ImageCaptureCore): lists them and the photos on them, and
 /// downloads the ones to import into a folder of the app's. iPadOS shows a camera on USB, and an SD card
-/// in a card reader, as a camera with photos. The simulator has neither (check on the iPad).
+/// in a card reader, as a camera with photos. Tethered capture: while it is on, every photo a connected
+/// camera adds (a shot taken on it, or fired from the app over USB with PTP) is copied in and handed over
+/// at once. The simulator has neither (check on the iPad).
 final class CameraImporter: NSObject, ObservableObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate {
     /// A connected camera or card and the photo files on it.
     struct Device: Identifiable {
@@ -20,6 +22,27 @@ final class CameraImporter: NSObject, ObservableObject, ICDeviceBrowserDelegate,
     @Published private(set) var downloading = false
     private let browser = ICDeviceBrowser()
     private var started = false
+    /// Cameras whose full list of files has arrived: files they add after that are new shots.
+    private var readyCameras: Set<ObjectIdentifier> = []
+    private let lock = NSLock()
+    /// PTP transaction numbers (each command has its own).
+    private var transaction: UInt32 = 1000
+
+    /// Tethered capture: photos the cameras add from now on are copied in and given to `onNewPhotos`.
+    var tethered = false {
+        didSet {
+            guard tethered, !oldValue else { return }
+            start()
+            // Firing the shutter needs control of the camera, not only its contents.
+            browser.requestControlAuthorization { _ in }
+        }
+    }
+
+    /// Gets the files of new shots while tethered (on the main queue).
+    var onNewPhotos: (([URL]) -> Void)?
+
+    /// How many cameras or cards are connected.
+    var count: Int { devices.count }
 
     /// Picture files the library can import (raws included).
     static let photoExtensions: Set<String> = ["jpg", "jpeg", "heic", "heif", "png", "tif", "tiff", "dng", "cr2", "cr3", "crw", "nef", "nrw",
@@ -65,6 +88,33 @@ final class CameraImporter: NSObject, ObservableObject, ICDeviceBrowserDelegate,
             self.downloading = false
             done(urls)
         }
+    }
+
+    /// Fires the first connected camera's shutter over USB (PTP InitiateCapture, for cameras that let the
+    /// iPad control them); the shot then arrives as any new photo does. False when no camera is connected.
+    @discardableResult
+    func takePicture(done: @escaping (String?) -> Void) -> Bool {
+        guard let camera = devices.first?.camera else { return false }
+        transaction += 1
+        // A PTP command container: length, type 1 (command), code 0x100E, transaction, storage 0 and format 0 (the camera's own).
+        var command = Data()
+        func put(_ value: UInt32, _ bytes: Int) {
+            var v = value.littleEndian
+            command.append(Data(bytes: &v, count: bytes))
+        }
+        put(20, 4)
+        put(1, 2)
+        put(0x100E, 2)
+        put(transaction, 4)
+        put(0, 4)
+        put(0, 4)
+        camera.requestSendPTPCommand(command, outData: nil) { _, response, error in
+            // The response's code (bytes 6–7): 0x2001 is OK.
+            let code = response.count >= 8 ? UInt16(response[response.startIndex + 6]) | UInt16(response[response.startIndex + 7]) << 8 : 0
+            let problem = error?.localizedDescription ?? (code == 0x2001 || code == 0 ? nil : String(format: "the camera answered 0x%04X", code))
+            DispatchQueue.main.async { done(problem) }
+        }
+        return true
     }
 
     /// The photo files a camera has, oldest first as the camera lists them.
@@ -131,6 +181,16 @@ final class CameraImporter: NSObject, ObservableObject, ICDeviceBrowserDelegate,
 
     func cameraDevice(_ camera: ICCameraDevice, didAdd items: [ICCameraItem]) {
         refresh(camera)
+        // Tethered: a file added after the camera listed its own is a new shot.
+        lock.lock()
+        let ready = readyCameras.contains(ObjectIdentifier(camera))
+        lock.unlock()
+        guard tethered, ready else { return }
+        let shots = items.compactMap { $0 as? ICCameraFile }.filter { file in
+            Self.photoExtensions.contains(((file.name ?? "") as NSString).pathExtension.lowercased())
+        }
+        guard !shots.isEmpty else { return }
+        download(shots) { urls in self.onNewPhotos?(urls) }
     }
 
     func cameraDevice(_ camera: ICCameraDevice, didRemove items: [ICCameraItem]) {
@@ -148,6 +208,9 @@ final class CameraImporter: NSObject, ObservableObject, ICDeviceBrowserDelegate,
     func cameraDevice(_ camera: ICCameraDevice, didReceivePTPEvent eventData: Data) {}
 
     func deviceDidBecomeReady(withCompleteContentCatalog device: ICCameraDevice) {
+        lock.lock()
+        readyCameras.insert(ObjectIdentifier(device))
+        lock.unlock()
         refresh(device, ready: true)
     }
 

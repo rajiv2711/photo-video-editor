@@ -1731,6 +1731,8 @@
     {"id": "unstack", "label": "Unstack", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["unstack photos", "remove stack", "break stack", "undo stack", "ungroup stack"]},
     {"id": "expandStacks", "label": "Expand Stacks", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["expand stack", "open stacks", "show stacks", "show all in stacks", "expand all stacks"]},
     {"id": "collapseStacks", "label": "Collapse Stacks", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["collapse stack", "close stacks", "hide stacks", "collapse all stacks"]},
-    {"id": "showMap", "label": "Map", "group": "library", "section": "Map", "kind": "action", "synonyms": ["show map", "photo map", "map view", "browse by location", "places", "where taken", "show places", "photos on map"]}
+    {"id": "showMap", "label": "Map", "group": "library", "section": "Map", "kind": "action", "synonyms": ["show map", "photo map", "map view", "browse by location", "places", "where taken", "show places", "photos on map"]},
+    {"id": "tetheredCapture", "label": "Tethered Capture", "group": "camera", "section": "Tethered", "kind": "toggle", "synonyms": ["tethered", "tether", "tethering", "tethered shooting", "shoot tethered", "tether camera", "live import"]},
+    {"id": "tetheredShot", "label": "Tethered Shot", "group": "camera", "section": "Tethered", "kind": "action", "synonyms": ["fire camera", "fire shutter", "trigger camera", "remote shutter", "release shutter", "trigger shutter"]}
   ]
 }
