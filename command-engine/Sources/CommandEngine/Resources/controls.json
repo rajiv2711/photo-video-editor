@@ -1172,6 +1172,17 @@
     {"id": "stackMode", "label": "Stack Mode", "group": "merge", "section": "Stack", "kind": "choice",
       "synonyms": ["stack method", "stacking mode", "average mode", "stack type"],
       "options": [{"id": "median", "label": "Median", "synonyms": ["middle", "remove people", "remove crowds"]},
-                  {"id": "mean", "label": "Mean", "synonyms": ["average", "long exposure", "smooth"]}]}
+                  {"id": "mean", "label": "Mean", "synonyms": ["average", "long exposure", "smooth"]}]},
+    {"id": "doubleExposure", "label": "Double Exposure", "group": "merge", "section": "Double exposure", "kind": "action",
+      "synonyms": ["double exposure merge", "multiple exposure", "blend photos", "blend two photos", "overlay photos", "combine two photos", "double expose"]},
+    {"id": "blendMode", "label": "Blend Mode", "group": "merge", "section": "Double exposure", "kind": "choice",
+      "synonyms": ["blending mode", "double exposure blend", "double exposure mode", "photo blend mode"],
+      "options": [{"id": "screen", "label": "Screen", "synonyms": ["lighten exposure"]}, {"id": "multiply", "label": "Multiply"},
+                  {"id": "overlay", "label": "Overlay"}, {"id": "softLight", "label": "Soft Light", "synonyms": ["softlight"]},
+                  {"id": "lighten", "label": "Lighten", "synonyms": ["lighter"]}, {"id": "darken", "label": "Darken", "synonyms": ["darker"]},
+                  {"id": "add", "label": "Add", "synonyms": ["linear dodge", "addition"]},
+                  {"id": "difference", "label": "Difference", "synonyms": ["diff"]}]},
+    {"id": "blendAmount", "label": "Blend Amount", "group": "merge", "section": "Double exposure", "min": 0, "max": 100, "default": 100, "step": 5,
+      "synonyms": ["blend opacity", "double exposure amount", "double exposure opacity", "top photo opacity"]}
   ]
 }

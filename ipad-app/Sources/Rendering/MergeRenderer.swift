@@ -46,6 +46,14 @@ final class MergeRenderer {
             let burst = photos.map { floats($0, width: size.width, height: size.height) }
             let mode = Stack.Mode(rawValue: option(value("stackMode"), Stack.modes)) ?? .median
             return Merged(image: picture(Stack.merge(burst, mode: mode)), used: photos.count)
+        case "double":
+            // The first photo's frame; the others fill it (cut to its shape, centred).
+            guard photos.count >= 2 else { return nil }
+            let size = Self.size(of: photos[0], maxSide: Self.maxSide)
+            let layers = photos.enumerated().map { floats($0.element, width: size.width, height: size.height, fill: $0.offset > 0) }
+            let mode = DoubleExposure.Mode(rawValue: option(value("blendMode"), DoubleExposure.modes)) ?? .screen
+            let merged = DoubleExposure.merge(layers, mode: mode, amount: Float((value("blendAmount") ?? 100) / 100))
+            return Merged(image: picture(merged), used: photos.count)
         case "panorama":
             guard photos.count >= 2 else { return nil }
             let pictures = photos.map { photo -> FloatImage in
@@ -103,13 +111,16 @@ final class MergeRenderer {
         return (max(1, Int((e.width * scale).rounded())), max(1, Int((e.height * scale).rounded())))
     }
 
-    /// A picture as RGB floats on sRGB levels (0…1), stretched smoothly to `width` × `height`.
-    func floats(_ image: CIImage, width: Int, height: Int) -> FloatImage {
+    /// A picture as RGB floats on sRGB levels (0…1), stretched smoothly to `width` × `height`, or
+    /// (`fill`) scaled to cover it and cut to its shape around the middle.
+    func floats(_ image: CIImage, width: Int, height: Int, fill: Bool = false) -> FloatImage {
         let target = CGRect(x: 0, y: 0, width: width, height: height)
         let e = image.extent
+        var sx = CGFloat(width) / max(e.width, 1), sy = CGFloat(height) / max(e.height, 1)
+        if fill { sx = max(sx, sy); sy = sx }
+        let dx = (CGFloat(width) - e.width * sx) / 2, dy = (CGFloat(height) - e.height * sy) / 2
         let scaled = image.clampedToExtent()
-            .transformed(by: CGAffineTransform(scaleX: CGFloat(width) / max(e.width, 1), y: CGFloat(height) / max(e.height, 1))
-                .translatedBy(x: -e.minX, y: -e.minY))
+            .transformed(by: CGAffineTransform(translationX: dx, y: dy).scaledBy(x: sx, y: sy).translatedBy(x: -e.minX, y: -e.minY))
             .cropped(to: target)
         var rgba = [Float](repeating: 0, count: width * height * 4)
         guard let space = CGColorSpace(name: CGColorSpace.sRGB) else { return FloatImage(width: width, height: height, channels: 3) }

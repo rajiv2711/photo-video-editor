@@ -10,7 +10,7 @@ import Foundation
 public enum MergeTools {
     /// Merge actions and the kind of merge each makes.
     public static let actions: [String: String] = ["hdrMerge": "hdr", "panoramaMerge": "panorama", "hdrPanorama": "hdrPanorama",
-                                                   "focusStack": "focus", "stackAverage": "stack"]
+                                                   "focusStack": "focus", "stackAverage": "stack", "doubleExposure": "double"]
 
     /// "Photos to Merge": how many of the last photos picked a merge uses (0 = all of them).
     public static let countID = "mergeCount"
@@ -22,6 +22,7 @@ public enum MergeTools {
         case "panorama": return [countID, "panoramaProjection", "boundaryWarp", "fillEdges"]
         case "hdrPanorama": return [countID, "deghost", "hdrOutput", "panoramaProjection", "boundaryWarp", "fillEdges"]
         case "stack": return [countID, "stackMode"]
+        case "double": return [countID, "blendMode", "blendAmount"]
         default: return [countID]
         }
     }

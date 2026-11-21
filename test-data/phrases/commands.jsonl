@@ -894,3 +894,10 @@
 {"group":"merge","text":"average photos","expect":[{"op":"run","control":"stackAverage"}]}
 {"group":"merge","text":"stack mode mean","expect":[{"op":"set","control":"stackMode","value":1}]}
 {"group":"merge","text":"stack mode median","expect":[{"op":"set","control":"stackMode","value":0}]}
+{"group":"merge","text":"double exposure","expect":[{"op":"run","control":"doubleExposure"}]}
+{"group":"merge","text":"blend photos","expect":[{"op":"run","control":"doubleExposure"}]}
+{"group":"merge","text":"blend mode screen","expect":[{"op":"set","control":"blendMode","value":0}]}
+{"group":"merge","text":"blend mode soft light","expect":[{"op":"set","control":"blendMode","value":3}]}
+{"group":"merge","text":"multiply blend mode","expect":[{"op":"set","control":"blendMode","value":1}]}
+{"group":"merge","text":"blend amount 60","expect":[{"op":"set","control":"blendAmount","value":60}]}
+{"group":"merge","text":"blend opacity less","expect":[{"op":"nudge","control":"blendAmount","steps":-1}]}

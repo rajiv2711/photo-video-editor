@@ -153,7 +153,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 113. **HDR panorama** — HDR merge and stitch in one step
 - [x] 114. **Focus stacking** — combine focus slices into one sharp photo
 - [x] 115. **Stack averaging** — median/mean of a burst: remove crowds, fake long exposure
-- [ ] 116. **Double exposure** — blend two photos
+- [x] 116. **Double exposure** — blend two photos
 - [ ] 117. **Live Photo effects** — key frame, loop, bounce, long exposure
 - [ ] 118. **Portrait depth editing** — change aperture, focus and lighting of iPhone portraits
 

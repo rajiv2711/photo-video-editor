@@ -448,6 +448,10 @@
 
     {"id": "burst-1", "command": "", "source": "burst-1", "expect": [{"metric": "edge", "dir": "up", "min": 1}, {"metric": "mean_luma", "dir": "down", "region": [0.12, 0.1, 0.18, 0.14], "min": 50}]},
     {"id": "stack-median", "command": "stack median", "photos": ["burst-1", "burst-2", "burst-3", "burst-4"], "control": "stackAverage", "expect": [{"metric": "mean_luma", "dir": "same", "region": [0.12, 0.1, 0.18, 0.14], "min": 8}, {"metric": "edge", "dir": "down", "vs": "burst-1", "min": 1}]},
-    {"id": "stack-mean", "command": "stack mode mean stack average", "photos": ["burst-1", "burst-2", "burst-3", "burst-4"], "control": "stackMode", "expect": [{"metric": "edge", "dir": "down", "vs": "burst-1", "min": 1}, {"metric": "mean_luma", "dir": "down", "vs": "stack-median", "region": [0.12, 0.1, 0.18, 0.14], "min": 3}]}
+    {"id": "stack-mean", "command": "stack mode mean stack average", "photos": ["burst-1", "burst-2", "burst-3", "burst-4"], "control": "stackMode", "expect": [{"metric": "edge", "dir": "down", "vs": "burst-1", "min": 1}, {"metric": "mean_luma", "dir": "down", "vs": "stack-median", "region": [0.12, 0.1, 0.18, 0.14], "min": 3}]},
+
+    {"id": "double-exposure", "command": "double exposure", "photos": ["chart"], "control": "doubleExposure", "expect": [{"metric": "mean_luma", "dir": "up", "min": 5}, {"metric": "mean_sat", "dir": "up", "min": 2}]},
+    {"id": "blend-mode", "command": "blend mode multiply double exposure", "photos": ["chart"], "control": "blendMode", "expect": [{"metric": "mean_luma", "dir": "down", "min": 10}]},
+    {"id": "blend-amount", "command": "blend amount 30 double exposure", "photos": ["chart"], "control": "blendAmount", "expect": [{"metric": "mean_luma", "dir": "down", "vs": "double-exposure", "min": 3}, {"metric": "mean_luma", "dir": "up", "min": 1}]}
   ]
 }

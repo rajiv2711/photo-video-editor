@@ -487,3 +487,39 @@ extension StackTests {
                        [.ran(controlID: "stackAverage"), .changed(controlID: "stackMode", from: 0, to: 1)])
     }
 }
+
+/// Double exposure: the blend formulas and the merge.
+final class DoubleExposureTests: XCTestCase {
+    func testBlendFormulas() {
+        XCTAssertEqual(DoubleExposure.blend(0.5, 0.5, mode: .screen), 0.75, accuracy: 1e-6)
+        XCTAssertEqual(DoubleExposure.blend(0.5, 0.5, mode: .multiply), 0.25, accuracy: 1e-6)
+        XCTAssertEqual(DoubleExposure.blend(0.25, 0.5, mode: .overlay), 0.25, accuracy: 1e-6)
+        XCTAssertEqual(DoubleExposure.blend(0.75, 0.5, mode: .overlay), 0.75, accuracy: 1e-6)
+        XCTAssertEqual(DoubleExposure.blend(0.4, 0.5, mode: .softLight), 0.4, accuracy: 1e-6, "mid-grey leaves it")
+        XCTAssertGreaterThan(DoubleExposure.blend(0.4, 0.9, mode: .softLight), 0.4)
+        XCTAssertEqual(DoubleExposure.blend(0.3, 0.6, mode: .lighten), 0.6)
+        XCTAssertEqual(DoubleExposure.blend(0.3, 0.6, mode: .darken), 0.3)
+        XCTAssertEqual(DoubleExposure.blend(0.7, 0.6, mode: .add), 1)
+        XCTAssertEqual(DoubleExposure.blend(0.3, 0.6, mode: .difference), 0.3, accuracy: 1e-6)
+        for mode in DoubleExposure.modes.compactMap(DoubleExposure.Mode.init) {
+            for a: Float in [0, 0.2, 0.5, 0.9, 1] {
+                for b: Float in [0, 0.3, 1] {
+                    let v = DoubleExposure.blend(a, b, mode: mode)
+                    XCTAssertTrue(v >= 0 && v <= 1, "\(mode) \(a) \(b)")
+                }
+            }
+        }
+    }
+
+    func testAmountMixesTowardsTheBlend() throws {
+        let base = FloatImage(width: 2, height: 1, channels: 3, value: 0.4)
+        let top = FloatImage(width: 2, height: 1, channels: 3, value: 0.8)
+        XCTAssertEqual(DoubleExposure.merge([base, top], mode: .screen, amount: 1).data[0], 0.88, accuracy: 1e-5)
+        XCTAssertEqual(DoubleExposure.merge([base, top], mode: .screen, amount: 0.5).data[0], 0.64, accuracy: 1e-5)
+        XCTAssertEqual(DoubleExposure.merge([base, top], mode: .multiply, amount: 0).data[0], 0.4, accuracy: 1e-6)
+        let registry = try ControlRegistry.bundled()
+        XCTAssertEqual(registry.control(id: "blendMode")!.options.map(\.id), DoubleExposure.modes)
+        XCTAssertEqual(CommandParser(registry: registry).parse("blend mode screen"), [.set("blendMode", 0)])
+        XCTAssertEqual(CommandParser(registry: registry).parse("blend less"), [.nudge("gradingBlending", -1)], "colour grading keeps blend")
+    }
+}

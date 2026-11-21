@@ -685,7 +685,11 @@ final class EditorModel: ObservableObject {
 
     /// The fewest photos a kind of merge needs.
     private static func minimumPhotos(_ kind: String) -> Int {
-        kind == "hdrPanorama" ? 4 : 2
+        switch kind {
+        case "hdrPanorama": return 4
+        case "double": return 1  // one picked photo goes over the photo as opened
+        default: return 2
+        }
     }
 
     /// The settings a kind of merge reads, as numbers (when they change, the photo it made is merged again).
@@ -697,7 +701,8 @@ final class EditorModel: ObservableObject {
     /// panel then works on it. Runs in the background (the gallery waits).
     private func merge(_ kind: String) {
         let count = registry.control(id: MergeTools.countID).map { state.value(of: $0) } ?? 0
-        let photos = MergeTools.chosen(mergePhotos, count: count)
+        var photos = MergeTools.chosen(mergePhotos, count: count)
+        if kind == "double", photos.count == 1 { photos.insert(opened, at: 0) }
         let needed = Self.minimumPhotos(kind)
         guard photos.count >= needed else {
             // The photo stays as it is (a merge made before is no longer redone).
