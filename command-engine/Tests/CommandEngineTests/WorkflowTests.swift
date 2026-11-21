@@ -231,6 +231,79 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(value("cropLeft"), 20)
     }
 
+    // MARK: - Undo / redo
+
+    func testUndoAndRedoStepThroughTheEdit() {
+        XCTAssertEqual(parse("undo"), [.run("undo")])
+        XCTAssertEqual(parse("undo 3"), [.run("undo", value: 3)])
+        XCTAssertEqual(parse("redo 2"), [.run("redo", value: 2)])
+        XCTAssertEqual(parse("undo last spot"), [.run("undoSpot")])
+        XCTAssertEqual(events(run("undo")), [.nothingToUndo])
+        run("exposure 1")
+        run("contrast 20")
+        run("linear gradient from top exposure -1 done")
+        XCTAssertEqual(interpreter.workspace.history.steps.map(\.label),
+                       ["Opened", "exposure 1", "contrast 20", "linear gradient from top exposure -1 done"])
+        XCTAssertEqual(events(run("undo")), [.undone(["linear gradient from top exposure -1 done"])])
+        XCTAssertTrue(state.masks.isEmpty)
+        XCTAssertEqual(value("contrast"), 20)
+        run("undo 5")
+        XCTAssertEqual(value("exposure"), 0)
+        XCTAssertEqual(events(run("redo 2")), [.redone(["exposure 1", "contrast 20"])])
+        XCTAssertEqual(value("exposure"), 1)
+        XCTAssertEqual(value("contrast"), 20)
+        // A new change drops what was undone.
+        run("vibrance 30")
+        XCTAssertEqual(events(run("redo")), [.nothingToRedo])
+        XCTAssertEqual(interpreter.workspace.history.steps.count, 4)
+    }
+
+    func testChangesSaidBeforeUndoAreAStepOfTheirOwn() {
+        run("exposure 1 undo")
+        XCTAssertEqual(value("exposure"), 0)
+        run("redo")
+        XCTAssertEqual(value("exposure"), 1)
+    }
+
+    func testViewSettingsAndSelectionAreNotSteps() {
+        run("exposure 1 linear gradient from top done")
+        let steps = interpreter.workspace.history.steps.count
+        run("include light off")
+        run("mask 1")
+        run("done")
+        XCTAssertEqual(interpreter.workspace.history.steps.count, steps)
+        run("undo")
+        XCTAssertEqual(value("includeLight"), 0, "the Include switches stay as they are")
+        XCTAssertEqual(value("exposure"), 0)
+    }
+
+    func testTouchRecordsMergeWhileDragging() {
+        let exposure = registry.control(id: "exposure")!
+        for v in stride(from: 0.1, through: 1.0, by: 0.1) {
+            state.set(exposure, to: v)
+            interpreter.record(state, label: "Exposure \(v)", key: "slider:exposure")
+        }
+        XCTAssertEqual(interpreter.workspace.history.steps.count, 2, "one drag, one step")
+        interpreter.workspace.history.seal()
+        state.set(exposure, to: 2)
+        interpreter.record(state, label: "Exposure 2", key: "slider:exposure")
+        XCTAssertEqual(interpreter.workspace.history.steps.count, 3, "a second drag is a step of its own")
+        run("undo")
+        XCTAssertEqual(value("exposure"), 1)
+    }
+
+    func testHistoryKeepsAtMostItsLimit() {
+        var history = EditHistory(registry: registry)
+        let exposure = registry.control(id: "exposure")!
+        for i in 1...(EditHistory.limit + 20) {
+            var s = EditState()
+            s.set(exposure, to: Double(i % 30) / 10 + 0.05)
+            history.record(s, label: "\(i)")
+        }
+        XCTAssertEqual(history.steps.count, EditHistory.limit)
+        XCTAssertEqual(history.steps[0].label, "Opened", "the photo as opened is always kept")
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {

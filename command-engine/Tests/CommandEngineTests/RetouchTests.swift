@@ -115,7 +115,7 @@ final class RetouchTests: XCTestCase {
         XCTAssertEqual(parse("remove mask"), [.run("deleteMask")])
         XCTAssertEqual(parse("remove haze up"), [.nudge("dehaze", 1)])
         XCTAssertEqual(parse("brush size 20"), [.set("brushSize", 20)])
-        XCTAssertEqual(parse("undo"), [.unknown("undo")], "Undo (history) is a later feature")
+        XCTAssertEqual(parse("undo"), [.run("undo")], "Undo is the History panel's; the last spot is “undo last spot”")
         XCTAssertEqual(parse("blur more"), [.nudge("gaussianBlur", 1)], "“blur” alone is the Gaussian blur filter")
     }
 

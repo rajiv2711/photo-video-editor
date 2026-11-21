@@ -1598,6 +1598,12 @@
     {"id": "includeRetouch", "label": "Include Retouch", "group": "presets", "section": "Include", "kind": "toggle",
       "synonyms": ["include retouching", "include spots", "include spot removal"]},
     {"id": "includeLayers", "label": "Include Layers", "group": "presets", "section": "Include", "kind": "toggle",
-      "synonyms": ["include layer", "include layers panel", "include watermark"]}
+      "synonyms": ["include layer", "include layers panel", "include watermark"]},
+    {"id": "undo", "label": "Undo", "group": "history", "kind": "action",
+      "synonyms": ["undo that", "undo last step", "undo the last step", "step back", "take that back", "undo last change"]},
+    {"id": "redo", "label": "Redo", "group": "history", "kind": "action",
+      "synonyms": ["redo that", "redo last step", "step forward", "redo last change", "undo the undo"]},
+    {"id": "history", "label": "History", "group": "history", "kind": "action",
+      "synonyms": ["history step", "jump to step", "back to step", "edit history", "show history", "history list"]}
   ]
 }

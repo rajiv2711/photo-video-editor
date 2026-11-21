@@ -32,6 +32,14 @@ struct EditorView: View {
                     Button { showSettings = true } label: {
                         Label("Settings", systemImage: "gearshape")
                     }
+                    Button { model.apply([.run("undo")]) } label: {
+                        Label("Undo", systemImage: "arrow.uturn.backward")
+                    }
+                    .disabled(!model.canUndo)
+                    Button { model.apply([.run("redo")]) } label: {
+                        Label("Redo", systemImage: "arrow.uturn.forward")
+                    }
+                    .disabled(!model.canRedo)
                     Button("Reset All") { model.run("reset all") }
                     Button { model.save() } label: {
                         Label("Save", systemImage: "square.and.arrow.down")
@@ -471,7 +479,8 @@ struct ControlRow: View {
                     set: { model.setFromSlider(control, to: $0) }
                 ),
                 isFocused: model.focusedControlID == control.id,
-                onReset: { model.reset(control) }
+                onReset: { model.reset(control) },
+                onEnd: { model.endSliderDrag() }
             )
         }
     }
@@ -482,6 +491,8 @@ struct SliderRow: View {
     @Binding var value: Double
     let isFocused: Bool
     let onReset: () -> Void
+    /// The finger left the slider (one drag is one history step).
+    var onEnd: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -494,7 +505,9 @@ struct SliderRow: View {
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
-            Slider(value: $value, in: control.min...control.max)
+            Slider(value: $value, in: control.min...control.max, onEditingChanged: { editing in
+                if !editing { onEnd() }
+            })
         }
         .padding(10)
         .background(

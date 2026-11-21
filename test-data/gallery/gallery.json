@@ -601,6 +601,11 @@
     {"id": "batch-edit", "command": "exposure 0.5 batch edit", "control": "batchEdit", "photos": ["bracket-dark"], "view": "batch", "expect": [{"metric": "mean_luma", "dir": "up", "vs": "bracket-dark", "min": 8}, {"metric": "mean_luma", "dir": "down"}]},
     {"id": "match-exposures", "command": "match exposures", "control": "matchExposures", "photos": ["bracket-dark"], "view": "batch", "expect": [{"metric": "mean_luma", "dir": "same", "min": 4}, {"metric": "mean_luma", "dir": "up", "vs": "batch-edit"}]},
     {"id": "open-fresh", "command": "exposure 1 temperature 30", "steps": [{"open": "chart"}], "expect": [{"metric": "diff", "dir": "same", "vs": "chart", "min": 0.5}]},
-    {"id": "previous", "command": "exposure 1 temperature 30", "control": "previousSettings", "steps": [{"open": "chart"}, {"command": "previous"}], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "chart"}, {"metric": "mean_b", "dir": "down", "vs": "chart"}]}
+    {"id": "previous", "command": "exposure 1 temperature 30", "control": "previousSettings", "steps": [{"open": "chart"}, {"command": "previous"}], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "chart"}, {"metric": "mean_b", "dir": "down", "vs": "chart"}]},
+    {"id": "history-source", "command": "exposure 1", "expect": [{"metric": "p50_luma", "dir": "up"}]},
+    {"id": "undo", "command": "exposure 1", "control": "undo", "steps": [{"command": "contrast 60"}, {"command": "undo"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
+    {"id": "undo-2", "command": "exposure 1", "control": "undo", "steps": [{"command": "contrast 60"}, {"command": "temperature 40"}, {"command": "undo 2"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]},
+    {"id": "redo", "command": "exposure 1", "control": "redo", "steps": [{"command": "contrast 60"}, {"command": "undo"}, {"command": "redo"}], "expect": [{"metric": "diff", "dir": "changed", "vs": "history-source"}, {"metric": "p5_luma", "dir": "down", "vs": "history-source"}]},
+    {"id": "history-jump", "command": "exposure 1", "control": "history", "steps": [{"command": "contrast 60"}, {"command": "temperature 40"}, {"command": "history 1"}], "expect": [{"metric": "diff", "dir": "same", "vs": "history-source", "min": 0.5}]}
   ]
 }

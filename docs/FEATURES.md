@@ -199,7 +199,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 
 ### History & viewing
 
-- [ ] 148. **Undo / redo** — step back and forward
+- [x] 148. **Undo / redo** — step back and forward
 - [ ] 149. **History** — list of steps; jump back to any
 - [ ] 150. **Versions / snapshots** — save named states of an edit
 - [ ] 151. **Virtual copies** — several edits of one photo

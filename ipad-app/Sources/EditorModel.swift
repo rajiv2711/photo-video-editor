@@ -49,6 +49,12 @@ final class EditorModel: ObservableObject {
     var keepsPresets = true
     /// The presets as last written to the file.
     private var savedPresets: [Preset] = []
+    /// The history step the next render records for a touch edit (a slider, a stroke…) and its key (a
+    /// drag's renders merge into one step; `historySeal` ends it). Nil: what changed belongs to the
+    /// step the last command made (the interpreter records those).
+    private var historyLabel: String?
+    private var historyKey: String?
+    private var historySeal = false
     private let recorder = AudioRecorder()
 
     /// `image` replaces the bundled test photo (the render gallery passes a small copy);
@@ -104,7 +110,34 @@ final class EditorModel: ObservableObject {
         }
         state.set(control, to: value, at: target)
         focus(control)
+        // One drag of a slider is one history step.
+        historyLabel = "\(control.label) \(Self.format(state.value(of: control, at: target), control))"
+        historyKey = "slider:" + control.id
         render()
+    }
+
+    /// A slider was let go: the next drag is a step of its own.
+    func endSliderDrag() {
+        interpreter.workspace.history.seal()
+    }
+
+    // MARK: - History
+
+    var canUndo: Bool { interpreter.workspace.history.canUndo }
+    var canRedo: Bool { interpreter.workspace.history.canRedo }
+    /// The edit's steps, oldest first (step 0: the photo as opened), and the one it is at.
+    var historySteps: [EditHistory.Step] { interpreter.workspace.history.steps }
+    var historyPosition: Int { interpreter.workspace.history.position }
+
+    /// The history name of a touch on the photo with the tool in use.
+    private var touchLabel: String {
+        if let tool = geometryTool {
+            return registry.controls.first { GeometryTools.actions[$0.id] == tool }?.label ?? tool.capitalized
+        }
+        if let tool = retouchTool { return label(ofTool: tool) }
+        if let s = state.selectedComponent { return "Mask \(s.mask + 1): " + label(ofPart: state.masks[s.mask].components[s.component].kind) }
+        if let l = state.selectedLayer { return "Layer \(l + 1): " + layerName(l) }
+        return "Touch"
     }
 
     func reset(_ control: Control) {
@@ -114,6 +147,7 @@ final class EditorModel: ObservableObject {
     /// Back to the untouched photo: every control at its default, nothing focused, no feedback.
     func startOver() {
         state = EditState()
+        historyLabel = nil
         // The user's presets and copied settings outlive the edit (not in the render gallery).
         let kept = interpreter.workspace
         interpreter = CommandInterpreter(registry: registry)
@@ -231,6 +265,7 @@ final class EditorModel: ObservableObject {
 
     /// Runs commands that came from a button (a mask action, "done", …), with feedback.
     func apply(_ commands: [Command]) {
+        historyLabel = nil
         let outcomes = interpreter.apply(commands, state: &state)
         focusedControlID = interpreter.lastControlID
         feedback = describe(outcomes)
@@ -254,6 +289,10 @@ final class EditorModel: ObservableObject {
     /// effect is full (first point) to where it ends (last point), a radial gradient moved or
     /// resized. `finished` is false while a drag is still going (the canvas sends it as it moves).
     func draw(_ shown: [MaskPoint], pressure: [Double] = [], tilt: [Double] = [], finished: Bool = true) {
+        // A drag is one history step, a stroke or tap one each.
+        historyLabel = touchLabel
+        historyKey = "draw"
+        historySeal = finished
         if let tool = geometryTool {
             geometryDraw(tool, shown, finished: finished)
             return
@@ -336,6 +375,7 @@ final class EditorModel: ObservableObject {
 
     /// A button for an action control (e.g. Auto) was tapped.
     func runAction(_ control: Control) {
+        historyLabel = nil
         let outcomes = interpreter.apply([.run(control.id)], state: &state)
         focusedControlID = interpreter.lastControlID
         feedback = describe(outcomes)
@@ -583,6 +623,7 @@ final class EditorModel: ObservableObject {
     func toggleLayerVisible(_ index: Int) {
         guard state.layers.indices.contains(index) else { return }
         state.layers[index].values["layerVisible"] = state.layers[index].isVisible ? 0 : 1
+        historyLabel = "Layer \(index + 1): " + (state.layers[index].isVisible ? "shown" : "hidden")
         render()
     }
 
@@ -766,6 +807,7 @@ final class EditorModel: ObservableObject {
                     ? renderer.retouch.unwarp([MaskPoint(x, y)])[0] : MaskPoint(x, y)
                 state.retouches[s].offset = MaskPoint(tapped.x - centre.x, tapped.y - centre.y)
                 feedback = Feedback(text: "Spot \(s + 1): source set")
+                historyLabel = "Spot \(s + 1): source"
             }
         default:
             break
@@ -789,6 +831,7 @@ final class EditorModel: ObservableObject {
     func run(_ text: String, heard: Bool = false) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        historyLabel = nil
         let outcomes = interpreter.interpret(trimmed, state: &state)
         focusedControlID = interpreter.lastControlID
         var result = describe(outcomes)
@@ -1067,6 +1110,20 @@ final class EditorModel: ObservableObject {
             return ("Previous: the last photo's edit (\(changes) setting\(changes == 1 ? "" : "s") changed)", false)
         case .noPrevious:
             return ("No previous photo yet: open another photo first", true)
+        case .undone(let labels):
+            return (labels.count == 1 ? "Undo “\(labels[0])”" : "Undo \(labels.count) steps", false)
+        case .redone(let labels):
+            return (labels.count == 1 ? "Redo “\(labels[0])”" : "Redo \(labels.count) steps", false)
+        case .nothingToUndo:
+            return ("Nothing to undo", true)
+        case .nothingToRedo:
+            return ("Nothing to redo", true)
+        case .historyJumped(let step, let label):
+            return ("History: step \(step), “\(label)”", false)
+        case .historyShown(let steps):
+            return ("History: \(steps) step\(steps == 1 ? "" : "s") · say “history 2” to go to step 2, “history 0” for the photo as opened", false)
+        case .noHistoryStep(let n):
+            return ("No step \(n): the history has \(historySteps.count - 1)", true)
         }
     }
 
@@ -1362,6 +1419,17 @@ final class EditorModel: ObservableObject {
         if geometryTool != nil, state.selectedMask != nil || state.retouchTool != nil || state.selectedLayer != nil { geometryTool = nil }
         // A merge's setting changed ("deghost high"): merge again.
         if let merged, mergeKey(merged.kind) != merged.key { merge(merged.kind) }
+        // History: a touch edit is a step (a drag's renders merge into one); after a command, what the
+        // app added (a placed photo's picture, …) belongs to the step the interpreter made.
+        if let label = historyLabel {
+            interpreter.record(state, label: label, key: historyKey)
+            if historySeal { interpreter.workspace.history.seal() }
+        } else {
+            interpreter.workspace.history.amend(state)
+        }
+        historyLabel = nil
+        historyKey = nil
+        historySeal = false
         let edited = editedPreview()
         if showsPreview { preview = renderer.uiImage(edited, hdr: isHDR) }
         pinRetouchSources()

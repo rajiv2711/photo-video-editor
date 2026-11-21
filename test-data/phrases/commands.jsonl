@@ -124,7 +124,7 @@
 {"group":"out-of-scope","text":"sharpen","expect":[{"op":"select","control":"sharpening"}]}
 {"group":"out-of-scope","text":"add a vignette","expect":[{"op":"nudge","control":"vignette","steps":1}]}
 {"group":"out-of-scope","text":"rotate left","expect":[{"op":"run","control":"rotateLeft"}]}
-{"group":"out-of-scope","text":"undo","expect":[{"op":"unknown","word":"undo"}]}
+{"group":"out-of-scope","text":"undo","expect":[{"op":"run","control":"undo"}]}
 {"group":"out-of-scope","text":"hello","expect":[{"op":"unknown","word":"hello"}]}
 {"group":"creative","text":"blur more","expect":[{"op":"nudge","control":"gaussianBlur","steps":1}]}
 {"group":"color","text":"temperature more","expect":[{"op":"nudge","control":"temperature","steps":1}]}
@@ -1180,3 +1180,14 @@
 {"group":"presets","text":"previous","expect":[{"op":"run","control":"previousSettings"}]}
 {"group":"presets","text":"paste previous","expect":[{"op":"run","control":"previousSettings"}]}
 {"group":"presets","text":"same as previous","expect":[{"op":"run","control":"previousSettings"}]}
+{"group":"history","text":"undo 3","expect":[{"op":"run","control":"undo","value":3}]}
+{"group":"history","text":"step back","expect":[{"op":"run","control":"undo"}]}
+{"group":"history","text":"undo that","expect":[{"op":"run","control":"undo"}]}
+{"group":"history","text":"redo","expect":[{"op":"run","control":"redo"}]}
+{"group":"history","text":"redo 2","expect":[{"op":"run","control":"redo","value":2}]}
+{"group":"history","text":"step forward","expect":[{"op":"run","control":"redo"}]}
+{"group":"history","text":"undo last spot","expect":[{"op":"run","control":"undoSpot"}]}
+{"group":"history","text":"history 12","expect":[{"op":"run","control":"history","value":12}]}
+{"group":"history","text":"jump to step 4","expect":[{"op":"run","control":"history","value":4}]}
+{"group":"history","text":"show history","expect":[{"op":"run","control":"history"}]}
+{"group":"history","text":"history","expect":[{"op":"run","control":"history"}]}
