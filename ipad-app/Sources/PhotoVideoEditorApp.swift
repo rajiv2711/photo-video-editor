@@ -22,26 +22,27 @@ struct PhotoVideoEditorApp: App {
 }
 
 /// Launch argument `-orientation landscape` (cloud build screenshots): turns the iPad to landscape. When the
-/// system keeps the window upright, the editor is laid out at landscape size and drawn turned instead.
+/// system keeps the window upright, the window itself is laid out at landscape size and turned a quarter
+/// (so the toolbar and safe areas are laid out as in landscape).
 struct DemoLandscape: ViewModifier {
-    @State private var turned = false
-
     func body(content: Content) -> some View {
-        GeometryReader { geo in
-            content
-                .frame(width: turned ? geo.size.height : geo.size.width, height: turned ? geo.size.width : geo.size.height)
-                .rotationEffect(.degrees(turned ? 90 : 0))
-                .frame(width: geo.size.width, height: geo.size.height)
-        }
-        .ignoresSafeArea()
-        .onAppear {
+        content.onAppear {
             let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
             scene?.requestGeometryUpdate(.iOS(interfaceOrientations: .landscapeRight)) { _ in
-                Task { @MainActor in turned = true }
+                Task { @MainActor in Self.turn(scene) }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                if scene?.interfaceOrientation.isPortrait ?? true { turned = true }
+                if scene?.interfaceOrientation.isPortrait ?? false { Self.turn(scene) }
             }
         }
+    }
+
+    /// Lays the window out at landscape size, turned a quarter (once).
+    @MainActor static func turn(_ scene: UIWindowScene?) {
+        guard let window = scene?.windows.first, window.transform == .identity else { return }
+        let size = window.bounds.size
+        guard size.height > size.width else { return }
+        window.bounds = CGRect(x: 0, y: 0, width: size.height, height: size.width)
+        window.transform = CGAffineTransform(rotationAngle: .pi / 2)
     }
 }
