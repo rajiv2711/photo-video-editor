@@ -330,4 +330,65 @@ final class LayersTests: XCTestCase {
         XCTAssertEqual(run("invert layer mask"), [.ran(controlID: "invertLayerMask"), .layered(layer: 1, event: .noMask)])
         XCTAssertFalse(state.addLayerMaskStroke(MaskStroke(points: [MaskPoint(0.5, 0.5)])))
     }
+
+    // MARK: - Text
+
+    func testWordsAfterATextNameAreTheText() {
+        XCTAssertEqual(parse("new text layer hello world"), [.run("newTextLayer", text: "hello world")])
+        XCTAssertEqual(parse("New text layer, Happy Birthday Mum!"), [.run("newTextLayer", text: "Happy Birthday Mum!")], "as typed")
+        XCTAssertEqual(parse("Add text: Hello world."), [.run("newTextLayer", text: "Hello world")], "speech's full stop goes")
+        XCTAssertEqual(parse("add text Wait..."), [.run("newTextLayer", text: "Wait...")])
+        XCTAssertEqual(parse("new text layer"), [.run("newTextLayer", text: nil)])
+        // Quotes keep the words apart from the commands after them.
+        XCTAssertEqual(parse("new text layer \"Sale 50%\" text size 80 text colour red"),
+                       [.run("newTextLayer", text: "Sale 50%"), .set("textSize", 80), .set("textColor", 2)])
+        XCTAssertEqual(parse("text size 80 add text “Hi, there”"), [.set("textSize", 80), .run("newTextLayer", text: "Hi, there")])
+        XCTAssertEqual(parse("edit text 'goodbye'"), [.run("editText", text: "goodbye")])
+        XCTAssertEqual(parse("change text to Good night"), [.run("editText", text: "Good night")])
+        XCTAssertEqual(parse("new text layer to do"), [.run("newTextLayer", text: "to do")], "only after Edit Text")
+        // Words of the text that are names stay words.
+        XCTAssertEqual(parse("add text contrast more"), [.run("newTextLayer", text: "contrast more")])
+        // A longer name that only starts like one takes no words.
+        XCTAssertEqual(parse("text size 48"), [.set("textSize", 48)])
+        XCTAssertEqual(parse("text font serif"), [.set("textFont", 1)])
+        XCTAssertEqual(parse("text colour white"), [.set("textColor", 0)])
+        XCTAssertEqual(parse("white text colour"), [.set("textColor", 0)], "an option before its name")
+        XCTAssertEqual(Command.run("newTextLayer", text: "Hi").json, #"{"control":"newTextLayer","op":"run","text":"Hi"}"#)
+        XCTAssertEqual(Command.run("auto").json, #"{"control":"auto","op":"run"}"#, "no text: no key")
+    }
+
+    func testTokenRangesMatchTheTokenizer() {
+        for text in ["contrast more, more!", "  Exposure 0.5.  ", "red curve 75 up", "a;b:c?d", "New text layer “Hi”"] {
+            XCTAssertEqual(CommandParser.tokenRanges(text).map(\.token), CommandParser.tokenize(text), text)
+        }
+    }
+
+    func testTextLayers() {
+        run("new text layer Hello")
+        XCTAssertEqual(state.layers.count, 1)
+        XCTAssertEqual(state.layers[0].kind, "text")
+        XCTAssertEqual(state.layers[0].text, "Hello")
+        XCTAssertEqual(state.layers[0].values["textSize"], 60)
+        XCTAssertEqual(state.selectedLayer, 0)
+        run("text size 120 text font script text colour yellow")
+        XCTAssertEqual(state.layers[0].values["textSize"], 120)
+        XCTAssertEqual(Layers.fonts[Int(state.layers[0].values["textFont"]!)], "script")
+        XCTAssertEqual(Layers.color(state.layers[0].values["textColor"]!), Layers.colors[4].rgb)
+        XCTAssertEqual(registry.control(id: "textFont")!.options.map(\.id), Layers.fonts)
+        XCTAssertEqual(registry.control(id: "textColor")!.options.map(\.id), Layers.colors.map(\.id))
+        run("edit text Goodbye")
+        XCTAssertEqual(state.layers[0].text, "Goodbye")
+        // Text settings go to the newest text layer when another kind is selected.
+        state.layers.append(Layers.make("photo", registry: registry))
+        state.selectLayer(1)
+        run("text size 30")
+        XCTAssertEqual(state.layers[0].values["textSize"], 30)
+        XCTAssertNil(state.layers[1].values["textSize"])
+        run("new text layer")
+        XCTAssertEqual(state.layers[2].text, "Text", "no words: a placeholder")
+        // Its outline: about 0.6 of the size per letter, 1.2 per line.
+        let size = Layers.size(of: state.layers[0])!
+        XCTAssertEqual(size.width, 7 * 0.6 * 0.03, accuracy: 1e-9)
+        XCTAssertEqual(size.height, 1.2 * 0.03, accuracy: 1e-9)
+    }
 }

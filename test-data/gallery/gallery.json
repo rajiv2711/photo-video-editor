@@ -526,6 +526,12 @@
     {"id": "new-adjustment-layer", "command": "new adjustment layer exposure -1", "control": "newAdjustmentLayer", "expect": [{"metric": "mean_luma", "dir": "down", "min": 20}]},
     {"id": "layer-mask", "command": "new adjustment layer exposure -2 layer mask top", "control": "layerMask", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.1, 0.02, 0.9, 0.12], "min": 30}, {"metric": "diff", "dir": "same", "region": [0.1, 0.88, 0.9, 0.98], "min": 1.5}]},
     {"id": "layer-mask-brush", "command": "new adjustment layer exposure -2 layer mask brush", "control": "layerMask", "strokes": [[[0.02, 0.9], [0.5, 0.9], [0.98, 0.9]]], "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.1, 0.88, 0.9, 0.92], "min": 20}, {"metric": "diff", "dir": "same", "region": [0.1, 0.02, 0.9, 0.12], "min": 1.5}]},
-    {"id": "invert-layer-mask", "command": "new adjustment layer exposure -2 layer mask top invert layer mask", "control": "invertLayerMask", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.1, 0.88, 0.9, 0.98], "min": 30}, {"metric": "diff", "dir": "same", "region": [0.1, 0.02, 0.9, 0.12], "min": 1.5}]}
+    {"id": "invert-layer-mask", "command": "new adjustment layer exposure -2 layer mask top invert layer mask", "control": "invertLayerMask", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.1, 0.88, 0.9, 0.98], "min": 30}, {"metric": "diff", "dir": "same", "region": [0.1, 0.02, 0.9, 0.12], "min": 1.5}]},
+
+    {"id": "new-text-layer", "command": "new text layer HELLO", "control": "newTextLayer", "expect": [{"metric": "p95_luma", "dir": "up", "region": [0.36, 0.47, 0.64, 0.53], "min": 60}, {"metric": "diff", "dir": "same", "region": [0.1, 0.05, 0.9, 0.3], "min": 0.5}]},
+    {"id": "edit-text", "command": "new text layer \"HI\" edit text HELLO WORLD", "control": "editText", "expect": [{"metric": "p95_luma", "dir": "up", "region": [0.22, 0.47, 0.34, 0.53], "min": 60}]},
+    {"id": "text-size", "command": "new text layer \"HI\" text size 150", "control": "textSize", "expect": [{"metric": "p95_luma", "dir": "up", "region": [0.4, 0.43, 0.6, 0.455], "min": 60}]},
+    {"id": "text-font", "command": "new text layer \"HELLO\" text font script", "control": "textFont", "expect": [{"metric": "diff", "dir": "changed", "vs": "new-text-layer", "region": [0.25, 0.42, 0.75, 0.58], "min": 2}]},
+    {"id": "text-colour", "command": "new text layer \"HELLO\" text colour red", "control": "textColor", "expect": [{"metric": "mean_sat", "dir": "up", "vs": "new-text-layer", "region": [0.36, 0.47, 0.64, 0.53], "min": 5}, {"metric": "mean_r", "dir": "up", "region": [0.36, 0.47, 0.64, 0.53], "min": 5}]}
   ]
 }

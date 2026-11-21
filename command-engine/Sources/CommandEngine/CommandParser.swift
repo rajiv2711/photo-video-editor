@@ -12,6 +12,9 @@ import Foundation
 /// Masks: an action may take an option or a number ("linear gradient from top", "delete mask 2"),
 /// and "new", "add", "subtract" or "intersect" before a mask part says how it joins the selected
 /// mask ("subtract luminance range").
+/// Words: an action that takes text (`Control.takesText`) gets everything said after its name, as
+/// typed ("new text layer Happy birthday"), or only what is inside quotes right after it, the rest
+/// being read as usual ("new text layer “Hi” text size 80").
 public struct CommandParser {
     public let registry: ControlRegistry
     private let matcher: NameMatcher
@@ -22,6 +25,73 @@ public struct CommandParser {
     }
 
     public func parse(_ text: String) -> [Command] {
+        if let found = freeText(in: text) {
+            return parse(found.before) + [.run(found.control.id, text: found.words)] + parse(found.after)
+        }
+        return parseWords(text)
+    }
+
+    /// The first name of an action that takes words, and its words: everything after the name, or
+    /// what is inside quotes right after it (then `after` is the rest). Surrounding spaces and a comma
+    /// or colon after the name go; so does one full stop at the end (speech adds one), and a "to"
+    /// after Edit Text ("change text to Goodbye").
+    func freeText(in text: String) -> (before: String, control: Control, words: String?, after: String)? {
+        let tokens = Self.tokenRanges(text)
+        for i in tokens.indices {
+            for extra in stride(from: Swift.min(3, tokens.count - 1 - i), through: 0, by: -1) {
+                guard let control = matcher.exact(tokens[i...(i + extra)].map(\.token).joined(separator: " ")) else { continue }
+                // The longest name starting here wins; another control's name is not a place for words.
+                guard control.takesText else { break }
+                let before = String(text[..<tokens[i].range.lowerBound])
+                var rest = text[tokens[i + extra].range.upperBound...].drop { $0.isWhitespace || ",:;-–—".contains($0) }
+                // "change text to Goodbye": a "to" after a verb-like name isn't part of the new words.
+                if control.id == "editText", rest.lowercased().hasPrefix("to "), tokens.count > i + extra + 2 {
+                    rest = rest.dropFirst(3).drop { $0.isWhitespace }
+                }
+                var after = ""
+                var words: String
+                if let quote = rest.first, "\"“‘'«".contains(quote) {
+                    rest = rest.dropFirst()
+                    if let close = rest.firstIndex(where: { "\"”’'»".contains($0) }) {
+                        words = String(rest[..<close])
+                        after = String(rest[rest.index(after: close)...])
+                    } else {
+                        words = String(rest)
+                    }
+                } else {
+                    words = String(rest).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if words.hasSuffix("."), !words.hasSuffix("..") { words.removeLast() }
+                }
+                words = words.trimmingCharacters(in: .whitespacesAndNewlines)
+                return (before, control, words.isEmpty ? nil : words, after)
+            }
+        }
+        return nil
+    }
+
+    /// The words of `text` as `tokenize` makes them, with where each stands in the text.
+    static func tokenRanges(_ text: String) -> [(token: String, range: Range<String.Index>)] {
+        let separators = CharacterSet(charactersIn: ",!?;:").union(.whitespacesAndNewlines)
+        var out: [(token: String, range: Range<String.Index>)] = []
+        var start: String.Index?
+        var i = text.startIndex
+        func close(_ end: String.Index) {
+            guard let s = start else { return }
+            let token = text[s..<end].lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            if !token.isEmpty { out.append((token, s..<end)) }
+            start = nil
+        }
+        while i < text.endIndex {
+            let isSeparator = text[i].unicodeScalars.allSatisfy { separators.contains($0) }
+            if isSeparator { close(i) } else if start == nil { start = i }
+            i = text.index(after: i)
+        }
+        close(text.endIndex)
+        return out
+    }
+
+    /// Parses words with no free text in them.
+    private func parseWords(_ text: String) -> [Command] {
         var commands: [Command] = []
         var clause: Clause?
         // After an unrecognised name, ignore actions until a real control is named,

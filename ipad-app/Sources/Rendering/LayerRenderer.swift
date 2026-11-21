@@ -11,6 +11,8 @@ final class LayerRenderer {
     let context: CIContext
     /// Layer mask grids made so far, by shape and grid size.
     private var maskGrids: [MaskKey: [Float]] = [:]
+    /// Text and the other drawn layers.
+    private let art = LayerArt()
 
     struct MaskKey: Hashable {
         let shape: MaskShape
@@ -74,6 +76,8 @@ final class LayerRenderer {
             let i = Int(layer.value("photo", -1))
             guard photos.indices.contains(i) else { return nil }
             return place(photos[i], side: Layers.photoSide, layer: layer, extent: extent)
+        case "text":
+            return art.image(of: layer, extent: extent)
         default:
             return nil
         }

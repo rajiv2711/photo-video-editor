@@ -1241,6 +1241,7 @@ final class EditorModel: ObservableObject {
         case .duplicated(let from): return "Layer \(layer): copy of Layer \(from)"
         case .moved(let to): return "Layer moved to \(to) of \(state.layers.count)"
         case .hidden: return "Layer \(layer) hidden"
+        case .textChanged: return "Layer \(layer): “\(state.layers.indices.contains(layer - 1) ? state.layers[layer - 1].text : "")”"
         case .masked(let part):
             switch part {
             case "none": return "Layer \(layer): mask removed"
@@ -1257,13 +1258,20 @@ final class EditorModel: ObservableObject {
     /// A layer's name for the panel and the feedback line ("Photo", …).
     func layerName(_ index: Int) -> String {
         guard state.layers.indices.contains(index) else { return "" }
-        return Layers.title(of: state.layers[index].kind)
+        let layer = state.layers[index]
+        return layer.kind == "text" ? "Text “\(layer.text)”" : Layers.title(of: layer.kind)
+    }
+
+    /// Changes the selected text layer's words (the panel's text field), as “edit text …” would.
+    func setLayerText(_ text: String) {
+        apply([.run("editText", text: text)])
     }
 
     /// What to do on the photo with a new layer of a kind.
     static let layerHints: [String: String] = [
         "photo": "drag it to move it; Layer Scale, Layer Rotation and Layer Opacity change it",
         "adjustment": "the sliders a mask holds (exposure, contrast, …) now change everything below it; “layer mask top” limits it",
+        "text": "drag it to move it; “edit text …”, Text Size, Text Font and Text Colour change it",
     ]
 
     private func describe(_ event: MaskEvent, mask: Int) -> String {

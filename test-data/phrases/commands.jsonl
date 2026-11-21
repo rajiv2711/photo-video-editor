@@ -1045,3 +1045,15 @@
 {"group":"layers","text":"layer mask off","expect":[{"op":"run","control":"layerMask","value":6}]}
 {"group":"layers","text":"invert layer mask","expect":[{"op":"run","control":"invertLayerMask"}]}
 {"group":"layers","text":"layer mask invert","expect":[{"op":"run","control":"invertLayerMask"}]}
+{"group":"layers","text":"new text layer hello world","expect":[{"op":"run","control":"newTextLayer","text":"hello world"}]}
+{"group":"layers","text":"add text: Happy Birthday!","expect":[{"op":"run","control":"newTextLayer","text":"Happy Birthday!"}]}
+{"group":"layers","text":"New text layer, Summer 2026.","expect":[{"op":"run","control":"newTextLayer","text":"Summer 2026"}]}
+{"group":"layers","text":"new text layer \"SALE\" text size 80","expect":[{"op":"run","control":"newTextLayer","text":"SALE"},{"op":"set","control":"textSize","value":80}]}
+{"group":"layers","text":"edit text goodbye","expect":[{"op":"run","control":"editText","text":"goodbye"}]}
+{"group":"layers","text":"change text to “See you soon”","expect":[{"op":"run","control":"editText","text":"See you soon"}]}
+{"group":"layers","text":"text size 48","expect":[{"op":"set","control":"textSize","value":48}]}
+{"group":"layers","text":"font size more","expect":[{"op":"nudge","control":"textSize","steps":1}]}
+{"group":"layers","text":"text font serif","expect":[{"op":"set","control":"textFont","value":1}]}
+{"group":"layers","text":"font handwriting","expect":[{"op":"set","control":"textFont","value":4}]}
+{"group":"layers","text":"text colour white","expect":[{"op":"set","control":"textColor","value":0}]}
+{"group":"layers","text":"text color yellow","expect":[{"op":"set","control":"textColor","value":4}]}

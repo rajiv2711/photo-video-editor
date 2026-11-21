@@ -110,6 +110,12 @@ struct LayersPanel: View {
             $0.scope == "layer" && ($0.layer == nil || $0.layer == layer.kind) && $0.id != "layerVisible"
                 && !Self.panelSections.contains($0.section ?? "")
         }
+        if layer.kind == "text" {
+            // The words, typed (or said: “edit text …”).
+            TextField("Text", text: Binding(get: { layer.text }, set: { model.setLayerText($0) }))
+                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal, 10)
+        }
         ForEach(rows.filter { $0.section == nil }) { ControlRow(model: model, control: $0) }
         ForEach(sections(of: rows), id: \.self) { section in
             DisclosureGroup(isExpanded: isOpen("layers/" + section)) {

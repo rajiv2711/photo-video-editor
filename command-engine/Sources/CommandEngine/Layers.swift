@@ -30,12 +30,16 @@ public struct Layer: Hashable, Codable {
     public var adjustments: [String: Double]
     /// Where the layer shows (white) and where not (black), in canvas coordinates; nil = everywhere.
     public var mask: Mask?
+    /// Text layers: the words, as typed or said.
+    public var text: String
 
-    public init(kind: String, values: [String: Double] = [:], adjustments: [String: Double] = [:], mask: Mask? = nil) {
+    public init(kind: String, values: [String: Double] = [:], adjustments: [String: Double] = [:], mask: Mask? = nil,
+                text: String = "") {
         self.kind = kind
         self.values = values
         self.adjustments = adjustments
         self.mask = mask
+        self.text = text
     }
 
     /// A setting, or its default when the layer doesn't have it.
@@ -117,11 +121,33 @@ public enum Layers {
     /// A picked photo placed as a layer: its long side, in L units, at Layer Scale 100.
     public static let photoSide = 0.5
 
+    /// The colours of the colour choices (Text Colour, …), in option order: id and sRGB levels.
+    public static let colors: [(id: String, rgb: RGB)] = [
+        ("white", RGB(1, 1, 1)), ("black", RGB(0.04, 0.04, 0.04)), ("red", RGB(0.89, 0.12, 0.14)), ("orange", RGB(1, 0.55, 0.1)),
+        ("yellow", RGB(1, 0.86, 0.12)), ("green", RGB(0.16, 0.68, 0.27)), ("blue", RGB(0.13, 0.42, 0.95)),
+        ("purple", RGB(0.56, 0.27, 0.86)), ("pink", RGB(1, 0.45, 0.71)), ("grey", RGB(0.5, 0.5, 0.5)), ("brown", RGB(0.5, 0.31, 0.16)),
+    ]
+
+    /// A colour choice's value as a colour; `none`: the choice starts with a "none" option (nil for it).
+    public static func color(_ value: Double, none: Bool = false) -> RGB? {
+        let i = Int(value) - (none ? 1 : 0)
+        return colors.indices.contains(i) ? colors[i].rgb : nil
+    }
+
+    /// "textFont" option ids, in order; must match controls.json.
+    public static let fonts = ["sans", "serif", "rounded", "mono", "script", "display", "typewriter", "marker"]
+
+    /// Text Size is per mille of the canvas's long side: the font size in L units.
+    public static func fontSize(_ layer: Layer) -> Double {
+        layer.value("textSize", 60) / 1000
+    }
+
     /// The display name of a layer kind ("Photo", …).
     public static func title(of kind: String) -> String {
         switch kind {
         case "photo": return "Photo"
         case "adjustment": return "Adjustment"
+        case "text": return "Text"
         default: return kind.prefix(1).uppercased() + kind.dropFirst()
         }
     }
@@ -133,6 +159,12 @@ public enum Layers {
         case "photo":
             let a = Swift.max(0.01, aspect ?? 1)
             return a >= 1 ? (photoSide, photoSide / a) : (photoSide * a, photoSide)
+        case "text":
+            // About: letters are near 0.6 of the font size wide, lines 1.2 tall.
+            let lines = layer.text.split(separator: "\n", omittingEmptySubsequences: false)
+            let longest = Double(lines.map(\.count).max() ?? 1)
+            let size = fontSize(layer)
+            return (Swift.max(1, longest) * 0.6 * size, Double(Swift.max(1, lines.count)) * 1.2 * size)
         default:
             return nil
         }
@@ -189,6 +221,8 @@ public enum LayerEvent: Equatable {
     /// Moved up or down the stack: now this number.
     case moved(to: Int)
     case hidden
+    /// A text layer's words changed.
+    case textChanged
     /// Its mask changed: made from a part (an option id of Layer Mask), inverted, or removed ("none").
     case masked(String)
     /// "invert layer mask" on a layer with no mask.
@@ -224,7 +258,7 @@ extension EditState {
     /// The layer a scope-"layer" control acts on: the selected one when it is of the control's kind
     /// (or the control fits every layer), else the newest layer of that kind; nil when there is none.
     func layerTarget(for control: Control) -> Int? {
-        if control.scope != "layer" {
+        if control.scope != "layer", control.kind != .action {
             // A slider a mask can hold: the selected adjustment layer's own.
             guard control.local, let l = selectedLayer, layers[l].kind == "adjustment" else { return nil }
             return l
@@ -270,6 +304,16 @@ extension CommandApplier {
         case "placePhoto":
             // The app adds the layer: it holds the photos picked.
             return [ran]
+        case "newTextLayer":
+            var layer = Layers.make("text", registry: registry)
+            layer.text = command.text ?? "Text"
+            state.layers.append(layer)
+            state.selectLayer(state.layers.count - 1)
+            return [ran, .layered(layer: state.layers.count, event: .created("text"))]
+        case "editText":
+            guard let l = state.layerTarget(for: control) else { return [.needsLayer(controlID: control.id)] }
+            state.layers[l].text = command.text ?? ""
+            return [ran, .layered(layer: l + 1, event: .textChanged)]
         case "newAdjustmentLayer":
             state.layers.append(Layers.make("adjustment", registry: registry))
             state.selectLayer(state.layers.count - 1)
