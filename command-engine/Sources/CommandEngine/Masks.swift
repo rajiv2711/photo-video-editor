@@ -171,6 +171,8 @@ extension EditState {
         case component(Int, Int)
         /// A setting of the retouch step at this index in `retouches` (its opacity, …).
         case retouch(Int)
+        /// A setting of the layer at this index in `layers` (its opacity, …).
+        case layer(Int)
     }
 
     /// The selected mask's index in `masks`, or nil when the sliders are global.
@@ -179,12 +181,15 @@ extension EditState {
         return number >= 1 && number <= masks.count ? number - 1 : nil
     }
 
-    /// Selects a mask by index (nil = global sliders). Selecting one puts the retouch tool away:
-    /// touches on the photo then draw the mask.
+    /// Selects a mask by index (nil = global sliders). Selecting one puts the retouch tool away and
+    /// deselects the layer: touches on the photo then draw the mask.
     public mutating func selectMask(_ index: Int?) {
         let number = index.map { $0 + 1 } ?? 0
         values[Self.maskSelectorID] = Double(number)
-        if index != nil { setRetouchTool(nil) }
+        if index != nil {
+            setRetouchTool(nil)
+            values[Self.layerSelectorID] = 0
+        }
     }
 
     /// Where a command on this control acts now; nil when it needs a selected mask (or a part of
@@ -193,6 +198,8 @@ extension EditState {
         switch control.scope {
         case "mask":
             return selectedMask.map { .mask($0) }
+        case "layer":
+            return layerTarget(for: control).map { .layer($0) }
         case "retouch":
             // The selected step's own setting when it has one; otherwise the setting for new steps.
             if let s = selectedRetouch, retouches[s].values[control.id] != nil { return .retouch(s) }
@@ -227,6 +234,9 @@ extension EditState {
         case .retouch(let s):
             guard retouches.indices.contains(s) else { return control.defaultValue }
             return retouches[s].values[control.id] ?? control.defaultValue
+        case .layer(let l):
+            guard layers.indices.contains(l) else { return control.defaultValue }
+            return layers[l].values[control.id] ?? control.defaultValue
         }
     }
 
@@ -241,7 +251,13 @@ extension EditState {
                 // Only masks that exist can be selected; selecting one puts the retouch tool away.
                 stored = Swift.min(stored.rounded(), Double(masks.count))
                 values[control.id] = stored
-                if stored > 0 { setRetouchTool(nil) }
+                if stored > 0 { selectMask(Int(stored) - 1) }
+            }
+            if control.id == Self.layerSelectorID {
+                // Only layers that exist can be selected; selecting one puts masks and the retouch tool away.
+                stored = Swift.min(stored.rounded(), Double(layers.count))
+                values[control.id] = stored
+                if stored > 0 { selectLayer(Int(stored) - 1) }
             }
             if control.id == Self.spotSelectorID {
                 // Only steps that exist can be selected.
@@ -267,6 +283,9 @@ extension EditState {
         case .retouch(let s):
             guard retouches.indices.contains(s) else { return stored }
             retouches[s].values[control.id] = stored
+        case .layer(let l):
+            guard layers.indices.contains(l) else { return stored }
+            layers[l].values[control.id] = stored
         }
         return stored
     }

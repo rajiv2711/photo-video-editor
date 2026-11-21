@@ -100,6 +100,15 @@ public struct CommandParser {
                 continue
             }
 
+            // "drop shadow", "hide layer", "add rectangle": a name that starts with a word that is
+            // otherwise a mask mode, an on/off or a direction is that name.
+            if Self.maskMode(token) != nil || Self.switchWord(token) != nil || Self.direction(of: token) != nil,
+               let found = longestName(token, tokens) {
+                tokens.removeFirst(found.extra)
+                begin(found.control)
+                continue
+            }
+
             // "subtract luminance range": how a new mask part joins the selected mask.
             if let mode = Self.maskMode(token), let found = maskPart(after: tokens) {
                 tokens.removeFirst(found.used)

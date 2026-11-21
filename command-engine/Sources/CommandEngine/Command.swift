@@ -16,6 +16,10 @@ import Foundation
 ///
 ///     {"op":"run","control":"linearGradient","value":0}              "linear gradient from top"
 ///     {"op":"run","control":"luminanceRange","mode":"subtract"}      "subtract luminance range"
+///
+/// Layers: an action that takes words carries them, as typed, in `text`:
+///
+///     {"op":"run","control":"newTextLayer","text":"Hello world"}     "new text layer Hello world"
 public struct Command: Codable, Equatable, CustomStringConvertible {
     public enum Op: String, Codable {
         case nudge, add, set, reset, max, min, select, run
@@ -32,9 +36,11 @@ public struct Command: Codable, Equatable, CustomStringConvertible {
     public var candidates: [String]?
     /// Mask parts only: "new", "add", "subtract" or "intersect" (nil = a new mask).
     public var mode: String?
+    /// Actions that take words (a text layer's): the words, as typed.
+    public var text: String?
 
     public init(op: Op, control: String? = nil, steps: Int? = nil, value: Double? = nil, word: String? = nil,
-                candidates: [String]? = nil, mode: String? = nil) {
+                candidates: [String]? = nil, mode: String? = nil, text: String? = nil) {
         self.op = op
         self.control = control
         self.steps = steps
@@ -42,6 +48,7 @@ public struct Command: Codable, Equatable, CustomStringConvertible {
         self.word = word
         self.candidates = candidates
         self.mode = mode
+        self.text = text
     }
 
     public static func nudge(_ control: String?, _ steps: Int) -> Command { Command(op: .nudge, control: control, steps: steps) }
@@ -55,6 +62,10 @@ public struct Command: Codable, Equatable, CustomStringConvertible {
     /// An action with an option index or number ("delete mask 2") and, for mask parts, a mode.
     public static func run(_ control: String, value: Double?, mode: String? = nil) -> Command {
         Command(op: .run, control: control, value: value, mode: mode)
+    }
+    /// An action with words ("new text layer Hello").
+    public static func run(_ control: String, text: String?) -> Command {
+        Command(op: .run, control: control, text: text)
     }
     public static let resetAll = Command(op: .resetAll)
     public static func ambiguous(_ word: String, _ candidates: [String]) -> Command { Command(op: .ambiguous, word: word, candidates: candidates) }

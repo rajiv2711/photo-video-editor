@@ -25,6 +25,12 @@ public enum CommandOutcome: Equatable {
     case retouched(spot: Int, event: RetouchEvent)
     /// The control acts on a selected retouch step (of a kind that has it) and there is none.
     case needsSpot(controlID: String)
+    /// A setting of a layer changed (its opacity, …); `layer` is its number (1 = the lowest).
+    case changedInLayer(layer: Int, controlID: String, from: Double, to: Double)
+    /// Something happened to a layer (made, deleted, moved…); `layer` is its number, 0 = none.
+    case layered(layer: Int, event: LayerEvent)
+    /// The control acts on a selected layer (of a kind that has it) and there is none.
+    case needsLayer(controlID: String)
 }
 
 /// Applies commands to slider values: [Command] → new EditState + outcomes.
@@ -58,6 +64,8 @@ public struct CommandApplier {
                     outcomes.append(.changedInMask(mask: m + 1, controlID: r.control.id, from: r.start, to: end))
                 case .retouch(let s):
                     outcomes.append(.changedInSpot(spot: s + 1, controlID: r.control.id, from: r.start, to: end))
+                case .layer(let l):
+                    outcomes.append(.changedInLayer(layer: l + 1, controlID: r.control.id, from: r.start, to: end))
                 }
             }
             run = nil
@@ -81,6 +89,10 @@ public struct CommandApplier {
                     outcomes.append(.retouched(spot: 0, event: .allDeleted))
                 }
                 state.geometry = GeometryEdits()
+                if !state.layers.isEmpty {
+                    state.layers = []
+                    outcomes.append(.layered(layer: 0, event: .allDeleted))
+                }
                 continue
             case .ambiguous:
                 flush()
@@ -122,6 +134,10 @@ public struct CommandApplier {
                     outcomes += done
                     continue
                 }
+                if let done = layerAction(control, command, state: &state) {
+                    outcomes += done
+                    continue
+                }
                 // Any command on an action runs it; its own commands are applied right here, in order.
                 outcomes.append(.ran(controlID: control.id))
                 let produced = (actionHandler?(control.id) ?? []).filter { $0.op != .run }
@@ -135,7 +151,7 @@ public struct CommandApplier {
             }
             guard let target = state.target(for: control) else {
                 flush()
-                outcomes.append(.needsMask(controlID: control.id))
+                outcomes.append(control.scope == "layer" ? .needsLayer(controlID: control.id) : .needsMask(controlID: control.id))
                 continue
             }
             if run?.control.id != control.id || run?.target != target {
@@ -170,6 +186,10 @@ public struct CommandApplier {
                 // "spot opacity 50" after a bare "spot": the newest step.
                 if control.id == EditState.spotSelectorID, state.selectedRetouch == nil, !state.retouches.isEmpty {
                     state.selectRetouch(state.retouches.count - 1)
+                }
+                // "layer opacity 50" after a bare "layer": the top layer.
+                if control.id == EditState.layerSelectorID, state.selectedLayer == nil, !state.layers.isEmpty {
+                    state.selectLayer(state.layers.count - 1)
                 }
             case .run, .resetAll, .ambiguous, .unknown: break
             }
@@ -224,9 +244,11 @@ public struct CommandApplier {
             state.selectMask(state.masks.count - 1)
             return [.ran(controlID: control.id), .masked(mask: state.masks.count, event: .duplicated(from: m + 1))]
         case "maskDone":
-            // Also puts the retouch tool away: touches on the photo do nothing until a tool or mask is picked.
+            // Also puts the retouch tool away and deselects the layer: touches on the photo do nothing
+            // until a tool, mask or layer is picked.
             state.selectMask(nil)
             state.setRetouchTool(nil)
+            state.selectLayer(nil)
             return [.ran(controlID: control.id), .masked(mask: 0, event: .deselected)]
         case "deleteComponent":
             guard let s = state.selectedComponent else { return [.needsMask(controlID: control.id)] }
@@ -253,6 +275,10 @@ public struct CommandApplier {
             if state.selectedMask != nil {
                 state.selectMask(nil)
                 out.append(.masked(mask: 0, event: .deselected))
+            }
+            if state.selectedLayer != nil {
+                state.selectLayer(nil)
+                out.append(.layered(layer: 0, event: .deselected))
             }
             state.setRetouchTool(tool)
             state.selectRetouch(nil)
@@ -309,9 +335,10 @@ public struct CommandApplier {
             GeometryTools.follow(id, from: from, to: to, state: &state, registry: registry)
         }
         if GeometryTools.actions[control.id] != nil {
-            // A touch tool for the photo: masks and retouch tools are put away (the app arms the tool on .ran).
+            // A touch tool for the photo: masks, retouch tools and layers are put away (the app arms the tool on .ran).
             state.selectMask(nil)
             state.setRetouchTool(nil)
+            state.selectLayer(nil)
         }
         switch control.id {
         case "resetCrop":
@@ -344,7 +371,7 @@ public struct CommandApplier {
     /// what was said with it: an option sets its choice ("stack median"), a number how many of the
     /// last photos picked to use ("hdr merge 3"). Nil for other actions.
     private func mergeAction(_ control: Control, _ command: Command, state: inout EditState) -> [CommandOutcome]? {
-        guard control.group == "merge", MergeTools.actions[control.id] != nil else { return nil }
+        guard MergeTools.actions[control.id] != nil else { return nil }
         var out: [CommandOutcome] = [.ran(controlID: control.id)]
         let setting = control.options.isEmpty ? MergeTools.countID : MergeTools.optionSetting[control.id]
         if let v = command.value, let id = setting, let c = registry.control(id: id) {

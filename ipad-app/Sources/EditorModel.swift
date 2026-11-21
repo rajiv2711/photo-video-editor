@@ -27,6 +27,8 @@ final class EditorModel: ObservableObject {
     @Published private(set) var geometryTool: String?
     /// The geometry of the shown preview: touches on it map back to the photo through it.
     @Published private(set) var previewPlan: GeometryPlan?
+    /// What touches do to the selected layer: "move" (drag it), … (see `layerCanvasTool`).
+    @Published private(set) var layerMode = "move"
 
     enum VoiceState: Equatable {
         case idle, listening, transcribing
@@ -111,6 +113,9 @@ final class EditorModel: ObservableObject {
         cropDrag = nil
         quadDrag = nil
         pinDrag = nil
+        layerDrag = nil
+        layerMode = "move"
+        layerPhotos = []
         mergePhotos = []
         livePhoto = nil
         if merged != nil {
@@ -134,6 +139,7 @@ final class EditorModel: ObservableObject {
             out["mask\(i + 1).parts"] = Double(mask.components.count)
         }
         if !state.retouches.isEmpty { out["retouch.steps"] = Double(state.retouches.count) }
+        if !state.layers.isEmpty { out["layers"] = Double(state.layers.count) }
         return out
     }
 
@@ -231,6 +237,11 @@ final class EditorModel: ObservableObject {
     func draw(_ shown: [MaskPoint], pressure: [Double] = [], finished: Bool = true) {
         if let tool = geometryTool {
             geometryDraw(tool, shown, finished: finished)
+            return
+        }
+        // Layers live on the finished picture itself: the shown points are theirs.
+        if retouchTool == nil, canvasTool == nil, let tool = layerCanvasTool {
+            layerDraw(tool, shown, pressure: pressure, finished: finished)
             return
         }
         // Masks and spots live on the photo itself: points on the (cropped, turned) preview map back.
@@ -483,6 +494,93 @@ final class EditorModel: ObservableObject {
         }
     }
 
+    // MARK: - Layers
+
+    /// Pictures shown by photo layers (a layer's "photo" number is its index here): the photo as picked
+    /// and a copy the preview's size.
+    private(set) var layerPhotos: [(full: CIImage, preview: CIImage)] = []
+    /// The selected layer's place when the current drag began.
+    private var layerDrag: (x: Double, y: Double)?
+
+    /// What touches on the picture do to the selected layer ("move"), or nil when a picker, a tool
+    /// or a mask takes them, or no layer is selected.
+    var layerCanvasTool: String? {
+        guard armedPicker == nil, geometryTool == nil, state.retouchTool == nil, canvasTool == nil, state.selectedLayer != nil else {
+            return nil
+        }
+        return layerMode
+    }
+
+    /// A drag on the picture with a layer selected (points on the shown picture, 0…1): moves it.
+    private func layerDraw(_ tool: String, _ points: [MaskPoint], pressure: [Double], finished: Bool) {
+        guard let l = state.selectedLayer, let start = points.first, let end = points.last else { return }
+        switch tool {
+        case "move":
+            let base = layerDrag ?? (state.layers[l].value("layerX", 50), state.layers[l].value("layerY", 50))
+            layerDrag = finished ? nil : base
+            guard start != end else { return }
+            func place(_ v: Double) -> Double { (min(100, max(0, v)) * 10).rounded() / 10 }
+            state.layers[l].values["layerX"] = place(base.x + (end.x - start.x) * 100)
+            state.layers[l].values["layerY"] = place(base.y + (end.y - start.y) * 100)
+        default:
+            return
+        }
+        render()
+    }
+
+    /// The eye in the layer list: shows or hides a layer.
+    func toggleLayerVisible(_ index: Int) {
+        guard state.layers.indices.contains(index) else { return }
+        state.layers[index].values["layerVisible"] = state.layers[index].isVisible ? 0 : 1
+        render()
+    }
+
+    /// The selected layer's outline on the shown picture (corners, 0…1 from the top-left), for the canvas.
+    var selectedLayerOutline: [MaskPoint] {
+        guard let l = state.selectedLayer, let plan = previewPlan else { return [] }
+        let layer = state.layers[l]
+        var aspect: Double?
+        if layer.kind == "photo", layerPhotos.indices.contains(Int(layer.value("photo", -1))) {
+            let e = layerPhotos[Int(layer.value("photo", -1))].full.extent
+            aspect = Double(e.width / max(e.height, 1))
+        }
+        let w = plan.outputWidth, h = plan.outputHeight
+        return Layers.outline(layer, aspect: aspect, width: w, height: h).map { MaskPoint($0.x / w, $0.y / h) }
+    }
+
+    /// Layer actions that ran (by button, voice or typing): a photo placed from the photos picked; a
+    /// new or reselected layer is moved by touch.
+    private func armLayerTools(_ outcomes: [CommandInterpreter.Outcome]) {
+        for outcome in outcomes {
+            switch outcome {
+            case .ran("placePhoto"):
+                placePhoto(interpreter.lastCommands.first { $0.control == "placePhoto" }?.value)
+            case .layered(_, .created), .layered(_, .duplicated), .changed(EditState.layerSelectorID, _, _):
+                layerMode = "move"
+            default:
+                break
+            }
+        }
+        if state.selectedLayer != nil { geometryTool = nil }
+    }
+
+    /// A photo picked (the last one, or "place photo 2": the second) becomes a new layer on top.
+    private func placePhoto(_ number: Double?) {
+        guard !mergePhotos.isEmpty else {
+            feedback = Feedback(text: "Pick a photo first (Layers panel → Pick Photos).", isProblem: true)
+            return
+        }
+        let i = number.map { Int($0) - 1 }.flatMap { mergePhotos.indices.contains($0) ? $0 : nil } ?? mergePhotos.count - 1
+        let photo = mergePhotos[i]
+        layerPhotos.append((photo, PhotoRenderer.downscaled(photo, maxSide: previewSide)))
+        var layer = Layers.make("photo", registry: registry)
+        layer.values["photo"] = Double(layerPhotos.count - 1)
+        state.layers.append(layer)
+        state.selectLayer(state.layers.count - 1)
+        layerMode = "move"
+        feedback = Feedback(text: "Layer \(state.layers.count): photo placed · " + (Self.layerHints["photo"] ?? ""))
+    }
+
     // MARK: - Pickers (tap the photo)
 
     /// Picker tools and what they ask the user to tap.
@@ -500,6 +598,7 @@ final class EditorModel: ObservableObject {
     /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
     private func armPickers(_ outcomes: [CommandInterpreter.Outcome]) {
         armGeometryTools(outcomes)
+        armLayerTools(outcomes)
         noteMissingInputs(outcomes)
         for case .ran(let id) in outcomes {
             if let kind = MergeTools.actions[id] { merge(kind) }
@@ -782,11 +881,12 @@ final class EditorModel: ObservableObject {
         let name = effect == .loop ? "loop" : "bounce"
         feedback = Feedback(text: "Saving the \(name)…")
         let value = currentValue, masks = state.masks, geometry = state.geometry, lens = renderer.lens
+        let layers = state.layers, photos = layerPhotos.map { $0.full }
         mergeQueue.async {
             let exporter = PhotoRenderer()
             exporter.lens = lens
             let data = live.gif(effect, side: 720, context: exporter.context) { frame in
-                exporter.apply(to: frame, value: value, masks: masks, geometry: geometry)
+                exporter.apply(to: frame, value: value, masks: masks, geometry: geometry, layers: layers, layerPhotos: photos)
             }
             Task { @MainActor in
                 guard let data else {
@@ -916,7 +1016,7 @@ final class EditorModel: ObservableObject {
             return
         }
         let edited = renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches,
-                                    geometry: state.geometry)
+                                    geometry: state.geometry, layers: state.layers, layerPhotos: layerPhotos.map { $0.full })
         if isHDR {
             guard let data = renderer.hdrHEIF(edited) else {
                 feedback = Feedback(text: "Couldn't render the HDR photo.", isProblem: true)
@@ -989,7 +1089,8 @@ final class EditorModel: ObservableObject {
     func editedPreview() -> CIImage {
         let edited = renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask,
                                     retouches: state.retouches, waitForRetouch: waitsForRetouch, visualize: visualizeThreshold,
-                                    geometry: state.geometry, stage: geometryStage, previewScale: previewScale)
+                                    geometry: state.geometry, stage: geometryStage, previewScale: previewScale,
+                                    layers: state.layers, layerPhotos: layerPhotos.map { $0.preview })
         previewPlan = renderer.lastPlan
         return edited
     }
@@ -1016,7 +1117,7 @@ final class EditorModel: ObservableObject {
 
     private func render() {
         // A selected mask or retouch tool takes the touches on the photo instead of a geometry tool.
-        if geometryTool != nil, state.selectedMask != nil || state.retouchTool != nil { geometryTool = nil }
+        if geometryTool != nil, state.selectedMask != nil || state.retouchTool != nil || state.selectedLayer != nil { geometryTool = nil }
         // A merge's setting changed ("deghost high"): merge again.
         if let merged, mergeKey(merged.kind) != merged.key { merge(merged.kind) }
         let edited = editedPreview()
@@ -1076,6 +1177,22 @@ final class EditorModel: ObservableObject {
             case .needsSpot:
                 parts.append(state.retouches.isEmpty ? "No spots yet" : "Select a spot first, e.g. “spot 1”")
                 problem = true
+            case .changed(EditState.layerSelectorID, _, let to):
+                parts.append(to == 0 ? "No layer selected" : "Layer \(Int(to)) selected: " + layerName(Int(to) - 1))
+            case .changedInLayer(let layer, let id, let from, let to):
+                let control = registry.control(id: id)
+                parts.append("Layer \(layer) · \(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))")
+            case .layered(let layer, let event):
+                parts.append(describe(event, layer: layer))
+            case .needsLayer(let id):
+                if let kind = registry.control(id: id)?.layer, !state.layers.isEmpty {
+                    parts.append("No \(Layers.title(of: kind).lowercased()) layer yet")
+                } else {
+                    parts.append(state.layers.isEmpty ? "No layers yet" : "Select a layer first, e.g. “layer 1”")
+                }
+                problem = true
+            case .ran(let id) where registry.control(id: id)?.group == "layers":
+                break  // described by its .layered outcome (or by the app: a photo placed)
             case .changed(let id, let from, let to):
                 let control = registry.control(id: id)
                 var text = "\(control?.label ?? id) \(Self.format(from, control)) → \(Self.format(to, control))"
@@ -1100,6 +1217,30 @@ final class EditorModel: ObservableObject {
         if parts.isEmpty { parts = ["Nothing to do"] }
         return Feedback(text: parts.joined(separator: " · "), choices: choices, isProblem: problem)
     }
+
+    private func describe(_ event: LayerEvent, layer: Int) -> String {
+        switch event {
+        case .created(let kind):
+            return "Layer \(layer): new \(Layers.title(of: kind).lowercased())" + (Self.layerHints[kind].map { " · " + $0 } ?? "")
+        case .deleted: return "Layer \(layer) deleted"
+        case .duplicated(let from): return "Layer \(layer): copy of Layer \(from)"
+        case .moved(let to): return "Layer moved to \(to) of \(state.layers.count)"
+        case .hidden: return "Layer \(layer) hidden"
+        case .deselected: return "No layer selected"
+        case .allDeleted: return "Layers deleted"
+        }
+    }
+
+    /// A layer's name for the panel and the feedback line ("Photo", …).
+    func layerName(_ index: Int) -> String {
+        guard state.layers.indices.contains(index) else { return "" }
+        return Layers.title(of: state.layers[index].kind)
+    }
+
+    /// What to do on the photo with a new layer of a kind.
+    static let layerHints: [String: String] = [
+        "photo": "drag it to move it; Layer Scale, Layer Rotation and Layer Opacity change it",
+    ]
 
     private func describe(_ event: MaskEvent, mask: Int) -> String {
         switch event {

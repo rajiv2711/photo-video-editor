@@ -9,7 +9,8 @@ import UIKit
 /// lighting of iPhone Portrait photos) → white balance → light
 /// (exposure, tone) → color → effects → detail → masks (local adjustments) → geometry (crop, turns,
 /// transforms) → creative filters (blur, distort, …, on the picture as framed) → vignette and grain
-/// (after the crop, as Lightroom's post-crop vignette) → canvas and resize → frame (Creative panel).
+/// (after the crop, as Lightroom's post-crop vignette) → canvas and resize → layers (Layers panel,
+/// on the finished picture) → frame (Creative panel).
 /// Each panel has its own file in Rendering/ (LightRenderer.swift, …).
 final class PhotoRenderer {
     let context: CIContext
@@ -23,6 +24,7 @@ final class PhotoRenderer {
     let geometry: GeometryRenderer
     let portrait: PortraitRenderer
     private let creative: CreativeRenderer
+    let layers: LayerRenderer
     /// The geometry of the last render (the editor maps touches on the preview back through it).
     private(set) var lastPlan: GeometryPlan?
     /// Every control by id (a mask's local pass leaves all but its own sliders at their defaults).
@@ -41,6 +43,7 @@ final class PhotoRenderer {
         self.geometry = GeometryRenderer(context: context)
         self.portrait = PortraitRenderer(context: context)
         self.creative = CreativeRenderer(context: context)
+        self.layers = LayerRenderer(context: context)
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
         self.controls = Dictionary(registry.controls.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     }
@@ -64,10 +67,12 @@ final class PhotoRenderer {
     /// `visualize`: Visualize Spots' threshold when it is on (preview only). `geometry`: what the
     /// Geometry panel's touch tools made; `stage`: how much of the geometry to show (the crop tool
     /// shows the whole frame); `previewScale`: the preview's size ÷ the full photo's (nil when saving),
-    /// so Resize keeps the preview no sharper than the saved photo.
+    /// so Resize keeps the preview no sharper than the saved photo. `layers`: the Layers panel's layers
+    /// (drawn only when the whole geometry shows), `layerPhotos` the pictures photo layers show.
     func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil,
                retouches: [Retouch] = [], waitForRetouch: Bool = true, visualize: Double? = nil,
-               geometry edits: GeometryEdits = GeometryEdits(), stage: GeometryStage = .full, previewScale: Double? = nil) -> CIImage {
+               geometry edits: GeometryEdits = GeometryEdits(), stage: GeometryStage = .full, previewScale: Double? = nil,
+               layers: [Layer] = [], layerPhotos: [CIImage] = []) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         let extent = image.extent
         // Lens corrections, then film negative conversion: the picture range masks and pickers look at.
@@ -103,6 +108,9 @@ final class PhotoRenderer {
         }
         output = geometry.frame(output, plan: plan)  // resize
         output = output.cropped(to: plan.isFrameIdentity ? shaped : output.extent)
+        if stage == .full {
+            output = self.layers.apply(output, layers: layers, photos: layerPhotos)
+        }
         return creative.frame(output, value: value)  // a frame over the finished picture's edge
     }
 

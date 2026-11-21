@@ -1001,3 +1001,34 @@
 {"group":"creative","text":"film frame","expect":[{"op":"set","control":"frame","value":4}]}
 {"group":"creative","text":"frame width 8","expect":[{"op":"set","control":"frameWidth","value":8}]}
 {"group":"creative","text":"frame thickness more","expect":[{"op":"nudge","control":"frameWidth","steps":1}]}
+{"group":"layers","text":"layer 2","expect":[{"op":"set","control":"layer","value":2}]}
+{"group":"layers","text":"select layer 1","expect":[{"op":"set","control":"layer","value":1}]}
+{"group":"layers","text":"layer up","expect":[{"op":"nudge","control":"layer","steps":1}]}
+{"group":"layers","text":"place photo","expect":[{"op":"run","control":"placePhoto"}]}
+{"group":"layers","text":"add photo layer","expect":[{"op":"run","control":"placePhoto"}]}
+{"group":"layers","text":"place photo 2","expect":[{"op":"run","control":"placePhoto","value":2}]}
+{"group":"layers","text":"layer opacity 60","expect":[{"op":"set","control":"layerOpacity","value":60}]}
+{"group":"layers","text":"layer transparency less","expect":[{"op":"nudge","control":"layerOpacity","steps":-1}]}
+{"group":"layers","text":"show layer","expect":[{"op":"set","control":"layerVisible","value":1}]}
+{"group":"layers","text":"layer visible off","expect":[{"op":"set","control":"layerVisible","value":0}]}
+{"group":"layers","text":"hide layer","expect":[{"op":"run","control":"hideLayer"}]}
+{"group":"layers","text":"hide layer 2","expect":[{"op":"run","control":"hideLayer","value":2}]}
+{"group":"layers","text":"move layer up","expect":[{"op":"run","control":"moveLayerUp"}]}
+{"group":"layers","text":"bring forward","expect":[{"op":"run","control":"moveLayerUp"}]}
+{"group":"layers","text":"move layer down","expect":[{"op":"run","control":"moveLayerDown"}]}
+{"group":"layers","text":"send layer backward","expect":[{"op":"run","control":"moveLayerDown"}]}
+{"group":"layers","text":"duplicate layer","expect":[{"op":"run","control":"duplicateLayer"}]}
+{"group":"layers","text":"copy layer","expect":[{"op":"run","control":"duplicateLayer"}]}
+{"group":"layers","text":"delete layer","expect":[{"op":"run","control":"deleteLayer"}]}
+{"group":"layers","text":"remove layer 3","expect":[{"op":"run","control":"deleteLayer","value":3}]}
+{"group":"layers","text":"layer position top left","expect":[{"op":"run","control":"layerPosition","value":5}]}
+{"group":"layers","text":"move layer to bottom right","expect":[{"op":"run","control":"layerPosition","value":8}]}
+{"group":"layers","text":"place layer center","expect":[{"op":"run","control":"layerPosition","value":0}]}
+{"group":"layers","text":"layer x 30","expect":[{"op":"set","control":"layerX","value":30}]}
+{"group":"layers","text":"layer position x more","expect":[{"op":"nudge","control":"layerX","steps":1}]}
+{"group":"layers","text":"layer y 70","expect":[{"op":"set","control":"layerY","value":70}]}
+{"group":"layers","text":"layer vertical position less","expect":[{"op":"nudge","control":"layerY","steps":-1}]}
+{"group":"layers","text":"layer scale 150","expect":[{"op":"set","control":"layerScale","value":150}]}
+{"group":"layers","text":"resize layer 50","expect":[{"op":"set","control":"layerScale","value":50}]}
+{"group":"layers","text":"layer rotation 45","expect":[{"op":"set","control":"layerRotation","value":45}]}
+{"group":"layers","text":"rotate layer -30","expect":[{"op":"set","control":"layerRotation","value":-30}]}

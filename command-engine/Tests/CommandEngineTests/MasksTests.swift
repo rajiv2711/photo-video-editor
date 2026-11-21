@@ -41,7 +41,7 @@ final class MasksTests: XCTestCase {
         for c in registry.controls {
             if c.local { XCTAssertEqual(c.kind, .slider, "\(c.id): only sliders can be local") }
             if c.local { XCTAssertNotEqual(c.group, "masks", c.id) }
-            if let scope = c.scope, scope != "retouch" {  // retouch settings: RetouchTests
+            if let scope = c.scope, scope != "retouch", scope != "layer" {  // retouch, layer settings: RetouchTests, LayersTests
                 XCTAssertTrue(["mask", "component"].contains(scope), c.id)
                 XCTAssertEqual(c.group, "masks", c.id)
             }

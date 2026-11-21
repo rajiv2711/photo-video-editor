@@ -88,6 +88,9 @@ func describe(_ outcome: CommandOutcome) -> String {
     case .changedInSpot(let spot, let id, let from, let to): return "spot \(spot) \(id) \(from) → \(to)"
     case .retouched(let spot, let event): return "spot \(spot): \(event)"
     case .needsSpot(let id): return "\(id) needs a spot"
+    case .changedInLayer(let layer, let id, let from, let to): return "layer \(layer) \(id) \(from) → \(to)"
+    case .layered(let layer, let event): return "layer \(layer): \(event)"
+    case .needsLayer(let id): return "\(id) needs a layer"
     }
 }
 

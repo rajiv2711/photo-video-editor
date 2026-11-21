@@ -28,6 +28,10 @@ import Foundation
 ///
 /// Creative filters add `on`: the value a slider gets when it is named alone while at its default
 /// ("zoom blur" turns Zoom Blur on at 30; "zoom blur 60" sets it as any slider).
+///
+/// Layers add the scope "layer" (a setting of the selected layer, e.g. its opacity), `layer`: the
+/// layer kind an action makes or a setting belongs to ("text" for Text Size), and `takesText`: the
+/// words after its name are the action's text, as typed ("new text layer Hello world").
 public struct Control: Codable, Equatable, Identifiable {
     public enum Kind: String, Codable {
         case slider, toggle, choice, action
@@ -83,16 +87,21 @@ public struct Control: Codable, Equatable, Identifiable {
     public let tool: String?
     /// Sliders only: the value naming it alone gives it while it is at its default (nil: naming selects).
     public let on: Double?
+    /// The layer kind this action makes or this setting belongs to ("text", "shape", …); nil: every layer.
+    public let layer: String?
+    /// Actions only: the words said after its name are its text ("new text layer Hello").
+    public let takesText: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, label, synonyms, group, section, kind, min, max, step, options, channel, x, local, scope, component, tool, on
+        case id, label, synonyms, group, section, kind, min, max, step, options, channel, x, local, scope, component, tool, on, layer, takesText
         case defaultValue = "default"
     }
 
     public init(id: String, label: String, synonyms: [String] = [], group: String = "other", section: String? = nil,
                 kind: Kind = .slider, min: Double, max: Double, defaultValue: Double, step: Double,
                 options: [Option] = [], channel: String? = nil, x: Double? = nil,
-                local: Bool = false, scope: String? = nil, component: String? = nil, tool: String? = nil, on: Double? = nil) {
+                local: Bool = false, scope: String? = nil, component: String? = nil, tool: String? = nil, on: Double? = nil,
+                layer: String? = nil, takesText: Bool = false) {
         self.id = id
         self.label = label
         self.synonyms = synonyms
@@ -111,6 +120,8 @@ public struct Control: Codable, Equatable, Identifiable {
         self.component = component
         self.tool = tool
         self.on = on
+        self.layer = layer
+        self.takesText = takesText
     }
 
     /// Older entries without group/kind still load (as sliders in "other"). Toggles, choices and
@@ -131,6 +142,8 @@ public struct Control: Codable, Equatable, Identifiable {
         component = try c.decodeIfPresent(String.self, forKey: .component)
         tool = try c.decodeIfPresent(String.self, forKey: .tool)
         on = try c.decodeIfPresent(Double.self, forKey: .on)
+        layer = try c.decodeIfPresent(String.self, forKey: .layer)
+        takesText = try c.decodeIfPresent(Bool.self, forKey: .takesText) ?? false
         let top: Double
         switch kind {
         case .toggle: top = 1

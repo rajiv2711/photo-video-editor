@@ -82,6 +82,9 @@ struct EditorView: View {
                         } else if let tool = model.canvasTool {
                             // The selected mask part is drawn on the photo (brush strokes, shapes, taps).
                             MaskCanvas(model: model, tool: tool)
+                        } else if let tool = model.layerCanvasTool {
+                            // The selected layer is moved (or drawn on) on the picture.
+                            LayerCanvas(model: model, tool: tool)
                         }
                     }
                     .padding(24)
@@ -102,6 +105,8 @@ struct EditorView: View {
                         GeometryPanel(model: model, expanded: $expanded)
                     } else if group == "merge", model.state.selectedMask == nil {
                         MergePanel(model: model, expanded: $expanded)
+                    } else if group == "layers", model.state.selectedMask == nil {
+                        LayersPanel(model: model, expanded: $expanded)
                     } else if model.state.selectedMask == nil {
                         // While a mask is selected only the Masks panel shows: its sliders are local.
                         GroupPanel(model: model, group: group, expanded: $expanded)
@@ -129,6 +134,9 @@ struct EditorView: View {
         }
         .onChange(of: model.geometryTool) { _, tool in
             if tool != nil { expanded.insert("geometry") }
+        }
+        .onChange(of: model.state.selectedLayer) { _, layer in
+            if layer != nil { expanded.insert("layers") }
         }
     }
 
