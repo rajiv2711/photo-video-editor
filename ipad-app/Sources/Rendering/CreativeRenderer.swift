@@ -3,7 +3,7 @@ import CoreImage
 
 /// The Creative panel (CreativeFilters in CommandEngine), after the crop and before the post-crop
 /// vignette and grain, so the filters see the picture as framed. Every filter is a slider, 0 = off;
-/// those that are on run in a fixed order: blur. Sizes are shares of the picture's long side, so the
+/// those that are on run in a fixed order: blur → tilt-shift. Sizes are shares of the picture's long side, so the
 /// preview and the saved photo look alike. The Effect Center and Angle (Placement) are shared.
 final class CreativeRenderer {
     let context: CIContext
@@ -44,6 +44,23 @@ final class CreativeRenderer {
         let gaussian = CreativeFilters.gaussianRadius(v("gaussianBlur"), longSide: side)
         if gaussian > 0 {
             output = Filters.blurred(output, radius: gaussian, extent: extent)
+        }
+
+        // Tilt-shift, iris and field blur: sharp around the Effect Center (a band, a circle, or below a
+        // line), more and more blurred away from it, through a mask (CreativeFilters.focusMask).
+        let focusBlurs: [(id: String, kind: CreativeFilters.FocusBlur)] = [("tiltShift", .tiltShift), ("irisBlur", .iris), ("fieldBlur", .field)]
+        for blur in focusBlurs {
+            let radius = CreativeFilters.focusBlurRadius(v(blur.id), longSide: side)
+            guard radius > 0 else { continue }
+            let grid = Vignette.gridSize(width: Double(extent.width), height: Double(extent.height))
+            let values = CreativeFilters.focusMask(blur.kind, width: grid.width, height: grid.height,
+                                                   center: CreativeFilters.center(value: value),
+                                                   size: (value("effectSize") ?? 30) / 100, angle: v("effectAngle"))
+            let mask = Filters.mask(values, width: grid.width, height: grid.height, over: extent)
+            output = output.clampedToExtent().applyingFilter("CIMaskedVariableBlur", parameters: [
+                "inputMask": mask.clampedToExtent(),
+                kCIInputRadiusKey: radius,
+            ]).cropped(to: extent)
         }
         return output
     }

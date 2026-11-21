@@ -934,3 +934,12 @@
 {"group":"creative","text":"effect angle -30","expect":[{"op":"set","control":"effectAngle","value":-30}]}
 {"group":"creative","text":"place center","expect":[{"op":"run","control":"placeCenter"}]}
 {"group":"creative","text":"pick center","expect":[{"op":"run","control":"placeCenter"}]}
+{"group":"creative","text":"tilt shift","expect":[{"op":"select","control":"tiltShift"}]}
+{"group":"creative","text":"miniature effect 70","expect":[{"op":"set","control":"tiltShift","value":70}]}
+{"group":"creative","text":"iris blur","expect":[{"op":"select","control":"irisBlur"}]}
+{"group":"creative","text":"iris blur more","expect":[{"op":"nudge","control":"irisBlur","steps":1}]}
+{"group":"creative","text":"field blur 40","expect":[{"op":"set","control":"fieldBlur","value":40}]}
+{"group":"creative","text":"gradient blur","expect":[{"op":"select","control":"fieldBlur"}]}
+{"group":"creative","text":"effect size 50","expect":[{"op":"set","control":"effectSize","value":50}]}
+{"group":"creative","text":"sharp area less","expect":[{"op":"nudge","control":"effectSize","steps":-1}]}
+{"group":"creative","text":"tilt shift angle 30","expect":[{"op":"set","control":"effectAngle","value":30}]}

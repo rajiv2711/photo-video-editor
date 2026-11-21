@@ -472,6 +472,10 @@
     {"id": "effect-center-x", "command": "zoom blur 60 effect center x 20", "control": "effectCenterX", "expect": [{"metric": "diff", "dir": "changed", "vs": "zoom-blur", "min": 1}]},
     {"id": "effect-center-y", "command": "spin blur 60 center y 20", "control": "effectCenterY", "expect": [{"metric": "diff", "dir": "changed", "vs": "spin-blur", "min": 1}]},
     {"id": "effect-angle", "command": "motion blur 60 motion blur angle 90", "control": "effectAngle", "expect": [{"metric": "diff", "dir": "changed", "vs": "motion-blur", "min": 1}]},
-    {"id": "place-center", "command": "zoom blur 60 place center", "control": "placeCenter", "tap": [0.2, 0.2], "expect": [{"metric": "diff", "dir": "changed", "vs": "zoom-blur", "min": 1}]}
+    {"id": "place-center", "command": "zoom blur 60 place center", "control": "placeCenter", "tap": [0.2, 0.2], "expect": [{"metric": "diff", "dir": "changed", "vs": "zoom-blur", "min": 1}]},
+    {"id": "tilt-shift", "command": "tilt shift", "control": "tiltShift", "expect": [{"metric": "edge", "dir": "down", "region": [0.2, 0.68, 0.8, 0.78], "min": 2}, {"metric": "edge", "dir": "same", "region": [0.2, 0.47, 0.8, 0.53], "min": 1}]},
+    {"id": "iris-blur", "command": "iris blur 80", "control": "irisBlur", "expect": [{"metric": "edge", "dir": "down", "region": [0.2, 0.2, 0.8, 0.3], "min": 1}, {"metric": "edge", "dir": "same", "region": [0.3, 0.45, 0.7, 0.55], "min": 1}]},
+    {"id": "field-blur", "command": "field blur", "control": "fieldBlur", "expect": [{"metric": "edge", "dir": "down", "region": [0.2, 0.2, 0.8, 0.35], "min": 1}, {"metric": "edge", "dir": "same", "region": [0.2, 0.6, 0.8, 0.78], "min": 1}]},
+    {"id": "effect-size", "command": "tilt shift effect size 60", "control": "effectSize", "expect": [{"metric": "diff", "dir": "changed", "vs": "tilt-shift", "min": 0.5}, {"metric": "edge", "dir": "up", "vs": "tilt-shift", "region": [0.2, 0.6, 0.8, 0.68], "min": 0.5}]}
   ]
 }

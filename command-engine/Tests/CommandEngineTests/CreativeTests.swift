@@ -88,4 +88,53 @@ final class CreativeTests: XCTestCase {
             XCTAssertEqual(registry.control(id: id)?.group, "creative", id)
         }
     }
+
+    // MARK: - Tilt-shift, iris and field blur
+
+    func testTiltShiftNames() {
+        XCTAssertEqual(parse("tilt shift"), [.select("tiltShift")])
+        XCTAssertEqual(parse("tilt-shift 60"), [.set("tiltShift", 60)])
+        XCTAssertEqual(parse("miniature effect 70"), [.set("tiltShift", 70)])
+        XCTAssertEqual(parse("iris blur"), [.select("irisBlur")])
+        XCTAssertEqual(parse("field blur 40"), [.set("fieldBlur", 40)])
+        XCTAssertEqual(parse("tilt shift effect size 60"), [.select("tiltShift"), .set("effectSize", 60)])
+        XCTAssertEqual(parse("tilt shift angle 30"), [.set("effectAngle", 30)])
+        run("tilt shift")
+        XCTAssertEqual(value("tiltShift"), 50)
+    }
+
+    /// The mask at a cell of a 100 × 100 grid.
+    private func mask(_ kind: CreativeFilters.FocusBlur, _ x: Int, _ y: Int, size: Double = 0.3, angle: Double = 0,
+                      center: MaskPoint = MaskPoint(0.5, 0.5)) -> Float {
+        CreativeFilters.focusMask(kind, width: 100, height: 100, center: center, size: size, angle: angle)[y * 100 + x]
+    }
+
+    func testTiltShiftIsSharpAlongALevelBandThroughTheCenter() {
+        XCTAssertEqual(mask(.tiltShift, 5, 50), 0, "sharp along the band, even at the side")
+        XCTAssertEqual(mask(.tiltShift, 50, 54), 0, "sharp within 0.2 × size × 100 = 6 cells")
+        XCTAssertEqual(mask(.tiltShift, 50, 2), 1, "fully blurred far above")
+        XCTAssertEqual(mask(.tiltShift, 50, 97), 1, "and far below")
+        XCTAssertGreaterThan(mask(.tiltShift, 50, 65), 0)
+        XCTAssertLessThan(mask(.tiltShift, 50, 65), 1, "a soft change in between")
+        XCTAssertEqual(mask(.tiltShift, 50, 2, angle: 90), 0, "turned upright: sharp up and down the middle")
+        XCTAssertEqual(mask(.tiltShift, 2, 50, angle: 90), 1)
+        XCTAssertEqual(mask(.tiltShift, 50, 22, center: MaskPoint(0.5, 0.2)), 0, "the band follows the centre")
+    }
+
+    func testIrisIsSharpInACircleAndFieldBelowALine() {
+        XCTAssertEqual(mask(.iris, 50, 50), 0)
+        XCTAssertEqual(mask(.iris, 60, 50), 0, "sharp within 0.5 × size × 100 = 15 cells")
+        XCTAssertEqual(mask(.iris, 2, 2), 1, "the corners are fully blurred")
+        XCTAssertEqual(mask(.iris, 50, 21), mask(.iris, 78, 50), accuracy: 1e-6, "round")
+        XCTAssertEqual(mask(.field, 50, 90), 0, "sharp below the line")
+        XCTAssertEqual(mask(.field, 50, 51), 0)
+        XCTAssertGreaterThan(mask(.field, 50, 30), mask(.field, 50, 45), "more blurred higher up")
+        XCTAssertEqual(mask(.field, 50, 10), 1, "fully blurred size × 100 = 30 cells above")
+        XCTAssertEqual(mask(.field, 50, 10, angle: 180), 0, "turned over: blurred below instead")
+    }
+
+    func testFocusBlurRadiusFollowsThePicture() {
+        XCTAssertEqual(CreativeFilters.focusBlurRadius(50, longSide: 800), 12, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.focusBlurRadius(-10, longSide: 800), 0)
+    }
 }
