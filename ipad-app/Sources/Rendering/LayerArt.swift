@@ -58,6 +58,8 @@ final class LayerArt {
             drawText(layer, in: context, long: long)
         case "shape":
             drawShape(layer, in: context, long: long)
+        case "paint":
+            drawPaint(layer, in: context, long: long)
         default:
             break
         }
@@ -130,6 +132,31 @@ final class LayerArt {
             context.setLineCap(.round)
             context.setLineJoin(.round)
             context.strokePath()
+        }
+    }
+
+    /// Paint strokes, piece by piece so the width follows the Pencil (round ends join them smoothly).
+    private static func drawPaint(_ layer: Layer, in context: CGContext, long: Double) {
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        for stroke in layer.strokes {
+            let ink = color(Layers.color(stroke.color) ?? RGB(0.89, 0.12, 0.14)).cgColor
+            context.setStrokeColor(ink)
+            context.setFillColor(ink)
+            let points = stroke.points.map { CGPoint(x: $0.x * long, y: $0.y * long) }
+            guard points.count > 1 else {
+                if let p = points.first {
+                    let r = CGFloat(stroke.width(at: 0) * long / 2)
+                    context.fillEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r))
+                }
+                continue
+            }
+            for i in 1..<points.count {
+                context.setLineWidth(CGFloat((stroke.width(at: i - 1) + stroke.width(at: i)) / 2 * long))
+                context.move(to: points[i - 1])
+                context.addLine(to: points[i])
+                context.strokePath()
+            }
         }
     }
 

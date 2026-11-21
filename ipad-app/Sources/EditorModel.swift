@@ -234,14 +234,14 @@ final class EditorModel: ObservableObject {
     /// part: a brush stroke with the current brush settings, a linear gradient drawn from where the
     /// effect is full (first point) to where it ends (last point), a radial gradient moved or
     /// resized. `finished` is false while a drag is still going (the canvas sends it as it moves).
-    func draw(_ shown: [MaskPoint], pressure: [Double] = [], finished: Bool = true) {
+    func draw(_ shown: [MaskPoint], pressure: [Double] = [], tilt: [Double] = [], finished: Bool = true) {
         if let tool = geometryTool {
             geometryDraw(tool, shown, finished: finished)
             return
         }
         // Layers live on the finished picture itself: the shown points are theirs.
         if retouchTool == nil, canvasTool == nil, let tool = layerCanvasTool {
-            layerDraw(tool, shown, pressure: pressure, finished: finished)
+            layerDraw(tool, shown, pressure: pressure, tilt: tilt, finished: finished)
             return
         }
         // Masks and spots live on the photo itself: points on the (cropped, turned) preview map back.
@@ -513,9 +513,18 @@ final class EditorModel: ObservableObject {
 
     /// A drag on the picture with a layer selected (points on the shown picture, 0…1): moves it, or
     /// ("mask") paints its mask with the brush settings (Brush Size, Feather, Eraser…).
-    private func layerDraw(_ tool: String, _ points: [MaskPoint], pressure: [Double], finished: Bool) {
+    private func layerDraw(_ tool: String, _ points: [MaskPoint], pressure: [Double], tilt: [Double], finished: Bool) {
         guard let l = state.selectedLayer, let start = points.first, let end = points.last else { return }
         switch tool {
+        case "paint":
+            // A stroke of the paint brush, its width following the Pencil's pressure and tilt.
+            guard finished, let plan = previewPlan else { return }
+            func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+            let w = plan.outputWidth, h = plan.outputHeight
+            let pressed = pressure.count == points.count && pressure.contains { $0 < 0.999 } ? pressure : []
+            let leaned = tilt.count == points.count && tilt.contains { $0 > 0.001 } ? tilt : []
+            state.addPaintStroke(points.map { Vec2($0.x * w, $0.y * h) }, pressure: pressed, tilt: leaned,
+                                 size: v("paintSize"), color: v("brushColor"), width: w, height: h)
         case "pen":
             // A tap: a corner; a drag: a point with a curve handle pulled out to where the finger lifts.
             guard finished, let plan = previewPlan else { return }
@@ -599,6 +608,7 @@ final class EditorModel: ObservableObject {
         }
         // The pen: taps and drags on the picture add points to the selected path.
         if outcomes.contains(.ran(controlID: "penTool")) { layerMode = "pen" }
+        if outcomes.contains(.ran(controlID: "paintBrush")) { layerMode = "paint" }
         if state.selectedLayer != nil { geometryTool = nil }
     }
 
@@ -1295,6 +1305,7 @@ final class EditorModel: ObservableObject {
         "photo": "drag it to move it; Layer Scale, Layer Rotation and Layer Opacity change it",
         "adjustment": "the sliders a mask holds (exposure, contrast, …) now change everything below it; “layer mask top” limits it",
         "text": "drag it to move it; “edit text …”, Text Size, Text Font and Text Colour change it",
+        "paint": "paint on the picture with a finger or the Pencil (press harder for a wider line, lean it over to shade); Brush Colour and Paint Size",
         "shape": "drag it to move it; Shape Width, Height, Fill and Line Width change it (pen: tap corners, drag for curves, tap the first point to close)",
     ]
 

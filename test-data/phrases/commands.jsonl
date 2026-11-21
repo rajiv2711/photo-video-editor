@@ -1089,3 +1089,10 @@
 {"group":"layers","text":"outline color red","expect":[{"op":"set","control":"strokeColor","value":2}]}
 {"group":"layers","text":"bevel","expect":[{"op":"set","control":"bevel","value":1}]}
 {"group":"layers","text":"bevel and emboss off","expect":[{"op":"set","control":"bevel","value":0}]}
+{"group":"layers","text":"paint brush","expect":[{"op":"run","control":"paintBrush"}]}
+{"group":"layers","text":"draw","expect":[{"op":"run","control":"paintBrush"}]}
+{"group":"layers","text":"new paint layer","expect":[{"op":"run","control":"paintBrush"}]}
+{"group":"layers","text":"brush colour blue","expect":[{"op":"set","control":"brushColor","value":6}]}
+{"group":"layers","text":"pen color black","expect":[{"op":"set","control":"brushColor","value":1}]}
+{"group":"layers","text":"paint size 3","expect":[{"op":"set","control":"paintSize","value":3}]}
+{"group":"layers","text":"paint brush size more","expect":[{"op":"nudge","control":"paintSize","steps":1}]}

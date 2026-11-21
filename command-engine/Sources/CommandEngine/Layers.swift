@@ -36,9 +36,11 @@ public struct Layer: Hashable, Codable {
     public var path: [PathNode]
     /// Pen paths: joined back to the first point (filled) or open (a line).
     public var closed: Bool
+    /// Paint layers: the brush strokes, oldest first.
+    public var strokes: [PaintStroke]
 
     public init(kind: String, values: [String: Double] = [:], adjustments: [String: Double] = [:], mask: Mask? = nil,
-                text: String = "", path: [PathNode] = [], closed: Bool = false) {
+                text: String = "", path: [PathNode] = [], closed: Bool = false, strokes: [PaintStroke] = []) {
         self.kind = kind
         self.values = values
         self.adjustments = adjustments
@@ -46,6 +48,7 @@ public struct Layer: Hashable, Codable {
         self.text = text
         self.path = path
         self.closed = closed
+        self.strokes = strokes
     }
 
     /// Shapes: rectangle, ellipse, line, polygon or path (Layers.shapeTypes).
@@ -85,6 +88,34 @@ public struct PathNode: Hashable, Codable {
     public init(_ point: MaskPoint, handle: MaskPoint = MaskPoint(0, 0)) {
         self.point = point
         self.handle = handle
+    }
+}
+
+/// One paint brush stroke: its points (L units around the layer's centre), the Pencil's pressure
+/// (0…1) and tilt (0 upright … 1 lying flat) at each, the brush size (% of the long side) and its
+/// colour (a Brush Colour value).
+public struct PaintStroke: Hashable, Codable {
+    public var points: [MaskPoint]
+    public var pressure: [Double]
+    public var tilt: [Double]
+    public var size: Double
+    public var color: Double
+
+    public init(points: [MaskPoint], pressure: [Double] = [], tilt: [Double] = [], size: Double = 1, color: Double = 2) {
+        self.points = points
+        self.pressure = pressure
+        self.tilt = tilt
+        self.size = size
+        self.color = color
+    }
+
+    /// The line's width at point `i`, in L units: the brush size, thinner with a light touch (a
+    /// third at the lightest), wider as the Pencil leans over (up to three times, like shading with
+    /// a pencil's side). Fingers press fully and stand upright.
+    public func width(at i: Int) -> Double {
+        let p = pressure.indices.contains(i) ? Swift.min(1, Swift.max(0, pressure[i])) : 1
+        let t = tilt.indices.contains(i) ? Swift.min(1, Swift.max(0, tilt[i])) : 0
+        return size / 100 * (0.3 + 0.7 * p) * (1 + 2 * t)
     }
 }
 
@@ -211,6 +242,7 @@ public enum Layers {
         case "adjustment": return "Adjustment"
         case "text": return "Text"
         case "shape": return "Shape"
+        case "paint": return "Paint"
         default: return kind.prefix(1).uppercased() + kind.dropFirst()
         }
     }
@@ -242,6 +274,18 @@ public enum Layers {
             default:
                 return centred(size.width, size.height)
             }
+        case "paint":
+            var box: GeoRect?
+            for stroke in layer.strokes {
+                for (i, p) in stroke.points.enumerated() {
+                    let r = stroke.width(at: i) / 2
+                    let dot = GeoRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r)
+                    guard let b = box else { box = dot; continue }
+                    let x0 = Swift.min(b.x, dot.x), y0 = Swift.min(b.y, dot.y)
+                    box = GeoRect(x: x0, y: y0, width: Swift.max(b.maxX, dot.maxX) - x0, height: Swift.max(b.maxY, dot.maxY) - y0)
+                }
+            }
+            return box ?? centred(0.02, 0.02)
         default:
             return sizeAround(layer, aspect: aspect).map { centred($0.width, $0.height) }
         }
@@ -378,6 +422,20 @@ extension EditState {
 }
 
 extension EditState {
+    /// A paint stroke on the selected paint layer: `points` in canvas pixels of a `width` × `height`
+    /// canvas, with the Pencil's pressure and tilt at each; the brush's size and colour. Returns false
+    /// when no paint layer is selected.
+    @discardableResult
+    public mutating func addPaintStroke(_ points: [Vec2], pressure: [Double] = [], tilt: [Double] = [], size: Double, color: Double,
+                                        width: Double, height: Double) -> Bool {
+        guard let l = selectedLayer, layers[l].kind == "paint", !points.isEmpty else { return false }
+        let t = layers[l].transform
+        let local = points.map { t.toLayer($0, width: width, height: height) }.map { MaskPoint($0.x, $0.y) }
+        // Sizes on the layer: a scaled layer gets a brush that looks as wide as the one on screen.
+        layers[l].strokes.append(PaintStroke(points: local, pressure: pressure, tilt: tilt, size: size / t.scale, color: color))
+        return true
+    }
+
     /// The pen on the selected open path: a point at `point` (canvas pixels of a `width` × `height`
     /// canvas) with a curve handle dragged out to `handleEnd` (nil: a corner). A point on the first one
     /// (with three or more) closes the path. Returns false when no open path is selected.
@@ -448,6 +506,12 @@ extension CommandApplier {
             state.layers.append(layer)
             state.selectLayer(state.layers.count - 1)
             return [ran, .layered(layer: state.layers.count, event: .created("shape"))]
+        case "paintBrush":
+            // Painting goes on on the selected paint layer; otherwise a new one.
+            if let l = state.selectedLayer, state.layers[l].kind == "paint" { return [ran] }
+            state.layers.append(Layers.make("paint", registry: registry))
+            state.selectLayer(state.layers.count - 1)
+            return [ran, .layered(layer: state.layers.count, event: .created("paint"))]
         case "newAdjustmentLayer":
             state.layers.append(Layers.make("adjustment", registry: registry))
             state.selectLayer(state.layers.count - 1)

@@ -137,7 +137,7 @@ struct RetouchCanvasView: View {
                     .allowsHitTesting(false)
                 PencilTouches(
                     onMove: { points = $0 },
-                    onEnd: { stroke, pressure in
+                    onEnd: { stroke, pressure, _ in
                         model.draw(stroke.map { MaskCanvas.unit($0, in: geo.size) }, pressure: pressure)
                         points = []
                     }
@@ -215,12 +215,12 @@ struct RetouchCanvasView: View {
     }
 }
 
-/// Finger and Pencil strokes with the Pencil's pressure (SwiftUI's drag gesture doesn't report it).
-/// `onMove` gets the stroke so far, `onEnd` the whole stroke and the pressure at each point (0…1;
-/// fingers press fully).
+/// Finger and Pencil strokes with the Pencil's pressure and tilt (SwiftUI's drag gesture doesn't report
+/// them). `onMove` gets the stroke so far, `onEnd` the whole stroke, the pressure at each point (0…1;
+/// fingers press fully) and the tilt (0 upright … 1 lying flat; fingers stand upright).
 struct PencilTouches: UIViewRepresentable {
     var onMove: ([CGPoint]) -> Void
-    var onEnd: ([CGPoint], [Double]) -> Void
+    var onEnd: ([CGPoint], [Double], [Double]) -> Void
 
     func makeUIView(context: Context) -> TouchView {
         let view = TouchView()
@@ -236,13 +236,15 @@ struct PencilTouches: UIViewRepresentable {
 
     final class TouchView: UIView {
         var onMove: (([CGPoint]) -> Void)?
-        var onEnd: (([CGPoint], [Double]) -> Void)?
+        var onEnd: (([CGPoint], [Double], [Double]) -> Void)?
         private var points: [CGPoint] = []
         private var pressures: [Double] = []
+        private var tilts: [Double] = []
 
         override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
             points = []
             pressures = []
+            tilts = []
             add(touches, event)
         }
 
@@ -252,9 +254,10 @@ struct PencilTouches: UIViewRepresentable {
 
         override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
             add(touches, event)
-            onEnd?(points, pressures)
+            onEnd?(points, pressures, tilts)
             points = []
             pressures = []
+            tilts = []
         }
 
         override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -271,8 +274,15 @@ struct PencilTouches: UIViewRepresentable {
                 if let last = points.last, last == p { continue }
                 points.append(p)
                 pressures.append(Self.pressure(of: t))
+                tilts.append(Self.tilt(of: t))
             }
             onMove?(points)
+        }
+
+        /// How far the Pencil leans over: 0 upright … 1 lying flat; fingers stand upright.
+        static func tilt(of touch: UITouch) -> Double {
+            guard touch.type == .pencil else { return 0 }
+            return min(1, max(0, 1 - Double(touch.altitudeAngle) / (Double.pi / 2)))
         }
 
         /// Pencil pressure 0…1 (a firm press reaches 1); fingers count as full pressure.

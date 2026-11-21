@@ -129,6 +129,10 @@ struct LayersPanel: View {
                 Text(section).font(.subheadline.weight(.semibold))
             }
         }
+        if layer.kind == "paint" {
+            // The paint brush's settings for new strokes.
+            ForEach(["brushColor", "paintSize"].compactMap { model.registry.control(id: $0) }) { ControlRow(model: model, control: $0) }
+        }
         if layer.kind == "adjustment" {
             // Its own sliders (those a mask can hold), on everything below it; colour grading folded away.
             let local = model.registry.controls.filter(\.local)
@@ -182,9 +186,9 @@ struct LayersPanel: View {
     }
 }
 
-/// Touches on the picture for the selected layer: a drag moves it; with the mask brush, strokes
-/// (finger or Pencil) paint its mask; with the pen, taps add corners and drags curved points. Its
-/// outline shows where it is.
+/// Touches on the picture for the selected layer: a drag moves it; with the paint brush or the mask
+/// brush, strokes (finger or Pencil, with its pressure and tilt) paint on it or its mask; with the pen,
+/// taps add corners and drags curved points. Its outline shows where it is.
 struct LayerCanvas: View {
     @ObservedObject var model: EditorModel
     let tool: String
@@ -203,25 +207,29 @@ struct LayerCanvas: View {
                         .position(x: CGFloat(item.element.x) * geo.size.width, y: CGFloat(item.element.y) * geo.size.height)
                         .allowsHitTesting(false)
                 }
-                if tool == "mask" {
+                if Self.painted.contains(tool) {
                     Path { path in path.addLines(points) }
-                        .stroke(Color.red.opacity(0.5), style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
+                        .stroke((tool == "mask" ? Color.red : Color.white).opacity(0.5),
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
                         .allowsHitTesting(false)
                     PencilTouches(
                         onMove: { points = $0 },
-                        onEnd: { stroke, pressure in
-                            model.draw(stroke.map { MaskCanvas.unit($0, in: geo.size) }, pressure: pressure)
+                        onEnd: { stroke, pressure, tilt in
+                            model.draw(stroke.map { MaskCanvas.unit($0, in: geo.size) }, pressure: pressure, tilt: tilt)
                             points = []
                         }
                     )
                 }
             }
-            .gesture(drag(geo.size), including: tool == "mask" ? .subviews : .all)
+            .gesture(drag(geo.size), including: Self.painted.contains(tool) ? .subviews : .all)
         }
         .onChange(of: tool) { _, _ in points = [] }
     }
 
-    /// A drag moves the layer (the Pencil strokes view takes the touches while painting a mask).
+    /// Tools that paint strokes with finger or Pencil (the mask brush, the paint brush).
+    static let painted: Set<String> = ["mask", "paint"]
+
+    /// A drag moves the layer (the Pencil strokes view takes the touches while painting).
     private func drag(_ size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { drag in

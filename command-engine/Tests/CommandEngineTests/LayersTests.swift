@@ -493,4 +493,32 @@ final class LayersTests: XCTestCase {
         XCTAssertEqual(state.layers[0].values["layerStroke"], 0)
         XCTAssertEqual(Layers.color(state.layers[0].values["strokeColor"]!), Layers.colors[1].rgb, "black by default")
     }
+
+    // MARK: - Paint brush
+
+    func testPaintBrushNamesAndLayers() {
+        XCTAssertEqual(parse("paint brush"), [.run("paintBrush")])
+        XCTAssertEqual(parse("brush colour blue"), [.set("brushColor", 6)], "not the mask brush")
+        XCTAssertEqual(parse("brush size 20"), [.set("brushSize", 20)], "still the mask brush's size")
+        XCTAssertEqual(parse("paint size 3"), [.set("paintSize", 3)])
+        run("paint brush")
+        XCTAssertEqual(state.layers.map(\.kind), ["paint"])
+        run("paint brush")
+        XCTAssertEqual(state.layers.count, 1, "painting goes on on the selected paint layer")
+        run("brush colour blue paint size 2")
+        XCTAssertEqual(state.layers[0].values["brushColor"], nil, "brush settings are for new strokes, not the layer's")
+        // Canvas 1000 × 500: points in pixels become L units around the layer's centre.
+        XCTAssertTrue(state.addPaintStroke([Vec2(500, 250), Vec2(600, 250)], pressure: [1, 0.5], tilt: [0, 1], size: 2, color: 7,
+                                           width: 1000, height: 500))
+        let stroke = state.layers[0].strokes[0]
+        XCTAssertEqual(stroke.points, [MaskPoint(0, 0), MaskPoint(0.1, 0)])
+        XCTAssertEqual(stroke.width(at: 0), 0.02, accuracy: 1e-12, "full pressure, upright: the brush size")
+        XCTAssertEqual(stroke.width(at: 1), 0.02 * 0.65 * 3, accuracy: 1e-12, "half pressure, lying flat")
+        XCTAssertEqual(PaintStroke(points: [MaskPoint(0, 0)], size: 2).width(at: 0), 0.02, accuracy: 1e-12, "fingers: full and upright")
+        let box = Layers.box(of: state.layers[0])!
+        XCTAssertEqual(box.maxX, 0.1 + 0.0195, accuracy: 1e-9)
+        state.layers.append(Layers.make("text", registry: registry))
+        state.selectLayer(1)
+        XCTAssertFalse(state.addPaintStroke([Vec2(1, 1)], size: 2, color: 2, width: 10, height: 10), "only on a paint layer")
+    }
 }
