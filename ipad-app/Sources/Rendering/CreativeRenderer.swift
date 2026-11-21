@@ -16,14 +16,20 @@ final class CreativeRenderer {
     }
 
     /// `extent` is the picture as framed (after the crop).
-    func apply(_ image: CIImage, extent: CGRect, value: (String) -> Double?) -> CIImage {
+    func apply(_ image: CIImage, extent framed: CGRect, value: (String) -> Double?) -> CIImage {
         func v(_ id: String) -> Double { value(id) ?? 0 }
+        var anyOn = false
+        for id in CreativeFilters.filters where v(id) != 0 { anyOn = true }
+        guard anyOn else { return image }
+        // Whole pixels: a downscaled photo's part-covered edge pixels would read as a dark rim to the
+        // filters that look at their neighbours (ink, edges, washes); they get their own colour, opaque.
+        let extent = framed.integral
         let side = Double(max(extent.width, extent.height))
         let centre = Self.point(CreativeFilters.center(value: value), in: extent)
         // Effect Angle counts anticlockwise on the screen, as Core Image does (y up).
         let angle = v("effectAngle") * .pi / 180
         let size = (value("effectSize") ?? 30) / 100
-        var output = image
+        var output = image.unpremultiplyingAlpha().settingAlphaOne(in: extent).cropped(to: extent)
 
         // Distort filters move pixels: twirl, pinch and spherize inside a circle around the centre,
         // ripple and wave over the whole picture, then polar coordinates.

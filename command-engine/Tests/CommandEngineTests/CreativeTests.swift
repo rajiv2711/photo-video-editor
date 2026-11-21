@@ -58,6 +58,15 @@ final class CreativeTests: XCTestCase {
         XCTAssertEqual(parse("place center"), [.run("placeCenter")])
     }
 
+    func testEveryFilterIsListedOnce() {
+        XCTAssertEqual(Set(CreativeFilters.filters).count, CreativeFilters.filters.count)
+        let panel = registry.controls(inGroup: "creative").filter {
+            $0.section != "Placement" && $0.section != "Frame"
+        }.map(\.id)
+        XCTAssertEqual(Set(panel), Set(CreativeFilters.filters))
+        for id in CreativeFilters.filters { XCTAssertEqual(registry.control(id: id)?.defaultValue, 0, "\(id): 0 is off") }
+    }
+
     // MARK: - Blur
 
     func testBlurNames() {
@@ -223,7 +232,7 @@ final class CreativeTests: XCTestCase {
     }
 
     func testStylizeSizesFollowThePicture() {
-        XCTAssertEqual(CreativeFilters.oilRadius(50, longSide: 800), 4, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.oilRadius(50, longSide: 800), 6, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.emboss(50, longSide: 4000).offset, 8, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.emboss(50, longSide: 100).offset, 1, "at least a pixel")
         XCTAssertEqual(CreativeFilters.emboss(50, longSide: 800).height, 4, accuracy: 1e-9)

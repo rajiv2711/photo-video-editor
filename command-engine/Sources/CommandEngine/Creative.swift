@@ -12,6 +12,12 @@ import Foundation
 /// Filters that work around a point share the Placement section: Effect Center X and Y (% of the
 /// picture from its top-left), Effect Size and Effect Angle. "place center", then a tap, moves the centre.
 public enum CreativeFilters {
+    /// Every filter of the panel before Frame, in the order they run (each 0 = off).
+    public static let filters = ["twirl", "pinch", "spherize", "ripple", "wave", "polarCoordinates",
+                                 "motionBlur", "zoomBlur", "spinBlur", "gaussianBlur", "tiltShift", "irisBlur", "fieldBlur",
+                                 "oilPaint", "emboss", "findEdges", "wind", "watercolor", "sketch", "cartoon", "cutout",
+                                 "mosaic", "crystallize", "halftone", "spotlight", "omniLight", "lensFlare", "lightLeak", "dustAndScratches"]
+
     /// The action that arms a tap on the photo to place the Effect Center.
     public static let centerPicker = "placeCenter"
 
@@ -162,9 +168,9 @@ public enum CreativeFilters {
 
     // MARK: - Stylize
 
-    /// Oil Paint's brush (the Kuwahara filter's reach, pixels): up to 1 % of the long side.
+    /// Oil Paint's brush (the Kuwahara filter's reach, pixels): up to 1.5 % of the long side.
     public static func oilRadius(_ amount: Double, longSide: Double) -> Double {
-        max(0, amount) / 100 * 0.01 * longSide
+        max(0, amount) / 100 * 0.015 * longSide
     }
 
     /// Emboss: how far apart the two samples of the relief are (pixels, 0.2 % of the long side, at
