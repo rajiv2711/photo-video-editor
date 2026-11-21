@@ -24,7 +24,7 @@ struct LayersPanel: View {
     }
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("layers")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Menu {

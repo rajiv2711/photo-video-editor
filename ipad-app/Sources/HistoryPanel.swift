@@ -10,7 +10,7 @@ struct HistoryPanel: View {
     @State private var copyName = ""
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("history")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Button("Undo") { model.apply([.run("undo")]) }.disabled(!model.canUndo)

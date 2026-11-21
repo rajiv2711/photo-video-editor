@@ -13,7 +13,7 @@ struct MergePanel: View {
     private var controls: [Control] { model.registry.controls(inGroup: "merge") }
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("merge")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 6) {
                 // Originals (.current), so HEIC brackets keep their full range.
                 PhotosPicker(selection: $items, selectionBehavior: .ordered, matching: .images, preferredItemEncoding: .current) {

@@ -14,7 +14,7 @@ struct MasksPanel: View {
     private var makers: [Control] { controls.filter { $0.kind == .action && $0.component != nil } }
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("masks")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 10) {
                 Menu {
                     ForEach(makers) { maker in

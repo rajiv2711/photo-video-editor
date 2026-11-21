@@ -25,7 +25,7 @@ struct PresetsPanel: View {
     }
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("presets")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     TextField("New preset name", text: $newName)

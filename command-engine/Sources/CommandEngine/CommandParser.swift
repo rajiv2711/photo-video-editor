@@ -185,6 +185,14 @@ public struct CommandParser {
                 continue
             }
 
+            // "light panel", "show layers", "open the export panel": a panel to show.
+            if let found = panelShown(token, tokens) {
+                tokens.removeFirst(found.used)
+                finish()
+                commands.append(.run(found.control, value: Double(found.index)))
+                continue
+            }
+
             // "drop shadow", "hide layer", "add rectangle": a name that starts with a word that is
             // otherwise a mask mode, an on/off or a direction is that name.
             if Self.maskMode(token) != nil || Self.switchWord(token) != nil || Self.direction(of: token) != nil,
@@ -365,6 +373,36 @@ public struct CommandParser {
             guard !registry.controls.contains(where: { $0.names.contains(phrase) }),
                   longestName(words[0], ArraySlice(words.dropFirst())) == nil else { return nil }
             return (control.id, index, skipped + count)
+        }
+        return nil
+    }
+
+    /// A panel to show: one of Show Panel's options followed by "panel" or "tab" ("light panel", "layers
+    /// tab"), or after "show" or "open" (skipping "the"), where "panel" may be left out ("show layers",
+    /// "open export"), except when "show"/"open" and the words make a name at least as long ("show history",
+    /// "show library") or the panel's word starts a longer name ("show color range"). The option's index
+    /// and the tokens used after `first`.
+    private func panelShown(_ first: String, _ rest: ArraySlice<String>) -> (control: String, index: Int, used: Int)? {
+        guard let control = registry.control(id: "showPanel") else { return nil }
+        let verb = first == "show" || first == "open"
+        var words = verb ? Array(rest) : [first] + Array(rest)
+        var skipped = 0
+        while verb, words.first == "the" {
+            words.removeFirst()
+            skipped += 1
+        }
+        for count in stride(from: Swift.min(2, words.count), through: 1, by: -1) {
+            let phrase = words.prefix(count).joined(separator: " ")
+            guard let index = control.options.firstIndex(where: { $0.names.contains(phrase) }) else { continue }
+            let named = words.dropFirst(count).first.map { ["panel", "tab"].contains($0) } ?? false
+            if !named {
+                guard verb else { return nil }
+                if let longer = longestName(words[0], ArraySlice(words.dropFirst())), longer.extra >= count { return nil }
+            }
+            // The tokens this reading takes after `first`.
+            let used = verb ? skipped + count + (named ? 1 : 0) : count
+            if let name = longestName(first, rest), name.extra >= used { return nil }
+            return (control.id, index, used)
         }
         return nil
     }

@@ -447,6 +447,53 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(value("temperature"), 30)
     }
 
+    // MARK: - Panels
+
+    func testPanelsByName() {
+        // An option of Show Panel with "panel" or "tab" after it, or after "show" / "open".
+        XCTAssertEqual(parse("light panel"), [.run("showPanel", value: 1)])
+        XCTAssertEqual(parse("show layers"), [.run("showPanel", value: 11)])
+        XCTAssertEqual(parse("open export"), [.run("showPanel", value: 15)])
+        XCTAssertEqual(parse("open the colour panel"), [.run("showPanel", value: 2)])
+        XCTAssertEqual(parse("go to the masks tab"), [.run("showPanel", value: 6)])
+        XCTAssertEqual(parse("show panel creative filters"), [.run("showPanel", value: 10)])
+        XCTAssertEqual(parse("lens corrections panel"), [.run("showPanel", value: 5)])
+        XCTAssertEqual(parse("show history panel"), [.run("showPanel", value: 13)])
+        XCTAssertEqual(parse("contrast 20 color panel exposure 0.5"),
+                       [.set("contrast", 20), .run("showPanel", value: 2), .set("exposure", 0.5)])
+        XCTAssertEqual(parse("panel"), [.run("showPanel")])
+        // Names that start the same way keep their meaning.
+        XCTAssertEqual(parse("show history"), [.run("history")])
+        XCTAssertEqual(parse("show library"), [.run("browseLibrary")])
+        XCTAssertEqual(parse("show layer"), [.set("layerVisible", 1)])
+        XCTAssertEqual(parse("show mask overlay"), [.set("maskOverlay", 1)])
+        XCTAssertEqual(parse("show color range"), [.run("colorRange")])
+        XCTAssertEqual(parse("show spots"), [.set("visualizeSpots", 1)])
+        XCTAssertEqual(parse("export"), [.run("export")])
+        XCTAssertEqual(parse("include light panel"), [.set("includeLight", 1)])
+        XCTAssertEqual(parse("reset light panel"), [.run("resetPanel", value: 0)])
+        XCTAssertEqual(parse("panel reset"), [.run("resetPanel")])
+
+        // Every panel the app shows has an option, each with a name of its own.
+        let options = registry.control(id: "showPanel")!.options
+        XCTAssertEqual(options.map(\.id), ["library", "light", "color", "effects", "detail", "optics", "masks", "retouch", "geometry",
+                                           "merge", "creative", "layers", "presets", "history", "view", "export"])
+        for (i, option) in options.enumerated() {
+            XCTAssertEqual(parse(option.label.lowercased() + " panel"), [.run("showPanel", value: Double(i))], option.label)
+            XCTAssertEqual(parse("open " + option.label.lowercased()), [.run("showPanel", value: Double(i))], option.label)
+        }
+
+        // The app is told which panel; the edit and its history don't change.
+        run("exposure 1")
+        let steps = interpreter.workspace.history.steps.count
+        XCTAssertEqual(events(run("layers panel")), [.panelShown("layers")])
+        XCTAssertEqual(events(run("panel")), [.panelShown(nil)])
+        XCTAssertEqual(interpreter.workspace.history.steps.count, steps)
+        XCTAssertEqual(value("exposure"), 1)
+        XCTAssertEqual(run("undo").first, .ran(controlID: "undo"))
+        XCTAssertEqual(value("exposure"), 0, "undo skips the panels shown")
+    }
+
     // MARK: - Scopes
 
     func testHistogramBinsTheShownLevels() {

@@ -32,6 +32,10 @@ final class EditorModel: ObservableObject {
     @Published private(set) var layerMode = "move"
     /// A panel a command asked to see ("history" alone opens the History panel).
     @Published private(set) var revealedPanel: String?
+    /// The panel shown, one at a time ("light", "masks", …: a group of controls.json, or "library", which
+    /// also holds the Camera panel's controls). The rail, a panel's name ("light panel") and what a command
+    /// selects or names choose it.
+    @Published var shownPanel = "light"
     /// The scopes of the preview as shown (View panel), while one is on.
     @Published private(set) var scopes: ScopeReadings?
     /// Colour samplers: points on the shown picture (0…1 from the top-left), oldest first.
@@ -165,6 +169,10 @@ final class EditorModel: ObservableObject {
         // Launch argument used by the cloud build to screenshot a command's effect.
         if let demo = UserDefaults.standard.string(forKey: "demoCommand") {
             run(demo)
+        }
+        // Launch argument used by the cloud build to screenshot one panel ("-panel export").
+        if let panel = UserDefaults.standard.string(forKey: "panel") {
+            shownPanel = panel
         }
     }
 
@@ -836,6 +844,10 @@ final class EditorModel: ObservableObject {
             if case .historyShown = event { revealedPanel = "history" }
             if case .library(.browsed) = event { revealedPanel = "library" }
             if case .library(.info) = event { revealedPanel = "library/Info" }
+            // "light panel", "show layers"; "panel" alone: the panel of the control used last.
+            if case .panelShown(let group) = event {
+                revealedPanel = group ?? focusedControlID.flatMap { registry.control(id: $0) }.map(panel(for:))
+            }
             if case .library(.mapShown) = event { showsMap = true }
             // "next photo": the engine has put that photo's edit in place; its picture comes now.
             if case .library(.opened(let id, _, _)) = event {
@@ -883,6 +895,10 @@ final class EditorModel: ObservableObject {
         where CreativeFilters.centered.contains(id) && from == 0 && to != 0 && armedPicker == nil {
             armedPicker = CreativeFilters.centerPicker
             feedback?.text += " · " + Self.centerHint
+        }
+        // The panel asked for shows ("library/Info": the Library panel, its Info section open).
+        if let revealedPanel {
+            shownPanel = String(revealedPanel.prefix { $0 != "/" })
         }
     }
 
@@ -984,7 +1000,66 @@ final class EditorModel: ObservableObject {
         if heard { result.text = "Heard “\(trimmed)” · " + result.text }
         feedback = result
         armPickers(outcomes)
+        // A control said by name: its panel shows ("contrast more" shows Light). Not for words that act on
+        // the workspace ("undo", "next photo") or name no control ("more").
+        if revealedPanel == nil,
+           let named = interpreter.lastCommands.last(where: { $0.control.map { !Workspace.actions.contains($0) } ?? false })?.control,
+           let control = registry.control(id: named) {
+            shownPanel = panel(for: control)
+        }
         render()
+    }
+
+    // MARK: - Panels
+
+    /// A panel the rail offers: its group, title and icon (an SF Symbol).
+    struct PanelInfo: Identifiable {
+        let group: String
+        let title: String
+        let symbol: String
+        var id: String { group }
+    }
+
+    /// The panels the rail offers, in order.
+    static let panels: [PanelInfo] = [
+        PanelInfo(group: "library", title: "Library", symbol: "photo.on.rectangle.angled"),
+        PanelInfo(group: "light", title: "Light", symbol: "sun.max"),
+        PanelInfo(group: "color", title: "Color", symbol: "paintpalette"),
+        PanelInfo(group: "effects", title: "Effects", symbol: "sparkles"),
+        PanelInfo(group: "detail", title: "Detail", symbol: "triangle"),
+        PanelInfo(group: "optics", title: "Optics", symbol: "camera.aperture"),
+        PanelInfo(group: "masks", title: "Masks", symbol: "circle.dashed"),
+        PanelInfo(group: "retouch", title: "Retouch", symbol: "bandage"),
+        PanelInfo(group: "geometry", title: "Geometry", symbol: "crop.rotate"),
+        PanelInfo(group: "merge", title: "Merge", symbol: "square.stack.3d.up"),
+        PanelInfo(group: "creative", title: "Creative", symbol: "wand.and.stars"),
+        PanelInfo(group: "layers", title: "Layers", symbol: "square.3.stack.3d"),
+        PanelInfo(group: "presets", title: "Presets", symbol: "rectangle.stack"),
+        PanelInfo(group: "history", title: "History", symbol: "clock.arrow.circlepath"),
+        PanelInfo(group: "view", title: "View", symbol: "eye"),
+        PanelInfo(group: "export", title: "Export", symbol: "square.and.arrow.up"),
+    ]
+
+    /// The title of a panel ("light" → "Light").
+    static func panelTitle(_ group: String) -> String {
+        panels.first { $0.group == group }?.title ?? group.prefix(1).uppercased() + group.dropFirst()
+    }
+
+    /// Whether a panel can show now: while a mask is selected only the Library, Masks, History and Export
+    /// panels do (sliders change the mask, as in Lightroom); while an adjustment layer is, also Layers.
+    func panelAvailable(_ group: String) -> Bool {
+        if state.selectedMask != nil { return ["library", "masks", "history", "export"].contains(group) }
+        if adjustmentLayerSelected { return ["library", "masks", "layers", "history", "export"].contains(group) }
+        return true
+    }
+
+    /// The panel where a control is: a selected mask's (or adjustment layer's) local sliders are in the
+    /// Masks (Layers) panel, the brush with the retouch tool in use in Retouch, the Camera panel's in Library.
+    func panel(for control: Control) -> String {
+        if retouchTool != nil, ["brushSize", "brushFeather"].contains(control.id) || control.group == "retouch" { return "retouch" }
+        if control.group == "masks" || (control.local && state.selectedMask != nil) { return "masks" }
+        if control.local, adjustmentLayerSelected { return "layers" }
+        return control.group == "camera" ? "library" : control.group
     }
 
     // MARK: - Voice (recorded on the iPad, transcribed by the laptop voice server)
@@ -1583,6 +1658,11 @@ final class EditorModel: ObservableObject {
             return ("Nothing to redo", true)
         case .historyJumped(let step, let label):
             return ("History: step \(step), “\(label)”", false)
+        case .panelShown(let group):
+            guard let shown = group ?? focusedControlID.flatMap({ registry.control(id: $0) }).map(panel(for:)) else {
+                return ("Say which panel, e.g. “light panel”, “show layers”, “open export”", true)
+            }
+            return ("\(Self.panelTitle(shown)) panel", false)
         case .historyShown(let steps):
             return ("History: \(steps) step\(steps == 1 ? "" : "s") · say “history 2” to go to step 2, “history 0” for the photo as opened", false)
         case .noHistoryStep(let n):

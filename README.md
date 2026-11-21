@@ -144,6 +144,7 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `undo` · `undo 3` · `redo` · `history` · `history 12` | Every change is a step (a slider drag is one); the History panel lists them, `history 0` is the photo as opened |
 | `snapshot before crop` · `restore snapshot before crop` · `version 2` · `delete snapshot before crop` | Named states of the edit |
 | `virtual copy mono` · `go to copy original` · `switch to copy 2` · `delete copy mono` | Several edits of one photo, each with its own history |
+| `light panel` · `show layers` · `open export` · `go to the masks tab` · `open the colour panel` | Shows that panel (also the icon rail beside it); naming a control shows its panel, and selecting a mask, a layer or a tool shows the Masks, Layers, Retouch or Geometry panel |
 | `reset light panel` · `reset effects` · `reset panel` | One panel back to its defaults (also the arrow on each panel's title) |
 | `before` · `compare split` · `compare side by side` · `compare off` | Before / after (or hold the half-filled frame in the toolbar) |
 | `histogram` · `clipping warning` · `vectorscope` · `color sampler` (then tap) · `clear samplers` | Scopes and readouts over the photo (never in the saved photo) |

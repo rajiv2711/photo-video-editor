@@ -14,7 +14,7 @@ struct LibraryPanel: View {
     private var library: Library { model.library }
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("library")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     Button { model.apply([.run("importPhotos")]) } label: { Label("Photos", systemImage: "photo.on.rectangle") }

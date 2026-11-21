@@ -41,6 +41,9 @@ public enum WorkflowEvent: Equatable {
     case historyShown(steps: Int)
     /// "history 40" when there are fewer steps.
     case noHistoryStep(Int)
+    /// A panel asked for by name ("light panel", "show layers"): its group, which the app shows (nil:
+    /// "panel" alone, the panel of the control used last).
+    case panelShown(String?)
     case snapshotSaved(String)
     case snapshotRestored(String)
     case snapshotDeleted(String)
@@ -116,7 +119,7 @@ public struct Workspace {
     public static let actions: Set<String> = Set(["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings",
                                               "previousSettings", "undo", "redo", "history", "saveSnapshot", "restoreSnapshot", "deleteSnapshot",
                                               "virtualCopy", "switchCopy", "deleteCopy",
-                                              "saveExportPreset", "exportPreset", "deleteExportPreset"]).union(Library.actions)
+                                              "saveExportPreset", "exportPreset", "deleteExportPreset", "showPanel"]).union(Library.actions)
 
     /// Actions that move through the history: what was changed before them is recorded first.
     public static let historyActions: Set<String> = ["undo", "redo", "history"]
@@ -146,6 +149,11 @@ public struct Workspace {
             return [ran] + done.events.map { .workflow(.library($0)) }
         }
         switch id {
+        case "showPanel":
+            // Nothing changes in the edit: the app shows the panel.
+            let options = registry.control(id: id)?.options ?? []
+            let index = command.value.map { Int($0) }
+            return [ran, .workflow(.panelShown(index.flatMap { options.indices.contains($0) ? options[$0].id : nil }))]
         case "saveExportPreset", "exportPreset", "deleteExportPreset":
             return [ran, .workflow(exportPreset(id, words: words, state: &state))]
         case "applyPreset":

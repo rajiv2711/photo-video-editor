@@ -11,7 +11,7 @@ struct GeometryPanel: View {
     private var controls: [Control] { model.registry.controls(inGroup: "geometry") }
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("geometry")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 6) {
                 if let tool = model.geometryTool {
                     if let hint = EditorModel.geometryHints[tool] {

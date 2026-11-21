@@ -13,7 +13,7 @@ struct ExportPanel: View {
     private var controls: [Control] { model.registry.controls(inGroup: "export") }
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("export")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Button { model.apply([.run("export")]) } label: { Label("Photos", systemImage: "photo.on.rectangle") }

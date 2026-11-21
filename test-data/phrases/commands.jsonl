@@ -1256,6 +1256,18 @@
 {"group":"view","text":"gamut warning","expect":[{"op":"set","control":"gamutWarning","value":1}]}
 {"group":"view","text":"show out of gamut","expect":[{"op":"set","control":"gamutWarning","value":1}]}
 {"group":"view","text":"gamut warning off","expect":[{"op":"set","control":"gamutWarning","value":0}]}
+{"group":"view","text":"light panel","expect":[{"op":"run","control":"showPanel","value":1}]}
+{"group":"view","text":"show layers","expect":[{"op":"run","control":"showPanel","value":11}]}
+{"group":"view","text":"open export","expect":[{"op":"run","control":"showPanel","value":15}]}
+{"group":"view","text":"open the colour panel","expect":[{"op":"run","control":"showPanel","value":2}]}
+{"group":"view","text":"go to the masks tab","expect":[{"op":"run","control":"showPanel","value":6}]}
+{"group":"view","text":"show panel creative filters","expect":[{"op":"run","control":"showPanel","value":10}]}
+{"group":"view","text":"history panel","expect":[{"op":"run","control":"showPanel","value":13}]}
+{"group":"view","text":"show history panel","expect":[{"op":"run","control":"showPanel","value":13}]}
+{"group":"view","text":"open library","expect":[{"op":"run","control":"showPanel","value":0}]}
+{"group":"view","text":"show effects","expect":[{"op":"run","control":"showPanel","value":3}]}
+{"group":"view","text":"open geometry","expect":[{"op":"run","control":"showPanel","value":8}]}
+{"group":"view","text":"light panel exposure 0.5","expect":[{"op":"run","control":"showPanel","value":1},{"op":"set","control":"exposure","value":0.5}]}
 {"group":"library","text":"import photos","expect":[{"op":"run","control":"importPhotos"}]}
 {"group":"library","text":"import from photos","expect":[{"op":"run","control":"importPhotos"}]}
 {"group":"library","text":"import files","expect":[{"op":"run","control":"importFiles"}]}

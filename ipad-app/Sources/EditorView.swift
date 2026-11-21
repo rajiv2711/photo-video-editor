@@ -189,77 +189,86 @@ struct EditorView: View {
         }
     }
 
-    /// The control panels (Light, Color, …), grouped as in controls.json.
+    /// The panel shown (one group of controls.json at a time) and the rail that picks it.
     private var panel: some View {
-        ScrollViewReader { proxy in
+        HStack(spacing: 0) {
+            panelContent
+                .frame(width: 320)
+            Divider()
+            PanelRail(model: model, vertical: true)
+                .frame(width: 60)
+        }
+        .background(.regularMaterial)
+        .onChange(of: model.focusedControlID) { _, id in
+            // Open the section of a control named by voice or typing.
+            guard let id, let control = model.registry.control(id: id), let section = control.section else { return }
+            expanded.insert(control.group + "/" + section)
+        }
+        // Selecting a mask, a layer or a tool shows its panel.
+        .onChange(of: model.state.selectedMask) { _, mask in
+            if mask != nil { model.shownPanel = "masks" }
+        }
+        .onChange(of: model.state.retouchTool) { _, tool in
+            if tool != nil { model.shownPanel = "retouch" }
+        }
+        .onChange(of: model.geometryTool) { _, tool in
+            if tool != nil { model.shownPanel = "geometry" }
+        }
+        .onChange(of: model.state.selectedLayer) { _, layer in
+            if layer != nil { model.shownPanel = "layers" }
+        }
+        .onChange(of: model.revealedPanel) { _, panel in
+            // "library/Info": a command asked to see a section of a panel.
+            if let panel, panel.contains("/") { expanded.insert(panel) }
+        }
+    }
+
+    /// The controls of the panel shown; a new panel starts at its top.
+    private var panelContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                // The library first: where photos come from.
-                LibraryPanel(model: model, expanded: $expanded)
-                    .id("library")
-                ForEach(model.registry.groups, id: \.self) { group in
-                    if group == "library" {
-                        EmptyView()  // shown above
-                    } else if group == "masks" {
-                        MasksPanel(model: model, expanded: $expanded)
-                    } else if group == "retouch", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
-                        RetouchPanel(model: model, expanded: $expanded)
-                    } else if group == "geometry", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
-                        GeometryPanel(model: model, expanded: $expanded)
-                    } else if group == "merge", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
-                        MergePanel(model: model, expanded: $expanded)
-                    } else if group == "layers", model.state.selectedMask == nil {
-                        LayersPanel(model: model, expanded: $expanded)
-                    } else if group == "presets", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
-                        PresetsPanel(model: model, expanded: $expanded)
-                    } else if group == "history" {
-                        HistoryPanel(model: model, expanded: $expanded)
-                    } else if group == "export" {
-                        ExportPanel(model: model, expanded: $expanded)
-                    } else if model.state.selectedMask == nil, !model.adjustmentLayerSelected {
-                        // While a mask or an adjustment layer is selected only its panel shows: its sliders are local.
-                        GroupPanel(model: model, group: group, expanded: $expanded)
+                if model.panelAvailable(model.shownPanel) {
+                    switch model.shownPanel {
+                    case "library":
+                        LibraryPanel(model: model, expanded: $expanded)
+                        // The Camera panel's controls (Pro camera, tethered capture) are where photos come from too.
+                        GroupPanel(model: model, group: "camera", expanded: $expanded)
+                    case "masks": MasksPanel(model: model, expanded: $expanded)
+                    case "retouch": RetouchPanel(model: model, expanded: $expanded)
+                    case "geometry": GeometryPanel(model: model, expanded: $expanded)
+                    case "merge": MergePanel(model: model, expanded: $expanded)
+                    case "layers": LayersPanel(model: model, expanded: $expanded)
+                    case "presets": PresetsPanel(model: model, expanded: $expanded)
+                    case "history": HistoryPanel(model: model, expanded: $expanded)
+                    case "export": ExportPanel(model: model, expanded: $expanded)
+                    default: GroupPanel(model: model, group: model.shownPanel, expanded: $expanded)
                     }
+                    Text("Double-tap a name to reset it.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    selectionNote
                 }
-                Text("Double-tap a name to reset it.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
             .padding()
         }
-        .onAppear {
-            // Launch argument used by the cloud build to screenshot one panel ("-panel export").
-            if let shown = UserDefaults.standard.string(forKey: "panel") {
-                expanded = [shown]
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo(shown, anchor: .top) }
-            }
-        }
-        }
-        .frame(width: 320)
-        .background(.regularMaterial)
-        .onChange(of: model.focusedControlID) { _, id in
-            // Open the panel and section of a control named by voice or typing.
-            guard let id, let control = model.registry.control(id: id) else { return }
-            expanded.insert(control.group)
-            if let section = control.section { expanded.insert(control.group + "/" + section) }
-        }
-        .onChange(of: model.state.selectedMask) { _, mask in
-            if mask != nil { expanded.insert("masks") }
-        }
-        .onChange(of: model.state.retouchTool) { _, tool in
-            if tool != nil { expanded.insert("retouch") }
-        }
-        .onChange(of: model.geometryTool) { _, tool in
-            if tool != nil { expanded.insert("geometry") }
-        }
-        .onChange(of: model.state.selectedLayer) { _, layer in
-            if layer != nil { expanded.insert("layers") }
-        }
-        .onChange(of: model.revealedPanel) { _, panel in
-            // "history", "presets": a command asked to see a panel ("library/Info": a section of one).
-            if let panel {
-                expanded.insert(panel)
-                if let slash = panel.firstIndex(of: "/") { expanded.insert(String(panel[..<slash])) }
+        .id(model.shownPanel)
+    }
+
+    /// While a mask or an adjustment layer is selected the other panels wait: sliders change it.
+    private var selectionNote: some View {
+        let mask = model.state.selectedMask
+        return VStack(alignment: .leading, spacing: 12) {
+            PanelTitle(model: model, title: EditorModel.panelTitle(model.shownPanel), group: model.shownPanel)
+            Text(mask.map { "Mask \($0 + 1) is selected: sliders change it, in the Masks panel. Done goes back to the whole photo." }
+                 ?? "An adjustment layer is selected: sliders change it, in the Layers panel. Done goes back to the whole photo.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button(mask != nil ? "Masks panel" : "Layers panel") { model.shownPanel = mask != nil ? "masks" : "layers" }
+                    .buttonStyle(.bordered)
+                Button("Done") { model.apply([.run("maskDone")]) }
+                    .buttonStyle(.borderedProminent)
             }
         }
     }
@@ -327,7 +336,7 @@ private struct GroupPanel: View {
 
     var body: some View {
         let controls = model.registry.controls(inGroup: group)
-        DisclosureGroup(isExpanded: isOpen(group)) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(controls.filter { $0.section == nil }) { control in
                     ControlRow(model: model, control: control)
@@ -342,7 +351,7 @@ private struct GroupPanel: View {
             }
             .padding(.top, 6)
         } label: {
-            PanelTitle(model: model, title: group.prefix(1).uppercased() + group.dropFirst(), group: group)
+            PanelTitle(model: model, title: EditorModel.panelTitle(group), group: group)
         }
     }
 
@@ -650,6 +659,69 @@ struct PanelTitle: View {
                 .buttonStyle(.borderless)
                 .accessibilityLabel("Reset the \(title) panel")
             }
+        }
+    }
+}
+
+/// One panel, shown on its own: its title (with the reset arrow) above its controls.
+struct PanelGroup<Content: View, Label: View>: View {
+    let content: Content
+    let label: Label
+
+    init(@ViewBuilder content: () -> Content, @ViewBuilder label: () -> Label) {
+        self.content = content()
+        self.label = label()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            label
+            content
+        }
+    }
+}
+
+/// The panels, an icon each (as Lightroom's tool strip): tap one to show it. Panels that wait while a
+/// mask or an adjustment layer is selected are dimmed. Saying a panel's name ("light panel") works too.
+struct PanelRail: View {
+    @ObservedObject var model: EditorModel
+    /// A column beside the panel, or a row above it.
+    let vertical: Bool
+
+    var body: some View {
+        ScrollView(vertical ? .vertical : .horizontal, showsIndicators: false) {
+            if vertical {
+                VStack(spacing: 2) { items }.padding(.vertical, 6)
+            } else {
+                HStack(spacing: 2) { items }.padding(.horizontal, 6)
+            }
+        }
+    }
+
+    private var items: some View {
+        ForEach(EditorModel.panels) { panel in
+            let shown = model.shownPanel == panel.group
+            let available = model.panelAvailable(panel.group)
+            Button {
+                model.shownPanel = panel.group
+            } label: {
+                VStack(spacing: 2) {
+                    Image(systemName: panel.symbol)
+                        .font(.system(size: 18))
+                    Text(panel.title)
+                        .font(.system(size: 9, weight: .medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .frame(width: 54, height: 44)
+                .foregroundStyle(shown ? Color.accentColor : available ? Color.primary : Color.secondary.opacity(0.5))
+                .background(shown ? Color.accentColor.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!available)
+            .accessibilityLabel(panel.title + " panel")
+            .accessibilityAddTraits(shown ? .isSelected : [])
         }
     }
 }

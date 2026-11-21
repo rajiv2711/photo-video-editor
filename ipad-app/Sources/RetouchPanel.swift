@@ -20,7 +20,7 @@ struct RetouchPanel: View {
     }
 
     var body: some View {
-        DisclosureGroup(isExpanded: isOpen("retouch")) {
+        PanelGroup {
             VStack(alignment: .leading, spacing: 10) {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 8)], alignment: .leading, spacing: 8) {
                     ForEach(tools) { tool in
