@@ -99,16 +99,16 @@ struct EditorView: View {
                 ForEach(model.registry.groups, id: \.self) { group in
                     if group == "masks" {
                         MasksPanel(model: model, expanded: $expanded)
-                    } else if group == "retouch", model.state.selectedMask == nil {
+                    } else if group == "retouch", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
                         RetouchPanel(model: model, expanded: $expanded)
-                    } else if group == "geometry", model.state.selectedMask == nil {
+                    } else if group == "geometry", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
                         GeometryPanel(model: model, expanded: $expanded)
-                    } else if group == "merge", model.state.selectedMask == nil {
+                    } else if group == "merge", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
                         MergePanel(model: model, expanded: $expanded)
                     } else if group == "layers", model.state.selectedMask == nil {
                         LayersPanel(model: model, expanded: $expanded)
-                    } else if model.state.selectedMask == nil {
-                        // While a mask is selected only the Masks panel shows: its sliders are local.
+                    } else if model.state.selectedMask == nil, !model.adjustmentLayerSelected {
+                        // While a mask or an adjustment layer is selected only its panel shows: its sliders are local.
                         GroupPanel(model: model, group: group, expanded: $expanded)
                     }
                 }

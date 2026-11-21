@@ -88,7 +88,7 @@ final class PhotoRenderer {
         for mask in masks where !mask.components.isEmpty && (mask.settings["maskAmount"] ?? 100) > 0
             && mask.adjustments.contains(where: { controls[$0.key]?.defaultValue != $0.value }) {
             let shape = self.masks.image(of: mask, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
-            output = Filters.blend(local(output, mask: mask, extent: extent, hdr: hdr), over: output, mask: shape)
+            output = Filters.blend(local(output, value: localValues(mask), extent: extent, hdr: hdr), over: output, mask: shape)
         }
         let plan = geometry.plan(extent: extent, value: value, edits: edits, stage: stage, previewScale: previewScale)
         lastPlan = plan
@@ -109,7 +109,12 @@ final class PhotoRenderer {
         output = geometry.frame(output, plan: plan)  // resize
         output = output.cropped(to: plan.isFrameIdentity ? shaped : output.extent)
         if stage == .full {
-            output = self.layers.apply(output, layers: layers, photos: layerPhotos)
+            // Adjustment layers: the same panels as a mask's local pass, on everything below them.
+            let controls = self.controls
+            output = self.layers.apply(output, layers: layers, photos: layerPhotos) { below, layer in
+                self.local(below, value: { id in controls[id].map { layer.adjustments[id] ?? $0.defaultValue } },
+                           extent: below.extent, hdr: hdr)
+            }
         }
         return creative.frame(output, value: value)  // a frame over the finished picture's edge
     }
@@ -128,15 +133,19 @@ final class PhotoRenderer {
         return PerspectiveCrop.detect(geometry.segments(), width: plan.sourceWidth, height: plan.sourceHeight)
     }
 
-    /// A mask's local adjustments on the globally edited picture: the same panels in the same order,
-    /// with every slider at its default except the mask's own, scaled by its Amount (exposure −1
-    /// inside the mask is one stop darker than the global result there).
-    private func local(_ image: CIImage, mask: Mask, extent: CGRect, hdr: Bool) -> CIImage {
+    /// A mask's values for its local pass: its own sliders, scaled by its Amount; the rest at their defaults.
+    private func localValues(_ mask: Mask) -> (String) -> Double? {
         let controls = self.controls
-        let value: (String) -> Double? = { id in
+        return { id in
             guard let control = controls[id] else { return nil }
             return mask.localValue(control) ?? control.defaultValue
         }
+    }
+
+    /// Local adjustments (a mask's, an adjustment layer's) on an edited picture: the same panels in the
+    /// same order, with every slider at its default except the ones `value` gives (exposure −1 inside
+    /// a mask is one stop darker than the global result there).
+    private func local(_ image: CIImage, value: (String) -> Double?, extent: CGRect, hdr: Bool) -> CIImage {
         var output = color.input(image, value: value)  // temperature, tint
         output = light.apply(output, value: value, hdr: hdr)
         output = color.apply(output, extent: extent, value: value)

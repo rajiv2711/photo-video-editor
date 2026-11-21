@@ -511,10 +511,16 @@ final class EditorModel: ObservableObject {
         return layerMode
     }
 
-    /// A drag on the picture with a layer selected (points on the shown picture, 0…1): moves it.
+    /// A drag on the picture with a layer selected (points on the shown picture, 0…1): moves it, or
+    /// ("mask") paints its mask with the brush settings (Brush Size, Feather, Eraser…).
     private func layerDraw(_ tool: String, _ points: [MaskPoint], pressure: [Double], finished: Bool) {
         guard let l = state.selectedLayer, let start = points.first, let end = points.last else { return }
         switch tool {
+        case "mask":
+            guard finished else { return }
+            func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
+            state.addLayerMaskStroke(MaskStroke(points: points, size: v("brushSize"), feather: v("brushFeather"), flow: v("brushFlow"),
+                                                density: v("brushDensity"), erase: v("brushErase") != 0))
         case "move":
             let base = layerDrag ?? (state.layers[l].value("layerX", 50), state.layers[l].value("layerY", 50))
             layerDrag = finished ? nil : base
@@ -526,6 +532,12 @@ final class EditorModel: ObservableObject {
             return
         }
         render()
+    }
+
+    /// An adjustment layer is selected: the light, colour, effects and detail sliders change it (the
+    /// Layers panel shows them; the other panels hide, as for a mask).
+    var adjustmentLayerSelected: Bool {
+        state.selectedLayer.map { state.layers[$0].kind == "adjustment" } ?? false
     }
 
     /// The eye in the layer list: shows or hides a layer.
@@ -557,6 +569,9 @@ final class EditorModel: ObservableObject {
                 placePhoto(interpreter.lastCommands.first { $0.control == "placePhoto" }?.value)
             case .layered(_, .created), .layered(_, .duplicated), .changed(EditState.layerSelectorID, _, _):
                 layerMode = "move"
+            case .layered(_, .masked(let part)):
+                // "layer mask brush": paint the mask; a gradient or radial: back to moving the layer.
+                layerMode = part == "brush" ? "mask" : "move"
             default:
                 break
             }
@@ -1226,6 +1241,14 @@ final class EditorModel: ObservableObject {
         case .duplicated(let from): return "Layer \(layer): copy of Layer \(from)"
         case .moved(let to): return "Layer moved to \(to) of \(state.layers.count)"
         case .hidden: return "Layer \(layer) hidden"
+        case .masked(let part):
+            switch part {
+            case "none": return "Layer \(layer): mask removed"
+            case "invert": return "Layer \(layer): mask inverted"
+            case "brush": return "Layer \(layer): paint its mask on the picture (Brush Size, Eraser)"
+            default: return "Layer \(layer): shows at the \(part == "center" ? "middle" : part)"
+            }
+        case .noMask: return "Layer \(layer) has no mask (say “layer mask top”, “layer mask brush”, …)"
         case .deselected: return "No layer selected"
         case .allDeleted: return "Layers deleted"
         }
@@ -1240,6 +1263,7 @@ final class EditorModel: ObservableObject {
     /// What to do on the photo with a new layer of a kind.
     static let layerHints: [String: String] = [
         "photo": "drag it to move it; Layer Scale, Layer Rotation and Layer Opacity change it",
+        "adjustment": "the sliders a mask holds (exposure, contrast, …) now change everything below it; “layer mask top” limits it",
     ]
 
     private func describe(_ event: MaskEvent, mask: Int) -> String {

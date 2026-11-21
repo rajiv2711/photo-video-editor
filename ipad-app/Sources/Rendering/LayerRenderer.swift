@@ -4,26 +4,62 @@ import UIKit
 
 /// Layers (Layers panel) over the finished picture, the lowest first: each layer's content is made
 /// over the whole canvas (transparent around it), faded by its opacity and laid over everything below
-/// it with its blend mode. Positions and sizes are shares of the canvas (see Layers.swift), so the
-/// preview and the saved photo agree.
+/// it with its blend mode, through its mask if it has one (worked out by MaskRaster, as the Masks
+/// panel's, on the canvas). An adjustment layer's content is everything below it with its own sliders.
+/// Positions and sizes are shares of the canvas (see Layers.swift), so the preview and the saved photo agree.
 final class LayerRenderer {
     let context: CIContext
+    /// Layer mask grids made so far, by shape and grid size.
+    private var maskGrids: [MaskKey: [Float]] = [:]
+
+    struct MaskKey: Hashable {
+        let shape: MaskShape
+        let width: Int
+        let height: Int
+    }
 
     init(context: CIContext) {
         self.context = context
     }
 
     /// The layers over `base` (the finished picture). `photos`: the pictures photo layers show (by the
-    /// layer's "photo" number).
-    func apply(_ base: CIImage, layers: [Layer], photos: [CIImage]) -> CIImage {
+    /// layer's "photo" number); `adjust`: an adjustment layer's sliders on the picture below it.
+    func apply(_ base: CIImage, layers: [Layer], photos: [CIImage], adjust: (CIImage, Layer) -> CIImage) -> CIImage {
         let extent = base.extent
         guard !layers.isEmpty, extent.width > 0, extent.height > 0 else { return base }
         var out = base
         for layer in layers where layer.isVisible && layer.opacity > 0 {
-            guard let content = content(of: layer, extent: extent, photos: photos) else { continue }
-            out = composite(content, over: out, layer: layer, extent: extent)
+            let made: CIImage?
+            if layer.kind == "adjustment" {
+                made = adjust(out, layer).cropped(to: extent)
+            } else {
+                made = content(of: layer, extent: extent, photos: photos)
+            }
+            guard var drawn = made else { continue }
+            if let mask = layer.mask, !mask.components.isEmpty {
+                drawn = drawn.applyingFilter("CIBlendWithMask", parameters: [
+                    kCIInputBackgroundImageKey: Self.clear(extent),
+                    kCIInputMaskImageKey: maskImage(mask, extent: extent),
+                ])
+            }
+            out = composite(drawn, over: out, layer: layer, extent: extent)
         }
         return out.cropped(to: extent)
+    }
+
+    /// A layer's mask as a grey picture over the canvas (white = the layer shows).
+    private func maskImage(_ mask: Mask, extent: CGRect) -> CIImage {
+        let size = MaskRaster.gridSize(width: Double(extent.width), height: Double(extent.height))
+        let key = MaskKey(shape: mask.shape, width: size.width, height: size.height)
+        let values: [Float]
+        if let known = maskGrids[key] {
+            values = known
+        } else {
+            values = MaskRaster.render(mask, width: size.width, height: size.height, pixels: nil)
+            if maskGrids.count > 16 { maskGrids = [:] }
+            maskGrids[key] = values
+        }
+        return Filters.mask(values, width: size.width, height: size.height, over: extent)
     }
 
     /// A transparent picture the size of the canvas.

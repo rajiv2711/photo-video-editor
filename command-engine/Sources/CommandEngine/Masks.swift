@@ -215,6 +215,7 @@ extension EditState {
             return mask.components.lastIndex { $0.kind == kind }.map { .component(m, $0) }
         default:
             if control.local, let m = selectedMask { return .mask(m) }
+            if let l = layerTarget(for: control) { return .layer(l) }
             return .global
         }
     }
@@ -236,7 +237,8 @@ extension EditState {
             return retouches[s].values[control.id] ?? control.defaultValue
         case .layer(let l):
             guard layers.indices.contains(l) else { return control.defaultValue }
-            return layers[l].values[control.id] ?? control.defaultValue
+            let stored = control.scope == "layer" ? layers[l].values : layers[l].adjustments
+            return stored[control.id] ?? control.defaultValue
         }
     }
 
@@ -285,7 +287,11 @@ extension EditState {
             retouches[s].values[control.id] = stored
         case .layer(let l):
             guard layers.indices.contains(l) else { return stored }
-            layers[l].values[control.id] = stored
+            if control.scope == "layer" {
+                layers[l].values[control.id] = stored
+            } else {
+                layers[l].adjustments[control.id] = stored
+            }
         }
         return stored
     }

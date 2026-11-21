@@ -14,7 +14,10 @@ import Foundation
 // layers.
 //
 // While a layer is selected (the "layer" control, 1 = the lowest, 0 = none) the layer settings
-// (scope "layer") change it, by touch or by name; "done" (or "layer 0") deselects it.
+// (scope "layer") change it, by touch or by name; "done" (or "layer 0") deselects it. An adjustment
+// layer also takes the sliders a mask can hold (`Control.local`: exposure, contrast, …): they change
+// everything below it. Any layer can have a mask (`Layer.mask`), made of the same parts as the Masks
+// panel's (a gradient from a side, a radial, brush strokes) on the canvas instead of the photo.
 
 /// One layer: its kind, its settings by control id and what touch or words made (text, paths, strokes).
 public struct Layer: Hashable, Codable {
@@ -23,10 +26,16 @@ public struct Layer: Hashable, Codable {
     /// Settings by control id (layerOpacity, layerX, …) plus a few set by the action that made it
     /// ("photo": which picked photo).
     public var values: [String: Double]
+    /// Adjustment layers: their own values of the sliders a mask can hold (exposure, …); missing = no change.
+    public var adjustments: [String: Double]
+    /// Where the layer shows (white) and where not (black), in canvas coordinates; nil = everywhere.
+    public var mask: Mask?
 
-    public init(kind: String, values: [String: Double] = [:]) {
+    public init(kind: String, values: [String: Double] = [:], adjustments: [String: Double] = [:], mask: Mask? = nil) {
         self.kind = kind
         self.values = values
+        self.adjustments = adjustments
+        self.mask = mask
     }
 
     /// A setting, or its default when the layer doesn't have it.
@@ -112,6 +121,7 @@ public enum Layers {
     public static func title(of kind: String) -> String {
         switch kind {
         case "photo": return "Photo"
+        case "adjustment": return "Adjustment"
         default: return kind.prefix(1).uppercased() + kind.dropFirst()
         }
     }
@@ -138,6 +148,27 @@ public enum Layers {
         return [Vec2(-w, -h), Vec2(w, -h), Vec2(w, h), Vec2(-w, h)].map { layer.transform.toCanvas($0, width: width, height: height) }
     }
 
+    /// "layerMask" option ids and the mask part each makes: a linear gradient full at that side, a
+    /// radial in the middle, brush strokes to paint (then draw on the picture); "none" removes the mask.
+    public static let maskOptions = ["brush", "top", "bottom", "left", "right", "center", "none"]
+
+    /// Gives a layer the mask a Layer Mask option asks for: a gradient or radial replaces the mask; a
+    /// brush is added to it (strokes then paint it) unless its newest part is a brush already.
+    public static func setMask(_ option: String, on layer: inout Layer, registry: ControlRegistry) {
+        switch option {
+        case "none":
+            layer.mask = nil
+        case "brush":
+            var mask = layer.mask ?? Mask()
+            if mask.components.last?.kind != "brush" { mask.components.append(MaskComponent(kind: "brush")) }
+            mask.selectedComponent = mask.components.count - 1
+            layer.mask = mask
+        default:
+            let kind = option == "center" ? "radial" : "linear"
+            layer.mask = Mask(components: [MaskPresets.component(kind: kind, mode: .add, option: option, registry: registry)])
+        }
+    }
+
     /// A new layer of `kind` with the layer settings at their defaults (the settings every layer has,
     /// and those of its kind).
     public static func make(_ kind: String, registry: ControlRegistry) -> Layer {
@@ -158,6 +189,10 @@ public enum LayerEvent: Equatable {
     /// Moved up or down the stack: now this number.
     case moved(to: Int)
     case hidden
+    /// Its mask changed: made from a part (an option id of Layer Mask), inverted, or removed ("none").
+    case masked(String)
+    /// "invert layer mask" on a layer with no mask.
+    case noMask
     /// "done": no layer selected.
     case deselected
     /// "reset all" deleted every layer.
@@ -189,9 +224,28 @@ extension EditState {
     /// The layer a scope-"layer" control acts on: the selected one when it is of the control's kind
     /// (or the control fits every layer), else the newest layer of that kind; nil when there is none.
     func layerTarget(for control: Control) -> Int? {
+        if control.scope != "layer" {
+            // A slider a mask can hold: the selected adjustment layer's own.
+            guard control.local, let l = selectedLayer, layers[l].kind == "adjustment" else { return nil }
+            return l
+        }
         if let l = selectedLayer, control.layer == nil || layers[l].kind == control.layer { return l }
         guard let kind = control.layer else { return nil }
         return layers.lastIndex { $0.kind == kind }
+    }
+}
+
+// MARK: - Touch edits (the app calls these; commands go through CommandApplier)
+
+extension EditState {
+    /// Adds a brush stroke (canvas coordinates) to the selected layer's mask, to its newest brush
+    /// part. Returns false when it has none.
+    @discardableResult
+    public mutating func addLayerMaskStroke(_ stroke: MaskStroke) -> Bool {
+        guard let l = selectedLayer, let p = layers[l].mask?.components.lastIndex(where: { $0.kind == "brush" }),
+              !stroke.points.isEmpty else { return false }
+        layers[l].mask?.components[p].strokes.append(stroke)
+        return true
     }
 }
 
@@ -216,6 +270,22 @@ extension CommandApplier {
         case "placePhoto":
             // The app adds the layer: it holds the photos picked.
             return [ran]
+        case "newAdjustmentLayer":
+            state.layers.append(Layers.make("adjustment", registry: registry))
+            state.selectLayer(state.layers.count - 1)
+            return [ran, .layered(layer: state.layers.count, event: .created("adjustment"))]
+        case "layerMask":
+            guard let l = state.selectedLayer else { return [.needsLayer(controlID: control.id)] }
+            let i = Int(command.value ?? 0)
+            let option = control.options.indices.contains(i) ? control.options[i].id : "brush"
+            Layers.setMask(option, on: &state.layers[l], registry: registry)
+            return [ran, .layered(layer: l + 1, event: .masked(option))]
+        case "invertLayerMask":
+            guard let l = named() else { return [.needsLayer(controlID: control.id)] }
+            guard state.layers[l].mask != nil else { return [ran, .layered(layer: l + 1, event: .noMask)] }
+            let inverted = (state.layers[l].mask?.settings["maskInvert"] ?? 0) != 0
+            state.layers[l].mask?.settings["maskInvert"] = inverted ? 0 : 1
+            return [ran, .layered(layer: l + 1, event: .masked("invert"))]
         case "deleteLayer":
             guard let l = named() else { return [.needsLayer(controlID: control.id)] }
             state.layers.remove(at: l)

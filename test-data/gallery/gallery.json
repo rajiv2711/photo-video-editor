@@ -521,6 +521,11 @@
 
     {"id": "layer-blend", "command": "place photo layer scale 200 layer blend multiply", "control": "layerBlend", "source": "chart", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "down", "vs": "chart", "min": 20}, {"metric": "diff", "dir": "same", "vs": "chart", "region": [0.9, 0.78, 0.98, 0.97], "min": 4}]},
     {"id": "layer-blend-difference", "command": "place photo layer scale 200 layer blend difference", "control": "layerBlend", "source": "chart", "photos": ["chart"], "expect": [{"metric": "p95_luma", "dir": "down", "vs": "chart", "min": 150}]},
-    {"id": "layer-blend-screen", "command": "place photo layer scale 200 layer blend screen", "control": "layerBlend", "source": "chart", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "chart", "min": 15}, {"metric": "diff", "dir": "same", "vs": "chart", "region": [0.02, 0.78, 0.1, 0.97], "min": 4}]}
+    {"id": "layer-blend-screen", "command": "place photo layer scale 200 layer blend screen", "control": "layerBlend", "source": "chart", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "chart", "min": 15}, {"metric": "diff", "dir": "same", "vs": "chart", "region": [0.02, 0.78, 0.1, 0.97], "min": 4}]},
+
+    {"id": "new-adjustment-layer", "command": "new adjustment layer exposure -1", "control": "newAdjustmentLayer", "expect": [{"metric": "mean_luma", "dir": "down", "min": 20}]},
+    {"id": "layer-mask", "command": "new adjustment layer exposure -2 layer mask top", "control": "layerMask", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.1, 0.02, 0.9, 0.12], "min": 30}, {"metric": "diff", "dir": "same", "region": [0.1, 0.88, 0.9, 0.98], "min": 1.5}]},
+    {"id": "layer-mask-brush", "command": "new adjustment layer exposure -2 layer mask brush", "control": "layerMask", "strokes": [[[0.02, 0.9], [0.5, 0.9], [0.98, 0.9]]], "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.1, 0.88, 0.9, 0.92], "min": 20}, {"metric": "diff", "dir": "same", "region": [0.1, 0.02, 0.9, 0.12], "min": 1.5}]},
+    {"id": "invert-layer-mask", "command": "new adjustment layer exposure -2 layer mask top invert layer mask", "control": "invertLayerMask", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0.1, 0.88, 0.9, 0.98], "min": 30}, {"metric": "diff", "dir": "same", "region": [0.1, 0.02, 0.9, 0.12], "min": 1.5}]}
   ]
 }

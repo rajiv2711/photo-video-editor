@@ -1344,6 +1344,19 @@
                   {"id": "hue", "label": "Hue"},
                   {"id": "saturation", "label": "Saturation"},
                   {"id": "color", "label": "Color", "synonyms": ["colour"]},
-                  {"id": "luminosity", "label": "Luminosity", "synonyms": ["luminance", "brightness"]}]}
+                  {"id": "luminosity", "label": "Luminosity", "synonyms": ["luminance", "brightness"]}]},
+    {"id": "newAdjustmentLayer", "label": "New Adjustment Layer", "group": "layers", "kind": "action", "layer": "adjustment",
+      "synonyms": ["adjustment layer", "add adjustment layer", "add an adjustment layer", "new adjustment", "adjustments layer"]},
+    {"id": "layerMask", "label": "Layer Mask", "group": "layers", "section": "Mask", "kind": "action",
+      "synonyms": ["add layer mask", "mask layer", "layer masking", "mask the layer"],
+      "options": [{"id": "brush", "label": "Brush", "synonyms": ["paint", "brush strokes", "painted"]},
+                  {"id": "top", "label": "Top", "synonyms": ["top side"]},
+                  {"id": "bottom", "label": "Bottom", "synonyms": ["bottom side"]},
+                  {"id": "left", "label": "Left", "synonyms": ["left side"]},
+                  {"id": "right", "label": "Right", "synonyms": ["right side"]},
+                  {"id": "center", "label": "Center", "synonyms": ["centre", "middle", "radial", "circle"]},
+                  {"id": "none", "label": "None", "synonyms": ["off", "remove", "clear", "no mask"]}]},
+    {"id": "invertLayerMask", "label": "Invert Layer Mask", "group": "layers", "section": "Mask", "kind": "action",
+      "synonyms": ["layer mask invert", "inverse layer mask", "invert the layer mask", "flip layer mask"]}
   ]
 }

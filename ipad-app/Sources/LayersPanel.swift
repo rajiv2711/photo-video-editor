@@ -123,6 +123,30 @@ struct LayersPanel: View {
                 Text(section).font(.subheadline.weight(.semibold))
             }
         }
+        if layer.kind == "adjustment" {
+            // Its own sliders (those a mask can hold), on everything below it; colour grading folded away.
+            let local = model.registry.controls.filter(\.local)
+            Text("Adjustments").font(.subheadline.weight(.semibold))
+            ForEach(local.filter { $0.section != "Color grading" }) { ControlRow(model: model, control: $0) }
+        }
+        DisclosureGroup(isExpanded: isOpen("layers/Mask")) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    if let mask = model.registry.control(id: "layerMask") { makerButton(mask) }
+                    Button("Invert") { model.apply([.run("invertLayerMask")]) }
+                }
+                .buttonStyle(.bordered)
+                .padding(.horizontal, 10)
+                if model.layerMode == "mask" {
+                    // Painting the mask uses the mask brush's settings.
+                    ForEach(["brushSize", "brushFeather", "brushErase"].compactMap { model.registry.control(id: $0) }) {
+                        ControlRow(model: model, control: $0)
+                    }
+                }
+            }
+        } label: {
+            Text(layer.mask == nil ? "Mask" : "Mask (on)").font(.subheadline.weight(.semibold))
+        }
         HStack {
             Button("Up") { model.apply([.run("moveLayerUp")]) }
             Button("Down") { model.apply([.run("moveLayerDown")]) }
@@ -152,28 +176,45 @@ struct LayersPanel: View {
     }
 }
 
-/// Touches on the picture for the selected layer: a drag moves it. Its outline shows where it is.
+/// Touches on the picture for the selected layer: a drag moves it; with the mask brush, strokes
+/// (finger or Pencil) paint its mask. Its outline shows where it is.
 struct LayerCanvas: View {
     @ObservedObject var model: EditorModel
     let tool: String
+    @State private var points: [CGPoint] = []
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 Color.clear.contentShape(Rectangle())
                 outline(geo.size)
+                if tool == "mask" {
+                    Path { path in path.addLines(points) }
+                        .stroke(Color.red.opacity(0.5), style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
+                        .allowsHitTesting(false)
+                    PencilTouches(
+                        onMove: { points = $0 },
+                        onEnd: { stroke, pressure in
+                            model.draw(stroke.map { MaskCanvas.unit($0, in: geo.size) }, pressure: pressure)
+                            points = []
+                        }
+                    )
+                }
             }
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { drag in
-                        model.draw([MaskCanvas.unit(drag.startLocation, in: geo.size), MaskCanvas.unit(drag.location, in: geo.size)],
-                                   finished: false)
-                    }
-                    .onEnded { drag in
-                        model.draw([MaskCanvas.unit(drag.startLocation, in: geo.size), MaskCanvas.unit(drag.location, in: geo.size)])
-                    }
-            )
+            .gesture(drag(geo.size), including: tool == "mask" ? .subviews : .all)
         }
+        .onChange(of: tool) { _, _ in points = [] }
+    }
+
+    /// A drag moves the layer (the Pencil strokes view takes the touches while painting a mask).
+    private func drag(_ size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { drag in
+                model.draw([MaskCanvas.unit(drag.startLocation, in: size), MaskCanvas.unit(drag.location, in: size)], finished: false)
+            }
+            .onEnded { drag in
+                model.draw([MaskCanvas.unit(drag.startLocation, in: size), MaskCanvas.unit(drag.location, in: size)])
+            }
     }
 
     /// The selected layer's box, dashed.

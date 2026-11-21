@@ -1036,3 +1036,12 @@
 {"group":"layers","text":"layer blend mode soft light","expect":[{"op":"set","control":"layerBlend","value":4}]}
 {"group":"layers","text":"layer mode color dodge","expect":[{"op":"set","control":"layerBlend","value":8}]}
 {"group":"layers","text":"layer blend luminosity","expect":[{"op":"set","control":"layerBlend","value":15}]}
+{"group":"layers","text":"new adjustment layer","expect":[{"op":"run","control":"newAdjustmentLayer"}]}
+{"group":"layers","text":"add adjustment layer","expect":[{"op":"run","control":"newAdjustmentLayer"}]}
+{"group":"layers","text":"adjustment layer exposure -1","expect":[{"op":"run","control":"newAdjustmentLayer"},{"op":"set","control":"exposure","value":-1}]}
+{"group":"layers","text":"layer mask top","expect":[{"op":"run","control":"layerMask","value":1}]}
+{"group":"layers","text":"layer mask from the left","expect":[{"op":"run","control":"layerMask","value":3}]}
+{"group":"layers","text":"layer mask brush","expect":[{"op":"run","control":"layerMask","value":0}]}
+{"group":"layers","text":"layer mask off","expect":[{"op":"run","control":"layerMask","value":6}]}
+{"group":"layers","text":"invert layer mask","expect":[{"op":"run","control":"invertLayerMask"}]}
+{"group":"layers","text":"layer mask invert","expect":[{"op":"run","control":"invertLayerMask"}]}

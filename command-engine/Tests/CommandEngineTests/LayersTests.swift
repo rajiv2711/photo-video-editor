@@ -270,4 +270,64 @@ final class LayersTests: XCTestCase {
         XCTAssertEqual(flat.r, flat.b, accuracy: 1e-9)
         XCTAssertEqual(LayerBlend.lum(flat), LayerBlend.lum(red), accuracy: 1e-9)
     }
+
+    // MARK: - Adjustment layers and layer masks
+
+    func testAdjustmentLayersTakeTheMaskSliders() {
+        XCTAssertEqual(parse("new adjustment layer"), [.run("newAdjustmentLayer")])
+        XCTAssertEqual(run("new adjustment layer"), [.ran(controlID: "newAdjustmentLayer"), .layered(layer: 1, event: .created("adjustment"))])
+        XCTAssertEqual(run("exposure -1"), [.changedInLayer(layer: 1, controlID: "exposure", from: 0, to: -1)])
+        XCTAssertEqual(state.layers[0].adjustments["exposure"], -1)
+        XCTAssertNil(state.values["exposure"], "the photo's own exposure stays")
+        XCTAssertEqual(state.current(registry.control(id: "exposure")!), -1, "the slider shows the layer's")
+        run("hdr on")
+        XCTAssertEqual(value("hdr"), 1, "sliders a mask can't hold stay global")
+        run("done exposure 0.5")
+        XCTAssertEqual(value("exposure"), 0.5, "deselected: the photo's own")
+        XCTAssertEqual(state.layers[0].adjustments["exposure"], -1)
+        // A photo layer selected: exposure is the photo's.
+        state.layers.append(Layers.make("photo", registry: registry))
+        state.selectLayer(1)
+        run("exposure 1")
+        XCTAssertEqual(value("exposure"), 1)
+        XCTAssertTrue(state.layers[1].adjustments.isEmpty)
+    }
+
+    private func value(_ id: String) -> Double {
+        state.value(of: registry.control(id: id)!)
+    }
+
+    func testLayerMasksAreMaskPartsOnTheCanvas() {
+        XCTAssertEqual(registry.control(id: "layerMask")!.options.map(\.id), Layers.maskOptions)
+        XCTAssertEqual(parse("layer mask from top"), [.run("layerMask", value: 1)])
+        XCTAssertEqual(parse("layer mask off"), [.run("layerMask", value: 6)])
+        XCTAssertEqual(parse("invert layer mask"), [.run("invertLayerMask")])
+        XCTAssertEqual(run("layer mask top"), [.needsLayer(controlID: "layerMask")])
+        run("new adjustment layer exposure -1")
+        run("layer mask top")
+        let part = state.layers[0].mask!.components[0]
+        XCTAssertEqual(part.kind, "linear")
+        XCTAssertEqual(part.values["linearAngle"], 0, "full at the top")
+        run("layer mask center")
+        XCTAssertEqual(state.layers[0].mask!.components.map(\.kind), ["radial"], "a preset replaces the mask")
+        run("layer mask brush")
+        XCTAssertEqual(state.layers[0].mask!.components.map(\.kind), ["radial", "brush"], "a brush adds to it")
+        run("layer mask brush")
+        XCTAssertEqual(state.layers[0].mask!.components.count, 2, "painting on goes on the same brush")
+        XCTAssertTrue(state.addLayerMaskStroke(MaskStroke(points: [MaskPoint(0.1, 0.5), MaskPoint(0.9, 0.5)])))
+        XCTAssertEqual(state.layers[0].mask!.components[1].strokes.count, 1)
+        run("invert layer mask")
+        XCTAssertEqual(state.layers[0].mask!.settings["maskInvert"], 1)
+        run("invert layer mask")
+        XCTAssertEqual(state.layers[0].mask!.settings["maskInvert"], 0)
+        // The mask's picture: the Masks panel's raster on the canvas.
+        run("layer mask left")
+        let grid = MaskRaster.render(state.layers[0].mask!, width: 40, height: 20, pixels: nil)
+        XCTAssertGreaterThan(grid[10 * 40 + 1], 0.9, "left side shows")
+        XCTAssertLessThan(grid[10 * 40 + 38], 0.1, "right side hidden")
+        run("layer mask none")
+        XCTAssertNil(state.layers[0].mask)
+        XCTAssertEqual(run("invert layer mask"), [.ran(controlID: "invertLayerMask"), .layered(layer: 1, event: .noMask)])
+        XCTAssertFalse(state.addLayerMaskStroke(MaskStroke(points: [MaskPoint(0.5, 0.5)])))
+    }
 }
