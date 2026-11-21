@@ -752,7 +752,8 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(at.x, 1.0 / 3, accuracy: 0.02)
         XCTAssertEqual(at.y, 1.0 / 3, accuracy: 0.02)
         let far = map.lookup(MaskPoint(0.95, 0.95))
-        XCTAssertEqual(far.x, 0.95, accuracy: 0.01)
+        XCTAssertEqual(far.x, 0.95, accuracy: 0.002, "the far corner stays put")
+        XCTAssertEqual(far.y, 0.95, accuracy: 0.002)
         XCTAssertNil(Warp.nearest(pins, to: MaskPoint(0.55, 0.2), width: 300, height: 200))
         // In the plan: the warp is part of the shape, and touches map back through it.
         let plan = GeometryPlan(settings: GeometrySettings(), width: 300, height: 200, edits: GeometryEdits(pins: pins))

@@ -2,7 +2,8 @@ import Foundation
 
 /// Warp and puppet warp: handles on the (cropped) picture are dragged, and the picture bends with them
 /// as rigidly as it can, by moving least squares (Schaefer, McPhail & Warren 2006, the rigid kind):
-/// around each point the handles are weighted by nearness, and the point follows the best rotation
+/// around each point the handles are weighted by nearness (1 ÷ distance⁴, so a handle bends its own
+/// neighbourhood and the far side of the picture stays put), and the point follows the best rotation
 /// and shift that carries the nearby handles to where they were dragged. Warp starts with a 4 × 4
 /// grid of handles (the outer ones hold the edges); puppet warp adds pins where the photo is tapped.
 ///
@@ -34,7 +35,7 @@ public enum Warp {
         for (i, pi) in p.enumerated() {
             let d2 = (pi.x - v.x) * (pi.x - v.x) + (pi.y - v.y) * (pi.y - v.y)
             if d2 < 1e-12 { return q[i] }
-            weights.append(1 / d2)
+            weights.append(1 / (d2 * d2))
         }
         let total = weights.reduce(0, +)
         var ps = Vec2(0, 0), qs = Vec2(0, 0)
