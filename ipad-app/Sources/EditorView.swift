@@ -117,6 +117,8 @@ struct EditorView: View {
                         LayersPanel(model: model, expanded: $expanded)
                     } else if group == "presets", model.state.selectedMask == nil, !model.adjustmentLayerSelected {
                         PresetsPanel(model: model, expanded: $expanded)
+                    } else if group == "history" {
+                        HistoryPanel(model: model, expanded: $expanded)
                     } else if model.state.selectedMask == nil, !model.adjustmentLayerSelected {
                         // While a mask or an adjustment layer is selected only its panel shows: its sliders are local.
                         GroupPanel(model: model, group: group, expanded: $expanded)
@@ -147,6 +149,10 @@ struct EditorView: View {
         }
         .onChange(of: model.state.selectedLayer) { _, layer in
             if layer != nil { expanded.insert("layers") }
+        }
+        .onChange(of: model.revealedPanel) { _, panel in
+            // "history", "presets": a command asked to see a panel.
+            if let panel { expanded.insert(panel) }
         }
     }
 

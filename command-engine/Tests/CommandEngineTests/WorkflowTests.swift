@@ -292,6 +292,24 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(value("exposure"), 1)
     }
 
+    func testHistoryJumpsToAnyStep() {
+        XCTAssertEqual(parse("history 12"), [.run("history", value: 12)])
+        XCTAssertEqual(parse("jump to step 4"), [.run("history", value: 4)])
+        run("exposure 1")
+        run("contrast 20")
+        run("temperature 30")
+        XCTAssertEqual(events(run("history")), [.historyShown(steps: 3)])
+        XCTAssertEqual(events(run("history 1")), [.historyJumped(step: 1, label: "exposure 1")])
+        XCTAssertEqual(value("contrast"), 0)
+        XCTAssertEqual(value("exposure"), 1)
+        run("history 3")
+        XCTAssertEqual(value("temperature"), 30)
+        run("history 0")
+        XCTAssertEqual(state.normalized(registry), EditState().normalized(registry))
+        XCTAssertEqual(events(run("history 9")), [.noHistoryStep(9)])
+        XCTAssertEqual(interpreter.workspace.history.position, 0)
+    }
+
     func testHistoryKeepsAtMostItsLimit() {
         var history = EditHistory(registry: registry)
         let exposure = registry.control(id: "exposure")!

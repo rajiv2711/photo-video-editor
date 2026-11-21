@@ -29,6 +29,8 @@ final class EditorModel: ObservableObject {
     @Published private(set) var previewPlan: GeometryPlan?
     /// What touches do to the selected layer: "move" (drag it), … (see `layerCanvasTool`).
     @Published private(set) var layerMode = "move"
+    /// A panel a command asked to see ("history" alone opens the History panel).
+    @Published private(set) var revealedPanel: String?
 
     enum VoiceState: Equatable {
         case idle, listening, transcribing
@@ -726,6 +728,10 @@ final class EditorModel: ObservableObject {
 
     /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
     private func armPickers(_ outcomes: [CommandInterpreter.Outcome]) {
+        revealedPanel = nil
+        for case .workflow(let event) in outcomes {
+            if case .historyShown = event { revealedPanel = "history" }
+        }
         armGeometryTools(outcomes)
         armLayerTools(outcomes)
         noteMissingInputs(outcomes)
