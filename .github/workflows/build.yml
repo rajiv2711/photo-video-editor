@@ -117,15 +117,29 @@ jobs:
         id: screenshots
         if: steps.install.outcome == 'success'
         continue-on-error: true
+        # One launch per state: portrait (p…) and landscape (l…). The library shots come last: their
+        # pictures stay in the library, and the app opens the library's photo from then on.
         run: |
           mkdir -p screenshots
-          xcrun simctl launch "$UDID" "$APP"
-          sleep 10
-          xcrun simctl io "$UDID" screenshot screenshots/1-start.png
-          xcrun simctl terminate "$UDID" "$APP"
-          xcrun simctl launch "$UDID" "$APP" -demoCommand "contrast max saturation 60 exposure 0.5"
-          sleep 10
-          xcrun simctl io "$UDID" screenshot screenshots/2-after-command.png
+          shot() {   # shot <name> <seconds> [launch arguments…]
+            local name=$1 wait=$2
+            shift 2
+            xcrun simctl launch "$UDID" "$APP" "$@"
+            sleep "$wait"
+            xcrun simctl io "$UDID" screenshot "screenshots/$name.png"
+            xcrun simctl terminate "$UDID" "$APP" 2>/dev/null || true
+          }
+          shot p1-light 8
+          shot p2-command 8 -demoCommand "contrast max saturation 60 exposure 0.5"
+          shot p3-color 8 -panel color
+          shot p4-mask 8 -demoCommand "radial gradient" -panel masks
+          shot p5-layers 8 -demoCommand "new text layer Hello" -panel layers
+          shot p6-export 8 -panel export
+          shot l1-light 9 -orientation landscape
+          shot l2-mask 9 -orientation landscape -demoCommand "radial gradient" -panel masks
+          shot l3-layers 9 -orientation landscape -demoCommand "new text layer Hello" -panel layers
+          shot p7-library 12 -demoLibrary YES -panel library
+          shot l4-library 10 -orientation landscape -panel library
       - uses: actions/upload-artifact@v4
         if: always()
         with:

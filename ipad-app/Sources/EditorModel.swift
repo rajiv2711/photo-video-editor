@@ -154,6 +154,14 @@ final class EditorModel: ObservableObject {
         render()
         resumeLibrary()
 
+        // Launch argument used by the cloud build to screenshot the Library panel: a few generated
+        // pictures in an empty library.
+        if UserDefaults.standard.bool(forKey: "demoLibrary"), library.photos.isEmpty {
+            let small = PhotoRenderer.downscaled(start, maxSide: 800)
+            importPictures(["warm", "haze", "chart", "building", "portrait", "tilted", "noise", "dust"].enumerated().compactMap {
+                RenderGallery.libraryImport($0.element, index: $0.offset, photo: small)
+            })
+        }
         // Launch argument used by the cloud build to screenshot a command's effect.
         if let demo = UserDefaults.standard.string(forKey: "demoCommand") {
             run(demo)

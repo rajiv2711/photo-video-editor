@@ -191,10 +191,12 @@ struct EditorView: View {
 
     /// The control panels (Light, Color, …), grouped as in controls.json.
     private var panel: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 // The library first: where photos come from.
                 LibraryPanel(model: model, expanded: $expanded)
+                    .id("library")
                 ForEach(model.registry.groups, id: \.self) { group in
                     if group == "library" {
                         EmptyView()  // shown above
@@ -224,6 +226,14 @@ struct EditorView: View {
                     .foregroundStyle(.secondary)
             }
             .padding()
+        }
+        .onAppear {
+            // Launch argument used by the cloud build to screenshot one panel ("-panel export").
+            if let shown = UserDefaults.standard.string(forKey: "panel") {
+                expanded = [shown]
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { proxy.scrollTo(shown, anchor: .top) }
+            }
+        }
         }
         .frame(width: 320)
         .background(.regularMaterial)
