@@ -217,6 +217,58 @@ final class CreativeRenderer {
         return output
     }
 
+    /// Frame, over the finished picture's edge (after the canvas and the resize), so the saved size
+    /// stays: bands of colour, rounded corners, a mat's line or a film's sprocket holes
+    /// (CreativeFilters.frameLayout).
+    func frame(_ image: CIImage, value: (String) -> Double?) -> CIImage {
+        let i = Int(value("frame") ?? 0)
+        let e = image.extent
+        guard CreativeFilters.frameStyles.indices.contains(i),
+              let layout = CreativeFilters.frameLayout(CreativeFilters.frameStyles[i], size: value("frameWidth") ?? 4,
+                                                       width: Double(e.width), height: Double(e.height)) else { return image }
+        // Core Image's y is up: the bottom band is at minY.
+        func inset(_ by: Double) -> CGRect {
+            CGRect(x: e.minX + CGFloat(layout.left + by), y: e.minY + CGFloat(layout.bottom + by),
+                   width: e.width - CGFloat(layout.left + layout.right + 2 * by),
+                   height: e.height - CGFloat(layout.top + layout.bottom + 2 * by))
+        }
+        func color(_ c: RGB) -> CIImage {
+            CIImage(color: CIColor(red: CGFloat(c.r), green: CGFloat(c.g), blue: CGFloat(c.b))).cropped(to: e)
+        }
+        var framed = color(layout.color)
+        if layout.line > 0 {
+            framed = Filters.blend(color(RGB(0.01, 0.01, 0.01)), over: framed, mask: Self.inside(inset(0), corner: 0, extent: e))
+        }
+        framed = Filters.blend(image, over: framed, mask: Self.inside(inset(layout.line), corner: layout.corner, extent: e))
+        for hole in layout.holes {
+            let r = CGRect(x: e.minX + CGFloat(hole.x), y: e.maxY - CGFloat(hole.y + hole.height), width: CGFloat(hole.width), height: CGFloat(hole.height))
+            let shape = CIFilter(name: "CIRoundedRectangleGenerator", parameters: [
+                "inputExtent": CIVector(cgRect: r),
+                kCIInputRadiusKey: 0.2 * min(r.width, r.height),
+                "inputColor": CIColor(red: 0.75, green: 0.74, blue: 0.7),
+            ])?.outputImage
+            if let shape { framed = shape.composited(over: framed) }
+        }
+        return framed.cropped(to: e)
+    }
+
+    /// 1 inside `rect` (its corners rounded by `corner`), 0 elsewhere over `extent`.
+    private static func inside(_ rect: CGRect, corner: Double, extent: CGRect) -> CIImage {
+        let black = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: extent)
+        let white = CIColor(red: 1, green: 1, blue: 1)
+        let shape: CIImage?
+        if corner > 0 {
+            shape = CIFilter(name: "CIRoundedRectangleGenerator", parameters: [
+                "inputExtent": CIVector(cgRect: rect),
+                kCIInputRadiusKey: corner,
+                "inputColor": white,
+            ])?.outputImage
+        } else {
+            shape = CIImage(color: white).cropped(to: rect)
+        }
+        return (shape ?? CIImage(color: white).cropped(to: rect)).composited(over: black).cropped(to: extent)
+    }
+
     /// A point given from the top-left (0…1) in Core Image's coordinates of `extent` (y up).
     static func point(_ p: MaskPoint, in extent: CGRect) -> CGPoint {
         CGPoint(x: extent.minX + CGFloat(p.x) * extent.width, y: extent.minY + CGFloat(1 - p.y) * extent.height)

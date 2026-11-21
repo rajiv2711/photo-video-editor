@@ -9,7 +9,7 @@ import UIKit
 /// lighting of iPhone Portrait photos) → white balance → light
 /// (exposure, tone) → color → effects → detail → masks (local adjustments) → geometry (crop, turns,
 /// transforms) → creative filters (blur, distort, …, on the picture as framed) → vignette and grain
-/// (after the crop, as Lightroom's post-crop vignette).
+/// (after the crop, as Lightroom's post-crop vignette) → canvas and resize → frame (Creative panel).
 /// Each panel has its own file in Rendering/ (LightRenderer.swift, …).
 final class PhotoRenderer {
     let context: CIContext
@@ -102,7 +102,8 @@ final class PhotoRenderer {
             output = MaskRenderer.overlay(output, mask: geometry.shape(shape, plan: plan), extent: shaped)
         }
         output = geometry.frame(output, plan: plan)  // resize
-        return output.cropped(to: plan.isFrameIdentity ? shaped : output.extent)
+        output = output.cropped(to: plan.isFrameIdentity ? shaped : output.extent)
+        return creative.frame(output, value: value)  // a frame over the finished picture's edge
     }
 
     /// Auto Straighten: the Straighten angle that levels the lines of the photo last rendered (nil

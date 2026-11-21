@@ -168,7 +168,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 125. **Lens flare** — add a light flare
 - [x] 126. **Lighting effects** — spot and omni lights over the image
 - [x] 127. **Film effects** — light leaks, dust and scratch overlays
-- [ ] 128. **Frames / borders** — add a border or frame
+- [x] 128. **Frames / borders** — add a border or frame
 
 ### Layers & graphics
 

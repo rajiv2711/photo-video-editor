@@ -374,4 +374,41 @@ final class CreativeTests: XCTestCase {
         XCTAssertTrue(CreativeFilters.lightLeaks.allSatisfy { $0.color.r >= $0.color.b }, "warm")
         XCTAssertEqual(CreativeFilters.leakStrength(150), 1)
     }
+
+    // MARK: - Frames
+
+    func testFrameNames() {
+        XCTAssertEqual(parse("frame white"), [.set("frame", 1)])
+        XCTAssertEqual(parse("white frame"), [.set("frame", 1)])
+        XCTAssertEqual(parse("polaroid frame"), [.set("frame", 3)])
+        XCTAssertEqual(parse("frame off"), [.set("frame", 0)])
+        XCTAssertEqual(parse("reset frame"), [.reset("frame")])
+        XCTAssertEqual(parse("frame black frame width 10"), [.set("frame", 2), .set("frameWidth", 10)])
+        // Older names keep their meaning.
+        XCTAssertEqual(parse("border 5"), [.set("canvasBorder", 5)], "a border is still Canvas Size")
+        XCTAssertEqual(parse("canvas color white"), [.set("canvasColor", 0)])
+        XCTAssertEqual(parse("key frame 12"), [.set("keyFrame", 12)])
+        XCTAssertEqual(parse("crop frame"), [.run("cropTool")])
+        XCTAssertEqual(registry.control(id: "frame")?.options.map(\.id), CreativeFilters.frameStyles)
+    }
+
+    func testFrameLayouts() {
+        XCTAssertNil(CreativeFilters.frameLayout("none", size: 4, width: 600, height: 800))
+        let white = CreativeFilters.frameLayout("white", size: 4, width: 600, height: 800)!
+        XCTAssertEqual([white.left, white.top, white.right, white.bottom], [32, 32, 32, 32])
+        let polaroid = CreativeFilters.frameLayout("polaroid", size: 4, width: 600, height: 800)!
+        XCTAssertEqual(polaroid.bottom, 3.5 * polaroid.top, accuracy: 1e-9, "a deep bottom to write on")
+        XCTAssertGreaterThan(CreativeFilters.frameLayout("rounded", size: 4, width: 600, height: 800)!.corner, 0)
+        XCTAssertGreaterThan(CreativeFilters.frameLayout("mat", size: 4, width: 600, height: 800)!.line, 0)
+
+        let film = CreativeFilters.frameLayout("film", size: 4, width: 600, height: 800)!
+        XCTAssertGreaterThan(film.left, film.top, "upright: the deep bands run down the long sides")
+        XCTAssertFalse(film.holes.isEmpty)
+        for hole in film.holes {
+            XCTAssertTrue(hole.x >= 0 && hole.x + hole.width <= 600 && hole.y >= 0 && hole.y + hole.height <= 800)
+            XCTAssertTrue(hole.x + hole.width <= film.left || hole.x >= 600 - film.right, "holes sit in the bands")
+        }
+        let wide = CreativeFilters.frameLayout("film", size: 4, width: 800, height: 600)!
+        XCTAssertGreaterThan(wide.top, wide.left, "landscape: along the top and bottom")
+    }
 }

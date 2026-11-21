@@ -498,6 +498,9 @@
     {"id": "spotlight", "command": "spotlight", "control": "spotlight", "expect": [{"metric": "corner_luma", "dir": "down", "min": 20}, {"metric": "diff", "dir": "changed", "min": 3}]},
     {"id": "omni-light", "command": "omni light center y 15", "control": "omniLight", "expect": [{"metric": "mean_luma", "dir": "up", "region": [0.35, 0.08, 0.65, 0.22], "min": 5}, {"metric": "mean_luma", "dir": "down", "region": [0.8, 0.85, 1, 1], "min": 15}]},
     {"id": "light-leak", "command": "light leak", "control": "lightLeak", "expect": [{"metric": "mean_r", "dir": "up", "min": 3}, {"metric": "mean_sat", "dir": "up", "min": 2}]},
-    {"id": "dust-and-scratches", "command": "dust and scratches", "control": "dustAndScratches", "expect": [{"metric": "diff", "dir": "changed", "min": 0.3}, {"metric": "diff", "dir": "changed", "region": [0, 0, 1, 0.25], "min": 0.2}]}
+    {"id": "dust-and-scratches", "command": "dust and scratches", "control": "dustAndScratches", "expect": [{"metric": "diff", "dir": "changed", "min": 0.3}, {"metric": "diff", "dir": "changed", "region": [0, 0, 1, 0.25], "min": 0.2}]},
+    {"id": "frame", "command": "frame white", "control": "frame", "expect": [{"metric": "mean_luma", "dir": "up", "region": [0, 0, 1, 0.02], "min": 10}, {"metric": "diff", "dir": "same", "region": [0.1, 0.1, 0.9, 0.9], "min": 0.5}, {"metric": "width", "dir": "same", "min": 0.5}]},
+    {"id": "film-frame", "command": "film frame", "control": "frame", "expect": [{"metric": "p5_luma", "dir": "down", "region": [0, 0.3, 0.05, 0.7], "min": 100}, {"metric": "p95_luma", "dir": "same", "region": [0, 0.3, 0.05, 0.7], "min": 60}]},
+    {"id": "frame-width", "command": "frame black frame width 10", "control": "frameWidth", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0, 0, 1, 0.08], "min": 100}]}
   ]
 }

@@ -397,6 +397,71 @@ public enum CreativeFilters {
         let count = { (n: Int) in Int((Double(n) * a).rounded(.up)) }
         return (Array(specks.prefix(count(60))), Array(hairs.prefix(count(6))), Array(scratches.prefix(count(5))))
     }
+
+    // MARK: - Frames
+
+    /// Frame's options, in controls.json order.
+    public static let frameStyles = ["none", "white", "black", "polaroid", "film", "rounded", "mat"]
+
+    /// A frame drawn over the finished picture's edge (pixels from the top-left): bands of `color`
+    /// (linear light) on each side, the picture's corners rounded by `corner`, a dark `line` around
+    /// the picture inside the bands (mat), and sprocket `holes` (film).
+    public struct FrameLayout: Equatable {
+        public let left: Double
+        public let top: Double
+        public let right: Double
+        public let bottom: Double
+        public let corner: Double
+        public let line: Double
+        public let color: RGB
+        public let holes: [GeoRect]
+    }
+
+    /// The frame for a `width` × `height` picture; `size` is Frame Width (% of the long side). White,
+    /// black and rounded have even bands; polaroid's bottom is 3.5 × as deep; film has deep black bands
+    /// along the long sides with sprocket holes and thin ones across the ends; mat is a wider white band
+    /// with a thin dark line round the picture. Nil for "none".
+    public static func frameLayout(_ style: String, size: Double, width: Double, height: Double) -> FrameLayout? {
+        let b = max(0.5, size) / 100 * max(width, height)
+        let white = RGB(1, 1, 1), black = RGB(0.01, 0.01, 0.01)
+        switch style {
+        case "white":
+            return FrameLayout(left: b, top: b, right: b, bottom: b, corner: 0, line: 0, color: white, holes: [])
+        case "black":
+            return FrameLayout(left: b, top: b, right: b, bottom: b, corner: 0, line: 0, color: black, holes: [])
+        case "polaroid":
+            return FrameLayout(left: b, top: b, right: b, bottom: 3.5 * b, corner: 0, line: 0, color: RGB(0.93, 0.91, 0.85), holes: [])
+        case "rounded":
+            return FrameLayout(left: b, top: b, right: b, bottom: b, corner: 1.5 * b, line: 0, color: white, holes: [])
+        case "mat":
+            return FrameLayout(left: 1.5 * b, top: 1.5 * b, right: 1.5 * b, bottom: 1.5 * b, corner: 0, line: max(1, 0.06 * b),
+                               color: white, holes: [])
+        case "film":
+            // The bands with the holes run along the long sides.
+            let deep = 1.8 * b, thin = 0.6 * b
+            let upright = height > width
+            let length = upright ? height : width
+            let across = 0.4 * deep, along = 0.55 * deep, pitch = deep
+            var holes: [GeoRect] = []
+            var at = pitch / 2
+            while at + along / 2 <= length {
+                let start = at - along / 2, inset = (deep - across) / 2
+                if upright {
+                    holes.append(GeoRect(x: inset, y: start, width: across, height: along))
+                    holes.append(GeoRect(x: width - deep + inset, y: start, width: across, height: along))
+                } else {
+                    holes.append(GeoRect(x: start, y: inset, width: along, height: across))
+                    holes.append(GeoRect(x: start, y: height - deep + inset, width: along, height: across))
+                }
+                at += pitch
+            }
+            return upright
+                ? FrameLayout(left: deep, top: thin, right: deep, bottom: thin, corner: 0, line: 0, color: black, holes: holes)
+                : FrameLayout(left: thin, top: deep, right: thin, bottom: deep, corner: 0, line: 0, color: black, holes: holes)
+        default:
+            return nil
+        }
+    }
 }
 
 /// A small repeatable random number generator (SplitMix64): the same numbers on every device.

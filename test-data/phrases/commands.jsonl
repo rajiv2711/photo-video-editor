@@ -995,3 +995,9 @@
 {"group":"creative","text":"dust and scratches","expect":[{"op":"select","control":"dustAndScratches"}]}
 {"group":"creative","text":"film scratches 30","expect":[{"op":"set","control":"dustAndScratches","value":30}]}
 {"group":"creative","text":"reset dust and scratches","expect":[{"op":"reset","control":"dustAndScratches"}]}
+{"group":"creative","text":"frame white","expect":[{"op":"set","control":"frame","value":1}]}
+{"group":"creative","text":"polaroid frame","expect":[{"op":"set","control":"frame","value":3}]}
+{"group":"creative","text":"frame off","expect":[{"op":"set","control":"frame","value":0}]}
+{"group":"creative","text":"film frame","expect":[{"op":"set","control":"frame","value":4}]}
+{"group":"creative","text":"frame width 8","expect":[{"op":"set","control":"frameWidth","value":8}]}
+{"group":"creative","text":"frame thickness more","expect":[{"op":"nudge","control":"frameWidth","steps":1}]}
