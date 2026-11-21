@@ -5,8 +5,8 @@ import Foundation
 /// A word that fits several controls equally ("colour": Vibrance or Saturation) is ambiguous.
 /// Masks- and Retouch-panel names are only tried when no other control is close: they reuse words of
 /// the other panels ("color range", "sharpen brush"), and a near-miss should keep meaning what it meant.
-/// Their actions need their exact name: a misheard word must never make or delete a mask or a spot
-/// ("one" is not "done").
+/// Their actions, and the Geometry panel's, need their exact name: a misheard word must never make or
+/// delete a mask or a spot ("one" is not "done") or reset a crop ("undo" is not "uncrop").
 public struct NameMatcher {
     public enum Match: Equatable {
         case found(Control)
@@ -18,6 +18,9 @@ public struct NameMatcher {
 
     /// Panels whose names are matched only when nothing else is close, and whose actions only by exact name.
     static let toolGroups: Set<String> = ["masks", "retouch"]
+
+    /// Panels whose actions are only reached by their exact name.
+    static let exactActionGroups: Set<String> = toolGroups.union(["geometry"])
 
     public init(registry: ControlRegistry) {
         self.registry = registry
@@ -40,7 +43,9 @@ public struct NameMatcher {
         if exact.count > 1 { return .ambiguous(exact) }
 
         // Otherwise score every control by its closest name; lower is better.
-        var best = closest(phrase, among: registry.controls.filter { !Self.toolGroups.contains($0.group) })
+        var best = closest(phrase, among: registry.controls.filter {
+            !Self.toolGroups.contains($0.group) && !(Self.exactActionGroups.contains($0.group) && $0.kind == .action)
+        })
         if best.isEmpty {
             best = closest(phrase, among: registry.controls.filter { Self.toolGroups.contains($0.group) && $0.kind != .action })
         }

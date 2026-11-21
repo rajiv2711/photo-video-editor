@@ -1,13 +1,17 @@
 import Foundation
 
-/// The current value of every control, the masks (local adjustments, see Masks.swift) and the
-/// retouch steps (spots and strokes, see Retouch.swift). Missing entries are at their default.
+/// The current value of every control, the masks (local adjustments, see Masks.swift), the
+/// retouch steps (spots and strokes, see Retouch.swift) and what the Geometry panel's touch tools
+/// made (guides, perspective crop corners, warp handles; see Geometry.swift). Missing entries are
+/// at their default.
 public struct EditState: Equatable {
     public internal(set) var values: [String: Double] = [:]
     /// Masks in the order they were made ("mask 2" is the second).
     public var masks: [Mask] = []
     /// Retouch steps in the order they were made ("spot 2" is the second).
     public var retouches: [Retouch] = []
+    /// Guides, perspective crop corners and warp handles.
+    public var geometry = GeometryEdits()
 
     public init() {}
 

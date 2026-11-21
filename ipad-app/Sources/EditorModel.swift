@@ -22,6 +22,10 @@ final class EditorModel: ObservableObject {
     @Published private(set) var voiceState: VoiceState = .idle
     /// A picker tool waiting for a tap on the photo (its control id, e.g. "wbPicker").
     @Published private(set) var armedPicker: String?
+    /// The Geometry panel's touch tool in use ("crop", …; see GeometryTools), or nil.
+    @Published private(set) var geometryTool: String?
+    /// The geometry of the shown preview: touches on it map back to the photo through it.
+    @Published private(set) var previewPlan: GeometryPlan?
 
     enum VoiceState: Equatable {
         case idle, listening, transcribing
@@ -96,7 +100,9 @@ final class EditorModel: ObservableObject {
         focusedControlID = nil
         feedback = nil
         armedPicker = nil
+        geometryTool = nil
         dragBase = nil
+        cropDrag = nil
         render()
     }
 
@@ -206,7 +212,13 @@ final class EditorModel: ObservableObject {
     /// part: a brush stroke with the current brush settings, a linear gradient drawn from where the
     /// effect is full (first point) to where it ends (last point), a radial gradient moved or
     /// resized. `finished` is false while a drag is still going (the canvas sends it as it moves).
-    func draw(_ points: [MaskPoint], pressure: [Double] = [], finished: Bool = true) {
+    func draw(_ shown: [MaskPoint], pressure: [Double] = [], finished: Bool = true) {
+        if let tool = geometryTool {
+            geometryDraw(tool, shown, finished: finished)
+            return
+        }
+        // Masks and spots live on the photo itself: points on the (cropped, turned) preview map back.
+        let points = shown.map(toPhoto)
         if let tool = retouchTool {
             if finished { retouchStroke(tool, points: points, pressure: pressure) }
             return
@@ -276,6 +288,93 @@ final class EditorModel: ObservableObject {
         render()
     }
 
+    // MARK: - Geometry (crop, …)
+
+    /// A point on the shown preview (0…1 from the top-left) → the same point on the photo.
+    func toPhoto(_ p: MaskPoint) -> MaskPoint {
+        guard let plan = previewPlan, !plan.isIdentity else { return p }
+        let q = plan.toSource(p)
+        return MaskPoint(min(max(q.x, 0), 1), min(max(q.y, 0), 1))
+    }
+
+    /// The geometry steps the preview shows: the crop tool shows the whole frame with the crop box on it.
+    var geometryStage: GeometryStage {
+        geometryTool == "crop" ? .frame : .full
+    }
+
+    /// The crop box as it is (after aspect and constrain), as shares of the frame, for the crop tool.
+    var cropBox: (x0: Double, y0: Double, x1: Double, y1: Double) {
+        fullPlan(previewSource.extent).cropBox
+    }
+
+    /// The whole geometry for a picture of this size (whatever the preview shows).
+    private func fullPlan(_ extent: CGRect) -> GeometryPlan {
+        renderer.geometry.plan(extent: extent, value: currentValue, edits: state.geometry, stage: .full)
+    }
+
+    /// Where the photo's own coordinates lie on the shown preview (`shown`: its size on screen): the
+    /// photo's size on screen and the projection from there onto the preview. Mask handles and spot
+    /// outlines are drawn on the photo and projected (see SourceSpace).
+    func sourceLayout(shown: CGSize) -> (size: CGSize, projection: ProjectionTransform) {
+        guard let plan = previewPlan, !plan.isIdentity, plan.shapedWidth > 0, shown.width > 0 else {
+            return (shown, ProjectionTransform())
+        }
+        let k = Double(shown.width) / plan.shapedWidth
+        let size = CGSize(width: CGFloat(plan.sourceWidth * k), height: CGFloat(plan.sourceHeight * k))
+        let h = (Homography.scale(Double(shown.width), Double(shown.height)) * plan.shownTransform
+                 * Homography.scale(1 / Double(size.width), 1 / Double(size.height))).normalized
+        let m = h.m.map { CGFloat($0) }
+        var p = ProjectionTransform()
+        p.m11 = m[0]
+        p.m21 = m[1]
+        p.m31 = m[2]
+        p.m12 = m[3]
+        p.m22 = m[4]
+        p.m32 = m[5]
+        p.m13 = m[6]
+        p.m23 = m[7]
+        p.m33 = m[8]
+        return (size, p)
+    }
+
+    /// The crop handle a drag took hold of and the box when it began.
+    private var cropDrag: (handle: Crop.Handle, box: (x0: Double, y0: Double, x1: Double, y1: Double))?
+
+    /// A drag or tap with the Geometry panel's tool (points on the shown preview).
+    private func geometryDraw(_ tool: String, _ points: [MaskPoint], finished: Bool) {
+        guard let start = points.first, let end = points.last else { return }
+        switch tool {
+        case "crop":
+            let plan = fullPlan(previewSource.extent)
+            let base = cropDrag?.box ?? plan.cropBox
+            let handle = cropDrag?.handle ?? Crop.handle(at: start, box: base)
+            cropDrag = finished ? nil : (handle, base)
+            guard start != end else { return }
+            let settings = GeometrySettings(value: currentValue)
+            let aspect = Crop.ratio(settings.aspect, original: plan.frameWidth / max(plan.frameHeight, 1))
+            let box = Crop.drag(handle, box: base, from: start, to: end, aspect: aspect, width: plan.frameWidth, height: plan.frameHeight)
+            for (id, value) in Crop.edges(of: box) {
+                if let control = registry.control(id: id) { state.set(control, to: value) }
+            }
+        default:
+            return
+        }
+        render()
+    }
+
+    /// A Geometry tool that ran (by button, voice or typing) takes the touches on the photo; "done"
+    /// puts it away, and so does picking a mask or a retouch tool.
+    private func armGeometryTools(_ outcomes: [CommandInterpreter.Outcome]) {
+        for case .ran(let id) in outcomes {
+            if let tool = GeometryTools.actions[id] {
+                geometryTool = tool
+                armedPicker = nil
+            } else if id == "maskDone" {
+                geometryTool = nil
+            }
+        }
+    }
+
     // MARK: - Pickers (tap the photo)
 
     /// Picker tools and what they ask the user to tap.
@@ -287,6 +386,7 @@ final class EditorModel: ObservableObject {
 
     /// A picker that ran (by button, voice or typing) now waits for a tap on the photo.
     private func armPickers(_ outcomes: [CommandInterpreter.Outcome]) {
+        armGeometryTools(outcomes)
         for case .ran(let id) in outcomes {
             if let hint = Self.pickers[id] {
                 armedPicker = id
@@ -297,12 +397,15 @@ final class EditorModel: ObservableObject {
 
     /// The photo was tapped while a picker waited, or for the selected mask part (a colour range's
     /// sample): `x`, `y` from the top-left corner, 0…1.
-    func tap(atX x: Double, y: Double) {
+    func tap(atX shownX: Double, y shownY: Double) {
         guard let picker = armedPicker else {
-            draw([MaskPoint(x, y)])
+            draw([MaskPoint(shownX, shownY)])
             return
         }
         armedPicker = nil
+        // Pickers read the photo itself: the point on the (cropped, turned) preview maps back.
+        let onPhoto = toPhoto(MaskPoint(shownX, shownY))
+        let x = onPhoto.x, y = onPhoto.y
         switch picker {
         case "wbPicker":
             // The colour the white balance step sees there (a small square), made neutral.
@@ -431,7 +534,8 @@ final class EditorModel: ObservableObject {
     /// Renders the full-resolution photo and saves it to the photo library.
     /// With HDR on it saves a 10-bit HEIF that keeps the brighter-than-white levels.
     func save() {
-        let edited = renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches)
+        let edited = renderer.apply(to: original, value: currentValue, masks: state.masks, retouches: state.retouches,
+                                    geometry: state.geometry)
         if isHDR {
             saveHDR(edited)
             return
@@ -491,8 +595,11 @@ final class EditorModel: ObservableObject {
 
     /// The preview photo with the current edits (not yet turned into pixels).
     func editedPreview() -> CIImage {
-        renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask,
-                       retouches: state.retouches, waitForRetouch: waitsForRetouch, visualize: visualizeThreshold)
+        let edited = renderer.apply(to: previewSource, value: currentValue, masks: state.masks, overlay: overlayMask,
+                                    retouches: state.retouches, waitForRetouch: waitsForRetouch, visualize: visualizeThreshold,
+                                    geometry: state.geometry, stage: geometryStage)
+        previewPlan = renderer.lastPlan
+        return edited
     }
 
     /// Visualize Spots' threshold while it is on (the preview only shows it).
@@ -516,6 +623,8 @@ final class EditorModel: ObservableObject {
     }
 
     private func render() {
+        // A selected mask or retouch tool takes the touches on the photo instead of a geometry tool.
+        if geometryTool != nil, state.selectedMask != nil || state.retouchTool != nil { geometryTool = nil }
         preview = renderer.uiImage(editedPreview(), hdr: isHDR)
         pinRetouchSources()
     }
@@ -552,6 +661,10 @@ final class EditorModel: ObservableObject {
                 problem = true
             case .ran(let id) where registry.control(id: id)?.group == "masks":
                 break  // described by its .masked outcome
+            case .ran(let id) where GeometryTools.actions[id] != nil:
+                // A geometry tool: what to do with it.
+                let tool = GeometryTools.actions[id] ?? ""
+                parts.append((registry.control(id: id)?.label ?? id) + (Self.geometryHints[tool].map { ": " + $0 } ?? ""))
             case .ran(let id) where registry.control(id: id)?.group == "retouch":
                 // A tool: what to do with it; other actions are described by their .retouched outcome.
                 if let tool = registry.control(id: id)?.tool {
@@ -623,6 +736,11 @@ final class EditorModel: ObservableObject {
         "blurBrush": "paint to soften detail (more with Tool Strength and Pencil pressure)",
         "sharpenBrush": "paint to crispen detail (more with Tool Strength and Pencil pressure)",
         "smudge": "drag to smear colours along the stroke, like a finger through wet paint",
+    ]
+
+    /// What to do on the photo with a Geometry panel tool.
+    static let geometryHints: [String: String] = [
+        "crop": "drag a corner or edge, or inside the box to move it (it keeps the Crop Aspect); “done” when finished",
     ]
 
     /// What to do on the photo after making a mask part.

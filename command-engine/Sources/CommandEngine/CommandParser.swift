@@ -102,6 +102,14 @@ public struct CommandParser {
             }
 
             if token == "reset" || token == "default" {
+                // "reset crop": a name that starts with the word (unless the words after it make a
+                // longer name on their own: "reset crop left" resets Crop Left).
+                if let found = longestName(token, tokens),
+                   (tokens.first.flatMap { longestName($0, tokens.dropFirst()) }?.extra ?? -1) + 1 <= found.extra {
+                    tokens.removeFirst(found.extra)
+                    begin(found.control)
+                    continue
+                }
                 if let next = tokens.first, next == "all" || next == "everything" {
                     tokens.removeFirst()
                     finish()

@@ -1013,6 +1013,33 @@
     {"id": "sharpenBrush", "label": "Sharpen Brush", "group": "retouch", "kind": "action", "tool": "sharpenBrush",
       "synonyms": ["sharpen tool", "sharpening brush", "sharpen brush tool"]},
     {"id": "smudge", "label": "Smudge", "group": "retouch", "kind": "action", "tool": "smudge",
-      "synonyms": ["smudge tool", "smudge brush", "finger tool", "smear"]}
+      "synonyms": ["smudge tool", "smudge brush", "finger tool", "smear"]},
+    {"id": "cropAspect", "label": "Crop Aspect", "group": "geometry", "section": "Crop", "kind": "choice", "default": 1,
+      "synonyms": ["crop", "aspect ratio", "crop ratio", "crop aspect ratio", "crop shape"],
+      "options": [
+        {"id": "original", "label": "Original", "synonyms": ["as shot", "original ratio", "original aspect", "photo ratio"]},
+        {"id": "free", "label": "Free", "synonyms": ["custom", "freeform", "free form", "unlocked", "any"]},
+        {"id": "1:1", "label": "1:1", "synonyms": ["1 1", "1 by 1", "1 x 1", "1x1", "1 to 1", "square"]},
+        {"id": "4:5", "label": "4:5", "synonyms": ["4 5", "4 by 5", "4 x 5", "4x5", "4 to 5"]},
+        {"id": "5:4", "label": "5:4", "synonyms": ["5 4", "5 by 4", "5 x 4", "5x4", "5 to 4"]},
+        {"id": "2:3", "label": "2:3", "synonyms": ["2 3", "2 by 3", "2 x 3", "2x3", "2 to 3"]},
+        {"id": "3:2", "label": "3:2", "synonyms": ["3 2", "3 by 2", "3 x 2", "3x2", "3 to 2"]},
+        {"id": "3:4", "label": "3:4", "synonyms": ["3 4", "3 by 4", "3 x 4", "3x4", "3 to 4"]},
+        {"id": "4:3", "label": "4:3", "synonyms": ["4 3", "4 by 3", "4 x 3", "4x3", "4 to 3"]},
+        {"id": "9:16", "label": "9:16", "synonyms": ["9 16", "9 by 16", "9 x 16", "9x16", "9 to 16"]},
+        {"id": "16:9", "label": "16:9", "synonyms": ["16 9", "16 by 9", "16 x 9", "16x9", "16 to 9", "widescreen"]}
+      ]},
+    {"id": "cropLeft", "label": "Crop Left", "group": "geometry", "section": "Crop", "min": 0, "max": 95, "default": 0, "step": 1,
+      "synonyms": ["crop from left", "trim left", "crop left side"]},
+    {"id": "cropTop", "label": "Crop Top", "group": "geometry", "section": "Crop", "min": 0, "max": 95, "default": 0, "step": 1,
+      "synonyms": ["crop from top", "trim top", "crop top side"]},
+    {"id": "cropRight", "label": "Crop Right", "group": "geometry", "section": "Crop", "min": 0, "max": 95, "default": 0, "step": 1,
+      "synonyms": ["crop from right", "trim right", "crop right side"]},
+    {"id": "cropBottom", "label": "Crop Bottom", "group": "geometry", "section": "Crop", "min": 0, "max": 95, "default": 0, "step": 1,
+      "synonyms": ["crop from bottom", "trim bottom", "crop bottom side"]},
+    {"id": "resetCrop", "label": "Reset Crop", "group": "geometry", "section": "Crop", "kind": "action",
+      "synonyms": ["clear crop", "remove crop", "uncrop", "no crop", "crop reset", "reset the crop"]},
+    {"id": "cropTool", "label": "Crop Tool", "group": "geometry", "section": "Crop", "kind": "action",
+      "synonyms": ["crop mode", "edit crop", "crop handles", "crop overlay", "crop frame", "adjust crop"]}
   ]
 }

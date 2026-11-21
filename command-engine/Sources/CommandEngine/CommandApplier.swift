@@ -80,6 +80,7 @@ public struct CommandApplier {
                     state.retouches = []
                     outcomes.append(.retouched(spot: 0, event: .allDeleted))
                 }
+                state.geometry = GeometryEdits()
                 continue
             case .ambiguous:
                 flush()
@@ -110,6 +111,10 @@ public struct CommandApplier {
                     continue
                 }
                 if let done = retouchAction(control, command, state: &state) {
+                    outcomes += done
+                    continue
+                }
+                if let done = geometryAction(control, command, state: &state) {
                     outcomes += done
                     continue
                 }
@@ -228,7 +233,7 @@ public struct CommandApplier {
 
     /// Runs a Retouch-panel action (pick a tool, delete or undo a step); nil for other actions.
     private func retouchAction(_ control: Control, _ command: Command, state: inout EditState) -> [CommandOutcome]? {
-        if let tool = control.tool {
+        if let tool = control.tool, control.group == "retouch" {
             // Picking a tool leaves the masks (touches on the photo now retouch) and starts a new step.
             var out: [CommandOutcome] = [.ran(controlID: control.id)]
             if state.selectedMask != nil {
@@ -273,5 +278,34 @@ public struct CommandApplier {
         default:
             return nil
         }
+    }
+
+    // MARK: - Geometry panel actions
+
+    /// Runs a Geometry-panel action (reset the crop, turn, clear guides, pick a touch tool); nil for
+    /// other actions and for those the app works out from the photo (auto straighten, …).
+    private func geometryAction(_ control: Control, _ command: Command, state: inout EditState) -> [CommandOutcome]? {
+        guard control.group == "geometry", !GeometryTools.fromPhoto.contains(control.id) else { return nil }
+        var out: [CommandOutcome] = [.ran(controlID: control.id)]
+        func set(_ id: String, _ value: Double) {
+            guard let c = registry.control(id: id) else { return }
+            let from = state.value(of: c)
+            let to = state.set(c, to: value)
+            if from != to { out.append(.changed(controlID: id, from: from, to: to)) }
+        }
+        if GeometryTools.actions[control.id] != nil {
+            // A touch tool for the photo: masks and retouch tools are put away (the app arms the tool on .ran).
+            state.selectMask(nil)
+            state.setRetouchTool(nil)
+        }
+        switch control.id {
+        case "resetCrop":
+            for id in GeometryTools.cropIDs {
+                if let c = registry.control(id: id) { set(id, c.defaultValue) }
+            }
+        default:
+            break
+        }
+        return out
     }
 }

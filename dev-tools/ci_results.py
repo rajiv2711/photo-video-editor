@@ -11,6 +11,7 @@ build-errors.txt. This script fetches that branch into reports/ci/, measures eac
 reference (the "base" case, or the case named in "vs"), checks the expectation (e.g. Highlights -100 ->
 p95 luma down) and writes "reports/Operation test report.html". An expectation with "region": [x0, y0, x1, y1]
 (fractions of the width and height, from the top-left) measures only that box of both pictures (masks).
+Geometry: width, height (pixels) and aspect (width / height) of the picture.
 
 Exit code: 0 all passed · 1 a build step or a case failed · 3 no results for this commit yet.
 """
@@ -36,7 +37,7 @@ BRANCH = "origin/ci-renders"
 
 # Smallest change that counts, per metric (luma and RGB on 0-255, saturation on 0-100, peak in linear light;
 # edge, local_contrast and fringe are small averages on 0-255).
-THRESHOLDS = {"mean_sat": 0.5, "peak": 0.02, "edge": 0.3, "local_contrast": 0.3, "fringe": 0.5}
+THRESHOLDS = {"mean_sat": 0.5, "peak": 0.02, "edge": 0.3, "local_contrast": 0.3, "fringe": 0.5, "aspect": 0.01}
 DEFAULT_THRESHOLD = 1.0
 METRIC_NAMES = {
     "mean_luma": "mean luma", "p5_luma": "p5 luma", "p25_luma": "p25 luma", "p50_luma": "median luma",
@@ -44,6 +45,7 @@ METRIC_NAMES = {
     "mean_g": "mean green", "mean_b": "mean blue", "diff": "pixel change", "peak": "peak (linear)",
     "edge": "fine detail", "local_contrast": "local contrast", "fringe": "edge colour",
     "corner_luma": "corner luma", "center_luma": "centre luma",
+    "width": "width (px)", "height": "height (px)", "aspect": "aspect (w/h)",
 }
 STEPS = [("linux_tests", "Linux tests"), ("generate", "Xcode project"), ("build", "Build"),
          ("install", "Install"), ("gallery", "Gallery"), ("screenshots", "Screenshots")]
@@ -128,6 +130,7 @@ def stats_of(a: np.ndarray) -> dict:
         "mean_luma": luma.mean(), "p5_luma": p5, "p25_luma": p25, "p50_luma": p50, "p75_luma": p75,
         "p95_luma": p95, "mean_sat": sat.mean(),
         "mean_r": a[..., 0].mean(), "mean_g": a[..., 1].mean(), "mean_b": a[..., 2].mean(),
+        "width": float(a.shape[1]), "height": float(a.shape[0]), "aspect": a.shape[1] / a.shape[0],
     }
     if min(a.shape[:2]) >= 40:  # the detail measures need room for their blurs
         stats.update(detail_stats(a, luma))
@@ -237,7 +240,7 @@ def main() -> int:
             vs = "" if ref_id == "base" else f" vs {ref_id}"
             if region:
                 vs += " in [" + ", ".join(f"{v:g}" for v in region) + "]"
-            digits = 3 if e["metric"] == "peak" else 2 if e["metric"] in ("edge", "local_contrast", "fringe") else 1
+            digits = 3 if e["metric"] in ("peak", "aspect") else 2 if e["metric"] in ("edge", "local_contrast", "fringe") else 1
             checks.append((f"{METRIC_NAMES.get(e['metric'], e['metric'])} {e['dir']}{vs}: "
                            f"{ref:.{digits}f} → {value:.{digits}f} ({delta:+.{digits}f})", ok))
         failed += 0 if ok_all else 1

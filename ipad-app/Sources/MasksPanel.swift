@@ -172,7 +172,8 @@ struct MaskCanvas: View {
         GeometryReader { geo in
             ZStack {
                 Color.clear.contentShape(Rectangle())
-                handles(geo.size)
+                // Handles are drawn on the photo's own shape and follow its crop and turns.
+                SourceSpace(model: model) { size in handles(size) }
                 Path { path in
                     path.addLines(points)
                 }

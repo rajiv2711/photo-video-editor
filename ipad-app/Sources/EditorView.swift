@@ -67,6 +67,9 @@ struct EditorView: View {
                                     }
                             }
                             .border(Color.accentColor, width: 2)
+                        } else if let tool = model.geometryTool {
+                            // The Geometry panel's tool (the crop box, …) takes the touches.
+                            GeometryCanvas(model: model, tool: tool)
                         } else if let tool = model.retouchTool {
                             // The retouch tool in use paints or taps on the photo.
                             RetouchCanvasView(model: model, tool: tool)
@@ -89,6 +92,8 @@ struct EditorView: View {
                         MasksPanel(model: model, expanded: $expanded)
                     } else if group == "retouch", model.state.selectedMask == nil {
                         RetouchPanel(model: model, expanded: $expanded)
+                    } else if group == "geometry", model.state.selectedMask == nil {
+                        GeometryPanel(model: model, expanded: $expanded)
                     } else if model.state.selectedMask == nil {
                         // While a mask is selected only the Masks panel shows: its sliders are local.
                         GroupPanel(model: model, group: group, expanded: $expanded)
@@ -113,6 +118,9 @@ struct EditorView: View {
         }
         .onChange(of: model.state.retouchTool) { _, tool in
             if tool != nil { expanded.insert("retouch") }
+        }
+        .onChange(of: model.geometryTool) { _, tool in
+            if tool != nil { expanded.insert("geometry") }
         }
     }
 

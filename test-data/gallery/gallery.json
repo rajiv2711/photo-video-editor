@@ -372,6 +372,14 @@
 
     {"id": "blur-brush", "command": "blur brush brush size 6 tool strength 100", "control": "blurBrush", "strokes": [[[0.456, 0.5775], [0.65, 0.5775]]], "expect": [{"metric": "edge", "dir": "down", "region": [0.44, 0.55, 0.66, 0.605], "min": 10}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.2, 0.2]}]},
     {"id": "sharpen-brush", "command": "sharpen brush brush size 6 tool strength 100", "control": "sharpenBrush", "strokes": [[[0.456, 0.5775], [0.65, 0.5775]]], "expect": [{"metric": "edge", "dir": "up", "region": [0.44, 0.55, 0.66, 0.605], "min": 10}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.2, 0.2]}]},
-    {"id": "smudge", "command": "smudge brush size 6 tool strength 100", "source": "grid", "control": "smudge", "strokes": [[[0.3, 0.5], [0.7, 0.5]]], "expect": [{"metric": "diff", "dir": "changed", "region": [0.35, 0.47, 0.65, 0.53], "vs": "grid", "min": 3}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.2, 0.2], "vs": "grid"}]}
+    {"id": "smudge", "command": "smudge brush size 6 tool strength 100", "source": "grid", "control": "smudge", "strokes": [[[0.3, 0.5], [0.7, 0.5]]], "expect": [{"metric": "diff", "dir": "changed", "region": [0.35, 0.47, 0.65, 0.53], "vs": "grid", "min": 3}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.2, 0.2], "vs": "grid"}]},
+
+    {"id": "crop-aspect", "command": "crop 16 by 9", "control": "cropAspect", "expect": [{"metric": "aspect", "dir": "up", "min": 1}, {"metric": "width", "dir": "same"}, {"metric": "height", "dir": "down", "min": 450}]},
+    {"id": "crop-left", "command": "crop left 30", "control": "cropLeft", "expect": [{"metric": "width", "dir": "down", "min": 150}, {"metric": "height", "dir": "same"}]},
+    {"id": "crop-top", "command": "crop top 25", "control": "cropTop", "expect": [{"metric": "height", "dir": "down", "min": 190}, {"metric": "width", "dir": "same"}]},
+    {"id": "crop-right", "command": "crop right 30", "control": "cropRight", "expect": [{"metric": "width", "dir": "down", "min": 150}, {"metric": "height", "dir": "same"}]},
+    {"id": "crop-bottom", "command": "crop bottom 25", "control": "cropBottom", "expect": [{"metric": "height", "dir": "down", "min": 190}, {"metric": "width", "dir": "same"}]},
+    {"id": "reset-crop", "command": "crop square crop top 10", "control": "resetCrop", "steps": [{"command": "reset crop"}], "expect": [{"metric": "diff", "dir": "same"}]},
+    {"id": "crop-tool", "command": "crop original crop tool", "control": "cropTool", "strokes": [[[0.0, 0.0], [0.4, 0.3]]], "steps": [{"command": "done"}], "expect": [{"metric": "width", "dir": "down", "min": 100}, {"metric": "height", "dir": "down", "min": 100}, {"metric": "aspect", "dir": "same"}]}
   ]
 }

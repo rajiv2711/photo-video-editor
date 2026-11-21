@@ -38,7 +38,7 @@ final class GalleryCasesTests: XCTestCase {
     static let metrics: Set = [
         "mean_luma", "p5_luma", "p25_luma", "p50_luma", "p75_luma", "p95_luma",
         "mean_sat", "mean_r", "mean_g", "mean_b", "diff", "peak",
-        "edge", "local_contrast", "fringe", "corner_luma", "center_luma",
+        "edge", "local_contrast", "fringe", "corner_luma", "center_luma", "width", "height", "aspect",
     ]
     static let directions: Set = ["up", "down", "changed", "same"]
     /// Generated starting pictures; must match RenderGallery.sourceImage in the app.

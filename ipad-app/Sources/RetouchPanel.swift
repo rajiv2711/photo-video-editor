@@ -130,7 +130,8 @@ struct RetouchCanvasView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                outlines(geo.size)
+                // Spots are drawn on the photo's own shape and follow its crop and turns.
+                SourceSpace(model: model) { size in outlines(size) }
                 Path { path in path.addLines(points) }
                     .stroke(Color.white.opacity(0.45), style: StrokeStyle(lineWidth: liveWidth(geo.size), lineCap: .round, lineJoin: .round))
                     .allowsHitTesting(false)

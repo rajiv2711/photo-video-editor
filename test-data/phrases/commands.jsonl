@@ -756,3 +756,22 @@
 {"group":"retouch","text":"smudge","expect":[{"op":"run","control":"smudge"}]}
 {"group":"retouch","text":"smudge tool","expect":[{"op":"run","control":"smudge"}]}
 {"group":"retouch","text":"smudge strength 70","expect":[{"op":"set","control":"toolStrength","value":70}]}
+{"group":"geometry","text":"crop 16 by 9","expect":[{"op":"set","control":"cropAspect","value":10}]}
+{"group":"geometry","text":"crop square","expect":[{"op":"set","control":"cropAspect","value":2}]}
+{"group":"geometry","text":"aspect ratio 4 by 5","expect":[{"op":"set","control":"cropAspect","value":3}]}
+{"group":"geometry","text":"crop 3:2","expect":[{"op":"set","control":"cropAspect","value":6}]}
+{"group":"geometry","text":"crop original","expect":[{"op":"set","control":"cropAspect","value":0}]}
+{"group":"geometry","text":"crop free","expect":[{"op":"set","control":"cropAspect","value":1}]}
+{"group":"geometry","text":"crop left 10","expect":[{"op":"set","control":"cropLeft","value":10}]}
+{"group":"geometry","text":"crop from left 20","expect":[{"op":"set","control":"cropLeft","value":20}]}
+{"group":"geometry","text":"crop top 15","expect":[{"op":"set","control":"cropTop","value":15}]}
+{"group":"geometry","text":"trim top 5","expect":[{"op":"set","control":"cropTop","value":5}]}
+{"group":"geometry","text":"crop right 10","expect":[{"op":"set","control":"cropRight","value":10}]}
+{"group":"geometry","text":"crop right more","expect":[{"op":"nudge","control":"cropRight","steps":1}]}
+{"group":"geometry","text":"crop bottom 20","expect":[{"op":"set","control":"cropBottom","value":20}]}
+{"group":"geometry","text":"trim bottom 10","expect":[{"op":"set","control":"cropBottom","value":10}]}
+{"group":"geometry","text":"reset crop","expect":[{"op":"run","control":"resetCrop"}]}
+{"group":"geometry","text":"clear crop","expect":[{"op":"run","control":"resetCrop"}]}
+{"group":"geometry","text":"uncrop","expect":[{"op":"run","control":"resetCrop"}]}
+{"group":"geometry","text":"crop tool","expect":[{"op":"run","control":"cropTool"}]}
+{"group":"geometry","text":"edit crop","expect":[{"op":"run","control":"cropTool"}]}

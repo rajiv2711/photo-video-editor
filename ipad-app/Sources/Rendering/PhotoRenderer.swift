@@ -6,7 +6,8 @@ import UIKit
 /// Turns control values (see controls.json) into Core Image filters, one panel at a time in
 /// Lightroom's processing order: optics (lens fixes, on the photo as shot) → film negative →
 /// retouching (spots and brush strokes, early as Lightroom's spot removal) → white balance → light
-/// (exposure, tone) → color → effects → detail → masks (local adjustments) → vignette and grain last.
+/// (exposure, tone) → color → effects → detail → masks (local adjustments) → geometry (crop, turns,
+/// transforms) → vignette and grain (after the crop, as Lightroom's post-crop vignette).
 /// Each panel has its own file in Rendering/ (LightRenderer.swift, …).
 final class PhotoRenderer {
     let context: CIContext
@@ -17,6 +18,9 @@ final class PhotoRenderer {
     private let optics: OpticsRenderer
     private let masks: MaskRenderer
     let retouch: RetouchRenderer
+    let geometry: GeometryRenderer
+    /// The geometry of the last render (the editor maps touches on the preview back through it).
+    private(set) var lastPlan: GeometryPlan?
     /// Every control by id (a mask's local pass leaves all but its own sliders at their defaults).
     private let controls: [String: Control]
 
@@ -30,6 +34,7 @@ final class PhotoRenderer {
         self.optics = OpticsRenderer(context: context)
         self.masks = MaskRenderer(context: context)
         self.retouch = RetouchRenderer(context: context)
+        self.geometry = GeometryRenderer(context: context)
         let registry = (try? ControlRegistry.bundled()) ?? ControlRegistry(controls: [])
         self.controls = Dictionary(registry.controls.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
     }
@@ -50,9 +55,12 @@ final class PhotoRenderer {
     /// `masks`: local adjustments, each blended in through its mask; `overlay`: a mask to show
     /// as a red tint (preview only). `retouches`: spots and brush strokes; with `waitForRetouch` false
     /// new ones may show a moment later (worked out in the background, see RetouchRenderer).
-    /// `visualize`: Visualize Spots' threshold when it is on (preview only).
+    /// `visualize`: Visualize Spots' threshold when it is on (preview only). `geometry`: what the
+    /// Geometry panel's touch tools made; `stage`: how much of the geometry to show (the crop tool
+    /// shows the whole frame).
     func apply(to image: CIImage, value: (String) -> Double?, masks: [Mask] = [], overlay: Mask? = nil,
-               retouches: [Retouch] = [], waitForRetouch: Bool = true, visualize: Double? = nil) -> CIImage {
+               retouches: [Retouch] = [], waitForRetouch: Bool = true, visualize: Double? = nil,
+               geometry edits: GeometryEdits = GeometryEdits(), stage: GeometryStage = .full) -> CIImage {
         let hdr = (value("hdr") ?? 0) != 0
         let extent = image.extent
         // Lens corrections, then film negative conversion: the picture range masks and pickers look at.
@@ -69,18 +77,22 @@ final class PhotoRenderer {
             let shape = self.masks.image(of: mask, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
             output = Filters.blend(local(output, mask: mask, extent: extent, hdr: hdr), over: output, mask: shape)
         }
-        output = effects.finish(output, extent: extent, value: value)  // vignette, grain
+        let plan = geometry.plan(extent: extent, value: value, edits: edits, stage: stage)
+        lastPlan = plan
+        output = geometry.shape(output, plan: plan, clampEdges: stage == .full)
+        let shaped = plan.isIdentity ? extent : output.extent
+        output = effects.finish(output, extent: shaped, value: value)  // vignette, grain
         if !hdr {
             output = output.applyingFilter("CIColorClamp")
         }
         if let threshold = visualize {
-            output = visualized(output, extent: extent, threshold: threshold)
+            output = visualized(output, extent: shaped, threshold: threshold)
         }
         if let overlay, !overlay.components.isEmpty {
             let shape = self.masks.image(of: overlay, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
-            output = MaskRenderer.overlay(output, mask: shape, extent: extent)
+            output = MaskRenderer.overlay(output, mask: geometry.shape(shape, plan: plan), extent: shaped)
         }
-        return output.cropped(to: extent)
+        return output.cropped(to: shaped)
     }
 
     /// A mask's local adjustments on the globally edited picture: the same panels in the same order,
