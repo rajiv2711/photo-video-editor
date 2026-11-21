@@ -1094,6 +1094,10 @@
     {"id": "transformOffsetX", "label": "Offset X", "group": "geometry", "section": "Transform", "min": -100, "max": 100, "default": 0, "step": 5,
       "synonyms": ["x offset", "horizontal offset", "transform x offset", "offset horizontal", "shift x", "transform offset x"]},
     {"id": "transformOffsetY", "label": "Offset Y", "group": "geometry", "section": "Transform", "min": -100, "max": 100, "default": 0, "step": 5,
-      "synonyms": ["y offset", "vertical offset", "transform y offset", "offset vertical", "shift y", "transform offset y"]}
+      "synonyms": ["y offset", "vertical offset", "transform y offset", "offset vertical", "shift y", "transform offset y"]},
+    {"id": "perspectiveCrop", "label": "Perspective Crop", "group": "geometry", "section": "Perspective crop", "kind": "action",
+      "synonyms": ["perspective crop tool", "crop perspective", "keystone crop", "rectify", "square up", "straighten plane", "document crop"]},
+    {"id": "clearPerspectiveCrop", "label": "Clear Perspective Crop", "group": "geometry", "section": "Perspective crop", "kind": "action",
+      "synonyms": ["remove perspective crop", "reset perspective crop", "no perspective crop", "undo perspective crop", "cancel perspective crop"]}
   ]
 }

@@ -520,6 +520,57 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(read.offsetY, -10)
     }
 
+    func testPerspectiveCropSquaresUpTheShape() throws {
+        let w = 800.0, h = 600.0
+        let quad = [MaskPoint(0.2, 0.1), MaskPoint(0.8, 0.2), MaskPoint(0.75, 0.9), MaskPoint(0.15, 0.8)]
+        let rect = try XCTUnwrap(PerspectiveCrop.rectify(quad, width: w, height: h))
+        let corners = quad.map { rect.transform.apply(Vec2($0.x * w, $0.y * h)) }
+        assertClose(corners[0], Vec2(0, 0), 1e-6)
+        assertClose(corners[2], Vec2(rect.width, rect.height), 1e-6)
+        // The frame is that rectangle; the crop is all of it.
+        let plan = GeometryPlan(settings: GeometrySettings(), width: w, height: h, edits: GeometryEdits(quad: quad))
+        XCTAssertEqual(plan.frameWidth, rect.width, accuracy: 1e-9)
+        XCTAssertEqual(plan.crop.width, (rect.width + 1e-6).rounded(.down))
+        let p = plan.toSource(MaskPoint(0, 0))
+        XCTAssertEqual(p.x, 0.2, accuracy: 0.01)
+        XCTAssertEqual(p.y, 0.1, accuracy: 0.01)
+        // While placing corners the photo shows as it is.
+        let placing = GeometryPlan(settings: GeometrySettings(), width: w, height: h, stage: .source, edits: GeometryEdits(quad: quad))
+        XCTAssertTrue(placing.isIdentity)
+        // A shape folded over itself is ignored.
+        XCTAssertNil(PerspectiveCrop.rectify([quad[0], quad[2], quad[1], quad[3]], width: w, height: h))
+        // Dragging the nearest corner.
+        let dragged = PerspectiveCrop.drag(quad, from: MaskPoint(0.21, 0.11), to: MaskPoint(0.31, 0.16))
+        XCTAssertEqual(dragged[0].x, 0.3, accuracy: 1e-9)
+        XCTAssertEqual(dragged[0].y, 0.15, accuracy: 1e-9)
+        XCTAssertEqual(PerspectiveCrop.drag(quad, from: MaskPoint(0.5, 0.5), to: MaskPoint(0.6, 0.6)), quad, "no corner near")
+    }
+
+    func testPerspectiveCropFindsTheTiltedPlane() throws {
+        let w = 400, h = 300
+        let corners = [Vec2(70, 40), Vec2(330, 60), Vec2(310, 260), Vec2(50, 230)]
+        var lines: [(Vec2, Vec2)] = []
+        for i in 0..<4 { lines.append((corners[i], corners[(i + 1) % 4])) }
+        // A smaller shape inside (like a picture's own edges) must not win.
+        lines += [(Vec2(150, 120), Vec2(230, 125)), (Vec2(230, 125), Vec2(225, 180)), (Vec2(225, 180), Vec2(148, 176)), (Vec2(148, 176), Vec2(150, 120))]
+        let segments = LineDetector.detect(Self.picture(width: w, height: h, lines: lines), width: w, height: h)
+        let found = try XCTUnwrap(PerspectiveCrop.detect(segments, width: Double(w), height: Double(h)))
+        for (p, c) in zip(found, corners) {
+            XCTAssertEqual(p.x * Double(w), c.x, accuracy: 3)
+            XCTAssertEqual(p.y * Double(h), c.y, accuracy: 3)
+        }
+        XCTAssertNil(PerspectiveCrop.detect([], width: 10, height: 10))
+    }
+
+    func testPerspectiveCropActions() {
+        var interpreter = CommandInterpreter(registry: registry)
+        var state = EditState()
+        XCTAssertEqual(interpreter.interpret("perspective crop", state: &state), [.ran(controlID: "perspectiveCrop")])
+        state.geometry.quad = PerspectiveCrop.inset
+        _ = interpreter.interpret("clear perspective crop", state: &state)
+        XCTAssertTrue(state.geometry.quad.isEmpty)
+    }
+
     func testUprightNames() {
         XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
         XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])

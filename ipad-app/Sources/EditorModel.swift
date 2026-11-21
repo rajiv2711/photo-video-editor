@@ -308,7 +308,11 @@ final class EditorModel: ObservableObject {
 
     /// The geometry steps the preview shows: the crop tool shows the whole frame with the crop box on it.
     var geometryStage: GeometryStage {
-        ["crop", "straighten", "guides"].contains(geometryTool ?? "") ? .frame : .full
+        switch geometryTool {
+        case "crop", "straighten", "guides": return .frame
+        case "perspective": return .source
+        default: return .full
+        }
     }
 
     /// The crop box as it is (after aspect and constrain), as shares of the frame, for the crop tool.
@@ -346,6 +350,9 @@ final class EditorModel: ObservableObject {
         return (size, p)
     }
 
+    /// Perspective crop's corners when the current drag began.
+    private var quadDrag: [MaskPoint]?
+
     /// The crop handle a drag took hold of and the box when it began.
     private var cropDrag: (handle: Crop.Handle, box: (x0: Double, y0: Double, x1: Double, y1: Double))?
 
@@ -375,6 +382,11 @@ final class EditorModel: ObservableObject {
             geometryTool = "crop"
             render()
             return
+        case "perspective":
+            // The photo shows as it is: the nearest corner follows the finger.
+            let base = quadDrag ?? state.geometry.quad
+            quadDrag = finished ? nil : base
+            state.geometry.quad = PerspectiveCrop.drag(base, from: start, to: end)
         case "guides":
             // A guide along an edge that should be upright or level, kept on the photo itself.
             guard finished, let plan = previewPlan else { return }
@@ -402,6 +414,10 @@ final class EditorModel: ObservableObject {
             if let tool = GeometryTools.actions[id] {
                 geometryTool = tool
                 armedPicker = nil
+                if tool == "perspective", state.geometry.quad.count != 4 {
+                    // Start from the largest four-sided shape along the photo's lines, or the middle.
+                    state.geometry.quad = renderer.detectedQuad() ?? PerspectiveCrop.inset
+                }
             } else if id == "maskDone" {
                 geometryTool = nil
             }
@@ -777,6 +793,7 @@ final class EditorModel: ObservableObject {
         "crop": "drag a corner or edge, or inside the box to move it (it keeps the Crop Aspect); “done” when finished",
         "straighten": "draw a line along something that should be level (a horizon) or upright; the photo turns to match",
         "guides": "draw up to four lines along edges that should be upright or level (two upright ones straighten converging walls); “clear guides” to start again",
+        "perspective": "drag the four corners onto the corners of the tilted page, picture or wall; “done” squares it up",
     ]
 
     /// What to do on the photo after making a mask part.

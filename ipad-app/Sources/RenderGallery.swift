@@ -176,8 +176,20 @@ enum RenderGallery {
     /// - "pet-eye": two animal eyes on dark fur, their pupils glowing pale green (pet eye).
     /// - "tilted": the grid turned 6° anticlockwise, filling the frame (straighten).
     /// - "building": the grid seen looking up, its upright lines leaning in towards the top (upright).
+    /// - "skewed": the colour chart as a tilted page on a dark table (perspective crop), its corners at
+    ///   `skewedCorners`.
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "skewed":
+            let size = photo.extent.integral.size
+            func corner(_ i: Int) -> CIVector {
+                CIVector(x: skewedCorners[i].x * size.width, y: (1 - skewedCorners[i].y) * size.height)
+            }
+            let page = chart(size: size).applyingFilter("CIPerspectiveTransform", parameters: [
+                "inputTopLeft": corner(0), "inputTopRight": corner(1), "inputBottomRight": corner(2), "inputBottomLeft": corner(3),
+            ])
+            let table = CIImage(color: CIColor(red: 0.03, green: 0.03, blue: 0.035)).cropped(to: CGRect(origin: .zero, size: size))
+            return page.composited(over: table).cropped(to: CGRect(origin: .zero, size: size))
         case "building":
             // A grid twice the size, its top 30 % narrower on each side, cut from the middle.
             let size = photo.extent.integral.size
@@ -337,6 +349,9 @@ enum RenderGallery {
         guard let cg = picture.cgImage else { return CIImage(color: .gray).cropped(to: CGRect(origin: .zero, size: size)) }
         return CIImage(cgImage: cg)
     }
+
+    /// The "skewed" page's corners (x, y from the top-left, 0…1): top-left, top-right, bottom-right, bottom-left.
+    static let skewedCorners: [(x: CGFloat, y: CGFloat)] = [(0.18, 0.12), (0.86, 0.20), (0.80, 0.88), (0.12, 0.80)]
 
     /// Where the "dust" picture's spots are (x, y from the top-left, 0…1).
     static let dustSpots: [(x: CGFloat, y: CGFloat)] = [(0.12, 0.10), (0.85, 0.12), (0.88, 0.55), (0.10, 0.70), (0.75, 0.90)]

@@ -305,16 +305,25 @@ public struct GeometryPlan: Equatable {
         sourceHeight = height
         self.stage = stage
         let corners = [Vec2(0, 0), Vec2(width, 0), Vec2(width, height), Vec2(0, height)]
-        // Upright: the perspective correction the photo's lines ask for.
-        let pre = settings.manualTransform(width: width, height: height)
-            * Upright.transform(mode: settings.upright, segments: segments, width: width, height: height, guides: edits.guides)
+        // Perspective crop (its four corners become the frame) or Upright (the perspective correction
+        // the photo's lines ask for), then the manual transform.
+        var base = (width: width, height: height)
+        var pre: Homography
+        if let rect = PerspectiveCrop.rectify(edits.quad, width: width, height: height) {
+            base = (rect.width, rect.height)
+            pre = settings.manualTransform(width: rect.width, height: rect.height) * rect.transform
+        } else {
+            pre = settings.manualTransform(width: width, height: height)
+                * Upright.transform(mode: settings.upright, segments: segments, width: width, height: height, guides: edits.guides)
+        }
+        if stage == .source { base = (width, height) }
         // Straighten turns the picture about the frame's middle; then the quarter turns (which swap
         // the frame's sides) and the flips, about the middle too.
         let turned = settings.quarterTurns % 2 == 1 && stage != .source
-        let w3 = turned ? height : width, h3 = turned ? width : height
+        let w3 = turned ? base.height : base.width, h3 = turned ? base.width : base.height
         let flip = Homography.scale(settings.flipHorizontal ? -1 : 1, settings.flipVertical ? -1 : 1)
         let turn = Homography.translation(w3 / 2, h3 / 2) * flip * Homography.rotation(degrees: Double(90 * settings.quarterTurns))
-            * Homography.rotation(degrees: settings.straighten) * Homography.translation(-width / 2, -height / 2)
+            * Homography.rotation(degrees: settings.straighten) * Homography.translation(-base.width / 2, -base.height / 2)
         preStraighten = stage == .source ? .identity : pre
         let h = stage == .source ? Homography.identity : turn * pre
         transform = h
@@ -575,7 +584,8 @@ public enum Crop {
 /// The Geometry panel's actions and the controls they act on.
 public enum GeometryTools {
     /// Actions that pick a touch tool for the photo, and the tool: "crop" (drag the crop box).
-    public static let actions: [String: String] = ["cropTool": "crop", "straightenTool": "straighten", "guidedUpright": "guides"]
+    public static let actions: [String: String] = ["cropTool": "crop", "straightenTool": "straighten", "guidedUpright": "guides",
+                                                   "perspectiveCrop": "perspective"]
     /// Actions the app works out from the photo (they come back as commands from its action handler).
     public static let fromPhoto: Set<String> = ["autoStraighten"]
     /// The crop box's controls ("reset crop" puts them back).

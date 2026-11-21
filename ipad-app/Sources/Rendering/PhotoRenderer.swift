@@ -110,6 +110,14 @@ final class PhotoRenderer {
         return Straighten.autoAngle(found, width: plan.sourceWidth, height: plan.sourceHeight, transform: plan.preStraighten)
     }
 
+    /// Perspective crop: the corners of the largest four-sided shape along the photo's lines (nil when
+    /// there is none).
+    func detectedQuad() -> [MaskPoint]? {
+        guard let photo = lastPhoto, let plan = lastPlan else { return nil }
+        let found = geometry.segments(of: photo.picture, key: photo.key)
+        return PerspectiveCrop.detect(found, width: plan.sourceWidth, height: plan.sourceHeight)
+    }
+
     /// A mask's local adjustments on the globally edited picture: the same panels in the same order,
     /// with every slider at its default except the mask's own, scaled by its Amount (exposure −1
     /// inside the mask is one stop darker than the global result there).

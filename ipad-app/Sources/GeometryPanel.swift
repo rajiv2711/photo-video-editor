@@ -73,6 +73,7 @@ struct GeometryCanvas: View {
             ZStack {
                 Color.clear.contentShape(Rectangle())
                 if tool == "crop" { cropBox(geo.size).allowsHitTesting(false) }
+                if tool == "perspective" { quad(geo.size).allowsHitTesting(false) }
                 if tool == "guides" {
                     // The guides drawn so far, where they now show.
                     Path { path in
@@ -113,6 +114,21 @@ struct GeometryCanvas: View {
 
     /// Tools that take a line drawn on the photo (handed over when the finger lifts).
     static let lines: Set<String> = ["straighten", "guides"]
+
+    /// Perspective crop's four corners on the photo, joined.
+    private func quad(_ size: CGSize) -> some View {
+        let points = model.state.geometry.quad.map { CGPoint(x: CGFloat($0.x) * size.width, y: CGFloat($0.y) * size.height) }
+        return ZStack {
+            Path { path in
+                path.addLines(points)
+                path.closeSubpath()
+            }
+            .stroke(Color.yellow, lineWidth: 1.5)
+            ForEach(Array(points.enumerated()), id: \.offset) { item in
+                Circle().stroke(Color.yellow, lineWidth: 2).frame(width: 18, height: 18).position(item.element)
+            }
+        }
+    }
 
     /// The crop box: the outside dimmed, thirds lines inside, handles at the corners.
     private func cropBox(_ size: CGSize) -> some View {

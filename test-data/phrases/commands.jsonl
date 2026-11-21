@@ -827,3 +827,7 @@
 {"group":"geometry","text":"offset y 15","expect":[{"op":"set","control":"transformOffsetY","value":15}]}
 {"group":"geometry","text":"vertical offset more","expect":[{"op":"nudge","control":"transformOffsetY","steps":1}]}
 {"group":"geometry","text":"vertical upright","expect":[{"op":"set","control":"upright","value":3}]}
+{"group":"geometry","text":"perspective crop","expect":[{"op":"run","control":"perspectiveCrop"}]}
+{"group":"geometry","text":"rectify","expect":[{"op":"run","control":"perspectiveCrop"}]}
+{"group":"geometry","text":"clear perspective crop","expect":[{"op":"run","control":"clearPerspectiveCrop"}]}
+{"group":"geometry","text":"reset perspective crop","expect":[{"op":"run","control":"clearPerspectiveCrop"}]}
