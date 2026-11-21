@@ -278,3 +278,123 @@ public enum TargetedAdjustment {
         return out
     }
 }
+
+/// Soft proofing (View panel): the preview as the photo would come out on screen as an sRGB file or on
+/// paper, with a gamut warning over the colours that can't be reproduced there. No ICC profiles are
+/// bundled: prints are modelled in CIE L*a*b* by their paper white and ink black (lightness range) and
+/// the most saturated colour their inks reach at each hue (a cone either side of that colour's lightness).
+public enum SoftProof {
+    /// "softProof" option ids, in order; must match controls.json.
+    public static let profiles = ["off", "srgb", "glossy", "matte", "newsprint"]
+
+    /// A print: paper white and ink black (L*), how much of a coated print's colour its inks reach, and
+    /// the paper's own tint (a*, b* at white).
+    public struct Paper: Equatable {
+        public let white: Double
+        public let black: Double
+        public let chroma: Double
+        public let tint: (a: Double, b: Double)
+
+        public static func == (x: Paper, y: Paper) -> Bool {
+            x.white == y.white && x.black == y.black && x.chroma == y.chroma && x.tint == y.tint
+        }
+    }
+
+    /// Glossy photo paper, matte (uncoated) paper, newsprint.
+    public static let papers: [String: Paper] = [
+        "glossy": Paper(white: 96, black: 8, chroma: 1, tint: (0, 0)),
+        "matte": Paper(white: 93, black: 18, chroma: 0.75, tint: (0, 1)),
+        "newsprint": Paper(white: 85, black: 28, chroma: 0.5, tint: (0, 5)),
+    ]
+
+    /// The most saturated colours of coated printing inks: their hue (degrees of a*, b*), lightness and
+    /// chroma (red, yellow, green, cyan, blue, magenta), roughly as offset printing reaches them.
+    static let inks: [(hue: Double, l: Double, c: Double)] = [
+        (40, 48, 72), (95, 88, 92), (150, 52, 68), (230, 56, 52), (290, 30, 58), (350, 48, 74),
+    ]
+
+    /// The most chroma a paper reaches at a lightness and hue (0 outside its white and black).
+    public static func maxChroma(l: Double, hue: Double, paper: Paper) -> Double {
+        let h = (hue.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
+        // The two inks the hue lies between, mixed by how near.
+        var lo = inks[inks.count - 1], hi = inks[0], t = 0.0
+        for i in inks.indices {
+            let a = inks[i], b = inks[(i + 1) % inks.count]
+            let span = (b.hue - a.hue + 360).truncatingRemainder(dividingBy: 360)
+            let into = (h - a.hue + 360).truncatingRemainder(dividingBy: 360)
+            if into <= span {
+                lo = a
+                hi = b
+                t = span > 0 ? into / span : 0
+                break
+            }
+        }
+        let peakL = lo.l + (hi.l - lo.l) * t, peakC = (lo.c + (hi.c - lo.c) * t) * paper.chroma
+        let top = Swift.min(paper.white, Swift.max(paper.black + 1, peakL))
+        let c: Double
+        if l <= top {
+            c = peakC * (l - paper.black) / Swift.max(1, top - paper.black)
+        } else {
+            c = peakC * (paper.white - l) / Swift.max(1, paper.white - top)
+        }
+        return Swift.max(0, c)
+    }
+
+    /// sRGB levels → L*, a*, b* (D65).
+    public static func lab(_ c: RGB) -> (l: Double, a: Double, b: Double) {
+        let v = MaskRaster.lab(Float(c.r), Float(c.g), Float(c.b))
+        return (Double(v.l), Double(v.a), Double(v.b))
+    }
+
+    /// L*, a*, b* (D65) → sRGB levels (clipped).
+    public static func rgb(l: Double, a: Double, b: Double) -> RGB {
+        let fy = (l + 16) / 116, fx = fy + a / 500, fz = fy - b / 200
+        func inverse(_ t: Double) -> Double { t * t * t > 0.008856 ? t * t * t : (t - 16.0 / 116) / 7.787 }
+        let x = 0.95047 * inverse(fx), y = inverse(fy), z = 1.08883 * inverse(fz)
+        let linear = RGB(3.2404542 * x - 1.5371385 * y - 0.4985314 * z,
+                         -0.9692660 * x + 1.8760108 * y + 0.0415560 * z,
+                         0.0556434 * x - 0.2040259 * y + 1.0572252 * z)
+        return linear.clamped().encoded
+    }
+
+    /// One colour (sRGB levels) as it would come out, and whether it is out of gamut. sRGB: as it is,
+    /// out of gamut when a saturated colour sits on the edge (a channel at 0 or 1: its true colour was
+    /// clipped to fit). A paper: lightness pressed between its white and black, chroma cut at what its
+    /// inks reach there, its tint added; out of gamut when the chroma had to be cut noticeably.
+    public static func proof(_ color: RGB, profile: String) -> (color: RGB, outOfGamut: Bool) {
+        let c = lab(color)
+        let chroma = (c.a * c.a + c.b * c.b).squareRoot()
+        guard let paper = papers[profile] else {
+            let edge = color.max >= 0.999 || color.min <= 0.001
+            return (color, profile == "srgb" && edge && chroma > 30)
+        }
+        let l = paper.black + c.l / 100 * (paper.white - paper.black)
+        let hue = atan2(c.b, c.a) * 180 / .pi
+        let limit = maxChroma(l: l, hue: hue, paper: paper)
+        let k = chroma > limit && chroma > 0 ? limit / chroma : 1
+        let w = l / 100
+        let out = rgb(l: l, a: c.a * k + paper.tint.a * w, b: c.b * k + paper.tint.b * w)
+        return (out, chroma > limit + 4)
+    }
+
+    /// The colour the gamut warning paints (mid grey, as Photoshop does).
+    public static let warning = RGB(0.5, 0.5, 0.5)
+
+    /// The proof as a size³ lookup table (RGBA, red fastest, sRGB levels in and out); with `warn`, colours
+    /// out of gamut are the warning grey.
+    public static func cube(profile: String, warn: Bool, size: Int = 33) -> [Float] {
+        var out: [Float] = []
+        out.reserveCapacity(size * size * size * 4)
+        let n = Double(size - 1)
+        for b in 0..<size {
+            for g in 0..<size {
+                for r in 0..<size {
+                    let p = proof(RGB(Double(r) / n, Double(g) / n, Double(b) / n), profile: profile)
+                    let c = warn && p.outOfGamut ? warning : p.color
+                    out += [Float(c.r), Float(c.g), Float(c.b), 1]
+                }
+            }
+        }
+        return out
+    }
+}

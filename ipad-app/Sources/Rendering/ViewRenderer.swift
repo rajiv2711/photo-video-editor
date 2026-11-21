@@ -2,8 +2,9 @@ import CommandEngine
 import CoreImage
 import UIKit
 
-/// The View panel's overlays on the preview (never on the saved photo): before / after, and the
-/// warnings, grids and markers drawn over it. Positions come from CommandEngine (Viewing.swift).
+/// The View panel's overlays on the preview (never on the saved photo): before / after, soft proofing,
+/// and the warnings, grids and markers drawn over it. Positions, tables and thresholds come from
+/// CommandEngine (Viewing.swift).
 final class ViewRenderer {
     let context: CIContext
 
@@ -16,6 +17,8 @@ final class ViewRenderer {
     func apply(_ edited: CIImage, before: CIImage, value: (String) -> Double?, samplers: [MaskPoint] = []) -> CIImage {
         var after = Self.atOrigin(edited)
         if (value("showBefore") ?? 0) != 0 { return Self.atOrigin(before) }
+        let p = Int(value("softProof") ?? 0)
+        if SoftProof.profiles.indices.contains(p), p > 0 { after = proof(after, profile: SoftProof.profiles[p], warn: (value("gamutWarning") ?? 0) != 0) }
         if (value("clippingWarning") ?? 0) != 0 { after = clippingWarning(after) }
         let g = Int(value("gridOverlay") ?? 0)
         if Guides.kinds.indices.contains(g), g > 0 { after = grid(after, kind: Guides.kinds[g]) }
@@ -43,6 +46,31 @@ final class ViewRenderer {
         let placedAfter = after.transformed(by: CGAffineTransform(translationX: CGFloat(place.after.x), y: CGFloat(place.after.y)))
         return placedAfter.composited(over: placedBefore).composited(over: backdrop).cropped(to: whole)
     }
+
+    /// Soft proofing tables already made, by profile and warning.
+    private var proofCubes: [String: Data] = [:]
+
+    /// Soft proofing (SoftProof): the picture as the profile would show it, one lookup-table pass on
+    /// sRGB levels; with the gamut warning, colours it can't reproduce in grey.
+    private func proof(_ image: CIImage, profile: String, warn: Bool) -> CIImage {
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB) else { return image }
+        let key = profile + (warn ? " warn" : "")
+        let data: Data
+        if let made = proofCubes[key] {
+            data = made
+        } else {
+            data = SoftProof.cube(profile: profile, warn: warn, size: Self.proofCubeSize).withUnsafeBufferPointer { Data(buffer: $0) }
+            proofCubes[key] = data
+        }
+        return image.applyingFilter("CIColorCubeWithColorSpace", parameters: [
+            "inputCubeDimension": Self.proofCubeSize,
+            "inputCubeData": data,
+            "inputColorSpace": space,
+        ]).cropped(to: image.extent)
+    }
+
+    /// Entries per side of the soft-proofing tables (finer than the colour tools': the gamut edge stays sharp).
+    static let proofCubeSize = 48
 
     /// Clipping warnings (Scopes.clipping): red where the brightest channel is at white, blue where
     /// every channel is at black, on sRGB levels.

@@ -212,7 +212,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 158. **Zoom / 1:1 loupe** — inspect fine detail
 - [x] 159. **Grid & guides** — thirds, golden ratio, grid overlay
 - [x] 160. **Targeted adjustment** — drag on the photo to change the tone/colour under your finger
-- [ ] 161. **Soft proofing** — preview print or web colour
+- [x] 161. **Soft proofing** — preview print or web colour
 
 ### Library
 

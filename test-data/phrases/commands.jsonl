@@ -1249,3 +1249,10 @@
 {"group":"view","text":"targeted hue","expect":[{"op":"set","control":"targetedAdjustment","value":2}]}
 {"group":"view","text":"targeted luminance","expect":[{"op":"set","control":"targetedAdjustment","value":4}]}
 {"group":"view","text":"targeted off","expect":[{"op":"set","control":"targetedAdjustment","value":0}]}
+{"group":"view","text":"soft proof print","expect":[{"op":"set","control":"softProof","value":2}]}
+{"group":"view","text":"proof matte","expect":[{"op":"set","control":"softProof","value":3}]}
+{"group":"view","text":"soft proof srgb","expect":[{"op":"set","control":"softProof","value":1}]}
+{"group":"view","text":"soft proof off","expect":[{"op":"set","control":"softProof","value":0}]}
+{"group":"view","text":"gamut warning","expect":[{"op":"set","control":"gamutWarning","value":1}]}
+{"group":"view","text":"show out of gamut","expect":[{"op":"set","control":"gamutWarning","value":1}]}
+{"group":"view","text":"gamut warning off","expect":[{"op":"set","control":"gamutWarning","value":0}]}

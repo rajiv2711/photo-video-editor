@@ -1671,6 +1671,15 @@
                   {"id": "toneCurve", "label": "Tone Curve", "synonyms": ["curve", "tone", "curves"]},
                   {"id": "hue", "label": "Hue"},
                   {"id": "saturation", "label": "Saturation", "synonyms": ["sat"]},
-                  {"id": "luminance", "label": "Luminance", "synonyms": ["lum", "brightness of colour", "brightness of color"]}]}
+                  {"id": "luminance", "label": "Luminance", "synonyms": ["lum", "brightness of colour", "brightness of color"]}]},
+    {"id": "softProof", "label": "Soft Proof", "group": "view", "section": "Proof", "kind": "choice", "on": 2,
+      "synonyms": ["soft proofing", "proof", "proofing", "print preview", "simulate print", "output preview", "proof for"],
+      "options": [{"id": "off", "label": "Off", "synonyms": ["none", "screen off"]},
+                  {"id": "srgb", "label": "sRGB (Web)", "synonyms": ["srgb", "web", "screen", "internet"]},
+                  {"id": "glossy", "label": "Glossy Print", "synonyms": ["glossy", "print", "photo paper", "glossy paper"]},
+                  {"id": "matte", "label": "Matte Print", "synonyms": ["matte", "matte paper", "uncoated", "uncoated paper"]},
+                  {"id": "newsprint", "label": "Newsprint", "synonyms": ["newspaper", "news print"]}]},
+    {"id": "gamutWarning", "label": "Gamut Warning", "group": "view", "section": "Proof", "kind": "toggle",
+      "synonyms": ["out of gamut", "show gamut", "gamut", "gamut warnings", "out of gamut warning"]}
   ]
 }

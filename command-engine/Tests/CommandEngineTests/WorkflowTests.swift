@@ -607,6 +607,50 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(v, ["curveDarks": 35, "curveLights": 25])
     }
 
+    // MARK: - Soft proofing
+
+    func testSoftProofNames() {
+        XCTAssertEqual(parse("soft proof print"), [.set("softProof", 2)])
+        XCTAssertEqual(parse("proof matte"), [.set("softProof", 3)])
+        XCTAssertEqual(parse("soft proof srgb"), [.set("softProof", 1)])
+        XCTAssertEqual(parse("soft proof off"), [.set("softProof", 0)])
+        XCTAssertEqual(parse("gamut warning"), [.set("gamutWarning", 1)])
+        XCTAssertEqual(parse("show out of gamut"), [.set("gamutWarning", 1)])
+        XCTAssertEqual(SoftProof.profiles, registry.control(id: "softProof")!.options.map(\.id))
+    }
+
+    func testSoftProofMaths() {
+        // Lab and back.
+        for c in [RGB(0.2, 0.5, 0.8), RGB(1, 1, 1), RGB(0.9, 0.3, 0.1)] {
+            let lab = SoftProof.lab(c)
+            let back = SoftProof.rgb(l: lab.l, a: lab.a, b: lab.b)
+            XCTAssertEqual(back.r, c.r, accuracy: 0.01)
+            XCTAssertEqual(back.g, c.g, accuracy: 0.01)
+            XCTAssertEqual(back.b, c.b, accuracy: 0.01)
+        }
+        let glossy = SoftProof.papers["glossy"]!, newsprint = SoftProof.papers["newsprint"]!
+        // Inks reach most chroma at their own lightness, none at paper white or ink black.
+        XCTAssertEqual(SoftProof.maxChroma(l: 88, hue: 95, paper: glossy), 92, accuracy: 0.5)
+        XCTAssertEqual(SoftProof.maxChroma(l: 96, hue: 95, paper: glossy), 0, accuracy: 0.5)
+        XCTAssertEqual(SoftProof.maxChroma(l: 8, hue: 40, paper: glossy), 0, accuracy: 0.5)
+        XCTAssertLessThan(SoftProof.maxChroma(l: 50, hue: 40, paper: newsprint), SoftProof.maxChroma(l: 50, hue: 40, paper: glossy))
+        // A pure screen blue can't be printed; a muted skin tone can.
+        XCTAssertTrue(SoftProof.proof(RGB(0, 0, 1), profile: "glossy").outOfGamut)
+        XCTAssertFalse(SoftProof.proof(RGB(0.8, 0.62, 0.52), profile: "glossy").outOfGamut)
+        // Paper white is darker than screen white, ink black lighter than screen black.
+        XCTAssertLessThan(SoftProof.proof(RGB(1, 1, 1), profile: "matte").color.g, 0.97)
+        XCTAssertGreaterThan(SoftProof.proof(RGB(0, 0, 0), profile: "matte").color.g, 0.1)
+        // sRGB: as it is; saturated colours on the edge are warned about, greys and white are not.
+        XCTAssertEqual(SoftProof.proof(RGB(0.3, 0.4, 0.5), profile: "srgb").color, RGB(0.3, 0.4, 0.5))
+        XCTAssertTrue(SoftProof.proof(RGB(1, 0.1, 0.1), profile: "srgb").outOfGamut)
+        XCTAssertFalse(SoftProof.proof(RGB(1, 1, 1), profile: "srgb").outOfGamut)
+        let cube = SoftProof.cube(profile: "glossy", warn: true, size: 5)
+        XCTAssertEqual(cube.count, 5 * 5 * 5 * 4)
+        // The pure blue corner (r 0, g 0, b 1) is painted grey.
+        let i = (4 * 25 + 0 * 5 + 0) * 4
+        XCTAssertEqual(Array(cube[i..<(i + 3)]), [0.5, 0.5, 0.5])
+    }
+
     // MARK: - Match exposures
 
     func testMatchExposuresEvensTheKeys() {
