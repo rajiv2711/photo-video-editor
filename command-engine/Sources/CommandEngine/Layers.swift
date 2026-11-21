@@ -257,3 +257,92 @@ extension CommandApplier {
         }
     }
 }
+
+// MARK: - Blend modes
+
+/// How a layer mixes with what is below it (Layer Blend), with the usual formulas (the W3C compositing
+/// spec, as Photoshop has them) on sRGB levels 0…1: `base` is below, `top` the layer. The iPad uses
+/// Core Image's filters of the same names; these are the reference the tests check them against.
+public enum LayerBlend {
+    /// "layerBlend" option ids, in order; must match controls.json.
+    public static let modes = ["normal", "multiply", "screen", "overlay", "softLight", "hardLight", "darken", "lighten",
+                               "colorDodge", "colorBurn", "difference", "exclusion", "hue", "saturation", "color", "luminosity"]
+
+    /// The mode id of a Layer Blend value ("normal" when out of range).
+    public static func mode(_ value: Double) -> String {
+        let i = Int(value)
+        return modes.indices.contains(i) ? modes[i] : "normal"
+    }
+
+    /// One colour of a layer blended onto one below it.
+    public static func blend(_ base: RGB, _ top: RGB, mode: String) -> RGB {
+        switch mode {
+        case "hue": return setLum(setSat(top, sat(base)), lum(base))
+        case "saturation": return setLum(setSat(base, sat(top)), lum(base))
+        case "color": return setLum(top, lum(base))
+        case "luminosity": return setLum(base, lum(top))
+        default:
+            return RGB(channel(base.r, top.r, mode), channel(base.g, top.g, mode), channel(base.b, top.b, mode))
+        }
+    }
+
+    /// The separable modes, one channel at a time (`b` below, `s` the layer).
+    static func channel(_ b: Double, _ s: Double, _ mode: String) -> Double {
+        switch mode {
+        case "multiply": return b * s
+        case "screen": return b + s - b * s
+        case "overlay": return channel(s, b, "hardLight")
+        case "hardLight": return s <= 0.5 ? b * 2 * s : channel(b, 2 * s - 1, "screen")
+        case "softLight":
+            if s <= 0.5 { return b - (1 - 2 * s) * b * (1 - b) }
+            let d = b <= 0.25 ? ((16 * b - 12) * b + 4) * b : b.squareRoot()
+            return b + (2 * s - 1) * (d - b)
+        case "darken": return Swift.min(b, s)
+        case "lighten": return Swift.max(b, s)
+        case "colorDodge":
+            if b == 0 { return 0 }
+            return s >= 1 ? 1 : Swift.min(1, b / (1 - s))
+        case "colorBurn":
+            if b >= 1 { return 1 }
+            return s <= 0 ? 0 : 1 - Swift.min(1, (1 - b) / s)
+        case "difference": return abs(b - s)
+        case "exclusion": return b + s - 2 * b * s
+        default: return s  // normal
+        }
+    }
+
+    static func lum(_ c: RGB) -> Double {
+        0.3 * c.r + 0.59 * c.g + 0.11 * c.b
+    }
+
+    static func sat(_ c: RGB) -> Double {
+        Swift.max(c.r, c.g, c.b) - Swift.min(c.r, c.g, c.b)
+    }
+
+    /// `c` with its luminosity moved to `l`, brought back into range keeping its hue.
+    static func setLum(_ c: RGB, _ l: Double) -> RGB {
+        let d = l - lum(c)
+        var out = RGB(c.r + d, c.g + d, c.b + d)
+        let l2 = lum(out), n = Swift.min(out.r, out.g, out.b), x = Swift.max(out.r, out.g, out.b)
+        if n < 0 {
+            out = RGB(l2 + (out.r - l2) * l2 / (l2 - n), l2 + (out.g - l2) * l2 / (l2 - n), l2 + (out.b - l2) * l2 / (l2 - n))
+        }
+        if x > 1 {
+            out = RGB(l2 + (out.r - l2) * (1 - l2) / (x - l2), l2 + (out.g - l2) * (1 - l2) / (x - l2), l2 + (out.b - l2) * (1 - l2) / (x - l2))
+        }
+        return out
+    }
+
+    /// `c` with its saturation (largest − smallest channel) set to `s`, the middle channel in proportion.
+    static func setSat(_ c: RGB, _ s: Double) -> RGB {
+        let values = [c.r, c.g, c.b]
+        let order = values.indices.sorted { values[$0] < values[$1] }
+        let lo = values[order[0]], mid = values[order[1]], hi = values[order[2]]
+        var out = [0.0, 0.0, 0.0]
+        if hi > lo {
+            out[order[1]] = (mid - lo) * s / (hi - lo)
+            out[order[2]] = s
+        }
+        return RGB(out[0], out[1], out[2])
+    }
+}

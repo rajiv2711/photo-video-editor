@@ -1326,6 +1326,24 @@
     {"id": "layerScale", "label": "Layer Scale", "group": "layers", "section": "Transform", "scope": "layer", "min": 10, "max": 400, "default": 100, "step": 10,
       "synonyms": ["layer size", "scale layer", "resize layer", "layer zoom"]},
     {"id": "layerRotation", "label": "Layer Rotation", "group": "layers", "section": "Transform", "scope": "layer", "min": -180, "max": 180, "default": 0, "step": 15,
-      "synonyms": ["rotate layer", "layer angle", "layer rotate", "spin layer", "layer turn"]}
+      "synonyms": ["rotate layer", "layer angle", "layer rotate", "spin layer", "layer turn"]},
+    {"id": "layerBlend", "label": "Layer Blend", "group": "layers", "section": "Blend", "kind": "choice", "scope": "layer",
+      "synonyms": ["layer blend mode", "layer blending", "layer blending mode", "layer mode", "blend layer", "layer composite mode"],
+      "options": [{"id": "normal", "label": "Normal", "synonyms": ["none", "off"]},
+                  {"id": "multiply", "label": "Multiply", "synonyms": ["darken multiply"]},
+                  {"id": "screen", "label": "Screen"},
+                  {"id": "overlay", "label": "Overlay"},
+                  {"id": "softLight", "label": "Soft Light", "synonyms": ["softlight"]},
+                  {"id": "hardLight", "label": "Hard Light", "synonyms": ["hardlight"]},
+                  {"id": "darken", "label": "Darken", "synonyms": ["darker"]},
+                  {"id": "lighten", "label": "Lighten", "synonyms": ["lighter"]},
+                  {"id": "colorDodge", "label": "Color Dodge", "synonyms": ["colour dodge", "dodge"]},
+                  {"id": "colorBurn", "label": "Color Burn", "synonyms": ["colour burn", "burn"]},
+                  {"id": "difference", "label": "Difference", "synonyms": ["diff"]},
+                  {"id": "exclusion", "label": "Exclusion", "synonyms": ["exclude"]},
+                  {"id": "hue", "label": "Hue"},
+                  {"id": "saturation", "label": "Saturation"},
+                  {"id": "color", "label": "Color", "synonyms": ["colour"]},
+                  {"id": "luminosity", "label": "Luminosity", "synonyms": ["luminance", "brightness"]}]}
   ]
 }

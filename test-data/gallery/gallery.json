@@ -517,6 +517,10 @@
     {"id": "move-layer-down", "command": "place photo 1 place photo 2 move layer down", "control": "moveLayerDown", "photos": ["chart", "warm"], "expect": [{"metric": "mean_sat", "dir": "up", "vs": "place-two", "region": [0.3, 0.3, 0.7, 0.7], "min": 20}]},
     {"id": "move-layer-up", "command": "place photo 1 place photo 2 layer 1 move layer up", "control": "moveLayerUp", "photos": ["chart", "warm"], "expect": [{"metric": "diff", "dir": "same", "vs": "move-layer-down", "min": 0.5}]},
     {"id": "duplicate-layer", "command": "place photo duplicate layer", "control": "duplicateLayer", "photos": ["chart"], "expect": [{"metric": "diff", "dir": "changed", "vs": "place-photo", "region": [0.25, 0.25, 0.8, 0.8], "min": 3}]},
-    {"id": "delete-layer", "command": "place photo delete layer", "control": "deleteLayer", "photos": ["chart"], "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]}
+    {"id": "delete-layer", "command": "place photo delete layer", "control": "deleteLayer", "photos": ["chart"], "expect": [{"metric": "diff", "dir": "same", "min": 0.5}]},
+
+    {"id": "layer-blend", "command": "place photo layer scale 200 layer blend multiply", "control": "layerBlend", "source": "chart", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "down", "vs": "chart", "min": 20}, {"metric": "diff", "dir": "same", "vs": "chart", "region": [0.9, 0.78, 0.98, 0.97], "min": 4}]},
+    {"id": "layer-blend-difference", "command": "place photo layer scale 200 layer blend difference", "control": "layerBlend", "source": "chart", "photos": ["chart"], "expect": [{"metric": "p95_luma", "dir": "down", "vs": "chart", "min": 150}]},
+    {"id": "layer-blend-screen", "command": "place photo layer scale 200 layer blend screen", "control": "layerBlend", "source": "chart", "photos": ["chart"], "expect": [{"metric": "mean_luma", "dir": "up", "vs": "chart", "min": 15}, {"metric": "diff", "dir": "same", "vs": "chart", "region": [0.02, 0.78, 0.1, 0.97], "min": 4}]}
   ]
 }

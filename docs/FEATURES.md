@@ -173,7 +173,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 ### Layers & graphics
 
 - [x] 129. **Layers** — stack images; opacity, reorder, duplicate
-- [ ] 130. **Blend modes** — multiply, screen, overlay, etc.
+- [x] 130. **Blend modes** — multiply, screen, overlay, etc.
 - [ ] 131. **Adjustment layers** — non-destructive edits, each with its own mask
 - [ ] 132. **Text** — add styled text
 - [ ] 133. **Shapes & vectors** — rectangles, ellipses, pen paths

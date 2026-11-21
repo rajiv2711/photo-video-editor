@@ -214,4 +214,60 @@ final class LayersTests: XCTestCase {
         XCTAssertEqual(top.x, 250 + 125, accuracy: 1e-9)
         XCTAssertEqual(top.y, 600, accuracy: 1e-9)
     }
+
+    // MARK: - Blend modes
+
+    func testBlendModeNamesMatchControls() {
+        XCTAssertEqual(registry.control(id: "layerBlend")!.options.map(\.id), LayerBlend.modes)
+        XCTAssertEqual(parse("layer blend multiply"), [.set("layerBlend", 1)])
+        XCTAssertEqual(parse("layer blend mode soft light"), [.set("layerBlend", 4)])
+        XCTAssertEqual(parse("blend mode screen"), [.set("blendMode", 0)], "still the double exposure's")
+    }
+
+    func testSeparableBlendModes() {
+        func blend(_ b: Double, _ s: Double, _ mode: String) -> Double { LayerBlend.blend(RGB(b, b, b), RGB(s, s, s), mode: mode).r }
+        XCTAssertEqual(blend(0.5, 0.5, "multiply"), 0.25, accuracy: 1e-12)
+        XCTAssertEqual(blend(0.5, 0.5, "screen"), 0.75, accuracy: 1e-12)
+        XCTAssertEqual(blend(0.2, 0.9, "normal"), 0.9, accuracy: 1e-12)
+        XCTAssertEqual(blend(0.25, 0.5, "overlay"), 0.25, accuracy: 1e-12, "dark base: multiply × 2")
+        XCTAssertEqual(blend(0.75, 0.5, "overlay"), 0.75, accuracy: 1e-12, "light base: screen")
+        XCTAssertEqual(blend(0.5, 0.25, "hardLight"), 0.25, accuracy: 1e-12, "overlay with the layers swapped")
+        XCTAssertEqual(blend(0.4, 0.5, "softLight"), 0.4, accuracy: 1e-12, "50 % grey leaves soft light alone")
+        XCTAssertLessThan(blend(0.4, 0.2, "softLight"), 0.4)
+        XCTAssertEqual(blend(0.3, 0.6, "darken"), 0.3, accuracy: 1e-12)
+        XCTAssertEqual(blend(0.3, 0.6, "lighten"), 0.6, accuracy: 1e-12)
+        XCTAssertEqual(blend(0.3, 0.5, "colorDodge"), 0.6, accuracy: 1e-12)
+        XCTAssertEqual(blend(0, 1, "colorDodge"), 0, accuracy: 1e-12, "black stays black")
+        XCTAssertEqual(blend(0.7, 0.5, "colorBurn"), 0.4, accuracy: 1e-12)
+        XCTAssertEqual(blend(1, 0, "colorBurn"), 1, accuracy: 1e-12, "white stays white")
+        XCTAssertEqual(blend(0.8, 0.3, "difference"), 0.5, accuracy: 1e-12)
+        XCTAssertEqual(blend(0.5, 0.5, "exclusion"), 0.5, accuracy: 1e-12)
+        XCTAssertEqual(blend(0.9, 1, "exclusion"), 0.1, accuracy: 1e-12, "white inverts")
+        // Every separable mode keeps black on white and white on black in range.
+        for mode in LayerBlend.modes {
+            for (b, s) in [(0.0, 1.0), (1.0, 0.0), (0.0, 0.0), (1.0, 1.0)] {
+                let v = blend(b, s, mode)
+                XCTAssertTrue(v >= -1e-12 && v <= 1 + 1e-12, "\(mode) \(b) \(s) → \(v)")
+            }
+        }
+    }
+
+    func testNonSeparableBlendModes() {
+        let red = RGB(0.9, 0.1, 0.1), grey = RGB(0.5, 0.5, 0.5)
+        // Colour: the layer's hue and saturation with the base's luminosity.
+        let colored = LayerBlend.blend(grey, red, mode: "color")
+        XCTAssertEqual(LayerBlend.lum(colored), 0.5, accuracy: 1e-9)
+        XCTAssertGreaterThan(colored.r, colored.g)
+        // Luminosity: the base's colour at the layer's luminosity.
+        let lit = LayerBlend.blend(red, RGB(0.8, 0.8, 0.8), mode: "luminosity")
+        XCTAssertEqual(LayerBlend.lum(lit), 0.8, accuracy: 1e-9)
+        XCTAssertGreaterThan(lit.r, lit.g)
+        // Hue onto grey: grey has no saturation to keep, so it stays grey.
+        let hued = LayerBlend.blend(grey, red, mode: "hue")
+        XCTAssertEqual(hued.r, hued.g, accuracy: 1e-9)
+        // Saturation: grey on top takes the colour out.
+        let flat = LayerBlend.blend(red, grey, mode: "saturation")
+        XCTAssertEqual(flat.r, flat.b, accuracy: 1e-9)
+        XCTAssertEqual(LayerBlend.lum(flat), LayerBlend.lum(red), accuracy: 1e-9)
+    }
 }

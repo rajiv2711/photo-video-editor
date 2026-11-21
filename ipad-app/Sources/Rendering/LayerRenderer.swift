@@ -4,8 +4,8 @@ import UIKit
 
 /// Layers (Layers panel) over the finished picture, the lowest first: each layer's content is made
 /// over the whole canvas (transparent around it), faded by its opacity and laid over everything below
-/// it. Positions and sizes are shares of the canvas (see Layers.swift), so the preview and the saved
-/// photo agree.
+/// it with its blend mode. Positions and sizes are shares of the canvas (see Layers.swift), so the
+/// preview and the saved photo agree.
 final class LayerRenderer {
     let context: CIContext
 
@@ -65,9 +65,30 @@ final class LayerRenderer {
             .composited(over: Self.clear(extent)).cropped(to: extent)
     }
 
-    /// The layer's content laid over `base`, faded by its opacity.
+    /// The layer's content laid over `base`, faded by its opacity, with its blend mode. Blend modes
+    /// work on sRGB levels as in Photoshop (LayerBlend has the formulas): the layer's colours, made
+    /// opaque, are blended with the picture below by Core Image's filter of that mode, and the result
+    /// shows through the layer's own coverage and opacity.
     private func composite(_ content: CIImage, over base: CIImage, layer: Layer, extent: CGRect) -> CIImage {
         let faded = layer.opacity < 1 ? Filters.mix(Self.clear(extent), content, layer.opacity) : content
-        return faded.composited(over: base).cropped(to: extent)
+        let mode = LayerBlend.mode(layer.value("layerBlend", 0))
+        guard mode != "normal", let filter = Self.blendFilters[mode] else {
+            return faded.composited(over: base).cropped(to: extent)
+        }
+        let top = Filters.encoded(content.applyingFilter("CIUnpremultiply").settingAlphaOne(in: extent))
+        let blended = Filters.linear(top.applyingFilter(filter, parameters: [kCIInputBackgroundImageKey: Filters.encoded(base)]))
+        return blended.cropped(to: extent).applyingFilter("CIBlendWithAlphaMask", parameters: [
+            kCIInputBackgroundImageKey: base,
+            kCIInputMaskImageKey: faded,
+        ]).cropped(to: extent)
     }
+
+    /// Core Image's filter for each blend mode (the layer is the input, the picture below the background).
+    static let blendFilters: [String: String] = [
+        "multiply": "CIMultiplyBlendMode", "screen": "CIScreenBlendMode", "overlay": "CIOverlayBlendMode",
+        "softLight": "CISoftLightBlendMode", "hardLight": "CIHardLightBlendMode", "darken": "CIDarkenBlendMode",
+        "lighten": "CILightenBlendMode", "colorDodge": "CIColorDodgeBlendMode", "colorBurn": "CIColorBurnBlendMode",
+        "difference": "CIDifferenceBlendMode", "exclusion": "CIExclusionBlendMode", "hue": "CIHueBlendMode",
+        "saturation": "CISaturationBlendMode", "color": "CIColorBlendMode", "luminosity": "CILuminosityBlendMode",
+    ]
 }

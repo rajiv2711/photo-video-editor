@@ -1032,3 +1032,7 @@
 {"group":"layers","text":"resize layer 50","expect":[{"op":"set","control":"layerScale","value":50}]}
 {"group":"layers","text":"layer rotation 45","expect":[{"op":"set","control":"layerRotation","value":45}]}
 {"group":"layers","text":"rotate layer -30","expect":[{"op":"set","control":"layerRotation","value":-30}]}
+{"group":"layers","text":"layer blend multiply","expect":[{"op":"set","control":"layerBlend","value":1}]}
+{"group":"layers","text":"layer blend mode soft light","expect":[{"op":"set","control":"layerBlend","value":4}]}
+{"group":"layers","text":"layer mode color dodge","expect":[{"op":"set","control":"layerBlend","value":8}]}
+{"group":"layers","text":"layer blend luminosity","expect":[{"op":"set","control":"layerBlend","value":15}]}
