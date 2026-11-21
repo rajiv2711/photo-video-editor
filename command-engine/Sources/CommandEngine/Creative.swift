@@ -17,7 +17,7 @@ public enum CreativeFilters {
 
     /// Filters that work around the Effect Center: turning one on by name lets the next tap place it.
     public static let centered: Set<String> = ["zoomBlur", "spinBlur", "tiltShift", "irisBlur", "fieldBlur",
-                                               "twirl", "ripple", "pinch", "spherize", "lensFlare"]
+                                               "twirl", "ripple", "pinch", "spherize", "lensFlare", "spotlight", "omniLight"]
 
     /// The Effect Center on the picture (0…1 from the top-left).
     public static func center(value: (String) -> Double?) -> MaskPoint {
@@ -290,5 +290,36 @@ public enum CreativeFilters {
     public static func flareAxis(source: Vec2, middle: Vec2, size: Double) -> Vec2 {
         let axis = middle - source
         return axis.length < 0.1 * size ? Vec2(1.4 * size, 1.4 * size) : axis
+    }
+
+    // MARK: - Lighting
+
+    /// A light's pool on the picture: `radius` (pixels) across, `stretch` × that along its beam, the
+    /// end towards the light `hot` brighter, everything else dimmed to `ambient` and the middle of the
+    /// pool brightened by `boost` (gains in linear light).
+    public struct LightPool: Equatable {
+        public let radius: Double
+        public let stretch: Double
+        public let hot: Double
+        public let ambient: Double
+        public let boost: Double
+    }
+
+    /// Spotlight (an oval pool, brighter towards the light) or Omni Light (a round pool around the
+    /// Effect Center) at `amount` (0…100): the rest dims by up to 70 %, the pool brightens by up to 40 %;
+    /// its radius is Effect Size × the long side.
+    public static func lightPool(_ amount: Double, size: Double, longSide: Double, spot: Bool) -> LightPool {
+        let a = min(max(amount, 0), 100) / 100
+        return LightPool(radius: max(0.05, size) * longSide, stretch: spot ? 1.8 : 1, hot: spot ? 0.3 : 0,
+                         ambient: 1 - 0.7 * a, boost: 0.4 * a)
+    }
+
+    /// The light's gain at `d` from the Effect Center, `beam` the unit direction the light shines
+    /// along (any coordinates, as long as both agree). The renderer's kernel does the same.
+    public static func lightGain(_ d: Vec2, beam: Vec2, pool: LightPool) -> Double {
+        let along = (d.x * beam.x + d.y * beam.y) / (pool.radius * pool.stretch)
+        let across = (d.y * beam.x - d.x * beam.y) / pool.radius
+        let inPool = exp(-2 * (along * along + across * across)) * (1 + pool.hot * min(max(-along, -1), 1))
+        return pool.ambient + (1 + pool.boost - pool.ambient) * inPool
     }
 }

@@ -309,4 +309,32 @@ final class CreativeTests: XCTestCase {
         XCTAssertEqual(CreativeFilters.flareSize(size: 0.3, longSide: 800), 120, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.flareStrength(50), 0.6, accuracy: 1e-9)
     }
+
+    // MARK: - Lighting
+
+    func testLightingNames() {
+        XCTAssertEqual(parse("spotlight"), [.select("spotlight")])
+        XCTAssertEqual(parse("spot light 80"), [.set("spotlight", 80)])
+        XCTAssertEqual(parse("omni light center y 15"), [.select("omniLight"), .set("effectCenterY", 15)])
+        XCTAssertEqual(parse("light size 40"), [.set("effectSize", 40)])
+        // Older names keep their meaning.
+        XCTAssertEqual(parse("spot 2"), [.set("spot", 2)])
+        XCTAssertEqual(parse("lights more"), [.nudge("curveLights", 1)])
+        XCTAssertEqual(parse("portrait lighting stage"), [.set("portraitLighting", 3)])
+    }
+
+    func testLightsBrightenTheirPoolAndDimTheRest() {
+        let omni = CreativeFilters.lightPool(100, size: 0.3, longSide: 1000, spot: false)
+        let down = Vec2(0, 1)
+        XCTAssertEqual(CreativeFilters.lightGain(Vec2(0, 0), beam: down, pool: omni), 1.4, accuracy: 1e-9, "the middle of the pool")
+        XCTAssertEqual(CreativeFilters.lightGain(Vec2(900, 0), beam: down, pool: omni), 0.3, accuracy: 1e-3, "far away: the ambient light")
+        XCTAssertEqual(CreativeFilters.lightGain(Vec2(150, 0), beam: down, pool: omni),
+                       CreativeFilters.lightGain(Vec2(0, -150), beam: down, pool: omni), accuracy: 1e-9, "round")
+        let spot = CreativeFilters.lightPool(100, size: 0.3, longSide: 1000, spot: true)
+        XCTAssertGreaterThan(CreativeFilters.lightGain(Vec2(0, 200), beam: down, pool: spot),
+                             CreativeFilters.lightGain(Vec2(200, 0), beam: down, pool: spot), "an oval along the beam")
+        XCTAssertGreaterThan(CreativeFilters.lightGain(Vec2(0, -150), beam: down, pool: spot),
+                             CreativeFilters.lightGain(Vec2(0, 150), beam: down, pool: spot), "brighter towards the light")
+        XCTAssertEqual(CreativeFilters.lightPool(0, size: 0.3, longSide: 1000, spot: true).ambient, 1, "off: no change")
+    }
 }

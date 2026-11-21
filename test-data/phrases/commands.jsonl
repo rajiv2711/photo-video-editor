@@ -984,3 +984,9 @@
 {"group":"creative","text":"sun flare less","expect":[{"op":"nudge","control":"lensFlare","steps":-1}]}
 {"group":"creative","text":"flare size 50","expect":[{"op":"set","control":"effectSize","value":50}]}
 {"group":"creative","text":"place flare","expect":[{"op":"run","control":"placeCenter"}]}
+{"group":"creative","text":"spotlight","expect":[{"op":"select","control":"spotlight"}]}
+{"group":"creative","text":"spot light 80","expect":[{"op":"set","control":"spotlight","value":80}]}
+{"group":"creative","text":"omni light","expect":[{"op":"select","control":"omniLight"}]}
+{"group":"creative","text":"omni light less","expect":[{"op":"nudge","control":"omniLight","steps":-1}]}
+{"group":"creative","text":"light size 40","expect":[{"op":"set","control":"effectSize","value":40}]}
+{"group":"creative","text":"light y 20","expect":[{"op":"set","control":"effectCenterY","value":20}]}

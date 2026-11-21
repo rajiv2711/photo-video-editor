@@ -3,7 +3,7 @@ import CoreImage
 
 /// The Creative panel (CreativeFilters in CommandEngine), after the crop and before the post-crop
 /// vignette and grain, so the filters see the picture as framed. Every filter is a slider, 0 = off;
-/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic → pixelate → lens flare. Sizes are shares of the picture's long side, so the
+/// those that are on run in a fixed order: distort → blur → tilt-shift → stylize → artistic → pixelate → lighting → lens flare. Sizes are shares of the picture's long side, so the
 /// preview and the saved photo look alike. The Effect Center and Angle (Placement) are shared.
 final class CreativeRenderer {
     let context: CIContext
@@ -188,6 +188,18 @@ final class CreativeRenderer {
             ]).cropped(to: extent))
         }
 
+        // Lighting effects, in linear light: the picture dims and a pool of light brightens around the
+        // Effect Center (an oval beam shining down, turned by Effect Angle, or a round omni light).
+        let lights: [(id: String, spot: Bool)] = [("spotlight", true), ("omniLight", false)]
+        for light in lights where v(light.id) > 0 {
+            guard let kernel = Self.lightKernel else { break }
+            let pool = CreativeFilters.lightPool(v(light.id), size: size, longSide: side, spot: light.spot)
+            // Straight down on the screen (Core Image's y is up), turned anticlockwise by Effect Angle.
+            let beam = CIVector(x: CGFloat(sin(angle)), y: CGFloat(-cos(angle)))
+            output = kernel.apply(extent: extent, arguments: [output, CIVector(cgPoint: centre), beam, pool.radius, pool.stretch,
+                                                              pool.hot, pool.ambient, pool.boost]) ?? output
+        }
+
         // Lens flare: light from the Effect Center, screened on (sRGB levels).
         let flare = CreativeFilters.flareStrength(v("lensFlare"))
         if flare > 0 {
@@ -293,6 +305,20 @@ final class CreativeRenderer {
                 best = max(best, mix(here, s, 1.0 - t));
             }
             return best;
+        }
+        """)
+
+    // MARK: - Lighting
+
+    /// A light's gain (CreativeFilters.lightGain) on each pixel.
+    private static let lightKernel: CIColorKernel? = CIColorKernel(source: """
+        kernel vec4 lighting(__sample s, vec2 center, vec2 beam, float radius, float stretch, float hot, float ambient, float boost) {
+            vec2 d = destCoord() - center;
+            float along = dot(d, beam) / (radius * stretch);
+            float across = (d.y * beam.x - d.x * beam.y) / radius;
+            float pool = exp(-2.0 * (along * along + across * across)) * (1.0 + hot * clamp(-along, -1.0, 1.0));
+            float gain = ambient + (1.0 + boost - ambient) * pool;
+            return vec4(s.rgb * gain, s.a);
         }
         """)
 
