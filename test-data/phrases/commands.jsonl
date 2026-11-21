@@ -854,3 +854,9 @@
 {"group":"geometry","text":"seam carving less","expect":[{"op":"nudge","control":"contentAwareWidth","steps":-1}]}
 {"group":"geometry","text":"content aware height 90","expect":[{"op":"set","control":"contentAwareHeight","value":90}]}
 {"group":"geometry","text":"smart height 110","expect":[{"op":"set","control":"contentAwareHeight","value":110}]}
+{"group":"geometry","text":"warp","expect":[{"op":"run","control":"warp"}]}
+{"group":"geometry","text":"grid warp","expect":[{"op":"run","control":"warp"}]}
+{"group":"geometry","text":"puppet warp","expect":[{"op":"run","control":"puppetWarp"}]}
+{"group":"geometry","text":"puppet pins","expect":[{"op":"run","control":"puppetWarp"}]}
+{"group":"geometry","text":"reset warp","expect":[{"op":"run","control":"resetWarp"}]}
+{"group":"geometry","text":"clear pins","expect":[{"op":"run","control":"resetWarp"}]}

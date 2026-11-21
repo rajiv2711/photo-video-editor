@@ -692,6 +692,57 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(p.x, 0.5, accuracy: 0.03, "a plain picture squeezes evenly")
     }
 
+    // MARK: - Warp
+
+    func testRigidMovingLeastSquares() {
+        let p = [Vec2(0, 0), Vec2(100, 0), Vec2(100, 100), Vec2(0, 100)]
+        // Handles that stay: nothing moves.
+        assertClose(Warp.rigid(Vec2(30, 70), from: p, to: p), Vec2(30, 70), 1e-9)
+        // Handles turned and shifted together: every point follows the same rigid move.
+        let move = Homography.translation(15, -5) * Homography.rotation(degrees: 20)
+        let q = p.map { move.apply($0) }
+        assertClose(Warp.rigid(Vec2(30, 70), from: p, to: q), move.apply(Vec2(30, 70)), 1e-6)
+        // A handle itself goes exactly where it was dragged.
+        var r = p
+        r[2] = Vec2(120, 130)
+        assertClose(Warp.rigid(p[2], from: p, to: r), Vec2(120, 130), 1e-9)
+    }
+
+    func testWarpGridAndPins() throws {
+        XCTAssertEqual(Warp.lattice.count, 16)
+        XCTAssertNil(Warp.map(Warp.lattice, width: 300, height: 200), "a grid at rest changes nothing")
+        var pins = Warp.lattice
+        // Drag the inner handle at (1/3, 1/3) to (0.45, 0.45).
+        let i = try XCTUnwrap(Warp.nearest(pins, to: MaskPoint(0.34, 0.33), width: 300, height: 200))
+        XCTAssertEqual(pins[i].anchor, MaskPoint(1.0 / 3, 1.0 / 3))
+        pins[i].position = MaskPoint(0.45, 0.45)
+        let map = try XCTUnwrap(Warp.map(pins, width: 300, height: 200))
+        // Where the handle is now reads where it started; far corners stay put.
+        let at = map.lookup(MaskPoint(0.45, 0.45))
+        XCTAssertEqual(at.x, 1.0 / 3, accuracy: 0.02)
+        XCTAssertEqual(at.y, 1.0 / 3, accuracy: 0.02)
+        let far = map.lookup(MaskPoint(0.95, 0.95))
+        XCTAssertEqual(far.x, 0.95, accuracy: 0.01)
+        XCTAssertNil(Warp.nearest(pins, to: MaskPoint(0.55, 0.2), width: 300, height: 200))
+        // In the plan: the warp is part of the shape, and touches map back through it.
+        let plan = GeometryPlan(settings: GeometrySettings(), width: 300, height: 200, edits: GeometryEdits(pins: pins))
+        XCTAssertFalse(plan.isIdentity)
+        let back = plan.toSource(MaskPoint(0.45, 0.45))
+        XCTAssertEqual(back.x, 1.0 / 3, accuracy: 0.02)
+        XCTAssertEqual(plan.unwarp(MaskPoint(0.45, 0.45)).y, 1.0 / 3, accuracy: 0.02)
+    }
+
+    func testWarpActions() {
+        var interpreter = CommandInterpreter(registry: registry)
+        var state = EditState()
+        XCTAssertEqual(interpreter.interpret("warp", state: &state), [.ran(controlID: "warp")])
+        XCTAssertEqual(state.geometry.pins, Warp.lattice)
+        _ = interpreter.interpret("reset warp", state: &state)
+        XCTAssertTrue(state.geometry.pins.isEmpty)
+        _ = interpreter.interpret("puppet warp", state: &state)
+        XCTAssertTrue(state.geometry.pins.isEmpty, "puppet pins come from taps")
+    }
+
     func testUprightNames() {
         XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
         XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])

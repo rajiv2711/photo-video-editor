@@ -79,6 +79,7 @@ struct GeometryCanvas: View {
                 Color.clear.contentShape(Rectangle())
                 if tool == "crop" { cropBox(geo.size).allowsHitTesting(false) }
                 if tool == "perspective" { quad(geo.size).allowsHitTesting(false) }
+                if tool == "warp" || tool == "puppet" { pins(geo.size).allowsHitTesting(false) }
                 if tool == "guides" {
                     // The guides drawn so far, where they now show.
                     Path { path in
@@ -119,6 +120,29 @@ struct GeometryCanvas: View {
 
     /// Tools that take a line drawn on the photo (handed over when the finger lifts).
     static let lines: Set<String> = ["straighten", "guides"]
+
+    /// Warp handles: dots, joined into the grid for Warp.
+    private func pins(_ size: CGSize) -> some View {
+        let shown = model.shownPins
+        let points = shown.points.map { CGPoint(x: CGFloat($0.x) * size.width, y: CGFloat($0.y) * size.height) }
+        return ZStack {
+            if shown.grid {
+                Path { path in
+                    for j in 0..<4 {
+                        for i in 0..<4 {
+                            let p = points[j * 4 + i]
+                            if i < 3 { path.move(to: p); path.addLine(to: points[j * 4 + i + 1]) }
+                            if j < 3 { path.move(to: p); path.addLine(to: points[(j + 1) * 4 + i]) }
+                        }
+                    }
+                }
+                .stroke(Color.white.opacity(0.7), lineWidth: 1)
+            }
+            ForEach(Array(points.enumerated()), id: \.offset) { item in
+                Circle().fill(Color.yellow).frame(width: 12, height: 12).position(item.element)
+            }
+        }
+    }
 
     /// Perspective crop's four corners on the photo, joined.
     private func quad(_ size: CGSize) -> some View {

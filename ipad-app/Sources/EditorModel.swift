@@ -104,6 +104,8 @@ final class EditorModel: ObservableObject {
         geometryTool = nil
         dragBase = nil
         cropDrag = nil
+        quadDrag = nil
+        pinDrag = nil
         render()
     }
 
@@ -366,6 +368,8 @@ final class EditorModel: ObservableObject {
 
     /// Perspective crop's corners when the current drag began.
     private var quadDrag: [MaskPoint]?
+    /// Warp: the handles when the current drag began, and the one dragged.
+    private var pinDrag: (pins: [WarpPin], index: Int)?
 
     /// The crop handle a drag took hold of and the box when it began.
     private var cropDrag: (handle: Crop.Handle, box: (x0: Double, y0: Double, x1: Double, y1: Double))?
@@ -396,6 +400,26 @@ final class EditorModel: ObservableObject {
             geometryTool = "crop"
             render()
             return
+        case "warp", "puppet":
+            // Handles live on the picture inside the canvas; the nearest one follows the finger.
+            guard let plan = previewPlan else { return }
+            let a = plan.toWarpSpace(start), b = plan.toWarpSpace(end)
+            if tool == "warp", state.geometry.pins.isEmpty { state.geometry.pins = Warp.lattice }
+            let base = pinDrag?.pins ?? state.geometry.pins
+            if let index = pinDrag?.index ?? Warp.nearest(base, to: a, width: plan.shapedWidth, height: plan.shapedHeight) {
+                pinDrag = finished ? nil : (base, index)
+                var pins = base
+                pins[index].position = MaskPoint(min(1, max(0, base[index].position.x + b.x - a.x)),
+                                                 min(1, max(0, base[index].position.y + b.y - a.y)))
+                state.geometry.pins = pins
+            } else if tool == "puppet", finished, hypot(b.x - a.x, b.y - a.y) < 0.01 {
+                // A tap away from the pins adds one, on the picture as it shows now.
+                state.geometry.pins.append(WarpPin(anchor: plan.unwarp(a), position: a))
+                feedback = Feedback(text: "Pin \(state.geometry.pins.count): drag it to bend the picture")
+            } else {
+                pinDrag = nil
+                return
+            }
         case "perspective":
             // The photo shows as it is: the nearest corner follows the finger.
             let base = quadDrag ?? state.geometry.quad
@@ -413,6 +437,14 @@ final class EditorModel: ObservableObject {
             return
         }
         render()
+    }
+
+    /// Warp handles where they show (normalized), and whether they are the 4 × 4 grid.
+    var shownPins: (points: [MaskPoint], grid: Bool) {
+        guard let plan = previewPlan else { return ([], false) }
+        let pins = state.geometry.pins
+        let grid = pins.count >= 16 && zip(pins.prefix(16), Warp.lattice).allSatisfy { $0.anchor == $1.anchor }
+        return (pins.map { plan.fromWarpSpace($0.position) }, grid)
     }
 
     /// The guides as they show on the frame (normalized), for the guides tool.
@@ -819,6 +851,8 @@ final class EditorModel: ObservableObject {
         "straighten": "draw a line along something that should be level (a horizon) or upright; the photo turns to match",
         "guides": "draw up to four lines along edges that should be upright or level (two upright ones straighten converging walls); “clear guides” to start again",
         "perspective": "drag the four corners onto the corners of the tilted page, picture or wall; “done” squares it up",
+        "warp": "drag the grid's handles to bend the picture (the outer ones hold the edges); “reset warp” to start again",
+        "puppet": "tap to pin the picture where it should stay, then drag a pin to bend it; “reset warp” clears the pins",
     ]
 
     /// What to do on the photo after making a mask part.

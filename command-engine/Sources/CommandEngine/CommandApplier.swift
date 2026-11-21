@@ -316,6 +316,11 @@ public struct CommandApplier {
             state.geometry.guides = []
         case "clearPerspectiveCrop":
             state.geometry.quad = []
+        case "warp":
+            // The grid of handles to drag (puppet pins are added by tapping instead).
+            if state.geometry.pins.isEmpty { state.geometry.pins = Warp.lattice }
+        case "resetWarp":
+            state.geometry.pins = []
         case "rotateLeft", "rotateRight":
             let turns = registry.control(id: "rotation").map { state.value(of: $0) } ?? 0
             set("rotation", Double(((Int(turns) + (control.id == "rotateRight" ? 1 : 3)) % 4)))

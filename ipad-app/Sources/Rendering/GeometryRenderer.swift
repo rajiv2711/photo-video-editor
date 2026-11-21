@@ -209,9 +209,16 @@ final class GeometryRenderer {
         }
         let c = plan.crop
         let rect = CGRect(x: CGFloat(c.x), y: CGFloat(plan.frameHeight - c.y - c.height), width: CGFloat(c.width), height: CGFloat(c.height))
-        let cropped = framed.cropped(to: rect).transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
-        guard plan.hasContentAware else { return cropped }
-        // Content-aware scale: busy parts keep their shape, plain parts give way.
-        return remap(cropped, map: plan.contentAwareMap, to: CGSize(width: CGFloat(plan.shapedWidth), height: CGFloat(plan.shapedHeight)))
+        var out = framed.cropped(to: rect).transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
+        let size = CGSize(width: CGFloat(plan.shapedWidth), height: CGFloat(plan.shapedHeight))
+        if plan.hasContentAware {
+            // Content-aware scale: busy parts keep their shape, plain parts give way.
+            out = remap(out, map: plan.contentAwareMap, to: size)
+        }
+        if let warp = plan.warpMap {
+            // Warp: the picture bends with its handles.
+            out = remap(out, map: warp, to: size)
+        }
+        return out
     }
 }

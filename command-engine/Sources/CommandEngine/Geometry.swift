@@ -327,6 +327,8 @@ public struct GeometryPlan: Equatable {
     public let contentAwareWidth: Double
     public let contentAwareHeight: Double
     public var contentAwareMap: WarpMap?
+    /// Warp: each point of the warped picture → where it reads before warping (nil: no warp).
+    public let warpMap: WarpMap?
     /// Canvas size: the canvas and where the picture lies on it (from its top-left), and its colour.
     public let canvasWidth: Double
     public let canvasHeight: Double
@@ -388,6 +390,7 @@ public struct GeometryPlan: Equatable {
         contentAwareHeight = stage == .full ? settings.contentAwareHeight : 1
         shapedWidth = Swift.max(1, (crop.width * contentAwareWidth).rounded())
         shapedHeight = Swift.max(1, (crop.height * contentAwareHeight).rounded())
+        warpMap = stage == .full ? Warp.map(edits.pins, width: shapedWidth, height: shapedHeight) : nil
         // The canvas around the finished picture (whole pixels).
         let canvas: (width: Double, height: Double) = stage == .full
             ? Canvas.size(width: shapedWidth, height: shapedHeight, border: settings.canvasBorder, aspect: settings.canvasAspect)
@@ -417,7 +420,7 @@ public struct GeometryPlan: Equatable {
     /// No turn, transform or crop (the photo keeps its shape).
     public var isShapeIdentity: Bool {
         transform.isClose(to: .identity) && frameWidth == sourceWidth && frameHeight == sourceHeight
-            && crop == Crop.whole(width: frameWidth, height: frameHeight) && !hasContentAware
+            && crop == Crop.whole(width: frameWidth, height: frameHeight) && !hasContentAware && warpMap == nil
     }
 
     /// Content-aware scale changes the picture.
@@ -461,8 +464,12 @@ public struct GeometryPlan: Equatable {
     /// A point on the shown picture (normalized) → the same point on the photo (normalized).
     public func toSource(_ p: MaskPoint) -> MaskPoint {
         // Off the canvas border onto the picture, then back through the crop and H.
-        var onPicture = Vec2((p.x * canvasWidth - contentX) / Swift.max(shapedWidth, 1e-9),
-                             (p.y * canvasHeight - contentY) / Swift.max(shapedHeight, 1e-9))
+        let warped = toWarpSpace(p)
+        var onPicture = Vec2(warped.x, warped.y)
+        if let map = warpMap {
+            let q = map.lookup(warped)
+            onPicture = Vec2(q.x, q.y)
+        }
         if let map = contentAwareMap {
             let q = map.lookup(MaskPoint(onPicture.x, onPicture.y))
             onPicture = Vec2(q.x, q.y)
@@ -470,6 +477,22 @@ public struct GeometryPlan: Equatable {
         let framed = Vec2(crop.x + onPicture.x * crop.width, crop.y + onPicture.y * crop.height)
         let q = transform.inverse.apply(framed)
         return MaskPoint(q.x / Swift.max(sourceWidth, 1e-9), q.y / Swift.max(sourceHeight, 1e-9))
+    }
+
+    /// A point on the shown picture → on the picture inside the canvas, where warp handles live (normalized).
+    public func toWarpSpace(_ p: MaskPoint) -> MaskPoint {
+        MaskPoint((p.x * canvasWidth - contentX) / Swift.max(shapedWidth, 1e-9), (p.y * canvasHeight - contentY) / Swift.max(shapedHeight, 1e-9))
+    }
+
+    /// The other way: a warp handle's place → where it shows (normalized).
+    public func fromWarpSpace(_ p: MaskPoint) -> MaskPoint {
+        MaskPoint((p.x * shapedWidth + contentX) / Swift.max(canvasWidth, 1e-9), (p.y * shapedHeight + contentY) / Swift.max(canvasHeight, 1e-9))
+    }
+
+    /// A point on the warped picture → where it was before the warp (both in warp space): where a new
+    /// puppet pin sits on the picture.
+    public func unwarp(_ p: MaskPoint) -> MaskPoint {
+        warpMap?.lookup(p) ?? p
     }
 
     /// A point on the photo (normalized) → where it shows (normalized).
@@ -702,7 +725,7 @@ public enum Crop {
 public enum GeometryTools {
     /// Actions that pick a touch tool for the photo, and the tool: "crop" (drag the crop box).
     public static let actions: [String: String] = ["cropTool": "crop", "straightenTool": "straighten", "guidedUpright": "guides",
-                                                   "perspectiveCrop": "perspective"]
+                                                   "perspectiveCrop": "perspective", "warp": "warp", "puppetWarp": "puppet"]
     /// Actions the app works out from the photo (they come back as commands from its action handler).
     public static let fromPhoto: Set<String> = ["autoStraighten"]
     /// The crop box's controls ("reset crop" puts them back).

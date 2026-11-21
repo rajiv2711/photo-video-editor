@@ -1132,6 +1132,12 @@
       "synonyms": ["content aware width", "content aware scale", "content-aware scale", "smart width", "seam carving", "content aware scale width",
                    "content aware resize"]},
     {"id": "contentAwareHeight", "label": "Content-Aware Height", "group": "geometry", "section": "Content-aware scale", "min": 50, "max": 150, "default": 100, "step": 5,
-      "synonyms": ["content aware height", "smart height", "content aware scale height", "seam carving height"]}
+      "synonyms": ["content aware height", "smart height", "content aware scale height", "seam carving height"]},
+    {"id": "warp", "label": "Warp", "group": "geometry", "section": "Warp", "kind": "action",
+      "synonyms": ["grid warp", "warp grid", "warp tool", "mesh warp", "bend", "warp mesh"]},
+    {"id": "puppetWarp", "label": "Puppet Warp", "group": "geometry", "section": "Warp", "kind": "action",
+      "synonyms": ["puppet", "puppet pins", "pin warp", "warp pins", "puppet tool", "puppet warp tool"]},
+    {"id": "resetWarp", "label": "Reset Warp", "group": "geometry", "section": "Warp", "kind": "action",
+      "synonyms": ["clear warp", "remove warp", "clear pins", "remove pins", "delete pins", "no warp", "warp reset", "unwarp"]}
   ]
 }

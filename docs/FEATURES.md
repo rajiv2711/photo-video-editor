@@ -144,7 +144,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 107. **Resize** — pixel size and resolution
 - [x] 108. **Canvas size** — add space or borders around the photo
 - [x] 109. **Content-aware scale** — resize while protecting the subject
-- [ ] 110. **Warp / puppet warp** — bend parts of the image with a grid or pins
+- [x] 110. **Warp / puppet warp** — bend parts of the image with a grid or pins
 
 ### Merge
 
