@@ -189,7 +189,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 ### Presets & batch
 
 - [x] 140. **Presets** — save/apply a bundle of settings, with Amount
-- [ ] 141. **Premium preset packs** — built-in looks: film, portrait, travel…
+- [x] 141. **Premium preset packs** — built-in looks: film, portrait, travel…
 - [ ] 142. **Adaptive presets** — presets that auto-mask sky, subject or portrait **AI · later**
 - [ ] 143. **Recommended presets** — AI suggests looks for this photo **AI · later**
 - [ ] 144. **Copy / paste edits** — choose which settings to copy

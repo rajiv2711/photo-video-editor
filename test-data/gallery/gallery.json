@@ -593,6 +593,8 @@
     {"id": "include-geometry", "command": "crop left 30 include geometry save preset \"p7\" reset all preset p7", "control": "includeGeometry", "expect": [{"metric": "width", "dir": "down", "min": 150}]},
     {"id": "include-masks", "command": "linear gradient from top exposure -1 done include masks save preset \"p8\" reset all preset p8", "control": "includeMasks", "expect": [{"metric": "mean_luma", "dir": "down", "region": [0, 0, 1, 0.1]}, {"metric": "mean_luma", "dir": "same", "region": [0, 0.85, 1, 1]}]},
     {"id": "include-retouch", "command": "remove brush brush size 4", "source": "dust", "control": "includeRetouch", "strokes": [[[0.12, 0.1]]], "steps": [{"command": "include retouch save preset \"p9\" reset all preset p9"}], "expect": [{"metric": "mean_luma", "dir": "up", "region": [0.09, 0.075, 0.15, 0.125], "vs": "dust"}]},
-    {"id": "include-layers", "command": "add rectangle done include layers save preset \"p10\" reset all preset p10", "control": "includeLayers", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.4, 0.45, 0.6, 0.55], "min": 60}]}
+    {"id": "include-layers", "command": "add rectangle done include layers save preset \"p10\" reset all preset p10", "control": "includeLayers", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.4, 0.45, 0.6, 0.55], "min": 60}]},
+    {"id": "preset-pack-noir", "command": "preset noir", "control": "applyPreset", "expect": [{"metric": "mean_sat", "dir": "down", "min": 5}, {"metric": "p5_luma", "dir": "down"}]},
+    {"id": "preset-pack-golden", "command": "preset golden hour", "control": "applyPreset", "expect": [{"metric": "mean_r", "dir": "up"}, {"metric": "mean_b", "dir": "down"}, {"metric": "corner_luma", "dir": "down"}]}
   ]
 }

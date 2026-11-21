@@ -125,6 +125,7 @@ final class WorkflowTests: XCTestCase {
     }
 
     func testRenameAndDelete() {
+        interpreter.workspace = Workspace(registry: registry, packs: [])
         run("exposure 1 save preset \"warm\"")
         var outcomes = run("rename preset warm to cosy")
         XCTAssertEqual(events(outcomes), [.presetRenamed(from: "warm", to: "cosy")])
@@ -143,7 +144,7 @@ final class WorkflowTests: XCTestCase {
         let presets = [Preset(name: "Portra"), Preset(name: "Portrait Glow", pack: "Portrait"), Preset(name: "Noir", pack: "Black & White")]
         XCTAssertEqual(Presets.find("portra", in: presets), .found(0))
         XCTAssertEqual(Presets.find("NOIR!", in: presets), .found(2))
-        XCTAssertEqual(Presets.find("black white noir", in: presets), .found(2))
+        XCTAssertEqual(Presets.find("black and white noir", in: presets), .found(2))
         XCTAssertEqual(Presets.find("portrait glo", in: presets), .found(1))
         XCTAssertEqual(Presets.find("port", in: presets), .ambiguous([0, 1]))
         XCTAssertEqual(Presets.find("velvia", in: presets), .none)
@@ -160,6 +161,42 @@ final class WorkflowTests: XCTestCase {
         XCTAssertEqual(value("temperature"), 20)
         XCTAssertEqual(value("vibrance"), 0)
         XCTAssertEqual(value("bw"), 1)
+    }
+
+    // MARK: - Built-in packs
+
+    func testBuiltInPacksAreWellFormed() {
+        let packs = Presets.bundled()
+        XCTAssertGreaterThanOrEqual(packs.count, 30)
+        XCTAssertEqual(Set(packs.compactMap(\.pack)), ["Film", "Portrait", "Travel", "Landscape", "Black & White", "Cinematic", "Vintage"])
+        XCTAssertEqual(Set(packs.map { Presets.normalized($0.name) }).count, packs.count, "names are unique")
+        for preset in packs {
+            XCTAssertEqual(preset.groups, ["look"], preset.name)
+            XCTAssertFalse(preset.values.isEmpty, preset.name)
+            for (id, v) in preset.values {
+                guard let control = registry.control(id: id) else { return XCTFail("\(preset.name): no control \(id)") }
+                // A look: never exposure, white balance or anything outside the colour treatment, curves and effects.
+                XCTAssertTrue(Presets.isLook(control), "\(preset.name): \(id) is not part of the look")
+                XCTAssertEqual(control.clamp(v), v, "\(preset.name): \(id) \(v) is out of range")
+            }
+        }
+    }
+
+    func testBuiltInPresetsApplyByName() {
+        run("exposure 0.5 temperature 20 preset noir")
+        XCTAssertEqual(value("bw"), 1)
+        XCTAssertEqual(value("exposure"), 0.5)
+        XCTAssertEqual(value("temperature"), 20)
+        // Another built-in look replaces it instead of piling up.
+        run("preset golden hour")
+        XCTAssertEqual(value("bw"), 0)
+        XCTAssertEqual(value("vignette"), -15)
+        XCTAssertGreaterThan(value("gradingHighlightsSaturation"), 0)
+        // Its pack and name, and a near-miss.
+        guard case .presetApplied(let name, _, _)? = events(run("preset black and white noir")).first else { return XCTFail("not applied") }
+        XCTAssertEqual(name, "Noir")
+        run("preset sepa")
+        XCTAssertEqual(value("toning"), 1)
     }
 
     func testNoPresetSaysSo() {

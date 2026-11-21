@@ -1,0 +1,55 @@
+{
+  "about": "Built-in presets, made for this app (no downloaded or licensed looks). Each sets the values listed and puts the rest of the look (colour treatment, tone curves, Fade, Effects) back to its defaults; exposure and white balance are never touched. Control ids as in controls.json; choices by option index.",
+  "packs": [
+    {"name": "Film", "presets": [
+      {"name": "Warm Negative", "values": {"vibrance": -10, "saturation": -5, "curveShadows": 10, "curveHighlights": -10, "fade": 12, "gradingShadowsHue": 200, "gradingShadowsSaturation": 8, "gradingHighlightsHue": 40, "gradingHighlightsSaturation": 12, "mixerOrangeSaturation": -10, "mixerOrangeLuminance": 10, "grain": 15}},
+      {"name": "Vivid Negative", "values": {"vibrance": 25, "saturation": 10, "curveLights": 10, "curveDarks": -10, "mixerRedSaturation": 15, "mixerBlueSaturation": 15, "grain": 10}},
+      {"name": "Vivid Slide", "values": {"saturation": 30, "vibrance": 20, "curveDarks": -15, "curveLights": 10, "mixerGreenSaturation": 20, "mixerBlueSaturation": 25, "gradingShadowsHue": 230, "gradingShadowsSaturation": 10}},
+      {"name": "Classic Slide", "values": {"saturation": 15, "curveDarks": -10, "curveHighlights": -5, "mixerRedSaturation": 20, "mixerYellowSaturation": 15, "mixerBlueHue": -10, "gradingHighlightsHue": 45, "gradingHighlightsSaturation": 15, "grain": 12}},
+      {"name": "Tungsten Night", "values": {"halation": 40, "saturation": -5, "fade": 10, "gradingShadowsHue": 190, "gradingShadowsSaturation": 20, "gradingHighlightsHue": 30, "gradingHighlightsSaturation": 10, "grain": 20}},
+      {"name": "Pastel Negative", "values": {"fade": 20, "saturation": -10, "curveHighlights": -5, "mixerGreenHue": 20, "mixerGreenSaturation": -10, "gradingShadowsHue": 170, "gradingShadowsSaturation": 12, "grain": 15}},
+      {"name": "Cross Process", "values": {"saturation": 20, "curveDarks": -10, "curveLights": 10, "gradingShadowsHue": 220, "gradingShadowsSaturation": 30, "gradingHighlightsHue": 60, "gradingHighlightsSaturation": 35}},
+      {"name": "Faded Film", "values": {"fade": 35, "saturation": -15, "curveHighlights": -15, "gradingShadowsHue": 30, "gradingShadowsSaturation": 10, "grain": 20}}
+    ]},
+    {"name": "Portrait", "presets": [
+      {"name": "Soft Portrait", "values": {"texture": -20, "clarity": -10, "curveShadows": 10, "fade": 5, "mixerOrangeLuminance": 15, "mixerOrangeSaturation": -10, "vignette": -10}},
+      {"name": "Warm Portrait", "values": {"texture": -10, "curveShadows": 5, "gradingMidtonesHue": 35, "gradingMidtonesSaturation": 10, "mixerOrangeSaturation": 5, "mixerRedSaturation": -10, "vignette": -15}},
+      {"name": "Bright and Airy", "values": {"curveShadows": 20, "curveDarks": 10, "fade": 10, "saturation": -10, "mixerOrangeLuminance": 10, "mixerBlueLuminance": 10, "gradingHighlightsHue": 50, "gradingHighlightsSaturation": 5}},
+      {"name": "Moody Portrait", "values": {"curveHighlights": -15, "curveDarks": -15, "saturation": -15, "clarity": 10, "vignette": -30, "gradingShadowsHue": 210, "gradingShadowsSaturation": 15, "mixerOrangeSaturation": -5}},
+      {"name": "Matte Portrait", "values": {"fade": 25, "curveHighlights": -10, "saturation": -10, "texture": -15, "gradingShadowsHue": 40, "gradingShadowsSaturation": 8}}
+    ]},
+    {"name": "Travel", "presets": [
+      {"name": "Vivid Travel", "values": {"vibrance": 30, "saturation": 5, "clarity": 15, "dehaze": 10, "curveDarks": -5, "curveLights": 5, "mixerBlueSaturation": 15, "mixerAquaSaturation": 15}},
+      {"name": "Golden Hour", "values": {"vibrance": 15, "gradingMidtonesHue": 40, "gradingMidtonesSaturation": 15, "gradingHighlightsHue": 45, "gradingHighlightsSaturation": 20, "mixerOrangeSaturation": 15, "mixerYellowSaturation": 10, "vignette": -15, "glow": 15}},
+      {"name": "Blue Hour", "values": {"curveDarks": -10, "gradingShadowsHue": 225, "gradingShadowsSaturation": 25, "gradingHighlightsHue": 210, "gradingHighlightsSaturation": 10, "mixerBlueSaturation": 20, "vignette": -15}},
+      {"name": "Desert", "values": {"fade": 10, "dehaze": 10, "gradingGlobalHue": 35, "gradingGlobalSaturation": 10, "mixerOrangeSaturation": 15, "mixerYellowHue": -10, "mixerBlueSaturation": -20}},
+      {"name": "Tropical", "values": {"vibrance": 35, "curveLights": 10, "mixerAquaSaturation": 30, "mixerAquaHue": -10, "mixerGreenSaturation": 20, "mixerBlueSaturation": 15}},
+      {"name": "Urban", "values": {"clarity": 25, "texture": 15, "saturation": -20, "curveDarks": -10, "gradingShadowsHue": 200, "gradingShadowsSaturation": 12, "vignette": -20}}
+    ]},
+    {"name": "Landscape", "presets": [
+      {"name": "Crisp Landscape", "values": {"clarity": 20, "dehaze": 15, "vibrance": 20, "texture": 15, "mixerGreenSaturation": 10, "mixerBlueLuminance": -10}},
+      {"name": "Misty Morning", "values": {"dehaze": -20, "fade": 15, "saturation": -15, "glow": 10, "gradingShadowsHue": 200, "gradingShadowsSaturation": 10}},
+      {"name": "Autumn", "values": {"vibrance": 10, "mixerOrangeSaturation": 25, "mixerYellowHue": -15, "mixerYellowSaturation": 15, "mixerGreenHue": -30, "gradingMidtonesHue": 35, "gradingMidtonesSaturation": 10}},
+      {"name": "Lush Green", "values": {"vibrance": 15, "clarity": 10, "mixerGreenSaturation": 25, "mixerGreenLuminance": 10, "mixerYellowHue": 15}}
+    ]},
+    {"name": "Black & White", "presets": [
+      {"name": "Classic Mono", "values": {"bw": 1, "curveDarks": -10, "curveLights": 10}},
+      {"name": "Noir", "values": {"bw": 1, "curveShadows": -20, "curveDarks": -20, "curveLights": 15, "curveHighlights": 10, "vignette": -30, "grain": 10}},
+      {"name": "Soft Mono", "values": {"bw": 1, "fade": 15, "curveHighlights": -10, "curveShadows": 10}},
+      {"name": "Selenium", "values": {"bw": 1, "curveDarks": -10, "gradingShadowsHue": 260, "gradingShadowsSaturation": 12, "gradingHighlightsHue": 30, "gradingHighlightsSaturation": 5}},
+      {"name": "Sepia", "values": {"bw": 1, "toning": 1, "toningAmount": 80, "fade": 10}},
+      {"name": "Infrared", "values": {"bw": 1, "bwBlue": -60, "bwAqua": -40, "bwGreen": 80, "bwYellow": 50, "glow": 25, "curveDarks": -10}},
+      {"name": "Grainy Street", "values": {"bw": 1, "clarity": 20, "grain": 40, "grainSize": 35, "curveDarks": -15, "curveLights": 10}}
+    ]},
+    {"name": "Cinematic", "presets": [
+      {"name": "Teal and Orange", "values": {"gradingShadowsHue": 190, "gradingShadowsSaturation": 30, "gradingHighlightsHue": 35, "gradingHighlightsSaturation": 25, "mixerOrangeSaturation": 10, "mixerBlueHue": -15}},
+      {"name": "Bleach Bypass", "values": {"lut": 3, "lutAmount": 80, "clarity": 15}},
+      {"name": "Night City", "values": {"curveDarks": -10, "glow": 20, "gradingShadowsHue": 220, "gradingShadowsSaturation": 25, "gradingHighlightsHue": 320, "gradingHighlightsSaturation": 10, "mixerBlueSaturation": 20, "mixerMagentaSaturation": 20}}
+    ]},
+    {"name": "Vintage", "presets": [
+      {"name": "Instant Photo", "values": {"fade": 25, "saturation": -10, "curveHighlights": -10, "vignette": -20, "gradingShadowsHue": 180, "gradingShadowsSaturation": 15, "gradingHighlightsHue": 50, "gradingHighlightsSaturation": 20}},
+      {"name": "Seventies", "values": {"fade": 20, "saturation": -10, "mixerGreenHue": -20, "gradingGlobalHue": 40, "gradingGlobalSaturation": 20, "grain": 20}},
+      {"name": "Lomo", "values": {"saturation": 25, "curveDarks": -20, "curveLights": 15, "vignette": -60, "gradingShadowsHue": 230, "gradingShadowsSaturation": 15}}
+    ]}
+  ]
+}

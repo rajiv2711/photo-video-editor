@@ -223,9 +223,10 @@ public enum Presets {
         }
     }
 
-    /// A name as compared: lower case, letters and digits, single spaces ("B&W  Noir!" → "b w noir").
+    /// A name as compared: lower case, letters and digits, "&" read as "and", single spaces
+    /// ("Black & White:  Noir!" → "black and white noir").
     public static func normalized(_ name: String) -> String {
-        let cleaned = name.lowercased().map { $0.isLetter || $0.isNumber ? $0 : " " }
+        let cleaned = name.lowercased().replacingOccurrences(of: "&", with: " and ").map { $0.isLetter || $0.isNumber ? $0 : " " }
         return String(cleaned).split(separator: " ").joined(separator: " ")
     }
 

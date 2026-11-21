@@ -1162,3 +1162,6 @@
 {"group":"presets","text":"include spots","expect":[{"op":"set","control":"includeRetouch","value":1}]}
 {"group":"presets","text":"include layers","expect":[{"op":"set","control":"includeLayers","value":1}]}
 {"group":"presets","text":"include watermark off","expect":[{"op":"set","control":"includeLayers","value":0}]}
+{"group":"presets","text":"preset noir","expect":[{"op":"run","control":"applyPreset","text":"noir"}]}
+{"group":"presets","text":"preset golden hour","expect":[{"op":"run","control":"applyPreset","text":"golden hour"}]}
+{"group":"presets","text":"apply preset black and white infrared","expect":[{"op":"run","control":"applyPreset","text":"black and white infrared"}]}
