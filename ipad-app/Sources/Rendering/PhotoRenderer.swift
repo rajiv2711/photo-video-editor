@@ -81,6 +81,9 @@ final class PhotoRenderer {
             let shape = self.masks.image(of: mask, photo: lensFixed, source: image, lensKey: lensKey, extent: extent)
             output = Filters.blend(local(output, mask: mask, extent: extent, hdr: hdr), over: output, mask: shape)
         }
+        if (value("upright") ?? 0) != 0 {
+            _ = geometry.segments(of: lensFixed, key: lensKey)  // Upright reads the photo's lines
+        }
         let plan = geometry.plan(extent: extent, value: value, edits: edits, stage: stage)
         lastPlan = plan
         output = geometry.shape(output, plan: plan, clampEdges: stage == .full)

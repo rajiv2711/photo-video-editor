@@ -797,3 +797,12 @@
 {"group":"geometry","text":"flip horizontal off","expect":[{"op":"set","control":"flipHorizontal","value":0}]}
 {"group":"geometry","text":"flip vertical","expect":[{"op":"set","control":"flipVertical","value":1}]}
 {"group":"geometry","text":"flip upside down","expect":[{"op":"set","control":"flipVertical","value":1}]}
+{"group":"geometry","text":"upright auto","expect":[{"op":"set","control":"upright","value":1}]}
+{"group":"geometry","text":"upright vertical","expect":[{"op":"set","control":"upright","value":3}]}
+{"group":"geometry","text":"upright full","expect":[{"op":"set","control":"upright","value":4}]}
+{"group":"geometry","text":"upright level","expect":[{"op":"set","control":"upright","value":2}]}
+{"group":"geometry","text":"upright off","expect":[{"op":"set","control":"upright","value":0}]}
+{"group":"geometry","text":"perspective correction vertical","expect":[{"op":"set","control":"upright","value":3}]}
+{"group":"geometry","text":"reset upright","expect":[{"op":"reset","control":"upright"}]}
+{"group":"geometry","text":"auto upright","expect":[{"op":"set","control":"upright","value":1}]}
+{"group":"geometry","text":"square crop","expect":[{"op":"set","control":"cropAspect","value":2}]}

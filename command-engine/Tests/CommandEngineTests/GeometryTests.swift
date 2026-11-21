@@ -335,6 +335,111 @@ final class GeometryTests: XCTestCase {
         XCTAssertFalse(parse("rotat left").contains(.run("rotateLeft")), "actions only by their exact name")
     }
 
+    // MARK: - Upright
+
+    /// A camera turn (pitch about x, then yaw about y, then roll about z, degrees) as a picture transform.
+    static func cameraTurn(pitch: Double, yaw: Double = 0, roll: Double = 0, width: Double, height: Double) -> Homography {
+        let f = Upright.defaultFocal(width: width, height: height)
+        let (p, y, r) = (pitch * .pi / 180, yaw * .pi / 180, roll * .pi / 180)
+        let rx = Homography([1, 0, 0, 0, cos(p), -sin(p), 0, sin(p), cos(p)])
+        let ry = Homography([cos(y), 0, sin(y), 0, 1, 0, -sin(y), 0, cos(y)])
+        let rz = Homography([cos(r), -sin(r), 0, sin(r), cos(r), 0, 0, 0, 1])
+        let k = Homography([f, 0, width / 2, 0, f, height / 2, 0, 0, 1])
+        return k * rz * ry * rx * k.inverse
+    }
+
+    /// A grid's lines (every 100 px inside the frame) as seen through `g`, as segments.
+    static func gridSegments(through g: Homography, width: Double, height: Double) -> [LineSegment] {
+        var out: [LineSegment] = []
+        func add(_ a: Vec2, _ b: Vec2) {
+            let p = g.apply(a), q = g.apply(b)
+            out.append(LineSegment(MaskPoint(p.x / width, p.y / height), MaskPoint(q.x / width, q.y / height), length: (q - p).length))
+        }
+        var x = 100.0
+        while x < width { add(Vec2(x, 80), Vec2(x, height - 80)); x += 100 }
+        var y = 100.0
+        while y < height { add(Vec2(80, y), Vec2(width - 80, y)); y += 100 }
+        return out
+    }
+
+    /// The largest tilt from upright among the nearly upright segments after `h`, and from level among the rest.
+    static func worstTilts(_ segments: [LineSegment], after h: Homography, width: Double, height: Double) -> (upright: Double, level: Double) {
+        var up = 0.0, flat = 0.0
+        for s in segments {
+            let (a, b) = s.ends(width: width, height: height)
+            let p = h.apply(a), q = h.apply(b)
+            let fromUpright = Upright.angleFromUpright(p, q)
+            if abs(fromUpright) < 45 { up = max(up, abs(fromUpright)) } else { flat = max(flat, abs(Straighten.deviation(p, q))) }
+        }
+        return (up, flat)
+    }
+
+    func testUprightVerticalMakesConvergingLinesUpright() {
+        let w = 600.0, h = 800.0
+        let segments = Self.gridSegments(through: Self.cameraTurn(pitch: 15, width: w, height: h), width: w, height: h)
+        let before = Self.worstTilts(segments, after: .identity, width: w, height: h)
+        XCTAssertGreaterThan(before.upright, 3, "looking up: the uprights lean in")
+        let fix = Upright.transform(mode: "vertical", segments: segments, width: w, height: h)
+        let after = Self.worstTilts(segments, after: fix, width: w, height: h)
+        XCTAssertLessThan(after.upright, 0.2)
+        XCTAssertLessThan(after.level, 0.2)
+        assertClose(fix.apply(Vec2(w / 2, h / 2)), Vec2(w / 2, h / 2), 1e-6)
+        XCTAssertEqual(Upright.transform(mode: "off", segments: segments, width: w, height: h), .identity)
+        XCTAssertEqual(Upright.transform(mode: "vertical", segments: [], width: w, height: h), .identity, "no lines: nothing to do")
+    }
+
+    func testUprightFullAlsoSquaresTheHorizontals() {
+        let w = 800.0, h = 600.0
+        let segments = Self.gridSegments(through: Self.cameraTurn(pitch: 10, yaw: 12, width: w, height: h), width: w, height: h)
+        let vertical = Self.worstTilts(segments, after: Upright.transform(mode: "vertical", segments: segments, width: w, height: h),
+                                       width: w, height: h)
+        XCTAssertLessThan(vertical.upright, 0.3)
+        XCTAssertGreaterThan(vertical.level, 2, "vertical leaves the receding horizontals")
+        let full = Self.worstTilts(segments, after: Upright.transform(mode: "full", segments: segments, width: w, height: h), width: w, height: h)
+        XCTAssertLessThan(full.upright, 0.3)
+        XCTAssertLessThan(full.level, 0.3)
+    }
+
+    func testUprightLevelOnlyTurnsAndAutoStaysModerate() {
+        let w = 600.0, h = 800.0
+        let turned = Self.gridSegments(through: Self.cameraTurn(pitch: 0, roll: -4, width: w, height: h), width: w, height: h)
+        let level = Upright.transform(mode: "level", segments: turned, width: w, height: h)
+        XCTAssertTrue(level.isAffine)
+        XCTAssertLessThan(Self.worstTilts(turned, after: level, width: w, height: h).level, 0.2)
+        // A strong lean (35°) is too much for Auto: it only levels.
+        let steep = Self.gridSegments(through: Self.cameraTurn(pitch: 35, width: w, height: h), width: w, height: h)
+        XCTAssertTrue(Upright.transform(mode: "auto", segments: steep, width: w, height: h).isAffine)
+        let mild = Self.gridSegments(through: Self.cameraTurn(pitch: 12, width: w, height: h), width: w, height: h)
+        XCTAssertLessThan(Self.worstTilts(mild, after: Upright.transform(mode: "auto", segments: mild, width: w, height: h),
+                                          width: w, height: h).upright, 0.2)
+    }
+
+    func testUprightFromADrawnPicture() {
+        let w = 300, h = 400
+        let g = Self.cameraTurn(pitch: 14, width: Double(w), height: Double(h))
+        var lines: [(Vec2, Vec2)] = []
+        for x in stride(from: -100.0, through: 400, by: 40) { lines.append((g.apply(Vec2(x, -200)), g.apply(Vec2(x, 600)))) }
+        for y in stride(from: -100.0, through: 500, by: 40) { lines.append((g.apply(Vec2(-200, y)), g.apply(Vec2(500, y)))) }
+        let pixels = Self.picture(width: w, height: h, lines: lines)
+        let segments = LineDetector.detect(pixels, width: w, height: h)
+        let fix = Upright.transform(mode: "vertical", segments: segments, width: Double(w), height: Double(h))
+        XCTAssertLessThan(Self.worstTilts(Self.gridSegments(through: g, width: Double(w), height: Double(h)), after: fix,
+                                          width: Double(w), height: Double(h)).upright, 0.7)
+        // The plan crops inside the corrected photo.
+        let plan = GeometryPlan(settings: GeometrySettings(upright: "vertical"), width: Double(w), height: Double(h), segments: segments)
+        XCTAssertFalse(plan.isIdentity)
+        for c in [Vec2(plan.crop.x, plan.crop.y), Vec2(plan.crop.maxX, plan.crop.maxY)] { XCTAssertTrue(Crop.inside(c, plan.photoCorners)) }
+    }
+
+    func testUprightNames() {
+        XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
+        XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])
+        XCTAssertEqual(parse("auto upright"), [.set("upright", 1)], "the option before the name")
+        XCTAssertEqual(parse("auto white balance"), [.set("whiteBalance", 1)])
+        XCTAssertEqual(parse("patch tool"), [.run("patchTool")], "a name of its own wins")
+        XCTAssertEqual(parse("auto"), [.run("auto")])
+    }
+
     // MARK: - Names and actions
 
     func testCropNames() {

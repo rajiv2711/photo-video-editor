@@ -175,8 +175,23 @@ enum RenderGallery {
     /// - "red-eye": two eyes on skin, their pupils flash-red (red eye).
     /// - "pet-eye": two animal eyes on dark fur, their pupils glowing pale green (pet eye).
     /// - "tilted": the grid turned 6° anticlockwise, filling the frame (straighten).
+    /// - "building": the grid seen looking up, its upright lines leaning in towards the top (upright).
     static func sourceImage(_ source: String?, photo: CIImage) -> CIImage {
         switch source {
+        case "building":
+            // A grid twice the size, its top 30 % narrower on each side, cut from the middle.
+            let size = photo.extent.integral.size
+            guard let grid = softGrid(size: CGSize(width: 2 * size.width, height: 2 * size.height)) else { return photo }
+            let big = CIImage(cgImage: grid)
+            let w = 2 * size.width, h = 2 * size.height, inset = 0.3 * w
+            let leaning = big.applyingFilter("CIPerspectiveTransform", parameters: [
+                "inputTopLeft": CIVector(x: inset, y: h),
+                "inputTopRight": CIVector(x: w - inset, y: h),
+                "inputBottomRight": CIVector(x: w, y: 0),
+                "inputBottomLeft": CIVector(x: 0, y: 0),
+            ])
+            return leaning.cropped(to: CGRect(x: size.width / 2, y: size.height / 2, width: size.width, height: size.height))
+                .transformed(by: CGAffineTransform(translationX: -size.width / 2, y: -size.height / 2))
         case "tilted":
             let size = photo.extent.integral.size
             guard let grid = softGrid(size: size) else { return photo }

@@ -41,8 +41,11 @@ final class GeometryRenderer {
     }
 
     /// The plan for a picture over `extent`.
+    /// Upright uses the lines last found on the photo (see `segments(of:key:)`).
     func plan(extent: CGRect, value: (String) -> Double?, edits: GeometryEdits, stage: GeometryStage) -> GeometryPlan {
-        GeometryPlan(settings: GeometrySettings(value: value), width: Double(extent.width), height: Double(extent.height), stage: stage)
+        let settings = GeometrySettings(value: value)
+        let lines = settings.upright == "off" ? [] : (lineCache?.segments ?? [])
+        return GeometryPlan(settings: settings, width: Double(extent.width), height: Double(extent.height), stage: stage, segments: lines)
     }
 
     /// The picture put into its frame and cropped, as the plan says; the result starts at the origin.

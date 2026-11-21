@@ -1066,6 +1066,15 @@
     {"id": "flipHorizontal", "label": "Flip Horizontal", "group": "geometry", "section": "Rotate and flip", "kind": "toggle",
       "synonyms": ["flip", "mirror", "flip horizontally", "mirror image", "flip left right", "horizontal flip", "mirror horizontal"]},
     {"id": "flipVertical", "label": "Flip Vertical", "group": "geometry", "section": "Rotate and flip", "kind": "toggle",
-      "synonyms": ["flip vertically", "flip upside down", "flip top bottom", "vertical flip", "mirror vertical"]}
+      "synonyms": ["flip vertically", "flip upside down", "flip top bottom", "vertical flip", "mirror vertical"]},
+    {"id": "upright", "label": "Upright", "group": "geometry", "section": "Upright", "kind": "choice",
+      "synonyms": ["upright mode", "auto perspective", "perspective correction", "upright correction"],
+      "options": [
+        {"id": "off", "label": "Off", "synonyms": ["none", "no upright"]},
+        {"id": "auto", "label": "Auto", "synonyms": ["automatic", "balanced"]},
+        {"id": "level", "label": "Level", "synonyms": ["levels", "horizon", "level only"]},
+        {"id": "vertical", "label": "Vertical", "synonyms": ["verticals", "vertical lines", "vertical only"]},
+        {"id": "full", "label": "Full", "synonyms": ["all", "both", "full perspective"]}
+      ]}
   ]
 }

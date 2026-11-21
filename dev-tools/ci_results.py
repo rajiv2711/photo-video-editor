@@ -12,7 +12,8 @@ reference (the "base" case, or the case named in "vs"), checks the expectation (
 p95 luma down) and writes "reports/Operation test report.html". An expectation with "region": [x0, y0, x1, y1]
 (fractions of the width and height, from the top-left) measures only that box of both pictures (masks).
 Geometry: width, height (pixels) and aspect (width / height) of the picture; tilt: how far its strong
-straight edges are from level or upright (degrees, weighted median).
+straight edges are from level or upright (degrees, weighted median); vertical_spread: how much the nearly
+upright edges disagree (degrees, weighted spread: converging verticals spread, parallel ones don't).
 
 Exit code: 0 all passed · 1 a build step or a case failed · 3 no results for this commit yet.
 """
@@ -38,7 +39,7 @@ BRANCH = "origin/ci-renders"
 
 # Smallest change that counts, per metric (luma and RGB on 0-255, saturation on 0-100, peak in linear light;
 # edge, local_contrast and fringe are small averages on 0-255).
-THRESHOLDS = {"mean_sat": 0.5, "peak": 0.02, "edge": 0.3, "local_contrast": 0.3, "fringe": 0.5, "aspect": 0.01, "tilt": 0.5}
+THRESHOLDS = {"mean_sat": 0.5, "peak": 0.02, "edge": 0.3, "local_contrast": 0.3, "fringe": 0.5, "aspect": 0.01, "tilt": 0.5, "vertical_spread": 0.5}
 DEFAULT_THRESHOLD = 1.0
 METRIC_NAMES = {
     "mean_luma": "mean luma", "p5_luma": "p5 luma", "p25_luma": "p25 luma", "p50_luma": "median luma",
@@ -46,7 +47,7 @@ METRIC_NAMES = {
     "mean_g": "mean green", "mean_b": "mean blue", "diff": "pixel change", "peak": "peak (linear)",
     "edge": "fine detail", "local_contrast": "local contrast", "fringe": "edge colour",
     "corner_luma": "corner luma", "center_luma": "centre luma",
-    "width": "width (px)", "height": "height (px)", "aspect": "aspect (w/h)", "tilt": "tilt (°)",
+    "width": "width (px)", "height": "height (px)", "aspect": "aspect (w/h)", "tilt": "tilt (°)", "vertical_spread": "vertical spread (°)",
 }
 STEPS = [("linux_tests", "Linux tests"), ("generate", "Xcode project"), ("build", "Build"),
          ("install", "Install"), ("gallery", "Gallery"), ("screenshots", "Screenshots")]
@@ -100,9 +101,12 @@ def detail_stats(a: np.ndarray, luma: np.ndarray) -> dict:
     h, w = L.shape
     ch, cw = max(1, int(h * 0.15)), max(1, int(w * 0.15))
     corners = np.concatenate([L[:ch, :cw].ravel(), L[:ch, -cw:].ravel(), L[-ch:, :cw].ravel(), L[-ch:, -cw:].ravel()])
-    dev, weight, _ = edge_angles(L)
+    dev, weight, upright = edge_angles(L)
+    du, wu = dev[upright], weight[upright]
     return {
         "tilt": abs(weighted_median(dev, weight)) if dev.size else 0.0,
+        # Interquartile range ÷ 1.35 (a standard deviation that line crossings don't pull).
+        "vertical_spread": (weighted_quantile(du, wu, 0.75) - weighted_quantile(du, wu, 0.25)) / 1.35 if du.size else 0.0,
         "edge": lap[2:-2, 2:-2].mean(),
         "local_contrast": np.abs(L - smooth)[8:-8, 8:-8].mean(),
         "fringe": chroma[near].mean() if near.any() else 0.0,
@@ -111,10 +115,14 @@ def detail_stats(a: np.ndarray, luma: np.ndarray) -> dict:
     }
 
 
-def weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
+def weighted_quantile(values: np.ndarray, weights: np.ndarray, q: float) -> float:
     order = np.argsort(values)
     cum = np.cumsum(weights[order])
-    return float(values[order][np.searchsorted(cum, cum[-1] / 2)])
+    return float(values[order][min(len(values) - 1, np.searchsorted(cum, cum[-1] * q))])
+
+
+def weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
+    return weighted_quantile(values, weights, 0.5)
 
 
 def edge_angles(L: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -262,7 +270,7 @@ def main() -> int:
             vs = "" if ref_id == "base" else f" vs {ref_id}"
             if region:
                 vs += " in [" + ", ".join(f"{v:g}" for v in region) + "]"
-            digits = 3 if e["metric"] in ("peak", "aspect") else 2 if e["metric"] in ("edge", "local_contrast", "fringe") else 1
+            digits = 3 if e["metric"] in ("peak", "aspect") else 2 if e["metric"] in ("edge", "local_contrast", "fringe", "tilt", "vertical_spread") else 1
             checks.append((f"{METRIC_NAMES.get(e['metric'], e['metric'])} {e['dir']}{vs}: "
                            f"{ref:.{digits}f} → {value:.{digits}f} ({delta:+.{digits}f})", ok))
         failed += 0 if ok_all else 1

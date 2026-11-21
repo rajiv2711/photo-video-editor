@@ -391,6 +391,10 @@
     {"id": "rotate-right", "command": "rotate right", "control": "rotateRight", "expect": [{"metric": "width", "dir": "up", "min": 250}, {"metric": "height", "dir": "down", "min": 250}, {"metric": "mean_luma", "dir": "same"}]},
     {"id": "rotate-left", "command": "rotate left rotate left", "control": "rotateLeft", "expect": [{"metric": "diff", "dir": "same", "vs": "rotation"}]},
     {"id": "flip-horizontal", "command": "flip horizontal", "control": "flipHorizontal", "expect": [{"metric": "diff", "dir": "changed", "min": 5}, {"metric": "mean_luma", "dir": "same"}]},
-    {"id": "flip-vertical", "command": "flip vertical flip horizontal", "control": "flipVertical", "expect": [{"metric": "diff", "dir": "same", "vs": "rotation"}]}
+    {"id": "flip-vertical", "command": "flip vertical flip horizontal", "control": "flipVertical", "expect": [{"metric": "diff", "dir": "same", "vs": "rotation"}]},
+
+    {"id": "building", "command": "", "source": "building", "expect": [{"metric": "vertical_spread", "dir": "up", "min": 1.5}]},
+    {"id": "upright", "command": "upright vertical", "source": "building", "control": "upright", "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}, {"metric": "tilt", "dir": "same", "vs": "building"}]},
+    {"id": "upright-auto", "command": "auto upright", "source": "building", "control": "upright", "expect": [{"metric": "vertical_spread", "dir": "down", "vs": "building", "min": 1.5}]}
   ]
 }

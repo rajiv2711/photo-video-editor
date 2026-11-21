@@ -208,10 +208,12 @@ public struct GeometrySettings: Equatable {
     public var quarterTurns: Int
     public var flipHorizontal: Bool
     public var flipVertical: Bool
+    /// Upright mode (an option id of Upright.modes: "off", "auto", "level", "vertical", "full").
+    public var upright: String
 
     public init(aspect: String = "free", cropLeft: Double = 0, cropTop: Double = 0, cropRight: Double = 0,
                 cropBottom: Double = 0, straighten: Double = 0, quarterTurns: Int = 0, flipHorizontal: Bool = false,
-                flipVertical: Bool = false) {
+                flipVertical: Bool = false, upright: String = "off") {
         self.aspect = aspect
         self.cropLeft = cropLeft
         self.cropTop = cropTop
@@ -221,6 +223,7 @@ public struct GeometrySettings: Equatable {
         self.quarterTurns = ((quarterTurns % 4) + 4) % 4
         self.flipHorizontal = flipHorizontal
         self.flipVertical = flipVertical
+        self.upright = upright
     }
 
     public init(value: (String) -> Double?) {
@@ -235,6 +238,8 @@ public struct GeometrySettings: Equatable {
         quarterTurns = ((Int(v("rotation")) % 4) + 4) % 4
         flipHorizontal = v("flipHorizontal") != 0
         flipVertical = v("flipVertical") != 0
+        let mode = Int(v("upright"))
+        upright = Upright.modes.indices.contains(mode) ? Upright.modes[mode] : "off"
     }
 }
 
@@ -256,12 +261,15 @@ public struct GeometryPlan: Equatable {
     /// Where the photo lies in the frame (its corners: top-left, top-right, bottom-right, bottom-left).
     public let photoCorners: [Vec2]
 
-    public init(settings: GeometrySettings, width: Double, height: Double, stage: GeometryStage = .full) {
+    /// `segments`: the photo's straight lines (LineDetector), for Upright.
+    public init(settings: GeometrySettings, width: Double, height: Double, stage: GeometryStage = .full,
+                segments: [LineSegment] = []) {
         sourceWidth = width
         sourceHeight = height
         self.stage = stage
         let corners = [Vec2(0, 0), Vec2(width, 0), Vec2(width, height), Vec2(0, height)]
-        let pre = Homography.identity
+        // Upright: the perspective correction the photo's lines ask for.
+        let pre = Upright.transform(mode: settings.upright, segments: segments, width: width, height: height)
         // Straighten turns the picture about the frame's middle; then the quarter turns (which swap
         // the frame's sides) and the flips, about the middle too.
         let turned = settings.quarterTurns % 2 == 1 && stage != .source

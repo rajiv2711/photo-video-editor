@@ -7,7 +7,8 @@ import Foundation
 /// Verb-first works at the start ("reset highlights", "more contrast"): words said before the
 /// first name belong to it. With no name at all they act on the focused control (`control: nil`).
 /// Names may be several words ("tone curve highlights", "red curve 50"); the longest one wins.
-/// Toggles take "on"/"off", choices take an option name, actions run when named.
+/// Toggles take "on"/"off", choices take an option name (after the name, or just before it: "auto
+/// upright", "square crop"), actions run when named.
 /// Masks: an action may take an option or a number ("linear gradient from top", "delete mask 2"),
 /// and "new", "add", "subtract" or "intersect" before a mask part says how it joins the selected
 /// mask ("subtract luminance range").
@@ -85,6 +86,15 @@ public struct CommandParser {
                let picked = option(of: control, token, tokens) {
                 tokens.removeFirst(picked.extra)
                 act(.option(picked.index))
+                continue
+            }
+
+            // "auto upright", "square crop": a choice's option said just before the choice's name
+            // (unless the words make a name of their own: "patch tool").
+            if longestName(token, tokens) == nil, let found = optionFirst(token, tokens) {
+                tokens.removeFirst(found.used)
+                begin(found.control)
+                act(.set(Double(found.index)))
                 continue
             }
 
@@ -176,6 +186,28 @@ public struct CommandParser {
         for extra in stride(from: words.count, through: 1, by: -1) {
             if let control = matcher.exact(([first] + words.prefix(extra)).joined(separator: " ")) {
                 return (control, extra)
+            }
+        }
+        return nil
+    }
+
+    /// A choice control whose option is `first` (plus up to two more words), followed at once by one
+    /// of the control's own names (exact): the control, the option's index and the tokens used after `first`.
+    private func optionFirst(_ first: String, _ rest: ArraySlice<String>) -> (control: Control, index: Int, used: Int)? {
+        let words = Array(rest.prefix(5))
+        for control in registry.controls where control.kind == .choice {
+            for (index, option) in control.options.enumerated() {
+                for name in option.names {
+                    let parts = name.split(separator: " ").map(String.init)
+                    guard parts.first == first, parts.count - 1 <= words.count, Array(words.prefix(parts.count - 1)) == Array(parts.dropFirst()) else {
+                        continue
+                    }
+                    let after = Array(words.dropFirst(parts.count - 1))
+                    for count in stride(from: Swift.min(3, after.count), through: 1, by: -1)
+                    where control.names.contains(after.prefix(count).joined(separator: " ")) {
+                        return (control, index, parts.count - 1 + count)
+                    }
+                }
             }
         }
         return nil
