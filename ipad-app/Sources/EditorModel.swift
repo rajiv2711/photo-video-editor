@@ -1140,6 +1140,24 @@ final class EditorModel: ObservableObject {
             return (label.isEmpty ? "Label removed" : "Label: \(label.capitalized)", false)
         case .filtered(let shown, let total):
             return ("Showing \(shown) of \(total) photos" + (library.filter.isEmpty ? "" : ": " + Self.describe(library.filter)), false)
+        case .albumMade(let name):
+            return ("New album “\(name)”", false)
+        case .addedToAlbum(let name):
+            return ("In album “\(name)” (\(library.albums.first { $0.name == name }?.photos.count ?? 0) photos)", false)
+        case .removedFromAlbum(let name):
+            return ("Taken out of album “\(name)”", false)
+        case .notInAlbum(let name):
+            return ("This photo isn't in album “\(name)”", true)
+        case .albumDeleted(let name):
+            return ("Album “\(name)” deleted (its photos stay in the library)", false)
+        case .albumExists(let name):
+            return ("There is an album called “\(name)” already: say “add to album \(name)”", true)
+        case .noAlbum(let word):
+            return (word.isEmpty ? "Say the album's name, e.g. “album trips”" : "No album called “\(word)”", true)
+        case .albumChoices(let word, let names):
+            return ("“\(word)” could be: " + names.map { "“\($0)”" }.joined(separator: ", "), true)
+        case .albums(let names):
+            return (names.isEmpty ? "No albums yet: say “new album …”" : "Albums: " + names.joined(separator: ", "), false)
         }
     }
 
@@ -1172,7 +1190,9 @@ final class EditorModel: ObservableObject {
             out["photo.rating"] = String(photo.rating)
             out["photo.flag"] = String(photo.flag)
             out["photo.label"] = photo.label
+            out["photo.albums"] = lib.albums(of: photo.id).joined(separator: ", ")
         }
+        out["library.albums"] = lib.albums.map { "\($0.name):\($0.photos.count)" }.joined(separator: ", ")
         out["library.filter"] = Self.describe(lib.filter)
         if let info = pictureInfo {
             out["photo.type"] = info.type ?? ""

@@ -1710,6 +1710,11 @@
                   {"id": "blue", "label": "Blue"},
                   {"id": "purple", "label": "Purple", "synonyms": ["violet"]},
                   {"id": "any", "label": "Any", "synonyms": ["all", "off", "none"]}]},
-    {"id": "showAllPhotos", "label": "Show All Photos", "group": "library", "section": "Filter", "kind": "action", "synonyms": ["show all", "all photos", "clear filters", "clear filter", "no filter", "filter off", "reset filters", "remove filters", "show everything"]}
+    {"id": "showAllPhotos", "label": "Show All Photos", "group": "library", "section": "Filter", "kind": "action", "synonyms": ["show all", "all photos", "clear filters", "clear filter", "no filter", "filter off", "reset filters", "remove filters", "show everything"]},
+    {"id": "newAlbum", "label": "New Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["create album", "make album", "make an album", "create an album", "new collection", "create collection"]},
+    {"id": "addToAlbum", "label": "Add To Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["add to the album", "put in album", "put in the album", "add photo to album", "add to collection", "put it in album"]},
+    {"id": "removeFromAlbum", "label": "Remove From Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["remove from the album", "take out of album", "take out of the album", "remove from collection"]},
+    {"id": "album", "label": "Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["show album", "open album", "go to album", "albums", "collection", "show collection"]},
+    {"id": "deleteAlbum", "label": "Delete Album", "group": "library", "section": "Albums", "kind": "action", "takesText": true, "synonyms": ["remove album", "delete collection", "delete the album"]}
   ]
 }

@@ -356,6 +356,8 @@ public struct Workspace {
             names = Set(snapshots.map { Presets.normalized($0.name) } + snapshots.indices.map { String($0 + 1) })
         case "switchCopy":
             names = Set(copies.map { Presets.normalized($0.name) } + copies.indices.map { String($0 + 1) })
+        case "album", "addToAlbum", "removeFromAlbum", "deleteAlbum":
+            names = Set(library.albums.map { Presets.normalized($0.name) })
         default:
             return nil
         }

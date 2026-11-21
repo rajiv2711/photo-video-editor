@@ -219,7 +219,7 @@ Every photo operation to build, top to bottom. Sources: Lightroom (incl. paid fe
 - [x] 162. **Import** — from Photos, Files, camera or SD card
 - [x] 163. **Raw support** — DNG, ProRAW, CR3, NEF, ARW and others
 - [x] 164. **Rate / flag / label** — stars, pick/reject, colour labels
-- [ ] 165. **Albums** — group photos
+- [x] 165. **Albums** — group photos
 - [ ] 166. **Keywords & metadata** — view and edit EXIF/IPTC
 - [ ] 167. **AI search** — find photos by content ("dog on beach") **AI · later**
 - [ ] 168. **People** — group photos by face **AI · later**

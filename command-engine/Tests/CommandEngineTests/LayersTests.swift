@@ -39,8 +39,9 @@ final class LayersTests: XCTestCase {
 
     func testLayerControlsAreWellFormed() {
         for c in registry.controls where c.scope == "layer" || c.layer != nil || c.takesText {
-            // Words are also taken by the Presets and History panels' actions (preset and snapshot names).
-            if !(c.takesText && ["presets", "history"].contains(c.group)) { XCTAssertEqual(c.group, "layers", c.id) }
+            // Words are also taken by the Presets, History, Library and Export panels' actions (preset,
+            // snapshot and album names, keywords, captions, file names).
+            if !(c.takesText && ["presets", "history", "library", "export"].contains(c.group)) { XCTAssertEqual(c.group, "layers", c.id) }
             if c.takesText { XCTAssertEqual(c.kind, .action, "\(c.id): only actions take words") }
             if c.layer != nil, c.kind != .action { XCTAssertEqual(c.scope, "layer", "\(c.id): a kind's setting is a layer setting") }
         }

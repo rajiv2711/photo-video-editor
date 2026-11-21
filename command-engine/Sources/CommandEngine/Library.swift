@@ -165,6 +165,22 @@ public enum LibraryEvent: Equatable {
     case labelled(String)
     /// The filter changed: how many photos it shows of how many.
     case filtered(shown: Int, total: Int)
+    /// An album was made (New Album; Add To Album with a new name).
+    case albumMade(String)
+    /// The photo being edited went into an album (or was in it already).
+    case addedToAlbum(String)
+    case removedFromAlbum(String)
+    /// Remove From Album: the photo isn't in that album.
+    case notInAlbum(String)
+    case albumDeleted(String)
+    /// New Album with a name an album has.
+    case albumExists(String)
+    /// No album has that name ("" when none was said).
+    case noAlbum(String)
+    /// Several albums fit the words: their names.
+    case albumChoices(word: String, names: [String])
+    /// "album" alone: the albums' names.
+    case albums([String])
 }
 
 /// The photos imported, the albums, the filter, and the photo being edited.
@@ -191,7 +207,8 @@ public struct Library: Codable, Equatable {
     /// The library's actions (run by the workspace, in order with the other commands).
     public static let actions: Set<String> = ["openPhoto", "nextPhoto", "previousPhoto", "browseLibrary",
                                               "rate", "pick", "reject", "unflag", "colorLabel",
-                                              "showRating", "showPicks", "showRejects", "showUnflagged", "showLabel", "showAllPhotos"]
+                                              "showRating", "showPicks", "showRejects", "showUnflagged", "showLabel", "showAllPhotos",
+                                              "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum"]
 
     /// Colour labels, as the options of Label (controls.json; Show Label adds "any").
     public static let labels = ["red", "yellow", "green", "blue", "purple"]
@@ -313,11 +330,83 @@ public struct Library: Codable, Equatable {
             filter.label = Self.labels.indices.contains(n) ? Self.labels[n] : ""
         case "showAllPhotos":
             filter = LibraryFilter()
+        case "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum":
+            return (album(id, words: (command.text ?? "").trimmingCharacters(in: .whitespaces)), nil)
         default:
             return ([], nil)
         }
         // A filter changed.
         return ([.filtered(shown: shown.count, total: photos.count)], nil)
+    }
+}
+
+extension Library {
+    /// The albums the photo is in, by name.
+    public func albums(of id: String?) -> [String] {
+        albums.filter { album in id.map { album.photos.contains($0) } ?? false }.map(\.name)
+    }
+
+    /// The album `words` name (exactly, or a near-miss as control names allow), or what to say instead.
+    func findAlbum(_ words: String) -> (index: Int?, problem: LibraryEvent?) {
+        let names = albums.map(\.name)
+        switch Presets.find(words, names: names) {
+        case .found(let i): return (i, nil)
+        case .ambiguous(let found): return (nil, .albumChoices(word: words, names: found.map { names[$0] }))
+        case .none: return (nil, .noAlbum(words))
+        }
+    }
+
+    /// Albums: New Album (with the photo being edited in it), Add To Album (made when no album has the
+    /// name), Remove From Album (the one shown when no name is said), Album (shows one; alone: their
+    /// names), Delete Album (its photos stay in the library).
+    mutating func album(_ id: String, words: String) -> [LibraryEvent] {
+        let photo = current.flatMap { c in photos.contains { $0.id == c } ? c : nil }
+        switch id {
+        case "newAlbum":
+            let name = words.isEmpty ? "Album \(albums.count + 1)" : words
+            if albums.contains(where: { Presets.normalized($0.name) == Presets.normalized(name) }) { return [.albumExists(name)] }
+            albums.append(Album(name: name, photos: photo.map { [$0] } ?? []))
+            return [.albumMade(name)] + (photo == nil ? [] : [.addedToAlbum(name)])
+        case "addToAlbum":
+            guard let photo else { return [.notInLibrary] }
+            // No name: the album shown. A name no album has: a new album.
+            let name = words.isEmpty ? (filter.album.isEmpty ? "Album \(albums.count + 1)" : filter.album) : words
+            var events: [LibraryEvent] = []
+            let found = findAlbum(name)
+            let i: Int
+            if let index = found.index {
+                i = index
+            } else if case .albumChoices? = found.problem {
+                return [found.problem ?? .noAlbum(name)]
+            } else {
+                albums.append(Album(name: name))
+                events.append(.albumMade(name))
+                i = albums.count - 1
+            }
+            if !albums[i].photos.contains(photo) { albums[i].photos.append(photo) }
+            return events + [.addedToAlbum(albums[i].name)]
+        case "removeFromAlbum":
+            guard let photo else { return [.notInLibrary] }
+            let found = findAlbum(words.isEmpty ? filter.album : words)
+            guard let i = found.index else { return [found.problem ?? .noAlbum(words)] }
+            guard albums[i].photos.contains(photo) else { return [.notInAlbum(albums[i].name)] }
+            albums[i].photos.removeAll { $0 == photo }
+            return [.removedFromAlbum(albums[i].name)]
+        case "album":
+            guard !words.isEmpty else { return [.albums(albums.map(\.name))] }
+            let found = findAlbum(words)
+            guard let i = found.index else { return [found.problem ?? .noAlbum(words)] }
+            filter.album = albums[i].name
+            return [.filtered(shown: shown.count, total: photos.count)]
+        case "deleteAlbum":
+            let found = findAlbum(words.isEmpty ? filter.album : words)
+            guard let i = found.index else { return [found.problem ?? .noAlbum(words)] }
+            let name = albums.remove(at: i).name
+            if Presets.normalized(filter.album) == Presets.normalized(name) { filter.album = "" }
+            return [.albumDeleted(name)]
+        default:
+            return []
+        }
     }
 }
 

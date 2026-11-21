@@ -1297,3 +1297,14 @@
 {"group":"library","text":"show all photos","expect":[{"op":"run","control":"showAllPhotos"}]}
 {"group":"library","text":"clear filters","expect":[{"op":"run","control":"showAllPhotos"}]}
 {"group":"library","text":"rate 5 next photo","expect":[{"op":"run","control":"rate","value":5},{"op":"run","control":"nextPhoto"}]}
+{"group":"library","text":"new album trips","expect":[{"op":"run","control":"newAlbum","text":"trips"}]}
+{"group":"library","text":"create album Summer 2026","expect":[{"op":"run","control":"newAlbum","text":"Summer 2026"}]}
+{"group":"library","text":"add to album trips","expect":[{"op":"run","control":"addToAlbum","text":"trips"}]}
+{"group":"library","text":"put in album family","expect":[{"op":"run","control":"addToAlbum","text":"family"}]}
+{"group":"library","text":"remove from album trips","expect":[{"op":"run","control":"removeFromAlbum","text":"trips"}]}
+{"group":"library","text":"take out of album trips","expect":[{"op":"run","control":"removeFromAlbum","text":"trips"}]}
+{"group":"library","text":"album trips","expect":[{"op":"run","control":"album","text":"trips"}]}
+{"group":"library","text":"show album family","expect":[{"op":"run","control":"album","text":"family"}]}
+{"group":"library","text":"albums","expect":[{"op":"run","control":"album"}]}
+{"group":"library","text":"delete album trips","expect":[{"op":"run","control":"deleteAlbum","text":"trips"}]}
+{"group":"library","text":"remove album trips","expect":[{"op":"run","control":"deleteAlbum","text":"trips"}]}

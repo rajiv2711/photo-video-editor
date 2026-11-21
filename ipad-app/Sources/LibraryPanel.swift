@@ -8,6 +8,7 @@ import SwiftUI
 struct LibraryPanel: View {
     @ObservedObject var model: EditorModel
     @Binding var expanded: Set<String>
+    @State private var albumName = ""
 
     private var library: Library { model.library }
 
@@ -47,6 +48,11 @@ struct LibraryPanel: View {
                 }
                 if let photo = library.photo(library.current) {
                     rateRow(photo).padding(.horizontal, 10)
+                }
+                DisclosureGroup(isExpanded: isOpen("library/Albums")) {
+                    albumsSection
+                } label: {
+                    Text("Albums").font(.subheadline.weight(.semibold))
                 }
             }
             .padding(.top, 6)
@@ -91,6 +97,46 @@ struct LibraryPanel: View {
                 }
             }
         }
+    }
+
+    /// The albums: tap one to show it (again: all photos), a long press adds the photo being edited to it,
+    /// takes it out or deletes the album; a new album starts with the photo being edited.
+    private var albumsSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                TextField("New album name", text: $albumName)
+                    .textFieldStyle(.roundedBorder)
+                Button("New") {
+                    model.apply([.run("newAlbum", text: albumName.trimmingCharacters(in: .whitespaces))])
+                    albumName = ""
+                }
+                .buttonStyle(.bordered)
+            }
+            ForEach(library.albums, id: \.name) { album in
+                let showing = library.filter.album == album.name
+                let has = library.current.map { album.photos.contains($0) } ?? false
+                Button {
+                    model.apply([showing ? Command.run("showAllPhotos") : Command.run("album", text: album.name)])
+                } label: {
+                    HStack {
+                        Image(systemName: showing ? "rectangle.stack.fill" : "rectangle.stack")
+                        Text(album.name)
+                        Spacer()
+                        if has { Image(systemName: "checkmark").foregroundStyle(.secondary) }
+                        Text("\(album.photos.count)").foregroundStyle(.secondary)
+                    }
+                }
+                .contextMenu {
+                    if has {
+                        Button("Take this photo out") { model.apply([.run("removeFromAlbum", text: album.name)]) }
+                    } else {
+                        Button("Add this photo") { model.apply([.run("addToAlbum", text: album.name)]) }
+                    }
+                    Button("Delete album", role: .destructive) { model.apply([.run("deleteAlbum", text: album.name)]) }
+                }
+            }
+        }
+        .padding(.horizontal, 10)
     }
 
     /// The filter: at least N stars, a flag, a colour label; Clear shows every photo.

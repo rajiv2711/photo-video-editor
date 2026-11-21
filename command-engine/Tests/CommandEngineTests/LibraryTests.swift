@@ -269,4 +269,44 @@ final class LibraryTests: XCTestCase {
         run("next photo")
         XCTAssertEqual(interpreter.workspace.library.current, "c", "b isn't shown: skipped")
     }
+
+    // MARK: - Albums (#165)
+
+    func testAlbumNamesReachTheirControls() {
+        XCTAssertEqual(parse("new album trips"), [.run("newAlbum", text: "trips")])
+        XCTAssertEqual(parse("add to album trips"), [.run("addToAlbum", text: "trips")])
+        XCTAssertEqual(parse("remove from album trips"), [.run("removeFromAlbum", text: "trips")])
+        XCTAssertEqual(parse("album trips"), [.run("album", text: "trips")])
+        XCTAssertEqual(parse("delete album trips"), [.run("deleteAlbum", text: "trips")])
+        XCTAssertEqual(parse("remove album trips"), [.run("deleteAlbum", text: "trips")])
+    }
+
+    func testAlbumsGroupPhotos() {
+        makeLibrary()
+        run("photo 1")
+        XCTAssertEqual(events(run("new album trips")), [.albumMade("trips"), .addedToAlbum("trips")])
+        XCTAssertEqual(events(run("new album Trips")), [.albumExists("Trips")])
+        run("next photo")
+        XCTAssertEqual(events(run("add to album trip")), [.addedToAlbum("trips")], "a near-miss finds the album")
+        XCTAssertEqual(events(run("add to album family")), [.albumMade("family"), .addedToAlbum("family")])
+        XCTAssertEqual(interpreter.workspace.library.albums(of: "b"), ["trips", "family"])
+        XCTAssertEqual(events(run("album trips")), [.filtered(shown: 2, total: 3)])
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["a", "b"])
+        XCTAssertEqual(events(run("remove from album")), [.removedFromAlbum("trips")], "no name: the album shown")
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["a"])
+        XCTAssertEqual(events(run("remove from album trips")), [.notInAlbum("trips")])
+        XCTAssertEqual(events(run("albums")), [.albums(["trips", "family"])])
+        XCTAssertEqual(events(run("delete album trips")), [.albumDeleted("trips")])
+        XCTAssertEqual(interpreter.workspace.library.filter.album, "", "the album shown is gone: all photos again")
+        XCTAssertEqual(interpreter.workspace.library.photos.count, 3, "its photos stay")
+        XCTAssertEqual(events(run("album holidays")), [.noAlbum("holidays")])
+    }
+
+    func testWordsAfterAnAlbumsNameAreCommandsAgain() {
+        makeLibrary()
+        run("photo 1 new album trips")
+        run("album trips exposure 0.5")
+        XCTAssertEqual(interpreter.workspace.library.filter.album, "trips")
+        XCTAssertEqual(value("exposure"), 0.5)
+    }
 }
