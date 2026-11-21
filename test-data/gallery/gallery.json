@@ -418,6 +418,9 @@
     {"id": "canvas-size", "command": "canvas size 10", "control": "canvasBorder", "expect": [{"metric": "width", "dir": "up", "min": 100}, {"metric": "corner_luma", "dir": "up", "min": 20}]},
     {"id": "canvas-aspect", "command": "canvas aspect square", "control": "canvasAspect", "expect": [{"metric": "width", "dir": "up", "min": 200}, {"metric": "aspect", "dir": "up", "min": 0.3}, {"metric": "height", "dir": "same"}]},
     {"id": "canvas-color", "command": "canvas size 10 canvas color black", "control": "canvasColor", "expect": [{"metric": "corner_luma", "dir": "down", "min": 100}]},
-    {"id": "canvas-blur", "command": "canvas size 10 canvas color blur", "control": "canvasColor", "expect": [{"metric": "corner_luma", "dir": "down", "vs": "canvas-size", "min": 10}, {"metric": "corner_luma", "dir": "up", "vs": "canvas-color", "min": 100}]}
+    {"id": "canvas-blur", "command": "canvas size 10 canvas color blur", "control": "canvasColor", "expect": [{"metric": "corner_luma", "dir": "down", "vs": "canvas-size", "min": 10}, {"metric": "corner_luma", "dir": "up", "vs": "canvas-color", "min": 100}]},
+
+    {"id": "content-aware-width", "command": "content aware width 70", "control": "contentAwareWidth", "expect": [{"metric": "width", "dir": "down", "min": 120}, {"metric": "height", "dir": "same"}, {"metric": "mean_luma", "dir": "down", "min": 5}]},
+    {"id": "content-aware-height", "command": "content aware height 75", "control": "contentAwareHeight", "expect": [{"metric": "height", "dir": "down", "min": 150}, {"metric": "mean_luma", "dir": "down", "min": 3}]}
   ]
 }

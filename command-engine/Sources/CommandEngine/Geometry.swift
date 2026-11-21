@@ -230,6 +230,9 @@ public struct GeometrySettings: Equatable {
     public var canvasBorder = 0.0
     public var canvasAspect = "free"
     public var canvasColor = "white"
+    /// Content-aware scale of the cropped picture: width and height factors (0.5…1.5).
+    public var contentAwareWidth = 1.0
+    public var contentAwareHeight = 1.0
 
     public init(aspect: String = "free", cropLeft: Double = 0, cropTop: Double = 0, cropRight: Double = 0,
                 cropBottom: Double = 0, straighten: Double = 0, quarterTurns: Int = 0, flipHorizontal: Bool = false,
@@ -274,6 +277,8 @@ public struct GeometrySettings: Equatable {
         let aspect = Int(v("canvasAspect")), color = Int(v("canvasColor"))
         canvasAspect = Canvas.aspects.indices.contains(aspect) ? Canvas.aspects[aspect] : "free"
         canvasColor = Canvas.colors.indices.contains(color) ? Canvas.colors[color] : "white"
+        contentAwareWidth = Swift.min(1.5, Swift.max(0.5, (value("contentAwareWidth") ?? 100) / 100))
+        contentAwareHeight = Swift.min(1.5, Swift.max(0.5, (value("contentAwareHeight") ?? 100) / 100))
     }
 
     /// The manual transform in pixels of a `width` × `height` photo (the frame keeps its size): a camera
@@ -314,9 +319,14 @@ public struct GeometryPlan: Equatable {
     public let crop: GeoRect
     /// Where the photo lies in the frame (its corners: top-left, top-right, bottom-right, bottom-left).
     public let photoCorners: [Vec2]
-    /// The picture after the crop (vignette and grain are laid over this).
+    /// The picture after the crop and content-aware scale (vignette and grain are laid over this).
     public let shapedWidth: Double
     public let shapedHeight: Double
+    /// Content-aware scale's factors (1 = none) and, once worked out from the photo, its map (each
+    /// point of the scaled picture → where it reads on the cropped one).
+    public let contentAwareWidth: Double
+    public let contentAwareHeight: Double
+    public var contentAwareMap: WarpMap?
     /// Canvas size: the canvas and where the picture lies on it (from its top-left), and its colour.
     public let canvasWidth: Double
     public let canvasHeight: Double
@@ -374,8 +384,10 @@ public struct GeometryPlan: Equatable {
         case .frame, .source:
             crop = Crop.whole(width: frameWidth, height: frameHeight)
         }
-        shapedWidth = crop.width
-        shapedHeight = crop.height
+        contentAwareWidth = stage == .full ? settings.contentAwareWidth : 1
+        contentAwareHeight = stage == .full ? settings.contentAwareHeight : 1
+        shapedWidth = Swift.max(1, (crop.width * contentAwareWidth).rounded())
+        shapedHeight = Swift.max(1, (crop.height * contentAwareHeight).rounded())
         // The canvas around the finished picture (whole pixels).
         let canvas: (width: Double, height: Double) = stage == .full
             ? Canvas.size(width: shapedWidth, height: shapedHeight, border: settings.canvasBorder, aspect: settings.canvasAspect)
@@ -405,7 +417,35 @@ public struct GeometryPlan: Equatable {
     /// No turn, transform or crop (the photo keeps its shape).
     public var isShapeIdentity: Bool {
         transform.isClose(to: .identity) && frameWidth == sourceWidth && frameHeight == sourceHeight
-            && crop == Crop.whole(width: frameWidth, height: frameHeight)
+            && crop == Crop.whole(width: frameWidth, height: frameHeight) && !hasContentAware
+    }
+
+    /// Content-aware scale changes the picture.
+    public var hasContentAware: Bool {
+        contentAwareWidth != 1 || contentAwareHeight != 1
+    }
+
+    /// The photo's brightness as the crop shows it, on a `gridWidth` × `gridHeight` grid (content-aware
+    /// scale's energy is worked out from it). `gray`: the photo's brightness, `width` × `height`, rows from the top.
+    public func cropGrid(gray: [Float], width: Int, height: Int, gridWidth: Int, gridHeight: Int) -> [Float] {
+        let back = transform.inverse
+        var out = [Float](repeating: 0, count: gridWidth * gridHeight)
+        guard width > 1, height > 1, gray.count >= width * height else { return out }
+        for y in 0..<gridHeight {
+            for x in 0..<gridWidth {
+                let framed = Vec2(crop.x + (Double(x) + 0.5) / Double(gridWidth) * crop.width,
+                                  crop.y + (Double(y) + 0.5) / Double(gridHeight) * crop.height)
+                let q = back.apply(framed)
+                let fx = Swift.min(Swift.max(q.x / sourceWidth * Double(width) - 0.5, 0), Double(width - 1))
+                let fy = Swift.min(Swift.max(q.y / sourceHeight * Double(height) - 0.5, 0), Double(height - 1))
+                let x0 = Int(fx), y0 = Int(fy), x1 = Swift.min(x0 + 1, width - 1), y1 = Swift.min(y0 + 1, height - 1)
+                let tx = Float(fx - Double(x0)), ty = Float(fy - Double(y0))
+                let top = gray[y0 * width + x0] * (1 - tx) + gray[y0 * width + x1] * tx
+                let bottom = gray[y1 * width + x0] * (1 - tx) + gray[y1 * width + x1] * tx
+                out[y * gridWidth + x] = top * (1 - ty) + bottom * ty
+            }
+        }
+        return out
     }
 
     /// No canvas and no resize at the end.
@@ -421,8 +461,12 @@ public struct GeometryPlan: Equatable {
     /// A point on the shown picture (normalized) → the same point on the photo (normalized).
     public func toSource(_ p: MaskPoint) -> MaskPoint {
         // Off the canvas border onto the picture, then back through the crop and H.
-        let onPicture = Vec2((p.x * canvasWidth - contentX) / Swift.max(shapedWidth, 1e-9),
+        var onPicture = Vec2((p.x * canvasWidth - contentX) / Swift.max(shapedWidth, 1e-9),
                              (p.y * canvasHeight - contentY) / Swift.max(shapedHeight, 1e-9))
+        if let map = contentAwareMap {
+            let q = map.lookup(MaskPoint(onPicture.x, onPicture.y))
+            onPicture = Vec2(q.x, q.y)
+        }
         let framed = Vec2(crop.x + onPicture.x * crop.width, crop.y + onPicture.y * crop.height)
         let q = transform.inverse.apply(framed)
         return MaskPoint(q.x / Swift.max(sourceWidth, 1e-9), q.y / Swift.max(sourceHeight, 1e-9))

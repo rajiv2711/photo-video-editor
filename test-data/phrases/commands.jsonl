@@ -849,3 +849,8 @@
 {"group":"geometry","text":"canvas color black","expect":[{"op":"set","control":"canvasColor","value":1}]}
 {"group":"geometry","text":"border colour blur","expect":[{"op":"set","control":"canvasColor","value":3}]}
 {"group":"geometry","text":"border color white","expect":[{"op":"set","control":"canvasColor","value":0}]}
+{"group":"geometry","text":"content aware scale 80","expect":[{"op":"set","control":"contentAwareWidth","value":80}]}
+{"group":"geometry","text":"content-aware width 120","expect":[{"op":"set","control":"contentAwareWidth","value":120}]}
+{"group":"geometry","text":"seam carving less","expect":[{"op":"nudge","control":"contentAwareWidth","steps":-1}]}
+{"group":"geometry","text":"content aware height 90","expect":[{"op":"set","control":"contentAwareHeight","value":90}]}
+{"group":"geometry","text":"smart height 110","expect":[{"op":"set","control":"contentAwareHeight","value":110}]}

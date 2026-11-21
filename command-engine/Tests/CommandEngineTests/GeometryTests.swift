@@ -637,6 +637,61 @@ final class GeometryTests: XCTestCase {
         XCTAssertEqual(read.canvasColor, "blur")
     }
 
+    // MARK: - Content-aware scale
+
+    /// A grey grid: plain background with a busy (striped) block at columns `x0..<x1`.
+    static func busyBlock(width: Int, height: Int, x0: Int, x1: Int) -> [Float] {
+        var g = [Float](repeating: 0.7, count: width * height)
+        for y in 0..<height { for x in x0..<x1 { g[y * width + x] = (x + y) % 2 == 0 ? 0.1 : 0.9 } }
+        return g
+    }
+
+    func testSeamCarvingSqueezesThePlainPartsAndKeepsTheBusyOne() {
+        let w = 60, h = 20
+        let energy = SeamCarving.energy(Self.busyBlock(width: w, height: h, x0: 25, x1: 35), width: w, height: h)
+        let narrow = SeamCarving.map(energy: energy, width: w, height: h, sx: 0.7, sy: 1)
+        XCTAssertEqual(narrow.width, 42)
+        XCTAssertEqual(narrow.height, 20)
+        // The busy block's columns (25…34) all survive side by side: about 10 output columns read them.
+        let row = 10
+        let read = (0..<narrow.width).map { Int((Double(narrow.positions[(row * narrow.width + $0) * 2]) * Double(w)).rounded(.down)) }
+        let busy = read.filter { (25..<35).contains($0) }.count
+        XCTAssertGreaterThanOrEqual(busy, 9, "busy part kept: \(read)")
+        // Wider: the plain parts are doubled, the block still once.
+        let wide = SeamCarving.map(energy: energy, width: w, height: h, sx: 1.3, sy: 1)
+        XCTAssertEqual(wide.width, 78)
+        let wideRead = (0..<wide.width).map { Int((Double(wide.positions[(row * wide.width + $0) * 2]) * Double(w)).rounded(.down)) }
+        XCTAssertLessThanOrEqual(wideRead.filter { (25..<35).contains($0) }.count, 12)
+        // Height works the same way, turned.
+        let tall = SeamCarving.map(energy: SeamCarving.energy(Self.busyBlock(width: h, height: w, x0: 0, x1: 0), width: h, height: w),
+                                   width: h, height: w, sx: 1, sy: 0.5)
+        XCTAssertEqual(tall.height, 30)
+        // An even map reads in order (no folds) along a row.
+        let xs = (0..<narrow.width).map { narrow.positions[(row * narrow.width + $0) * 2] }
+        XCTAssertEqual(xs, xs.sorted())
+        let same = WarpMap.identity(width: 4, height: 2).lookup(MaskPoint(0.3, 0.7))
+        XCTAssertEqual(same.x, 0.3, accuracy: 1e-6)
+        XCTAssertEqual(same.y, 0.7, accuracy: 1e-6)
+    }
+
+    func testContentAwareScaleInThePlan() {
+        var s = GeometrySettings()
+        s.contentAwareWidth = 0.8
+        var plan = GeometryPlan(settings: s, width: 500, height: 300)
+        XCTAssertEqual(plan.shapedWidth, 400)
+        XCTAssertFalse(plan.isShapeIdentity)
+        // The photo as the crop shows it, on a grid.
+        let gray = (0..<(50 * 30)).map { Float($0 % 50) / 50 }
+        let grid = plan.cropGrid(gray: gray, width: 50, height: 30, gridWidth: 10, gridHeight: 6)
+        XCTAssertEqual(Double(grid[3]), 0.35 * 50 / 50 - 0.01, accuracy: 0.02)
+        // Touches go back through the map.
+        let size = SeamCarving.gridSize(width: 500, height: 300, side: 50)
+        plan.contentAwareMap = SeamCarving.map(energy: [Float](repeating: 1, count: size.width * size.height), width: size.width,
+                                               height: size.height, sx: 0.8, sy: 1)
+        let p = plan.toSource(MaskPoint(0.5, 0.5))
+        XCTAssertEqual(p.x, 0.5, accuracy: 0.03, "a plain picture squeezes evenly")
+    }
+
     func testUprightNames() {
         XCTAssertEqual(control("upright").options.map(\.id), Upright.modes)
         XCTAssertEqual(parse("upright vertical"), [.set("upright", 3)])

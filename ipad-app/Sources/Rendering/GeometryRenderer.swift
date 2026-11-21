@@ -4,51 +4,132 @@ import CoreImage.CIFilterBuiltins
 
 /// The Geometry panel, at the end of the pipeline (the maths is GeometryPlan in CommandEngine). The
 /// edited photo is put into its frame by one transform H (affine on the GPU with `transformed(by:)`,
-/// or CIPerspectiveTransform when it has perspective) and cropped. Everything before it (masks,
-/// retouching, pickers) works on the photo's own pixels, so nothing has to follow the crop.
+/// or CIPerspectiveTransform when it has perspective) and cropped; content-aware scale then reads it
+/// through a WarpMap (a small Core Image kernel). Everything before it (masks, retouching, pickers)
+/// works on the photo's own pixels, so nothing has to follow the crop.
 final class GeometryRenderer {
     let context: CIContext
 
-    /// Bumped by the editor when another photo is opened (the lines found are kept until then).
+    /// Bumped by the editor when another photo is opened (what was read from the photo is kept until then).
     var photoGeneration = 0
-    /// The lines found on the photo, and for which photo and lens settings.
+    /// The photo after lens corrections (Upright, Auto Straighten, perspective crop and content-aware
+    /// scale read it) and a key for it: its lens settings and the photo generation.
+    private var photo: (picture: CIImage, key: [Double])?
+    /// What was read from it: a grey copy of at most 800 px, its straight lines, the content-aware map.
+    private var grayCache: (key: [Double], pixels: [Float], width: Int, height: Int)?
     private var lineCache: (key: [Double], segments: [LineSegment])?
+    private var mapCache: (key: [Double], map: WarpMap)?
 
     init(context: CIContext) {
         self.context = context
     }
 
-    /// Straight lines on the photo (after lens corrections; `key`: the lens settings), found once on a
-    /// copy of at most 800 px (LineDetector in CommandEngine) and kept, so the preview and the saved
-    /// photo use the same lines.
-    func segments(of picture: CIImage, key: [Double]) -> [LineSegment] {
-        let fullKey = key + [Double(photoGeneration)]
-        if let lineCache, lineCache.key == fullKey { return lineCache.segments }
-        let small = PhotoRenderer.downscaled(picture, maxSide: 800)
+    /// The photo after lens corrections, for this render (`key`: the lens settings). Nothing is read
+    /// from it until a tool needs it.
+    func use(_ picture: CIImage, key: [Double]) {
+        photo = (picture, key + [Double(photoGeneration)])
+    }
+
+    /// The photo's brightness (sRGB levels) on a copy of at most 800 px, read once per photo, so the
+    /// preview and the saved photo see the same.
+    private func gray() -> (pixels: [Float], width: Int, height: Int)? {
+        guard let photo else { return nil }
+        if let grayCache, grayCache.key == photo.key { return (grayCache.pixels, grayCache.width, grayCache.height) }
+        let small = PhotoRenderer.downscaled(photo.picture, maxSide: 800)
         let e = small.extent
         let w = Int(e.width.rounded(.down)), h = Int(e.height.rounded(.down))
-        guard w > 8, h > 8, let space = CGColorSpace(name: CGColorSpace.sRGB) else { return [] }
+        guard w > 8, h > 8, let space = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
         var rgba = [Float](repeating: 0, count: w * h * 4)
         context.render(small, toBitmap: &rgba, rowBytes: w * 16,
                        bounds: CGRect(x: e.minX, y: e.minY, width: CGFloat(w), height: CGFloat(h)), format: .RGBAf, colorSpace: space)
-        var gray = [Float](repeating: 0, count: w * h)
+        var pixels = [Float](repeating: 0, count: w * h)
         for i in 0..<(w * h) {
-            gray[i] = 0.2126 * rgba[4 * i] + 0.7152 * rgba[4 * i + 1] + 0.0722 * rgba[4 * i + 2]
+            pixels[i] = 0.2126 * rgba[4 * i] + 0.7152 * rgba[4 * i + 1] + 0.0722 * rgba[4 * i + 2]
         }
-        let found = LineDetector.detect(gray, width: w, height: h)
-        lineCache = (fullKey, found)
+        grayCache = (photo.key, pixels, w, h)
+        return (pixels, w, h)
+    }
+
+    /// Straight lines on the photo (LineDetector in CommandEngine), found once per photo.
+    func segments() -> [LineSegment] {
+        guard let photo else { return [] }
+        if let lineCache, lineCache.key == photo.key { return lineCache.segments }
+        guard let g = gray() else { return [] }
+        let found = LineDetector.detect(g.pixels, width: g.width, height: g.height)
+        lineCache = (photo.key, found)
         return found
     }
 
-    /// The plan for a picture over `extent`.
-    /// Upright uses the lines last found on the photo (see `segments(of:key:)`). `previewScale`: the
-    /// preview's size ÷ the full photo's (nil when saving).
+    /// The plan for a picture over `extent`. `previewScale`: the preview's size ÷ the full photo's
+    /// (nil when saving). Upright reads the photo's lines; content-aware scale gets its map here.
     func plan(extent: CGRect, value: (String) -> Double?, edits: GeometryEdits, stage: GeometryStage,
               previewScale: Double? = nil) -> GeometryPlan {
         let settings = GeometrySettings(value: value)
-        let lines = settings.upright == "off" ? [] : (lineCache?.segments ?? [])
-        return GeometryPlan(settings: settings, width: Double(extent.width), height: Double(extent.height), stage: stage, segments: lines,
-                            edits: edits, previewScale: previewScale)
+        let lines = settings.upright == "off" || settings.upright == "guided" || edits.quad.count == 4 ? [] : segments()
+        var plan = GeometryPlan(settings: settings, width: Double(extent.width), height: Double(extent.height), stage: stage,
+                                segments: lines, edits: edits, previewScale: previewScale)
+        if plan.hasContentAware { plan.contentAwareMap = contentAwareMap(plan) }
+        return plan
+    }
+
+    /// Content-aware scale's map: the photo as the crop shows it, on a grid of long side 256 (its
+    /// energy), seam-carved to the new size. Kept while the photo, the geometry and the sizes stay.
+    private func contentAwareMap(_ plan: GeometryPlan) -> WarpMap? {
+        guard let photo, let g = gray() else { return nil }
+        // Normalized, so the preview and the saved photo share it.
+        let w = plan.sourceWidth, h = plan.sourceHeight
+        let norm = Homography.scale(1 / plan.frameWidth, 1 / plan.frameHeight) * plan.transform * Homography.scale(w, h)
+        let key = photo.key + norm.normalized.m + [plan.crop.x / plan.frameWidth, plan.crop.y / plan.frameHeight,
+                                                   plan.crop.width / plan.frameWidth, plan.crop.height / plan.frameHeight,
+                                                   plan.contentAwareWidth, plan.contentAwareHeight]
+        if let mapCache, mapCache.key.count == key.count, zip(mapCache.key, key).allSatisfy({ abs($0 - $1) < 1e-6 }) {
+            return mapCache.map
+        }
+        let size = SeamCarving.gridSize(width: plan.crop.width, height: plan.crop.height)
+        let grid = plan.cropGrid(gray: g.pixels, width: g.width, height: g.height, gridWidth: size.width, gridHeight: size.height)
+        let map = SeamCarving.map(energy: SeamCarving.energy(grid, width: size.width, height: size.height), width: size.width,
+                                  height: size.height, sx: plan.contentAwareWidth, sy: plan.contentAwareHeight)
+        mapCache = (key, map)
+        return map
+    }
+
+    /// Reads each output pixel where a WarpMap says, as a shift from a plain stretch (Core Image
+    /// kernel language: the picture and the shift grid as two samplers).
+    private static let remapKernel: CIKernel? = CIKernel(source: """
+        kernel vec4 remap(sampler image, sampler shift, vec4 inBox, vec4 outBox) {
+            vec2 u = (destCoord() - outBox.xy) / outBox.zw;
+            vec2 d = sample(shift, samplerCoord(shift)).rg;
+            vec2 p = inBox.xy + (u + d) * inBox.zw;
+            p = clamp(p, inBox.xy + vec2(0.5), inBox.xy + inBox.zw - vec2(0.5));
+            return sample(image, samplerTransform(image, p));
+        }
+        """)
+
+    /// `image` read through `map` into a picture of `size` at the origin (a plain stretch if the
+    /// kernel is missing).
+    func remap(_ image: CIImage, map: WarpMap?, to size: CGSize) -> CIImage {
+        let inBox = image.extent
+        let outBox = CGRect(origin: .zero, size: size)
+        let stretched = image.clampedToExtent()
+            .transformed(by: CGAffineTransform(translationX: -inBox.minX, y: -inBox.minY)
+                .concatenating(CGAffineTransform(scaleX: size.width / max(inBox.width, 1), y: size.height / max(inBox.height, 1))))
+            .cropped(to: outBox)
+        guard let map, map.width > 0, map.height > 0, let kernel = Self.remapKernel else { return stretched }
+        // The shifts with y counted upwards, as Core Image does.
+        let d = map.displacements
+        var pixels = [Float](repeating: 0, count: map.width * map.height * 4)
+        for i in 0..<(map.width * map.height) {
+            pixels[4 * i] = d[2 * i]
+            pixels[4 * i + 1] = -d[2 * i + 1]
+            pixels[4 * i + 3] = 1
+        }
+        let data = pixels.withUnsafeBufferPointer { Data(buffer: $0) }
+        let grid = CIImage(bitmapData: data, bytesPerRow: map.width * 16, size: CGSize(width: map.width, height: map.height),
+                           format: .RGBAf, colorSpace: nil)
+        let shift = Filters.resized(grid, to: outBox)
+        let shiftExtent = shift.extent
+        return kernel.apply(extent: outBox, roiCallback: { index, _ in index == 0 ? inBox : shiftExtent },
+                            arguments: [image, shift, CIVector(cgRect: inBox), CIVector(cgRect: outBox)]) ?? stretched
     }
 
     /// The finished picture on its canvas and resized (Lanczos) as the plan says, at the origin.
@@ -128,6 +209,9 @@ final class GeometryRenderer {
         }
         let c = plan.crop
         let rect = CGRect(x: CGFloat(c.x), y: CGFloat(plan.frameHeight - c.y - c.height), width: CGFloat(c.width), height: CGFloat(c.height))
-        return framed.cropped(to: rect).transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
+        let cropped = framed.cropped(to: rect).transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
+        guard plan.hasContentAware else { return cropped }
+        // Content-aware scale: busy parts keep their shape, plain parts give way.
+        return remap(cropped, map: plan.contentAwareMap, to: CGSize(width: CGFloat(plan.shapedWidth), height: CGFloat(plan.shapedHeight)))
     }
 }

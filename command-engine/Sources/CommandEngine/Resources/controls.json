@@ -1127,6 +1127,11 @@
         {"id": "black", "label": "Black", "synonyms": ["dark"]},
         {"id": "grey", "label": "Grey", "synonyms": ["gray", "mid grey", "mid gray"]},
         {"id": "blur", "label": "Blur", "synonyms": ["blurred", "blurred photo", "soft", "photo"]}
-      ]}
+      ]},
+    {"id": "contentAwareWidth", "label": "Content-Aware Width", "group": "geometry", "section": "Content-aware scale", "min": 50, "max": 150, "default": 100, "step": 5,
+      "synonyms": ["content aware width", "content aware scale", "content-aware scale", "smart width", "seam carving", "content aware scale width",
+                   "content aware resize"]},
+    {"id": "contentAwareHeight", "label": "Content-Aware Height", "group": "geometry", "section": "Content-aware scale", "min": 50, "max": 150, "default": 100, "step": 5,
+      "synonyms": ["content aware height", "smart height", "content aware scale height", "seam carving height"]}
   ]
 }
