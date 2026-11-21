@@ -391,4 +391,76 @@ final class LayersTests: XCTestCase {
         XCTAssertEqual(size.width, 7 * 0.6 * 0.03, accuracy: 1e-9)
         XCTAssertEqual(size.height, 1.2 * 0.03, accuracy: 1e-9)
     }
+
+    // MARK: - Shapes and pen paths
+
+    func testShapeNames() {
+        XCTAssertEqual(parse("add rectangle"), [.run("addRectangle")], "a shape layer, not a marquee mask")
+        XCTAssertEqual(parse("add ellipse"), [.run("addEllipse")])
+        XCTAssertEqual(parse("rectangle"), [.run("rectangleMarquee")], "alone it is still the mask")
+        XCTAssertEqual(parse("shape fill red"), [.set("shapeFill", 3)])
+        XCTAssertEqual(parse("shape fill none"), [.set("shapeFill", 0)])
+        XCTAssertEqual(parse("pen tool"), [.run("penTool")])
+        XCTAssertEqual(parse("polygon sides 5"), [.set("polygonSides", 5)])
+        XCTAssertEqual(registry.control(id: "shapeFill")!.options.map(\.id), ["none"] + Layers.colors.map(\.id))
+        XCTAssertEqual(Layers.color(registry.control(id: "shapeFill")!.defaultValue, none: true), Layers.colors[6].rgb, "blue")
+        XCTAssertNil(Layers.color(0, none: true))
+        for id in Layers.shapeActions.keys { XCTAssertEqual(registry.control(id: id)?.layer, "shape", id) }
+    }
+
+    func testAddShapesMakesShapeLayers() {
+        run("add ellipse")
+        XCTAssertEqual(state.layers[0].kind, "shape")
+        XCTAssertEqual(state.layers[0].shapeType, "ellipse")
+        XCTAssertEqual(state.layers[0].values["shapeWidth"], 25)
+        run("shape width 40 shape fill red")
+        XCTAssertEqual(state.layers[0].values["shapeWidth"], 40)
+        XCTAssertEqual(Layers.color(state.layers[0].values["shapeFill"]!, none: true), Layers.colors[2].rgb)
+        run("add line line width 3")
+        XCTAssertEqual(state.layers[1].shapeType, "line")
+        XCTAssertEqual(state.layers[1].values["lineWidth"], 3)
+        let box = Layers.box(of: state.layers[1])!
+        XCTAssertEqual(box.width, 0.4, accuracy: 1e-9)
+        XCTAssertEqual(box.height, 0.03, accuracy: 1e-9)
+    }
+
+    func testRegularPolygons() {
+        let triangle = Layers.polygon(sides: 3, width: 2, height: 2)
+        XCTAssertEqual(triangle.count, 3)
+        XCTAssertEqual(triangle[0].x, 0, accuracy: 1e-12)
+        XCTAssertEqual(triangle[0].y, -1, accuracy: 1e-12, "first corner at the top")
+        XCTAssertGreaterThan(triangle[1].x, 0, "then clockwise: to the right")
+        let square = Layers.polygon(sides: 4, width: 2, height: 1)
+        XCTAssertEqual(square[1].x, 1, accuracy: 1e-12)
+        XCTAssertEqual(square[2].y, 0.5, accuracy: 1e-12)
+    }
+
+    func testPenPathsByTapsAndDrags() {
+        run("pen tool")
+        XCTAssertEqual(state.layers[0].shapeType, "path")
+        // Canvas 1000 × 500 (L = 1000), the layer's centre at 500, 250.
+        XCTAssertTrue(state.penPoint(Vec2(400, 150), width: 1000, height: 500))
+        XCTAssertTrue(state.penPoint(Vec2(600, 150), handleEnd: Vec2(650, 150), width: 1000, height: 500))
+        XCTAssertTrue(state.penPoint(Vec2(600, 350), width: 1000, height: 500))
+        XCTAssertEqual(state.layers[0].path[0].point, MaskPoint(-0.1, -0.1))
+        XCTAssertEqual(state.layers[0].path[1].handle.x, 0.05, accuracy: 1e-9, "dragged out: a curve")
+        XCTAssertEqual(state.layers[0].path[1].handle.y, 0, accuracy: 1e-9)
+        XCTAssertEqual(run("pen tool"), [.ran(controlID: "penTool")], "the open path goes on")
+        XCTAssertEqual(state.layers.count, 1)
+        XCTAssertTrue(state.penPoint(Vec2(405, 152), width: 1000, height: 500), "on the first point: closes")
+        XCTAssertTrue(state.layers[0].closed)
+        XCTAssertEqual(state.layers[0].path.count, 3)
+        XCTAssertFalse(state.penPoint(Vec2(500, 250), width: 1000, height: 500), "closed: no more points")
+        let pieces = Layers.bezier(state.layers[0].path, closed: true)
+        XCTAssertEqual(pieces.count, 3)
+        XCTAssertEqual(pieces[0].2.x, 0.05, accuracy: 1e-9, "arrives from point − handle")
+        XCTAssertEqual(pieces[0].2.y, -0.1, accuracy: 1e-9)
+        XCTAssertEqual(Layers.point(on: pieces[0], at: 0), Vec2(-0.1, -0.1))
+        XCTAssertEqual(Layers.point(on: pieces[0], at: 1), Vec2(0.1, -0.1))
+        let box = Layers.box(of: state.layers[0])!
+        XCTAssertEqual(box.x, -0.1, accuracy: 1e-9)
+        XCTAssertEqual(box.maxY, 0.1, accuracy: 1e-9)
+        run("pen tool")
+        XCTAssertEqual(state.layers.count, 2, "a closed path done: a new one")
+    }
 }

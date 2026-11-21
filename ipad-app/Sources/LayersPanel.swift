@@ -183,7 +183,8 @@ struct LayersPanel: View {
 }
 
 /// Touches on the picture for the selected layer: a drag moves it; with the mask brush, strokes
-/// (finger or Pencil) paint its mask. Its outline shows where it is.
+/// (finger or Pencil) paint its mask; with the pen, taps add corners and drags curved points. Its
+/// outline shows where it is.
 struct LayerCanvas: View {
     @ObservedObject var model: EditorModel
     let tool: String
@@ -194,6 +195,14 @@ struct LayerCanvas: View {
             ZStack {
                 Color.clear.contentShape(Rectangle())
                 outline(geo.size)
+                // The pen's points so far (the first one closes the path).
+                ForEach(Array(model.penPoints.enumerated()), id: \.offset) { item in
+                    Circle()
+                        .fill(item.offset == 0 ? Color.accentColor : Color.white)
+                        .frame(width: 9, height: 9)
+                        .position(x: CGFloat(item.element.x) * geo.size.width, y: CGFloat(item.element.y) * geo.size.height)
+                        .allowsHitTesting(false)
+                }
                 if tool == "mask" {
                     Path { path in path.addLines(points) }
                         .stroke(Color.red.opacity(0.5), style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))

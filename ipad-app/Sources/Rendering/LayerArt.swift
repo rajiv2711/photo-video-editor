@@ -2,7 +2,7 @@ import CommandEngine
 import CoreImage
 import UIKit
 
-/// Draws the layers that are made of words and lines (text, …) with Core Graphics into a transparent
+/// Draws the layers that are made of words and lines (text, shapes, …) with Core Graphics into a transparent
 /// picture the canvas's size, placed, scaled and turned as the layer says (see Layers.swift). Pictures
 /// are kept until the layer's look or the canvas size changes, so moving a slider elsewhere is quick.
 final class LayerArt {
@@ -56,6 +56,8 @@ final class LayerArt {
         switch layer.kind {
         case "text":
             drawText(layer, in: context, long: long)
+        case "shape":
+            drawShape(layer, in: context, long: long)
         default:
             break
         }
@@ -78,6 +80,56 @@ final class LayerArt {
         text.draw(with: CGRect(x: -bounds.width / 2, y: -bounds.height / 2, width: bounds.width, height: bounds.height),
                   options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
         UIGraphicsPopContext()
+    }
+
+    /// A rectangle, ellipse, regular polygon or closed pen path filled with Shape Fill (or, with no
+    /// fill, outlined); a line or open path drawn Line Width wide.
+    private static func drawShape(_ layer: Layer, in context: CGContext, long: Double) {
+        let size = Layers.shapeSize(layer)
+        let w = CGFloat(size.width * long), h = CGFloat(size.height * long)
+        let fill = Layers.color(layer.value("shapeFill", 7), none: true)
+        let line = CGFloat(layer.value("lineWidth", 1) / 100 * long)
+        let path = CGMutablePath()
+        var closed = true
+        switch layer.shapeType {
+        case "ellipse":
+            path.addEllipse(in: CGRect(x: -w / 2, y: -h / 2, width: w, height: h))
+        case "polygon":
+            let corners = Layers.polygon(sides: Int(layer.value("polygonSides", 6)), width: Double(w), height: Double(h))
+            path.addLines(between: corners.map { CGPoint(x: $0.x, y: $0.y) })
+            path.closeSubpath()
+        case "line":
+            path.move(to: CGPoint(x: -w / 2, y: 0))
+            path.addLine(to: CGPoint(x: w / 2, y: 0))
+            closed = false
+        case "path":
+            func p(_ v: Vec2) -> CGPoint { CGPoint(x: v.x * long, y: v.y * long) }
+            let pieces = Layers.bezier(layer.path, closed: layer.closed)
+            guard let first = pieces.first else {
+                // A single point so far: a dot where it is.
+                if let node = layer.path.first {
+                    path.addEllipse(in: CGRect(x: node.point.x * long - Double(line), y: node.point.y * long - Double(line),
+                                               width: 2 * Double(line), height: 2 * Double(line)))
+                }
+                break
+            }
+            path.move(to: p(first.0))
+            for piece in pieces { path.addCurve(to: p(piece.3), control1: p(piece.1), control2: p(piece.2)) }
+            if layer.closed { path.closeSubpath() } else { closed = false }
+        default:
+            path.addRect(CGRect(x: -w / 2, y: -h / 2, width: w, height: h))
+        }
+        context.addPath(path)
+        if closed, let fill {
+            context.setFillColor(color(fill).cgColor)
+            context.fillPath()
+        } else {
+            context.setStrokeColor(color(fill ?? .white).cgColor)
+            context.setLineWidth(line)
+            context.setLineCap(.round)
+            context.setLineJoin(.round)
+            context.strokePath()
+        }
     }
 
     /// Text Font's typefaces (Layers.fonts), all on the iPad already.

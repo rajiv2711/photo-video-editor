@@ -32,14 +32,26 @@ public struct Layer: Hashable, Codable {
     public var mask: Mask?
     /// Text layers: the words, as typed or said.
     public var text: String
+    /// Pen paths: the points tapped (or dragged out for curves), L units around the centre.
+    public var path: [PathNode]
+    /// Pen paths: joined back to the first point (filled) or open (a line).
+    public var closed: Bool
 
     public init(kind: String, values: [String: Double] = [:], adjustments: [String: Double] = [:], mask: Mask? = nil,
-                text: String = "") {
+                text: String = "", path: [PathNode] = [], closed: Bool = false) {
         self.kind = kind
         self.values = values
         self.adjustments = adjustments
         self.mask = mask
         self.text = text
+        self.path = path
+        self.closed = closed
+    }
+
+    /// Shapes: rectangle, ellipse, line, polygon or path (Layers.shapeTypes).
+    public var shapeType: String {
+        let i = Int(values["shapeType"] ?? 0)
+        return Layers.shapeTypes.indices.contains(i) ? Layers.shapeTypes[i] : "rectangle"
     }
 
     /// A setting, or its default when the layer doesn't have it.
@@ -61,6 +73,18 @@ public struct Layer: Hashable, Codable {
     public var transform: LayerTransform {
         LayerTransform(x: value("layerX", 50) / 100, y: value("layerY", 50) / 100,
                        scale: Swift.max(0.01, value("layerScale", 100) / 100), angle: value("layerRotation", 0))
+    }
+}
+
+/// One point of a pen path and its curve handle: the path leaves it towards `point + handle` and
+/// arrives from `point − handle` (no handle: a corner). L units around the layer's centre.
+public struct PathNode: Hashable, Codable {
+    public var point: MaskPoint
+    public var handle: MaskPoint
+
+    public init(_ point: MaskPoint, handle: MaskPoint = MaskPoint(0, 0)) {
+        self.point = point
+        self.handle = handle
     }
 }
 
@@ -137,6 +161,44 @@ public enum Layers {
     /// "textFont" option ids, in order; must match controls.json.
     public static let fonts = ["sans", "serif", "rounded", "mono", "script", "display", "typewriter", "marker"]
 
+    /// The kinds of shape, in the order of the "shapeType" setting the add actions give a shape layer.
+    public static let shapeTypes = ["rectangle", "ellipse", "line", "polygon", "path"]
+
+    /// The shape each add action makes and the size it starts at (width, height, % of the long side).
+    public static let shapeActions: [String: (type: String, width: Double, height: Double)] = [
+        "addRectangle": ("rectangle", 30, 20), "addEllipse": ("ellipse", 25, 25), "addLine": ("line", 40, 20),
+        "addPolygon": ("polygon", 25, 25), "penTool": ("path", 30, 20),
+    ]
+
+    /// A shape's box (width, height) in L units.
+    public static func shapeSize(_ layer: Layer) -> (width: Double, height: Double) {
+        (layer.value("shapeWidth", 30) / 100, layer.value("shapeHeight", 20) / 100)
+    }
+
+    /// A regular polygon of `sides` corners in a `width` × `height` box around the centre, the first
+    /// corner at the top, going clockwise (y down).
+    public static func polygon(sides: Int, width: Double, height: Double) -> [Vec2] {
+        let n = Swift.max(3, sides)
+        return (0..<n).map { i in
+            let a = Double(i) / Double(n) * 2 * .pi
+            return Vec2(sin(a) * width / 2, -cos(a) * height / 2)
+        }
+    }
+
+    /// A pen path as cubic Bézier pieces (start, control 1, control 2, end), joined back to the start when closed.
+    public static func bezier(_ nodes: [PathNode], closed: Bool) -> [(Vec2, Vec2, Vec2, Vec2)] {
+        guard nodes.count >= 2 else { return [] }
+        func v(_ p: MaskPoint) -> Vec2 { Vec2(p.x, p.y) }
+        let pairs = Array(zip(nodes, nodes.dropFirst())) + (closed ? [(nodes[nodes.count - 1], nodes[0])] : [])
+        return pairs.map { a, b in (v(a.point), v(a.point) + v(a.handle), v(b.point) - v(b.handle), v(b.point)) }
+    }
+
+    /// A point on a Bézier piece at `t` (0…1).
+    public static func point(on piece: (Vec2, Vec2, Vec2, Vec2), at t: Double) -> Vec2 {
+        let u = 1 - t
+        return piece.0 * (u * u * u) + piece.1 * (3 * u * u * t) + piece.2 * (3 * u * t * t) + piece.3 * (t * t * t)
+    }
+
     /// Text Size is per mille of the canvas's long side: the font size in L units.
     public static func fontSize(_ layer: Layer) -> Double {
         layer.value("textSize", 60) / 1000
@@ -148,6 +210,7 @@ public enum Layers {
         case "photo": return "Photo"
         case "adjustment": return "Adjustment"
         case "text": return "Text"
+        case "shape": return "Shape"
         default: return kind.prefix(1).uppercased() + kind.dropFirst()
         }
     }
@@ -155,6 +218,37 @@ public enum Layers {
     /// The size of a layer's content before Layer Scale, in L units (width, height); nil for layers
     /// that cover the whole canvas. `aspect`: a photo layer's width ÷ height.
     public static func size(of layer: Layer, aspect: Double? = nil) -> (width: Double, height: Double)? {
+        box(of: layer, aspect: aspect).map { ($0.maxX - $0.x, $0.maxY - $0.y) }
+    }
+
+    /// The box around a layer's content before Layer Scale and Rotation, in L units around its centre;
+    /// nil for layers that cover the whole canvas.
+    public static func box(of layer: Layer, aspect: Double? = nil) -> GeoRect? {
+        func centred(_ w: Double, _ h: Double) -> GeoRect { GeoRect(x: -w / 2, y: -h / 2, width: w, height: h) }
+        switch layer.kind {
+        case "shape":
+            let size = shapeSize(layer)
+            switch layer.shapeType {
+            case "line":
+                return centred(size.width, layer.value("lineWidth", 1) / 100)
+            case "path":
+                let points = bezier(layer.path, closed: layer.closed).flatMap { piece in
+                    stride(from: 0.0, through: 1.0, by: 0.125).map { point(on: piece, at: $0) }
+                } + layer.path.map { Vec2($0.point.x, $0.point.y) }
+                guard let first = points.first else { return centred(0.02, 0.02) }
+                let xs = points.map(\.x), ys = points.map(\.y)
+                return GeoRect(x: xs.min() ?? first.x, y: ys.min() ?? first.y, width: (xs.max() ?? 0) - (xs.min() ?? 0),
+                               height: (ys.max() ?? 0) - (ys.min() ?? 0))
+            default:
+                return centred(size.width, size.height)
+            }
+        default:
+            return sizeAround(layer, aspect: aspect).map { centred($0.width, $0.height) }
+        }
+    }
+
+    /// The content size of layers drawn around their centre.
+    private static func sizeAround(_ layer: Layer, aspect: Double?) -> (width: Double, height: Double)? {
         switch layer.kind {
         case "photo":
             let a = Swift.max(0.01, aspect ?? 1)
@@ -173,11 +267,11 @@ public enum Layers {
     /// The layer's outline on a `width` × `height` canvas (pixels from the top-left): the corners of
     /// its content's box, placed, scaled and turned (top-left, top-right, bottom-right, bottom-left).
     public static func outline(_ layer: Layer, aspect: Double? = nil, width: Double, height: Double) -> [Vec2] {
-        guard let size = size(of: layer, aspect: aspect) else {
+        guard let b = box(of: layer, aspect: aspect) else {
             return [Vec2(0, 0), Vec2(width, 0), Vec2(width, height), Vec2(0, height)]
         }
-        let w = size.width / 2, h = size.height / 2
-        return [Vec2(-w, -h), Vec2(w, -h), Vec2(w, h), Vec2(-w, h)].map { layer.transform.toCanvas($0, width: width, height: height) }
+        return [Vec2(b.x, b.y), Vec2(b.maxX, b.y), Vec2(b.maxX, b.maxY), Vec2(b.x, b.maxY)]
+            .map { layer.transform.toCanvas($0, width: width, height: height) }
     }
 
     /// "layerMask" option ids and the mask part each makes: a linear gradient full at that side, a
@@ -283,6 +377,32 @@ extension EditState {
     }
 }
 
+extension EditState {
+    /// The pen on the selected open path: a point at `point` (canvas pixels of a `width` × `height`
+    /// canvas) with a curve handle dragged out to `handleEnd` (nil: a corner). A point on the first one
+    /// (with three or more) closes the path. Returns false when no open path is selected.
+    @discardableResult
+    public mutating func penPoint(_ point: Vec2, handleEnd: Vec2? = nil, width: Double, height: Double) -> Bool {
+        guard let l = selectedLayer, layers[l].kind == "shape", layers[l].shapeType == "path", !layers[l].closed else { return false }
+        let t = layers[l].transform
+        let p = t.toLayer(point, width: width, height: height)
+        if layers[l].path.count >= 3, let first = layers[l].path.first {
+            let close = 0.02 / t.scale  // 2 % of the long side, on screen
+            if hypot(p.x - first.point.x, p.y - first.point.y) < close {
+                layers[l].closed = true
+                return true
+            }
+        }
+        var handle = MaskPoint(0, 0)
+        if let end = handleEnd {
+            let q = t.toLayer(end, width: width, height: height)
+            handle = MaskPoint(q.x - p.x, q.y - p.y)
+        }
+        layers[l].path.append(PathNode(MaskPoint(p.x, p.y), handle: handle))
+        return true
+    }
+}
+
 // MARK: - Layer actions
 
 extension CommandApplier {
@@ -314,6 +434,20 @@ extension CommandApplier {
             guard let l = state.layerTarget(for: control) else { return [.needsLayer(controlID: control.id)] }
             state.layers[l].text = command.text ?? ""
             return [ran, .layered(layer: l + 1, event: .textChanged)]
+        case "addRectangle", "addEllipse", "addLine", "addPolygon", "penTool":
+            // The pen goes on drawing the selected path while it is open.
+            if control.id == "penTool", let l = state.selectedLayer, state.layers[l].kind == "shape",
+               state.layers[l].shapeType == "path", !state.layers[l].closed {
+                return [ran]
+            }
+            let made = Layers.shapeActions[control.id] ?? ("rectangle", 30, 20)
+            var layer = Layers.make("shape", registry: registry)
+            layer.values["shapeType"] = Double(Layers.shapeTypes.firstIndex(of: made.type) ?? 0)
+            layer.values["shapeWidth"] = made.width
+            layer.values["shapeHeight"] = made.height
+            state.layers.append(layer)
+            state.selectLayer(state.layers.count - 1)
+            return [ran, .layered(layer: state.layers.count, event: .created("shape"))]
         case "newAdjustmentLayer":
             state.layers.append(Layers.make("adjustment", registry: registry))
             state.selectLayer(state.layers.count - 1)

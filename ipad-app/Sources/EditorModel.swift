@@ -516,6 +516,17 @@ final class EditorModel: ObservableObject {
     private func layerDraw(_ tool: String, _ points: [MaskPoint], pressure: [Double], finished: Bool) {
         guard let l = state.selectedLayer, let start = points.first, let end = points.last else { return }
         switch tool {
+        case "pen":
+            // A tap: a corner; a drag: a point with a curve handle pulled out to where the finger lifts.
+            guard finished, let plan = previewPlan else { return }
+            let w = plan.outputWidth, h = plan.outputHeight
+            let a = Vec2(start.x * w, start.y * h), b = Vec2(end.x * w, end.y * h)
+            let drag = hypot(end.x - start.x, end.y - start.y) > 0.01
+            state.penPoint(a, handleEnd: drag ? b : nil, width: w, height: h)
+            if state.layers[l].closed {
+                layerMode = "move"
+                feedback = Feedback(text: "Layer \(l + 1): path closed · drag it to move it; Shape Fill colours it")
+            }
         case "mask":
             guard finished else { return }
             func v(_ id: String) -> Double { registry.control(id: id).map { state.value(of: $0) } ?? 0 }
@@ -547,6 +558,16 @@ final class EditorModel: ObservableObject {
         render()
     }
 
+    /// The selected pen path's points on the shown picture (0…1), while the pen draws it.
+    var penPoints: [MaskPoint] {
+        guard layerMode == "pen", let l = state.selectedLayer, let plan = previewPlan else { return [] }
+        let w = plan.outputWidth, h = plan.outputHeight, t = state.layers[l].transform
+        return state.layers[l].path.map {
+            let p = t.toCanvas(Vec2($0.point.x, $0.point.y), width: w, height: h)
+            return MaskPoint(p.x / w, p.y / h)
+        }
+    }
+
     /// The selected layer's outline on the shown picture (corners, 0…1 from the top-left), for the canvas.
     var selectedLayerOutline: [MaskPoint] {
         guard let l = state.selectedLayer, let plan = previewPlan else { return [] }
@@ -576,6 +597,8 @@ final class EditorModel: ObservableObject {
                 break
             }
         }
+        // The pen: taps and drags on the picture add points to the selected path.
+        if outcomes.contains(.ran(controlID: "penTool")) { layerMode = "pen" }
         if state.selectedLayer != nil { geometryTool = nil }
     }
 
@@ -1272,6 +1295,7 @@ final class EditorModel: ObservableObject {
         "photo": "drag it to move it; Layer Scale, Layer Rotation and Layer Opacity change it",
         "adjustment": "the sliders a mask holds (exposure, contrast, …) now change everything below it; “layer mask top” limits it",
         "text": "drag it to move it; “edit text …”, Text Size, Text Font and Text Colour change it",
+        "shape": "drag it to move it; Shape Width, Height, Fill and Line Width change it (pen: tap corners, drag for curves, tap the first point to close)",
     ]
 
     private func describe(_ event: MaskEvent, mask: Int) -> String {

@@ -1057,3 +1057,23 @@
 {"group":"layers","text":"font handwriting","expect":[{"op":"set","control":"textFont","value":4}]}
 {"group":"layers","text":"text colour white","expect":[{"op":"set","control":"textColor","value":0}]}
 {"group":"layers","text":"text color yellow","expect":[{"op":"set","control":"textColor","value":4}]}
+{"group":"layers","text":"add rectangle","expect":[{"op":"run","control":"addRectangle"}]}
+{"group":"layers","text":"add a square","expect":[{"op":"run","control":"addRectangle"}]}
+{"group":"layers","text":"add ellipse","expect":[{"op":"run","control":"addEllipse"}]}
+{"group":"layers","text":"add circle","expect":[{"op":"run","control":"addEllipse"}]}
+{"group":"layers","text":"add line","expect":[{"op":"run","control":"addLine"}]}
+{"group":"layers","text":"draw line","expect":[{"op":"run","control":"addLine"}]}
+{"group":"layers","text":"add polygon","expect":[{"op":"run","control":"addPolygon"}]}
+{"group":"layers","text":"add triangle polygon sides 3","expect":[{"op":"run","control":"addPolygon"},{"op":"set","control":"polygonSides","value":3}]}
+{"group":"layers","text":"pen tool","expect":[{"op":"run","control":"penTool"}]}
+{"group":"layers","text":"bezier path","expect":[{"op":"run","control":"penTool"}]}
+{"group":"layers","text":"shape width 50","expect":[{"op":"set","control":"shapeWidth","value":50}]}
+{"group":"layers","text":"shape size more","expect":[{"op":"nudge","control":"shapeWidth","steps":1}]}
+{"group":"layers","text":"shape height 40","expect":[{"op":"set","control":"shapeHeight","value":40}]}
+{"group":"layers","text":"height of shape less","expect":[{"op":"nudge","control":"shapeHeight","steps":-1}]}
+{"group":"layers","text":"shape fill red","expect":[{"op":"set","control":"shapeFill","value":3}]}
+{"group":"layers","text":"shape colour none","expect":[{"op":"set","control":"shapeFill","value":0}]}
+{"group":"layers","text":"line width 3","expect":[{"op":"set","control":"lineWidth","value":3}]}
+{"group":"layers","text":"line thickness more","expect":[{"op":"nudge","control":"lineWidth","steps":1}]}
+{"group":"layers","text":"polygon sides 5","expect":[{"op":"set","control":"polygonSides","value":5}]}
+{"group":"layers","text":"number of sides 8","expect":[{"op":"set","control":"polygonSides","value":8}]}

@@ -532,6 +532,17 @@
     {"id": "edit-text", "command": "new text layer \"HI\" edit text HELLO WORLD", "control": "editText", "expect": [{"metric": "p95_luma", "dir": "up", "region": [0.22, 0.47, 0.34, 0.53], "min": 60}]},
     {"id": "text-size", "command": "new text layer \"HI\" text size 150", "control": "textSize", "expect": [{"metric": "p95_luma", "dir": "up", "region": [0.4, 0.43, 0.6, 0.455], "min": 60}]},
     {"id": "text-font", "command": "new text layer \"HELLO\" text font script", "control": "textFont", "expect": [{"metric": "diff", "dir": "changed", "vs": "new-text-layer", "region": [0.25, 0.42, 0.75, 0.58], "min": 2}]},
-    {"id": "text-colour", "command": "new text layer \"HELLO\" text colour red", "control": "textColor", "expect": [{"metric": "mean_sat", "dir": "up", "vs": "new-text-layer", "region": [0.36, 0.47, 0.64, 0.53], "min": 5}, {"metric": "mean_r", "dir": "up", "region": [0.36, 0.47, 0.64, 0.53], "min": 5}]}
+    {"id": "text-colour", "command": "new text layer \"HELLO\" text colour red", "control": "textColor", "expect": [{"metric": "mean_sat", "dir": "up", "vs": "new-text-layer", "region": [0.36, 0.47, 0.64, 0.53], "min": 5}, {"metric": "mean_r", "dir": "up", "region": [0.36, 0.47, 0.64, 0.53], "min": 5}]},
+
+    {"id": "add-rectangle", "command": "add rectangle", "control": "addRectangle", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.4, 0.45, 0.6, 0.55], "min": 60}, {"metric": "diff", "dir": "same", "region": [0.1, 0.05, 0.9, 0.3], "min": 0.5}]},
+    {"id": "add-ellipse", "command": "add ellipse", "control": "addEllipse", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.42, 0.45, 0.58, 0.55], "min": 60}, {"metric": "diff", "dir": "same", "region": [0.31, 0.38, 0.35, 0.41], "min": 1}]},
+    {"id": "add-line", "command": "add line", "control": "addLine", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.3, 0.497, 0.7, 0.503], "min": 40}, {"metric": "diff", "dir": "same", "region": [0.3, 0.46, 0.7, 0.48], "min": 1}]},
+    {"id": "add-polygon", "command": "add polygon polygon sides 3", "control": "addPolygon", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.47, 0.41, 0.53, 0.45], "min": 40}, {"metric": "diff", "dir": "same", "region": [0.33, 0.38, 0.38, 0.42], "min": 1}]},
+    {"id": "polygon-sides", "command": "add polygon polygon sides 4", "control": "polygonSides", "expect": [{"metric": "diff", "dir": "changed", "vs": "add-polygon", "region": [0.3, 0.55, 0.7, 0.62], "min": 3}]},
+    {"id": "pen-tool", "command": "pen tool", "control": "penTool", "steps": [{"tap": [0.3, 0.3]}, {"tap": [0.7, 0.3]}, {"tap": [0.7, 0.7]}, {"tap": [0.3, 0.7]}, {"tap": [0.3, 0.3]}], "expect": [{"metric": "mean_b", "dir": "up", "region": [0.35, 0.35, 0.65, 0.65], "min": 60}, {"metric": "diff", "dir": "same", "region": [0.05, 0.05, 0.25, 0.25], "min": 1}]},
+    {"id": "shape-width", "command": "add rectangle shape width 80", "control": "shapeWidth", "expect": [{"metric": "mean_sat", "dir": "up", "region": [0.08, 0.47, 0.18, 0.53], "min": 40}]},
+    {"id": "shape-height", "command": "add rectangle shape height 60", "control": "shapeHeight", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.45, 0.24, 0.55, 0.3], "min": 60}]},
+    {"id": "shape-fill", "command": "add rectangle shape fill red", "control": "shapeFill", "expect": [{"metric": "mean_r", "dir": "up", "vs": "add-rectangle", "region": [0.4, 0.45, 0.6, 0.55], "min": 100}, {"metric": "mean_b", "dir": "down", "vs": "add-rectangle", "region": [0.4, 0.45, 0.6, 0.55], "min": 100}]},
+    {"id": "line-width", "command": "add line line width 5", "control": "lineWidth", "expect": [{"metric": "mean_b", "dir": "up", "region": [0.3, 0.478, 0.7, 0.488], "min": 40}]}
   ]
 }
