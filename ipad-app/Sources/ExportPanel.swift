@@ -8,6 +8,7 @@ struct ExportPanel: View {
     @ObservedObject var model: EditorModel
     @Binding var expanded: Set<String>
     @State private var customName = ""
+    @State private var presetName = ""
 
     private var controls: [Control] { model.registry.controls(inGroup: "export") }
 
@@ -34,6 +35,7 @@ struct ExportPanel: View {
                                 }
                             }
                             if section == "Naming" { nameField }
+                            if section == "Presets" { presetsSection }
                         }
                     } label: {
                         Text(section).font(.subheadline.weight(.semibold))
@@ -46,8 +48,35 @@ struct ExportPanel: View {
         }
     }
 
-    /// Controls shown in their own way (buttons above, the name field).
-    static let shownApart: Set<String> = ["export", "exportName"]
+    /// Controls shown in their own way (buttons above, the name field, the presets list).
+    static let shownApart: Set<String> = ["export", "exportName", "exportPreset", "saveExportPreset", "deleteExportPreset"]
+
+    /// Export presets: tap one to use its settings (a long press deletes one of yours); save the panel's
+    /// settings under a name.
+    private var presetsSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                TextField("New export preset", text: $presetName)
+                    .textFieldStyle(.roundedBorder)
+                Button("Save") {
+                    model.apply([.run("saveExportPreset", text: presetName.trimmingCharacters(in: .whitespaces))])
+                    presetName = ""
+                }
+                .buttonStyle(.bordered)
+            }
+            ForEach(Array(model.exportPresets.enumerated()), id: \.offset) { item in
+                Button(item.element.name + (item.offset < model.userExportPresetCount ? "" : " (built in)")) {
+                    model.apply([.run("exportPreset", text: item.element.name)])
+                }
+                .contextMenu {
+                    if item.offset < model.userExportPresetCount {
+                        Button("Delete", role: .destructive) { model.apply([.run("deleteExportPreset", text: item.element.name)]) }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+    }
 
     /// Only the formats ImageIO can write on this iPad.
     private func formatPicker(_ control: Control) -> some View {

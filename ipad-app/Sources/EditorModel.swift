@@ -89,6 +89,8 @@ final class EditorModel: ObservableObject {
     var keepsPresets = true
     /// The presets as last written to the file.
     private var savedPresets: [Preset] = []
+    /// The user's export presets as last written to their file.
+    private var savedExportPresets: [Preset] = []
     /// The history step the next render records for a touch edit (a slider, a stroke…) and its key (a
     /// drag's renders merge into one step; `historySeal` ends it). Nil: what changed belongs to the
     /// step the last command made (the interpreter records those).
@@ -127,8 +129,10 @@ final class EditorModel: ObservableObject {
         self.previewSide = previewSide
         self.previewSource = PhotoRenderer.downscaled(start, maxSide: previewSide)
         renderer.lens = Self.lens(of: start)
-        savedPresets = Self.readPresets()
+        savedPresets = Self.readPresets(Self.presetsFile)
         interpreter.workspace.presets = savedPresets
+        savedExportPresets = Self.readPresets(Self.exportPresetsFile)
+        interpreter.workspace.exportPresets = savedExportPresets
         interpreter.workspace.library = libraryStore.read()
         installActions()
         // The Pro camera's photos join the library and open.
@@ -222,6 +226,7 @@ final class EditorModel: ObservableObject {
         if keepsPresets {
             interpreter.workspace.presets = kept.presets
             interpreter.workspace.clipboard = kept.clipboard
+            interpreter.workspace.exportPresets = kept.exportPresets
         }
         if keepsLibrary { interpreter.workspace.library = kept.library }
         installActions()
@@ -1315,6 +1320,7 @@ final class EditorModel: ObservableObject {
             if let lat = photo.latitude, let lon = photo.longitude { out["photo.gps"] = String(format: "%.2f,%.2f", lat, lon) }
         }
         if !lastExported.isEmpty { out["export.saved"] = lastExported }
+        out["export.presets"] = interpreter.workspace.exportPresets.map(\.name).joined(separator: ", ")
         out["camera.tethered"] = cameras.tethered ? "on" : "off"
         if showsCamera { out["ui.camera"] = "shown" }
         out["camera.shots"] = String(cameraShots)
@@ -1487,17 +1493,29 @@ final class EditorModel: ObservableObject {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("presets.json")
     }
 
-    private static func readPresets() -> [Preset] {
-        guard let data = try? Data(contentsOf: presetsFile) else { return [] }
+    /// Where the user's export presets are kept.
+    private static var exportPresetsFile: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("export-presets.json")
+    }
+
+    private static func readPresets(_ file: URL) -> [Preset] {
+        guard let data = try? Data(contentsOf: file) else { return [] }
         return (try? JSONDecoder().decode([Preset].self, from: data)) ?? []
     }
 
-    /// Writes the presets when they changed (saved, renamed, deleted).
+    /// Writes the presets and export presets when they changed (saved, renamed, deleted).
     private func writePresets() {
+        guard keepsPresets else { return }
         let presets = interpreter.workspace.presets
-        guard keepsPresets, presets != savedPresets, let data = try? JSONEncoder().encode(presets) else { return }
-        try? data.write(to: Self.presetsFile, options: .atomic)
-        savedPresets = presets
+        if presets != savedPresets, let data = try? JSONEncoder().encode(presets) {
+            try? data.write(to: Self.presetsFile, options: .atomic)
+            savedPresets = presets
+        }
+        let exports = interpreter.workspace.exportPresets
+        if exports != savedExportPresets, let data = try? JSONEncoder().encode(exports) {
+            try? data.write(to: Self.exportPresetsFile, options: .atomic)
+            savedExportPresets = exports
+        }
     }
 
     /// What a workspace event says on the feedback line.
@@ -1566,8 +1584,26 @@ final class EditorModel: ObservableObject {
             return ("The photo's only edit can't be deleted", true)
         case .library(let event):
             return describe(event)
+        case .exportPresetSaved(let name):
+            return ("Saved export preset “\(name)” (say “export preset \(name)” to use it)", false)
+        case .exportPresetApplied(let name, let changes):
+            return ("Export preset “\(name)” (\(changes) setting\(changes == 1 ? "" : "s") changed)", false)
+        case .exportPresetDeleted(let name):
+            return ("Export preset “\(name)” deleted", false)
+        case .noExportPreset(let word):
+            return (word.isEmpty ? "Say the export preset's name, e.g. “export preset web”" : "No export preset called “\(word)”", true)
+        case .exportPresetChoices(let word, let names):
+            return ("“\(word)” could be: " + names.map { "“\($0)”" }.joined(separator: ", "), true)
+        case .builtInExportPreset(let name):
+            return ("“\(name)” is a built-in export preset: it can't be deleted", true)
         }
     }
+
+    /// The user's export presets, then the built-in ones (Export panel).
+    var exportPresets: [Preset] { interpreter.workspace.allExportPresets }
+
+    /// How many of the export presets are the user's (the rest are built in).
+    var userExportPresetCount: Int { interpreter.workspace.exportPresets.count }
 
     // MARK: - Batch (the photos picked)
 

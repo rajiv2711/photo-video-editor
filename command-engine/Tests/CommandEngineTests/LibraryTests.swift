@@ -598,4 +598,53 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(Set(none.keys), ["Orientation", "DPIWidth"])
         XCTAssertNotNil(ExportSettings.filtered(all, keep: "all")["{GPS}"])
     }
+
+    // MARK: - Export presets (#175)
+
+    private func workflow(_ outcomes: [CommandOutcome]) -> [WorkflowEvent] {
+        outcomes.compactMap { if case .workflow(let e) = $0 { return e } else { return nil } }
+    }
+
+    func testExportPresetNamesReachTheirControls() {
+        XCTAssertEqual(parse("export preset web"), [.run("exportPreset", text: "web")])
+        XCTAssertEqual(parse("save export preset proofs"), [.run("saveExportPreset", text: "proofs")])
+        XCTAssertEqual(parse("delete export preset proofs"), [.run("deleteExportPreset", text: "proofs")])
+        // The edit's presets keep their names.
+        XCTAssertEqual(parse("preset noir"), [.run("applyPreset", text: "noir")])
+        XCTAssertEqual(parse("save preset warm"), [.run("savePreset", text: "warm")])
+    }
+
+    func testBuiltInExportPresetsSetTheWholePanel() {
+        run("export as png export scale 50")
+        XCTAssertEqual(workflow(run("export preset web")).first, .exportPresetApplied(name: "Web", changes: 7))
+        XCTAssertEqual(value("exportFormat"), 0)
+        XCTAssertEqual(value("exportLongEdge"), 2048)
+        XCTAssertEqual(value("exportScale"), 100, "what the preset doesn't set goes back to its default")
+        XCTAssertEqual(value("removeLocation"), 1)
+        run("export preset instagram")
+        XCTAssertEqual(value("exportLongEdge"), 1080)
+        run("export preset print")
+        XCTAssertEqual(value("exportFormat"), 3)
+        XCTAssertEqual(value("removeLocation"), 0)
+        for preset in interpreter.workspace.exportPacks {
+            for id in preset.values.keys { XCTAssertEqual(registry.control(id: id)?.group, "export", id) }
+        }
+    }
+
+    func testSavedExportPresetsComeBack() {
+        run("export as tiff export long edge 3000 output sharpening matte export name Proof")
+        XCTAssertEqual(workflow(run("save export preset client proofs")), [.exportPresetSaved("client proofs")])
+        run("export preset web")
+        run("export name Other")
+        XCTAssertEqual(workflow(run("export preset client proof")).first, .exportPresetApplied(name: "client proofs", changes: 7), "a near-miss finds it")
+        XCTAssertEqual(value("exportFormat"), 3)
+        XCTAssertEqual(value("exportLongEdge"), 3000)
+        XCTAssertEqual(value("outputSharpening"), 2)
+        XCTAssertEqual(interpreter.workspace.library.exportName, "Proof")
+        XCTAssertEqual(workflow(run("delete export preset web")), [.builtInExportPreset("Web")])
+        XCTAssertEqual(workflow(run("delete export preset client proofs")), [.exportPresetDeleted("client proofs")])
+        XCTAssertEqual(workflow(run("export preset client proofs")), [.noExportPreset("client proofs")])
+        // An export preset is no edit: nothing to undo; the edit's presets don't take export settings.
+        XCTAssertFalse(interpreter.workspace.history.canUndo)
+    }
 }

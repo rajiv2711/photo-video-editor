@@ -1387,3 +1387,9 @@
 {"group":"export","text":"file name original","expect":[{"op":"set","control":"fileNaming","value":0}]}
 {"group":"export","text":"export name Trip to Rome","expect":[{"op":"run","control":"exportName","text":"Trip to Rome"}]}
 {"group":"export","text":"custom file name Holiday","expect":[{"op":"run","control":"exportName","text":"Holiday"}]}
+{"group":"export","text":"export preset web","expect":[{"op":"run","control":"exportPreset","text":"web"}]}
+{"group":"export","text":"export for instagram","expect":[{"op":"run","control":"exportPreset","text":"instagram"}]}
+{"group":"export","text":"save export preset client proofs","expect":[{"op":"run","control":"saveExportPreset","text":"client proofs"}]}
+{"group":"export","text":"save export settings print shop","expect":[{"op":"run","control":"saveExportPreset","text":"print shop"}]}
+{"group":"export","text":"delete export preset client proofs","expect":[{"op":"run","control":"deleteExportPreset","text":"client proofs"}]}
+{"group":"export","text":"remove export preset old","expect":[{"op":"run","control":"deleteExportPreset","text":"old"}]}

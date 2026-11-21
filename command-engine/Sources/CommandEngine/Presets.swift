@@ -29,9 +29,12 @@ public struct Preset: Codable, Equatable {
     public var geometry: GeometryEdits?
     public var layers: [Layer]?
     public var watermarkText: String?
+    /// Export presets: the words exported files are named after (Export Name).
+    public var exportName: String?
 
     public init(name: String, pack: String? = nil, groups: [String] = [], values: [String: Double] = [:], masks: [Mask]? = nil,
-                retouches: [Retouch]? = nil, geometry: GeometryEdits? = nil, layers: [Layer]? = nil, watermarkText: String? = nil) {
+                retouches: [Retouch]? = nil, geometry: GeometryEdits? = nil, layers: [Layer]? = nil, watermarkText: String? = nil,
+                exportName: String? = nil) {
         self.name = name
         self.pack = pack
         self.groups = groups
@@ -41,6 +44,7 @@ public struct Preset: Codable, Equatable {
         self.geometry = geometry
         self.layers = layers
         self.watermarkText = watermarkText
+        self.exportName = exportName
     }
 
     public init(from decoder: Decoder) throws {
@@ -54,6 +58,7 @@ public struct Preset: Codable, Equatable {
         geometry = try c.decodeIfPresent(GeometryEdits.self, forKey: .geometry)
         layers = try c.decodeIfPresent([Layer].self, forKey: .layers)
         watermarkText = try c.decodeIfPresent(String.self, forKey: .watermarkText)
+        exportName = try c.decodeIfPresent(String.self, forKey: .exportName)
     }
 
     /// The bundle of an edit's settings in `groups` (panel names, e.g. ["light", "color"]): every

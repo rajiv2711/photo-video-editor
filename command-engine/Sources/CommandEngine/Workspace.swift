@@ -60,6 +60,15 @@ public enum WorkflowEvent: Equatable {
     case lastCopy
     /// The library did something (Library panel).
     case library(LibraryEvent)
+    /// Export presets (Export panel): saved, applied (how many settings changed), deleted.
+    case exportPresetSaved(String)
+    case exportPresetApplied(name: String, changes: Int)
+    case exportPresetDeleted(String)
+    /// No export preset has that name ("" when none was said).
+    case noExportPreset(String)
+    case exportPresetChoices(word: String, names: [String])
+    /// Built-in export presets can't be deleted.
+    case builtInExportPreset(String)
 }
 
 /// One of several edits of the same photo (Virtual copies), with its own history.
@@ -98,11 +107,16 @@ public struct Workspace {
     public private(set) var currentCopy = 0
     /// Every photo imported, each with its own edit (Library panel).
     public var library = Library()
+    /// The user's export presets, oldest first (the app keeps them in a file).
+    public var exportPresets: [Preset] = []
+    /// The built-in export presets (Web, Instagram, Print, …).
+    public let exportPacks = ExportSettings.builtInPresets()
 
     /// The actions the workspace runs (the applier never sees them).
     public static let actions: Set<String> = Set(["applyPreset", "savePreset", "renamePreset", "deletePreset", "copySettings", "pasteSettings",
                                               "previousSettings", "undo", "redo", "history", "saveSnapshot", "restoreSnapshot", "deleteSnapshot",
-                                              "virtualCopy", "switchCopy", "deleteCopy"]).union(Library.actions)
+                                              "virtualCopy", "switchCopy", "deleteCopy",
+                                              "saveExportPreset", "exportPreset", "deleteExportPreset"]).union(Library.actions)
 
     /// Actions that move through the history: what was changed before them is recorded first.
     public static let historyActions: Set<String> = ["undo", "redo", "history"]
@@ -132,6 +146,8 @@ public struct Workspace {
             return [ran] + done.events.map { .workflow(.library($0)) }
         }
         switch id {
+        case "saveExportPreset", "exportPreset", "deleteExportPreset":
+            return [ran, .workflow(exportPreset(id, words: words, state: &state))]
         case "applyPreset":
             switch find(words) {
             case .index(let i):
@@ -287,6 +303,42 @@ public struct Workspace {
         }
     }
 
+    /// The user's export presets, then the built-in ones.
+    public var allExportPresets: [Preset] { exportPresets + exportPacks }
+
+    /// Export presets: Save Export Preset keeps the Export panel's settings (and Export Name's words) under
+    /// a name (the same name again replaces it), Export Preset puts them back, Delete Export Preset.
+    mutating func exportPreset(_ id: String, words: String, state: inout EditState) -> WorkflowEvent {
+        if id == "saveExportPreset" {
+            let name = words.isEmpty ? "Export \(exportPresets.count + 1)" : words
+            var preset = Preset.capture(state, name: name, groups: ["export"], registry: registry)
+            preset.exportName = library.exportName
+            if let i = exportPresets.firstIndex(where: { Presets.normalized($0.name) == Presets.normalized(name) }) {
+                exportPresets[i] = preset
+            } else {
+                exportPresets.append(preset)
+            }
+            return .exportPresetSaved(name)
+        }
+        let all = allExportPresets
+        let i: Int
+        switch Presets.find(words, in: all) {
+        case .found(let found): i = found
+        case .ambiguous(let found): return .exportPresetChoices(word: words, names: found.map { all[$0].name })
+        case .none: return .noExportPreset(words)
+        }
+        if id == "deleteExportPreset" {
+            guard i < exportPresets.count else { return .builtInExportPreset(all[i].name) }
+            return .exportPresetDeleted(exportPresets.remove(at: i).name)
+        }
+        var changes = all[i].apply(to: &state, registry: registry)
+        if let name = all[i].exportName, name != library.exportName {
+            library.exportName = name
+            changes += 1
+        }
+        return .exportPresetApplied(name: all[i].name, changes: changes)
+    }
+
     /// The names of the photo's edits ("Original" alone when there are no virtual copies).
     public var copyNames: [String] { copies.isEmpty ? ["Original"] : copies.map(\.name) }
 
@@ -363,6 +415,8 @@ public struct Workspace {
             names = Set(copies.map { Presets.normalized($0.name) } + copies.indices.map { String($0 + 1) })
         case "album", "addToAlbum", "removeFromAlbum", "deleteAlbum":
             names = Set(library.albums.map { Presets.normalized($0.name) })
+        case "exportPreset":
+            names = Set(allExportPresets.map { Presets.normalized($0.name) })
         default:
             return nil
         }

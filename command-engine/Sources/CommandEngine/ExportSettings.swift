@@ -106,4 +106,23 @@ public enum ExportSettings {
             return properties
         }
     }
+
+    /// The built-in export presets: Web (JPEG 80, 2048 px, screen sharpening, copyright only, no
+    /// location), Instagram (JPEG 90, 1080 px), Print (TIFF, full size, glossy paper sharpening, all
+    /// metadata), Full Size JPEG (95) and Lossless PNG.
+    public static func builtInPresets() -> [Preset] {
+        func i(_ list: [String], _ id: String) -> Double { Double(list.firstIndex(of: id) ?? 0) }
+        func preset(_ name: String, _ values: [String: Double]) -> Preset {
+            Preset(name: name, pack: "Export", groups: ["export"], values: values)
+        }
+        return [
+            preset("Web", ["exportFormat": i(formats, "jpeg"), "exportQuality": 80, "exportLongEdge": 2048,
+                           "outputSharpening": i(media, "screen"), "exportMetadata": i(metadata, "copyright"), "removeLocation": 1]),
+            preset("Instagram", ["exportFormat": i(formats, "jpeg"), "exportQuality": 90, "exportLongEdge": 1080,
+                                 "outputSharpening": i(media, "screen"), "exportMetadata": i(metadata, "copyright"), "removeLocation": 1]),
+            preset("Print", ["exportFormat": i(formats, "tiff"), "outputSharpening": i(media, "glossy")]),
+            preset("Full Size JPEG", ["exportFormat": i(formats, "jpeg"), "exportQuality": 95]),
+            preset("Lossless PNG", ["exportFormat": i(formats, "png")]),
+        ]
+    }
 }
