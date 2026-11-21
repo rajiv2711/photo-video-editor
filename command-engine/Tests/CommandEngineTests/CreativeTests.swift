@@ -137,4 +137,65 @@ final class CreativeTests: XCTestCase {
         XCTAssertEqual(CreativeFilters.focusBlurRadius(50, longSide: 800), 12, accuracy: 1e-9)
         XCTAssertEqual(CreativeFilters.focusBlurRadius(-10, longSide: 800), 0)
     }
+
+    // MARK: - Distort
+
+    func testDistortNames() {
+        XCTAssertEqual(parse("twirl 90"), [.set("twirl", 90)])
+        XCTAssertEqual(parse("twirl -180"), [.set("twirl", -180)])
+        XCTAssertEqual(parse("wave"), [.select("wave")])
+        XCTAssertEqual(parse("ripple 60"), [.set("ripple", 60)])
+        XCTAssertEqual(parse("pinch -40"), [.set("pinch", -40)])
+        XCTAssertEqual(parse("spherize"), [.select("spherize")])
+        XCTAssertEqual(parse("polar coordinates"), [.set("polarCoordinates", 1)])
+        XCTAssertEqual(parse("tiny planet off"), [.set("polarCoordinates", 0)])
+        XCTAssertEqual(parse("twirl radius 60"), [.set("effectSize", 60)])
+        XCTAssertEqual(parse("wavelength more"), [.nudge("effectSize", 1)])
+        run("twirl")
+        XCTAssertEqual(value("twirl"), 90, "a quarter turn")
+        // Older names keep their meaning.
+        XCTAssertEqual(parse("distortion 30"), [.set("distortion", 30)])
+        XCTAssertEqual(parse("liquify twirl"), [.run("liquify", value: 1)])
+        XCTAssertEqual(parse("liquify mode pinch"), [.set("liquifyMode", 2)])
+    }
+
+    func testPinchPullsTheMiddleInAndLeavesTheOutsideAlone() {
+        let k = CreativeFilters.pinchPower(50)
+        XCTAssertEqual(k, 0.4, accuracy: 1e-9)
+        let inside = CreativeFilters.pinchSource(Vec2(30, 0), radius: 100, power: k)
+        XCTAssertGreaterThan(inside.x, 30, "reads farther out: the picture is pulled in")
+        XCTAssertEqual(inside.y, 0, accuracy: 1e-9, "along the same line")
+        XCTAssertLessThan(CreativeFilters.pinchSource(Vec2(30, 0), radius: 100, power: -k).x, 30, "negative swells")
+        let outside = CreativeFilters.pinchSource(Vec2(0, 150), radius: 100, power: k)
+        XCTAssertEqual(outside.y, 150, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.pinchSource(Vec2(99.999, 0), radius: 100, power: k).x, 100, accuracy: 0.01, "no step at the rim")
+    }
+
+    func testSpherizeSwellsTheMiddleAndSqueezesTheRim() {
+        let middle = CreativeFilters.spherizeSource(Vec2(10, 0), radius: 100, amount: 1)
+        XCTAssertLessThan(middle.x, 10, "reads nearer the centre: magnified")
+        XCTAssertGreaterThan(CreativeFilters.spherizeSource(Vec2(10, 0), radius: 100, amount: -1).x, 10, "negative shrinks the middle")
+        XCTAssertEqual(CreativeFilters.spherizeSource(Vec2(0, 50), radius: 100, amount: 0).y, 50, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.spherizeSource(Vec2(0, 120), radius: 100, amount: 1).y, 120, "outside: unmoved")
+        XCTAssertEqual(CreativeFilters.spherizeSource(Vec2(0, 99.99), radius: 100, amount: 1).y, 100, accuracy: 1, "no step at the rim")
+    }
+
+    func testPolarCoordinatesPutTheBottomEdgeInTheMiddle() {
+        let w = 300.0, h = 400.0
+        XCTAssertEqual(CreativeFilters.polarSource(Vec2(0, 0.001), width: w, height: h).y, h, accuracy: 0.01, "the middle reads the bottom edge")
+        let corner = CreativeFilters.polarSource(Vec2(150, 200), width: w, height: h)
+        XCTAssertEqual(corner.y, 0, accuracy: 1e-9, "the corners read the top edge")
+        XCTAssertEqual(CreativeFilters.polarSource(Vec2(0, 100), width: w, height: h).x, 150, accuracy: 1e-9, "straight down: the middle column")
+        XCTAssertEqual(CreativeFilters.polarSource(Vec2(-100, 0), width: w, height: h).x, 225, accuracy: 1e-9, "a quarter turn on: three quarters across")
+    }
+
+    func testWaveAndRippleSizesFollowThePicture() {
+        let wave = CreativeFilters.wave(100, size: 0.3, longSide: 1000)
+        XCTAssertEqual(wave.amplitude, 30, accuracy: 1e-9)
+        XCTAssertEqual(wave.wavelength, 150, accuracy: 1e-9)
+        let ripple = CreativeFilters.ripple(40, size: 0.3, longSide: 1000)
+        XCTAssertEqual(ripple.amplitude, 6, accuracy: 1e-9)
+        XCTAssertEqual(ripple.wavelength, 75, accuracy: 1e-9)
+        XCTAssertEqual(CreativeFilters.distortRadius(size: 0.3, longSide: 800), 240, accuracy: 1e-9)
+    }
 }

@@ -476,6 +476,12 @@
     {"id": "tilt-shift", "command": "tilt shift", "control": "tiltShift", "expect": [{"metric": "edge", "dir": "down", "region": [0.2, 0.68, 0.8, 0.78], "min": 2}, {"metric": "edge", "dir": "same", "region": [0.2, 0.47, 0.8, 0.53], "min": 1}]},
     {"id": "iris-blur", "command": "iris blur 80", "control": "irisBlur", "expect": [{"metric": "edge", "dir": "down", "region": [0.2, 0.2, 0.8, 0.3], "min": 1}, {"metric": "edge", "dir": "same", "region": [0.3, 0.45, 0.7, 0.55], "min": 1}]},
     {"id": "field-blur", "command": "field blur", "control": "fieldBlur", "expect": [{"metric": "edge", "dir": "down", "region": [0.2, 0.2, 0.8, 0.35], "min": 1}, {"metric": "edge", "dir": "same", "region": [0.2, 0.6, 0.8, 0.78], "min": 1}]},
-    {"id": "effect-size", "command": "tilt shift effect size 60", "control": "effectSize", "expect": [{"metric": "diff", "dir": "changed", "vs": "tilt-shift", "min": 0.5}, {"metric": "edge", "dir": "up", "vs": "tilt-shift", "region": [0.2, 0.6, 0.8, 0.68], "min": 0.5}]}
+    {"id": "effect-size", "command": "tilt shift effect size 60", "control": "effectSize", "expect": [{"metric": "diff", "dir": "changed", "vs": "tilt-shift", "min": 0.5}, {"metric": "edge", "dir": "up", "vs": "tilt-shift", "region": [0.2, 0.6, 0.8, 0.68], "min": 0.5}]},
+    {"id": "twirl", "command": "twirl 90", "control": "twirl", "expect": [{"metric": "diff", "dir": "changed", "region": [0.3, 0.35, 0.7, 0.65], "min": 5}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.15, 0.15], "min": 0.5}]},
+    {"id": "wave", "command": "wave", "control": "wave", "expect": [{"metric": "diff", "dir": "changed", "min": 2}]},
+    {"id": "ripple", "command": "ripple", "control": "ripple", "expect": [{"metric": "diff", "dir": "changed", "min": 1}]},
+    {"id": "pinch", "command": "pinch", "control": "pinch", "expect": [{"metric": "diff", "dir": "changed", "region": [0.3, 0.35, 0.7, 0.65], "min": 5}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.15, 0.15], "min": 0.5}]},
+    {"id": "spherize", "command": "spherize", "control": "spherize", "expect": [{"metric": "diff", "dir": "changed", "region": [0.3, 0.35, 0.7, 0.65], "min": 5}, {"metric": "diff", "dir": "same", "region": [0, 0, 0.15, 0.15], "min": 0.5}]},
+    {"id": "polar-coordinates", "command": "polar coordinates", "control": "polarCoordinates", "expect": [{"metric": "diff", "dir": "changed", "min": 10}]}
   ]
 }

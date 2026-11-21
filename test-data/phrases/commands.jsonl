@@ -943,3 +943,16 @@
 {"group":"creative","text":"effect size 50","expect":[{"op":"set","control":"effectSize","value":50}]}
 {"group":"creative","text":"sharp area less","expect":[{"op":"nudge","control":"effectSize","steps":-1}]}
 {"group":"creative","text":"tilt shift angle 30","expect":[{"op":"set","control":"effectAngle","value":30}]}
+{"group":"creative","text":"twirl 90","expect":[{"op":"set","control":"twirl","value":90}]}
+{"group":"creative","text":"swirl less","expect":[{"op":"nudge","control":"twirl","steps":-1}]}
+{"group":"creative","text":"wave","expect":[{"op":"select","control":"wave"}]}
+{"group":"creative","text":"wave 60","expect":[{"op":"set","control":"wave","value":60}]}
+{"group":"creative","text":"ripple","expect":[{"op":"select","control":"ripple"}]}
+{"group":"creative","text":"ripple more","expect":[{"op":"nudge","control":"ripple","steps":1}]}
+{"group":"creative","text":"pinch 40","expect":[{"op":"set","control":"pinch","value":40}]}
+{"group":"creative","text":"pinch -30","expect":[{"op":"set","control":"pinch","value":-30}]}
+{"group":"creative","text":"spherize","expect":[{"op":"select","control":"spherize"}]}
+{"group":"creative","text":"bulge 60","expect":[{"op":"set","control":"spherize","value":60}]}
+{"group":"creative","text":"polar coordinates","expect":[{"op":"set","control":"polarCoordinates","value":1}]}
+{"group":"creative","text":"tiny planet off","expect":[{"op":"set","control":"polarCoordinates","value":0}]}
+{"group":"creative","text":"twirl radius 60","expect":[{"op":"set","control":"effectSize","value":60}]}
