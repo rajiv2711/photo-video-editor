@@ -35,6 +35,25 @@ final class CommandParserTests: XCTestCase {
         XCTAssertEqual(parser.parse("add a wobble"), [.unknown("wobble")])
     }
 
+    func testNumberWordsAreNumbers() {
+        XCTAssertEqual(parser.parse("exposure one"), [.set("exposure", 1)])
+        XCTAssertEqual(parser.parse("contrast twenty"), [.set("contrast", 20)])
+        XCTAssertEqual(parser.parse("contrast twenty five"), [.set("contrast", 25)])
+        XCTAssertEqual(parser.parse("saturation minus ten"), [.set("saturation", -10)])
+        XCTAssertEqual(parser.parse("profile amount two hundred"), [.set("profileAmount", 200)])
+        XCTAssertEqual(parser.parse("contrast up by fifteen"), [.add("contrast", 15)])
+        // Options and names that start with a number word stay what they were.
+        XCTAssertEqual(parser.parse("zoom one to one"), [.set("zoom", 3)])
+        XCTAssertEqual(parser.parse("next one").first?.control, "nextPhoto")
+        XCTAssertEqual(parser.parse("toning two tone"), [.set("toning", 2)])  // option 2: Duotone
+        XCTAssertEqual(parser.parse("toning three tone"), [.set("toning", 3)])  // not the number 3 by chance
+        // Options named by digits take number words too.
+        XCTAssertEqual(parser.parse("export bits eight"), [.set("bitDepth", 0)])
+        XCTAssertEqual(parser.parse("export bits sixteen"), [.set("bitDepth", 1)])
+        XCTAssertEqual(parser.parse("zoom two hundred"), [.set("zoom", 4)])
+        XCTAssertEqual(parser.parse("zoom fifty"), [.set("zoom", 2)])
+    }
+
     /// Every label and synonym in controls.json must reach its own control when said alone (a name whose
     /// first word the parser reads as something else, like "make" or "set", can never be used).
     func testEveryNameReachesItsControl() throws {

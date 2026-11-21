@@ -1415,3 +1415,6 @@
 {"group":"export","text":"export bits 16","expect":[{"op":"set","control":"bitDepth","value":1}]}
 {"group":"export","text":"output bit depth 16 bit","expect":[{"op":"set","control":"bitDepth","value":1}]}
 {"group":"export","text":"bits per channel 8","expect":[{"op":"set","control":"bitDepth","value":0}]}
+{"group":"number-words","text":"contrast twenty five","expect":[{"op":"set","control":"contrast","value":25}]}
+{"group":"number-words","text":"exposure minus two","expect":[{"op":"set","control":"exposure","value":-2}]}
+{"group":"number-words","text":"collage spacing eight","expect":[{"op":"set","control":"collageSpacing","value":8}]}

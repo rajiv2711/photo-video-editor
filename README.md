@@ -73,6 +73,7 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `contrast more more more` | Contrast +15 (3 steps) |
 | `more` / `less` | Repeats on the last control named or touched |
 | `exposure 0.5` · `contrast up by 20` | Set to a value · change by an amount |
+| `exposure one` · `contrast twenty five` · `saturation minus ten` · `zoom two hundred` | Numbers said as words (speech recognition often writes small numbers so) |
 | `saturation less exposure more` | Several controls at once |
 | `contrast reset` · `reset all` | Back to defaults |
 | `contrst more` · `vividness down` | Typos and synonyms are matched |

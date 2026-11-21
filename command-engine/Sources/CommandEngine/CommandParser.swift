@@ -242,9 +242,9 @@ public struct CommandParser {
 
             if let sign = Self.direction(of: token) {
                 // "minus 20" is a negative number, not "less".
-                if token == "minus", let next = tokens.first, let n = Self.number(next) {
+                if token == "minus", let next = tokens.first, Self.number(next) != nil {
                     tokens.removeFirst()
-                    act(.set(-abs(n)))
+                    act(.set(-abs(Self.number(next, then: &tokens) ?? 0)))
                 } else {
                     act(.nudge(sign))
                 }
@@ -257,7 +257,7 @@ public struct CommandParser {
             default: break
             }
 
-            if let n = Self.number(token) {
+            if let n = Self.number(token, then: &tokens) {
                 // "up 20" / "more by 20" is relative; a bare "20" is absolute.
                 if !blocked, case .nudge(let sign)? = clause?.actions.last {
                     clause?.actions.removeLast()
@@ -390,6 +390,19 @@ public struct CommandParser {
                 return (index, extra)
             }
         }
+        // Number words for options named by digits: "zoom two hundred" = "zoom 200", "bits eight" = "bits 8".
+        var after = rest
+        if Self.numberWords[first] != nil, let n = Self.number(first, then: &after) {
+            let digits = String(Int(n))
+            let used = rest.count - after.count
+            let more = Array(after.prefix(2))
+            for extra in stride(from: more.count, through: 0, by: -1) {
+                let phrase = ([digits] + more.prefix(extra)).joined(separator: " ")
+                if let index = control.options.firstIndex(where: { $0.names.contains(phrase) }) {
+                    return (index, used + extra)
+                }
+            }
+        }
         let close = control.options.indices.filter { i in
             control.options[i].names.contains { NameMatcher.score(first, against: $0) != nil }
         }
@@ -421,8 +434,32 @@ public struct CommandParser {
         }
     }
 
+    /// Number words, as speech recognition writes small numbers ("exposure one", "contrast twenty").
+    static let numberWords: [String: Double] = [
+        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+        "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
+        "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
+        "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90, "hundred": 100,
+    ]
+
+    /// A number from `token`, also taking the next word when two number words make one number
+    /// ("twenty five" = 25, "two hundred" = 200).
+    static func number(_ token: String, then rest: inout ArraySlice<String>) -> Double? {
+        guard var n = number(token) else { return nil }
+        if numberWords[token] != nil, let next = rest.first, let more = numberWords[next] {
+            if n >= 20, n <= 90, more >= 1, more <= 9 {
+                n += more
+                rest.removeFirst()
+            } else if more == 100, n >= 1, n <= 9 {
+                n *= 100
+                rest.removeFirst()
+            }
+        }
+        return n
+    }
+
     static func number(_ token: String) -> Double? {
-        if token == "zero" { return 0 }
+        if let n = numberWords[token] { return n }
         // f-numbers: "f2.8", "f/4".
         if token.hasPrefix("f") {
             let rest = token.hasPrefix("f/") ? token.dropFirst(2) : token.dropFirst()
