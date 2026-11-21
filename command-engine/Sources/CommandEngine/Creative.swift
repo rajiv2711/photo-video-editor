@@ -285,11 +285,11 @@ public enum CreativeFilters {
     /// middle, at these shares of the way (1 = the middle, 2 = as far past it), with their radius (×
     /// the flare's size), colour and strength. A light in the very middle sends them along the diagonal.
     public static let flareGhosts: [(at: Double, radius: Double, color: RGB, strength: Double)] = [
-        (0.4, 0.15, RGB(0.6, 0.8, 1.0), 0.15),
-        (0.8, 0.08, RGB(1.0, 0.7, 0.4), 0.2),
-        (1.25, 0.3, RGB(0.5, 1.0, 0.6), 0.08),
-        (1.6, 0.12, RGB(0.8, 0.6, 1.0), 0.15),
-        (2.1, 0.45, RGB(0.5, 0.7, 1.0), 0.07),
+        (0.4, 0.15, RGB(0.6, 0.8, 1.0), 0.3),
+        (0.8, 0.08, RGB(1.0, 0.7, 0.4), 0.4),
+        (1.25, 0.3, RGB(0.5, 1.0, 0.6), 0.16),
+        (1.6, 0.12, RGB(0.8, 0.6, 1.0), 0.3),
+        (2.1, 0.45, RGB(0.5, 0.7, 1.0), 0.14),
     ]
 
     /// The line the ghosts run along (pixels, y down): from the light to the picture's middle, or down

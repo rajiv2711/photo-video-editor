@@ -394,13 +394,13 @@ final class CreativeRenderer {
 
     // MARK: - Lens flare
 
-    /// The flare's light around the source: a bright core and its glow, six thin rays and a faint
-    /// rainbow ring (red outside) at 1.2 × `size`.
+    /// The flare's light around the source: a bright core, its glow and a wide veil of glare, six thin
+    /// rays and a faint rainbow ring (red outside) at 1.2 × `size`.
     private static let flareKernel: CIColorKernel? = CIColorKernel(source: """
         kernel vec4 lensFlare(vec2 source, float size, float strength) {
             vec2 d = destCoord() - source;
             float r = length(d) / size;
-            float core = exp(-r * r * 30.0) + 0.3 * exp(-r * 3.0);
+            float core = exp(-r * r * 30.0) + 0.45 * exp(-r * 2.5) + 0.08 * exp(-r * 0.6);
             float qr = (r - 1.25) * 14.0;
             float qg = (r - 1.2) * 14.0;
             float qb = (r - 1.15) * 14.0;

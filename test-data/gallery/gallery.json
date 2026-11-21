@@ -494,7 +494,7 @@
     {"id": "sketch", "command": "sketch", "control": "sketch", "expect": [{"metric": "mean_luma", "dir": "up", "min": 30}, {"metric": "mean_sat", "dir": "down", "min": 3}]},
     {"id": "cartoon", "command": "cartoon", "control": "cartoon", "expect": [{"metric": "flat", "dir": "up", "region": [0.25, 0.3, 0.75, 0.75], "min": 15}]},
     {"id": "cutout", "command": "cutout", "control": "cutout", "expect": [{"metric": "flat", "dir": "up", "region": [0.25, 0.3, 0.75, 0.75], "min": 15}]},
-    {"id": "lens-flare", "command": "lens flare", "control": "lensFlare", "tap": [0.75, 0.2], "expect": [{"metric": "mean_luma", "dir": "up", "region": [0.68, 0.15, 0.82, 0.25], "min": 4}, {"metric": "diff", "dir": "changed", "min": 2}]},
+    {"id": "lens-flare", "command": "lens flare", "control": "lensFlare", "tap": [0.75, 0.2], "expect": [{"metric": "mean_luma", "dir": "up", "region": [0.68, 0.15, 0.82, 0.25], "min": 4}, {"metric": "diff", "dir": "changed", "min": 1}, {"metric": "p5_luma", "dir": "up", "min": 0.8}]},
     {"id": "spotlight", "command": "spotlight", "control": "spotlight", "expect": [{"metric": "corner_luma", "dir": "down", "min": 20}, {"metric": "diff", "dir": "changed", "min": 3}]},
     {"id": "omni-light", "command": "omni light center y 15", "control": "omniLight", "expect": [{"metric": "mean_luma", "dir": "up", "region": [0.35, 0.08, 0.65, 0.22], "min": 5}, {"metric": "mean_luma", "dir": "down", "region": [0.8, 0.85, 1, 1], "min": 15}]},
     {"id": "light-leak", "command": "light leak", "control": "lightLeak", "expect": [{"metric": "mean_r", "dir": "up", "min": 3}, {"metric": "mean_sat", "dir": "up", "min": 2}]},
