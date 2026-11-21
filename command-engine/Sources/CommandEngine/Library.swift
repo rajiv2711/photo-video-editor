@@ -192,6 +192,18 @@ public enum LibraryEvent: Equatable {
     case described(field: String, value: String)
     /// Photo Info: the camera data of the photo being edited (the app says it).
     case info
+    /// Photos selected in the browser (Select Photo, Clear Selection): how many now.
+    case selected(Int)
+    /// Stack These made a stack of this many photos.
+    case stacked(Int)
+    /// Stack These with fewer than two photos to stack.
+    case nothingToStack
+    /// Auto Stack: how many stacks it made, of how many photos, with what gap (seconds).
+    case autoStacked(stacks: Int, photos: Int, gap: Double)
+    /// Unstack: the stack of the photo being edited is undone (its photos), or it was in none (0).
+    case unstacked(Int)
+    /// Stacks show all their photos (true) or only the top one.
+    case stacksExpanded(Bool)
 }
 
 /// The photos imported, the albums, the filter, and the photo being edited.
@@ -203,6 +215,10 @@ public struct Library: Codable, Equatable {
     public var current: String?
     /// Stacks show all their photos (true) or only the top one.
     public var stacksExpanded = false
+    /// Photos taken at most this many seconds apart are a burst (Auto Stack, Stack These).
+    public var stackGap = 2.0
+    /// Photos selected in the browser, in the order they were selected.
+    public var selected: [String] = []
 
     public init() {}
 
@@ -213,6 +229,8 @@ public struct Library: Codable, Equatable {
         filter = try c.decodeIfPresent(LibraryFilter.self, forKey: .filter) ?? LibraryFilter()
         current = try c.decodeIfPresent(String.self, forKey: .current)
         stacksExpanded = try c.decodeIfPresent(Bool.self, forKey: .stacksExpanded) ?? false
+        stackGap = try c.decodeIfPresent(Double.self, forKey: .stackGap) ?? 2
+        selected = try c.decodeIfPresent([String].self, forKey: .selected) ?? []
     }
 
     /// The library's actions (run by the workspace, in order with the other commands).
@@ -220,7 +238,8 @@ public struct Library: Codable, Equatable {
                                               "rate", "pick", "reject", "unflag", "colorLabel",
                                               "showRating", "showPicks", "showRejects", "showUnflagged", "showLabel", "showAllPhotos",
                                               "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum",
-                                              "addKeyword", "removeKeyword", "showKeyword", "photoTitle", "photoCaption", "photoCopyright", "photoInfo"]
+                                              "addKeyword", "removeKeyword", "showKeyword", "photoTitle", "photoCaption", "photoCopyright", "photoInfo",
+                                              "selectPhoto", "clearSelection", "stackThese", "autoStack", "unstack", "expandStacks", "collapseStacks"]
 
     /// Colour labels, as the options of Label (controls.json; Show Label adds "any").
     public static let labels = ["red", "yellow", "green", "blue", "purple"]
@@ -260,9 +279,78 @@ public struct Library: Codable, Equatable {
         }.map(\.element)
     }
 
-    /// The photos the library shows (those the filter lets through), in order.
+    /// The photos the library shows (those the filter lets through), in order; a collapsed stack shows
+    /// one photo: the one being edited when it is in it, else its first (its top).
     public var shown: [LibraryPhoto] {
-        ordered.filter(matches)
+        let passing = ordered.filter(matches)
+        guard !stacksExpanded else { return passing }
+        var top: [String: String] = [:]
+        for photo in passing {
+            if let stack = photo.stack, top[stack] == nil || photo.id == current { top[stack] = photo.id }
+        }
+        return passing.filter { photo in photo.stack.map { top[$0] == photo.id } ?? true }
+    }
+
+    /// How many photos are in the photo's stack (1: in none).
+    public func stackCount(of id: String) -> Int {
+        guard let stack = photo(id)?.stack else { return 1 }
+        return photos.filter { $0.stack == stack }.count
+    }
+
+    /// The stacks, as their photos' ids in order.
+    public var stacks: [[String]] {
+        var out: [String: [String]] = [:]
+        var order: [String] = []
+        for photo in ordered {
+            guard let stack = photo.stack else { continue }
+            if out[stack] == nil { order.append(stack) }
+            out[stack, default: []].append(photo.id)
+        }
+        return order.compactMap { out[$0] }
+    }
+
+    /// The burst a photo belongs to: it and the photos taken at most `gap` seconds before or after the one
+    /// next to them (dated photos only), in order.
+    public func burst(around id: String, gap: Double) -> [String] {
+        let dated = ordered.filter { $0.captured != nil }
+        guard let i = dated.firstIndex(where: { $0.id == id }) else { return [id] }
+        var lo = i, hi = i
+        while lo > 0, dated[lo].date.timeIntervalSince(dated[lo - 1].date) <= gap { lo -= 1 }
+        while hi < dated.count - 1, dated[hi + 1].date.timeIntervalSince(dated[hi].date) <= gap { hi += 1 }
+        return dated[lo...hi].map(\.id)
+    }
+
+    /// Makes one stack of these photos (out of any stack they were in).
+    mutating func stack(_ ids: [String]) {
+        guard let first = ids.first else { return }
+        for i in photos.indices where ids.contains(photos[i].id) { photos[i].stack = "stack:" + first }
+        tidyStacks()
+    }
+
+    /// A stack left with one photo is no stack.
+    mutating func tidyStacks() {
+        for group in stacks where group.count < 2 {
+            for i in photos.indices where photos[i].id == group.first { photos[i].stack = nil }
+        }
+    }
+
+    /// Auto Stack: every run of photos taken at most `gap` seconds apart becomes a stack (bursts,
+    /// brackets); stacks made before are undone. Returns the stacks made.
+    mutating func autoStack(gap: Double) -> [[String]] {
+        for i in photos.indices { photos[i].stack = nil }
+        var groups: [[String]] = []
+        var run: [LibraryPhoto] = []
+        for photo in ordered where photo.captured != nil {
+            if let last = run.last, photo.date.timeIntervalSince(last.date) <= gap {
+                run.append(photo)
+            } else {
+                if run.count >= 2 { groups.append(run.map(\.id)) }
+                run = [photo]
+            }
+        }
+        if run.count >= 2 { groups.append(run.map(\.id)) }
+        for group in groups { stack(group) }
+        return groups
     }
 
     /// The photo being edited's place among those shown (from 1), or nil when it isn't shown.
@@ -344,6 +432,40 @@ public struct Library: Codable, Equatable {
             filter = LibraryFilter()
         case "newAlbum", "addToAlbum", "removeFromAlbum", "album", "deleteAlbum":
             return (album(id, words: (command.text ?? "").trimmingCharacters(in: .whitespaces)), nil)
+        case "selectPhoto":
+            // "select photo 3": the third shown; alone: the photo being edited. Again: deselected.
+            var target = current
+            if let v = command.value {
+                let n = Int(v)
+                guard list.indices.contains(n - 1) else { return ([.noPhoto(n)], nil) }
+                target = list[n - 1].id
+            }
+            guard let target, photo(target) != nil else { return ([.notInLibrary], nil) }
+            if let i = selected.firstIndex(of: target) { selected.remove(at: i) } else { selected.append(target) }
+            return ([.selected(selected.count)], nil)
+        case "clearSelection":
+            selected = []
+            return ([.selected(0)], nil)
+        case "stackThese":
+            // The photos selected, or else the burst of the photo being edited.
+            let ids = !selected.isEmpty ? selected : current.map { burst(around: $0, gap: stackGap) } ?? []
+            guard ids.count >= 2 else { return ([.nothingToStack], nil) }
+            stack(ids)
+            selected = []
+            return ([.stacked(ids.count)], nil)
+        case "autoStack":
+            // "auto stack 5": photos up to 5 seconds apart.
+            if let v = command.value, v > 0 { stackGap = v }
+            let made = autoStack(gap: stackGap)
+            return ([.autoStacked(stacks: made.count, photos: made.reduce(0) { $0 + $1.count }, gap: stackGap)], nil)
+        case "unstack":
+            guard let id = current, let stack = photo(id)?.stack else { return ([.unstacked(0)], nil) }
+            let count = photos.filter { $0.stack == stack }.count
+            for i in photos.indices where photos[i].stack == stack { photos[i].stack = nil }
+            return ([.unstacked(count)], nil)
+        case "expandStacks", "collapseStacks":
+            stacksExpanded = id == "expandStacks"
+            return ([.stacksExpanded(stacksExpanded)], nil)
         case "showKeyword":
             // No words: any keyword again.
             filter.keyword = (command.text ?? "").trimmingCharacters(in: .whitespaces)

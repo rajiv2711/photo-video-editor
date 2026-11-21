@@ -1173,6 +1173,19 @@ final class EditorModel: ObservableObject {
             return (field.capitalized + (value.isEmpty ? ": none" : ": “\(value)”"), false)
         case .info:
             return ("Info: " + photoInfo, false)
+        case .selected(let count):
+            return (count == 0 ? "No photos selected" : "\(count) photo\(count == 1 ? "" : "s") selected · “stack these” stacks them", false)
+        case .stacked(let count):
+            return ("Stacked \(count) photos", false)
+        case .nothingToStack:
+            return ("Nothing to stack: select photos first (long press their thumbnails, or “select photo 3”); with none selected, the photos taken within \(Workflow.number(library.stackGap)) s of this one are stacked", true)
+        case .autoStacked(let stacks, let photos, let gap):
+            return (stacks == 0 ? "No photos taken within \(Workflow.number(gap)) s of each other"
+                    : "Auto Stack: \(stacks) stack\(stacks == 1 ? "" : "s") of \(photos) photos (taken within \(Workflow.number(gap)) s of each other)", false)
+        case .unstacked(let count):
+            return (count == 0 ? "This photo isn't in a stack" : "Unstacked \(count) photos", count == 0)
+        case .stacksExpanded(let open):
+            return (open ? "Stacks expanded: every photo shows" : "Stacks collapsed: one photo of each shows", false)
         }
     }
 
@@ -1226,6 +1239,9 @@ final class EditorModel: ObservableObject {
             out["photo.captured"] = photo.captured.map { PhotoMetadata.exifText($0) } ?? ""
             if let lat = photo.latitude, let lon = photo.longitude { out["photo.gps"] = String(format: "%.2f,%.2f", lat, lon) }
         }
+        out["library.stacks"] = String(lib.stacks.count)
+        out["library.selected"] = String(lib.selected.count)
+        if let id = lib.current { out["photo.stack"] = String(lib.stackCount(of: id)) }
         out["library.albums"] = lib.albums.map { "\($0.name):\($0.photos.count)" }.joined(separator: ", ")
         out["library.filter"] = Self.describe(lib.filter)
         if let info = pictureInfo {

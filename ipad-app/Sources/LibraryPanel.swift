@@ -32,9 +32,15 @@ struct LibraryPanel: View {
                     filterRow.padding(.horizontal, 10)
                 }
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 4)], spacing: 4) {
-                    ForEach(library.shown) { photo in
-                        LibraryThumb(model: model, photo: photo, isCurrent: photo.id == library.current)
-                            .onTapGesture { model.openLibraryPhoto(photo.id) }
+                    ForEach(Array(library.shown.enumerated()), id: \.element.id) { item in
+                        LibraryThumb(model: model, photo: item.element, isCurrent: item.element.id == library.current,
+                                     isSelected: library.selected.contains(item.element.id), stack: library.stackCount(of: item.element.id))
+                            .onTapGesture { model.openLibraryPhoto(item.element.id) }
+                            .contextMenu {
+                                Button(library.selected.contains(item.element.id) ? "Deselect" : "Select") {
+                                    model.apply([.run("selectPhoto", value: Double(item.offset + 1))])
+                                }
+                            }
                     }
                 }
                 .padding(.horizontal, 10)
@@ -54,6 +60,11 @@ struct LibraryPanel: View {
                     albumsSection
                 } label: {
                     Text("Albums").font(.subheadline.weight(.semibold))
+                }
+                DisclosureGroup(isExpanded: isOpen("library/Stacks")) {
+                    stacksSection
+                } label: {
+                    Text("Stacks").font(.subheadline.weight(.semibold))
                 }
                 if let photo = library.photo(library.current) {
                     DisclosureGroup(isExpanded: isOpen("library/Info")) {
@@ -144,6 +155,32 @@ struct LibraryPanel: View {
                 }
             }
         }
+        .padding(.horizontal, 10)
+    }
+
+    /// Bursts and brackets: Auto Stack (by capture time), Stack These (the photos selected with a long press,
+    /// or the burst of the photo being edited), Unstack, and stacks open or closed.
+    private var stacksSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Button("Auto Stack") { model.apply([.run("autoStack")]) }
+                Button("Stack These") { model.apply([.run("stackThese")]) }
+                Button("Unstack") { model.apply([.run("unstack")]) }
+            }
+            HStack {
+                Button(library.stacksExpanded ? "Collapse Stacks" : "Expand Stacks") {
+                    model.apply([.run(library.stacksExpanded ? "collapseStacks" : "expandStacks")])
+                }
+                if !library.selected.isEmpty {
+                    Button("Clear Selection (\(library.selected.count))") { model.apply([.run("clearSelection")]) }
+                }
+            }
+            Text("\(library.stacks.count) stack\(library.stacks.count == 1 ? "" : "s") · bursts are photos taken within \(Workflow.number(library.stackGap)) s")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.bordered)
+        .font(.footnote)
         .padding(.horizontal, 10)
     }
 
@@ -245,6 +282,9 @@ struct LibraryThumb: View {
     @ObservedObject var model: EditorModel
     let photo: LibraryPhoto
     let isCurrent: Bool
+    var isSelected = false
+    /// How many photos its stack has (1: none).
+    var stack = 1
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -270,6 +310,13 @@ struct LibraryThumb: View {
         }
         .overlay(alignment: .top) {
             if !photo.label.isEmpty { Self.color(photo.label).frame(height: 4) }
+        }
+        .overlay(alignment: .topTrailing) {
+            HStack(spacing: 2) {
+                if stack > 1 { Label("\(stack)", systemImage: "square.stack").font(.system(size: 9)).padding(2).background(Color.black.opacity(0.6)) }
+                if isSelected { Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.accentColor) }
+            }
+            .padding(3)
         }
         .frame(height: 88)
         .clipped()

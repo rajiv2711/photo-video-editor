@@ -396,4 +396,64 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(value("removeLocation"), 1)
         XCTAssertFalse(interpreter.workspace.history.canUndo)
     }
+
+    // MARK: - Stacks (#170)
+
+    /// Photos taken at 0, 1, 2, 60, 61 and 300 seconds: two bursts and one on its own.
+    private func makeBursts() {
+        for (i, t) in [0.0, 1, 2, 60, 61, 300].enumerated() { interpreter.workspace.library.add(photo("p\(i)", at: t)) }
+    }
+
+    func testStackNamesReachTheirControls() {
+        XCTAssertEqual(parse("stack these"), [.run("stackThese")])
+        XCTAssertEqual(parse("auto stack 5"), [.run("autoStack", value: 5)])
+        XCTAssertEqual(parse("unstack"), [.run("unstack")])
+        XCTAssertEqual(parse("expand stacks"), [.run("expandStacks")])
+        XCTAssertEqual(parse("collapse stacks"), [.run("collapseStacks")])
+        XCTAssertEqual(parse("select photo 2"), [.run("selectPhoto", value: 2)])
+        // The merge's stack keeps its names.
+        XCTAssertEqual(parse("stack"), [.run("stackAverage")])
+        XCTAssertEqual(parse("stack mean"), [.run("stackAverage", value: 1)])
+    }
+
+    func testAutoStackGroupsBurstsByCaptureTime() {
+        makeBursts()
+        XCTAssertEqual(events(run("auto stack")), [.autoStacked(stacks: 2, photos: 5, gap: 2)])
+        let lib = interpreter.workspace.library
+        XCTAssertEqual(lib.stacks, [["p0", "p1", "p2"], ["p3", "p4"]])
+        XCTAssertEqual(lib.shown.map(\.id), ["p0", "p3", "p5"], "collapsed: each stack shows its top")
+        XCTAssertEqual(lib.stackCount(of: "p1"), 3)
+        run("expand stacks")
+        XCTAssertEqual(interpreter.workspace.library.shown.count, 6)
+        run("collapse stacks")
+        // A wider gap: one stack of five.
+        XCTAssertEqual(events(run("auto stack 60")), [.autoStacked(stacks: 1, photos: 5, gap: 60)])
+    }
+
+    func testStackTheseTakesTheSelectionOrTheBurst() {
+        makeBursts()
+        run("photo 4")                          // p3
+        XCTAssertEqual(events(run("stack these")), [.stacked(2)], "nothing selected: the burst p3, p4")
+        XCTAssertEqual(interpreter.workspace.library.stacks, [["p3", "p4"]])
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["p0", "p1", "p2", "p3", "p5"])
+        run("expand stacks")
+        XCTAssertEqual(events(run("select photo 1 select photo 6")), [.selected(1), .selected(2)])
+        XCTAssertEqual(events(run("stack these")), [.stacked(2)])
+        XCTAssertEqual(interpreter.workspace.library.stacks, [["p0", "p5"], ["p3", "p4"]])
+        XCTAssertTrue(interpreter.workspace.library.selected.isEmpty)
+        run("photo 6")                          // p5, alone in time
+        XCTAssertEqual(events(run("unstack")), [.unstacked(2)])
+        XCTAssertEqual(events(run("stack these")), [.nothingToStack])
+        XCTAssertEqual(events(run("select photo 3 select photo 3")), [.selected(1), .selected(0)], "again: deselected")
+        run("select photo 2 clear selection")
+        XCTAssertTrue(interpreter.workspace.library.selected.isEmpty)
+    }
+
+    func testCollapsedStackShowsThePhotoBeingEdited() {
+        makeBursts()
+        run("auto stack expand stacks photo 2 collapse stacks")   // p1, inside the first stack
+        XCTAssertEqual(interpreter.workspace.library.shown.map(\.id), ["p1", "p3", "p5"])
+        run("next photo")
+        XCTAssertEqual(interpreter.workspace.library.current, "p3")
+    }
 }

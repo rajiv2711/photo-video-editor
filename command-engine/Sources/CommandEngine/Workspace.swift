@@ -409,7 +409,7 @@ public enum Workflow {
     }
 
     /// 20 → "20", 0.5 → "0.5".
-    static func number(_ v: Double) -> String {
+    public static func number(_ v: Double) -> String {
         v == v.rounded() ? String(Int(v)) : String((v * 100).rounded() / 100)
     }
 

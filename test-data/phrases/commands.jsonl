@@ -1327,3 +1327,18 @@
 {"group":"export","text":"strip gps","expect":[{"op":"set","control":"removeLocation","value":1}]}
 {"group":"export","text":"remove location off","expect":[{"op":"set","control":"removeLocation","value":0}]}
 {"group":"library","text":"add title Sale","expect":[{"op":"run","control":"newTextLayer","text":"Sale"}]}
+{"group":"library","text":"stack these","expect":[{"op":"run","control":"stackThese"}]}
+{"group":"library","text":"group into stack","expect":[{"op":"run","control":"stackThese"}]}
+{"group":"library","text":"auto stack","expect":[{"op":"run","control":"autoStack"}]}
+{"group":"library","text":"auto stack 5","expect":[{"op":"run","control":"autoStack","value":5}]}
+{"group":"library","text":"stack by capture time","expect":[{"op":"run","control":"autoStack"}]}
+{"group":"library","text":"unstack","expect":[{"op":"run","control":"unstack"}]}
+{"group":"library","text":"break stack","expect":[{"op":"run","control":"unstack"}]}
+{"group":"library","text":"expand stacks","expect":[{"op":"run","control":"expandStacks"}]}
+{"group":"library","text":"show stacks","expect":[{"op":"run","control":"expandStacks"}]}
+{"group":"library","text":"collapse stacks","expect":[{"op":"run","control":"collapseStacks"}]}
+{"group":"library","text":"hide stacks","expect":[{"op":"run","control":"collapseStacks"}]}
+{"group":"library","text":"select photo 3","expect":[{"op":"run","control":"selectPhoto","value":3}]}
+{"group":"library","text":"select photo","expect":[{"op":"run","control":"selectPhoto"}]}
+{"group":"library","text":"clear selection","expect":[{"op":"run","control":"clearSelection"}]}
+{"group":"library","text":"deselect all","expect":[{"op":"run","control":"clearSelection"}]}

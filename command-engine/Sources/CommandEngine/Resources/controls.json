@@ -1723,6 +1723,13 @@
     {"id": "photoCaption", "label": "Caption", "group": "library", "section": "Keywords & info", "kind": "action", "takesText": true, "synonyms": ["photo caption", "set caption", "description", "photo description"]},
     {"id": "photoCopyright", "label": "Copyright", "group": "library", "section": "Keywords & info", "kind": "action", "takesText": true, "synonyms": ["copyright notice", "set copyright", "photo copyright", "rights"]},
     {"id": "photoInfo", "label": "Photo Info", "group": "library", "section": "Keywords & info", "kind": "action", "synonyms": ["info", "show info", "camera data", "camera info", "exif", "show exif", "metadata", "show metadata", "photo details", "details"]},
-    {"id": "removeLocation", "label": "Remove Location", "group": "export", "section": "Metadata", "kind": "toggle", "synonyms": ["strip location", "remove gps", "strip gps", "no location", "hide location", "remove location data", "without location"]}
+    {"id": "removeLocation", "label": "Remove Location", "group": "export", "section": "Metadata", "kind": "toggle", "synonyms": ["strip location", "remove gps", "strip gps", "no location", "hide location", "remove location data", "without location"]},
+    {"id": "selectPhoto", "label": "Select Photo", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["select picture", "pick photo number", "select this photo", "select image", "deselect photo"]},
+    {"id": "clearSelection", "label": "Clear Selection", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["deselect all", "select none", "deselect photos", "clear the selection", "unselect all"]},
+    {"id": "stackThese", "label": "Stack These", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["group into stack", "stack selected", "stack selected photos", "make a stack", "make stack", "stack this burst", "group these"]},
+    {"id": "autoStack", "label": "Auto Stack", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["auto stack by time", "stack by capture time", "stack by time", "auto stack bursts", "stack bursts", "group bursts"]},
+    {"id": "unstack", "label": "Unstack", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["unstack photos", "remove stack", "break stack", "undo stack", "ungroup stack"]},
+    {"id": "expandStacks", "label": "Expand Stacks", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["expand stack", "open stacks", "show stacks", "show all in stacks", "expand all stacks"]},
+    {"id": "collapseStacks", "label": "Collapse Stacks", "group": "library", "section": "Stacks", "kind": "action", "synonyms": ["collapse stack", "close stacks", "hide stacks", "collapse all stacks"]}
   ]
 }
