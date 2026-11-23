@@ -135,6 +135,7 @@ enum RenderGallery {
             made.keepsPresets = false  // each case starts with no presets of its own
             made.keepsLibrary = false  // and an empty library
             made.exportsFiles = false  // nothing goes to Photos or Files
+            made.cropSlidersShowCropTool = false  // crop sliders crop the render (no crop tool on screen)
             return made
         }
         // One editor per starting picture, made when a case first needs it.

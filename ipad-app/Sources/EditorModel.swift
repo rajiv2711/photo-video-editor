@@ -246,6 +246,7 @@ final class EditorModel: ObservableObject {
         }
         state.set(control, to: value, at: target)
         focus(control)
+        if Self.cropSliders.contains(control.id) { showCropTool() }
         // One drag of a slider is one history step.
         historyLabel = "\(control.label) \(Self.format(state.value(of: control, at: target), control))"
         historyKey = "slider:" + control.id
@@ -697,6 +698,21 @@ final class EditorModel: ObservableObject {
         return plan.guidesOnFrame(state.geometry.guides)
     }
 
+    /// The sliders that show the crop tool when moved or named: the crop box's edges, its aspect and the
+    /// crop angle (Straighten).
+    static let cropSliders: Set<String> = Set(GeometryTools.cropIDs + ["straighten"])
+    /// Moving or naming a crop slider shows the crop tool (the render gallery renders the crop itself).
+    var cropSlidersShowCropTool = true
+
+    /// Crop mode, as in Lightroom: the whole frame shows with the crop box over it (the outside dimmed),
+    /// the box follows the crop sliders, and Done shows the cropped photo. The saved photo is cropped either way.
+    private func showCropTool() {
+        guard cropSlidersShowCropTool, geometryTool != "crop", state.selectedMask == nil, state.retouchTool == nil,
+              state.selectedLayer == nil else { return }
+        geometryTool = "crop"
+        armedPicker = nil
+    }
+
     /// A Geometry tool that ran (by button, voice or typing) takes the touches on the photo; "done"
     /// puts it away, and so does picking a mask or a retouch tool.
     private func armGeometryTools(_ outcomes: [CommandInterpreter.Outcome]) {
@@ -910,6 +926,15 @@ final class EditorModel: ObservableObject {
         }
         if outcomes.contains(where: { if case .ran(let id) = $0 { return Library.actions.contains(id) } else { return false } }) {
             saveLibrary()
+        }
+        // A crop slider named and changed ("crop left 30", "square crop", "crop angle 5") shows the crop tool;
+        // not when something else moved it ("reset crop", "undo", a preset).
+        let named = Set(interpreter.lastCommands.compactMap { $0.control })
+        if outcomes.contains(where: { outcome in
+            if case .changed(let id, _, _) = outcome { return Self.cropSliders.contains(id) && named.contains(id) }
+            return false
+        }) {
+            showCropTool()
         }
         armGeometryTools(outcomes)
         armLayerTools(outcomes)
