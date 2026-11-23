@@ -200,8 +200,8 @@ final class EditorModel: ObservableObject {
 
     /// Launch argument used by the cloud build (-demoSteps "crop left 30;done;crop left 0;done"): the
     /// commands run 5 seconds apart from 7 seconds after launch; the photo's frame is written to
-    /// Documents/frames.json 4 seconds after launch and 2.5 seconds after each command, between the
-    /// screenshots the build takes.
+    /// Documents/frames.json 4 seconds after launch and 2.5 seconds after each command. The build takes a
+    /// screenshot as soon as each state is written (it waits for the file to grow).
     private func runDemoSteps(_ steps: [String]) {
         let file = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("frames.json")
         try? FileManager.default.removeItem(at: file)
@@ -209,13 +209,13 @@ final class EditorModel: ObservableObject {
             var states: [ShownFrame] = []
             try? await Task.sleep(for: .seconds(4))
             states.append(self.shownFrame("start"))
-            try? JSONEncoder().encode(["states": states]).write(to: file)
+            try? JSONEncoder().encode(["states": states]).write(to: file, options: .atomic)
             try? await Task.sleep(for: .seconds(3))
             for step in steps where !step.isEmpty {
                 self.run(step)
                 try? await Task.sleep(for: .seconds(2.5))
                 states.append(self.shownFrame(step))
-                try? JSONEncoder().encode(["states": states]).write(to: file)
+                try? JSONEncoder().encode(["states": states]).write(to: file, options: .atomic)
                 try? await Task.sleep(for: .seconds(2.5))
             }
         }
