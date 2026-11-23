@@ -138,6 +138,21 @@ jobs:
           shot l1-light 9 -orientation landscape
           shot l2-mask 9 -orientation landscape -demoCommand "radial gradient" -panel masks
           shot l3-layers 9 -orientation landscape -demoCommand "new text layer Hello" -panel layers
+          shot l5-export 9 -orientation landscape -panel export
+          shot p9-retouch 8 -demoCommand "remove brush" -panel retouch
+          # A crop and back in one launch: the app runs a command every 5 s and notes the photo's frame on
+          # screen after each (crop-frames.json, checked by ci_results.py); a screenshot of each state.
+          xcrun simctl launch "$UDID" "$APP" -demoSteps "crop left 30;done;crop left 0;done"
+          began=$(date +%s)
+          at=6
+          for name in p8-crop1-start p8-crop2-left30 p8-crop3-done p8-crop4-left0 p8-crop5-done; do
+            while [ $(( $(date +%s) - began )) -lt $at ]; do sleep 0.2; done
+            xcrun simctl io "$UDID" screenshot "screenshots/$name.png"
+            at=$((at + 5))
+          done
+          sleep 1
+          cp "$(xcrun simctl get_app_container "$UDID" "$APP" data)/Documents/frames.json" screenshots/crop-frames.json || true
+          xcrun simctl terminate "$UDID" "$APP" 2>/dev/null || true
           shot p7-library 12 -demoLibrary YES -panel library
           shot l4-library 10 -orientation landscape -panel library
       - uses: actions/upload-artifact@v4

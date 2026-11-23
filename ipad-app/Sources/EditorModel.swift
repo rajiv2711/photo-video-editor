@@ -178,6 +178,55 @@ final class EditorModel: ObservableObject {
         if let panel = UserDefaults.standard.string(forKey: "panel") {
             shownPanel = panel
         }
+        // Launch argument used by the cloud build to check the photo's size on screen through a crop and back.
+        if let steps = UserDefaults.standard.string(forKey: "demoSteps") {
+            runDemoSteps(steps.components(separatedBy: ";").map { $0.trimmingCharacters(in: .whitespaces) })
+        }
+    }
+
+    // MARK: - Cloud build: the photo's frame on screen
+
+    /// Where the photo and the black area around it are on screen (points), as last laid out: the view
+    /// reports them, -demoSteps writes them down.
+    var shownFrames: (photo: CGRect, canvas: CGRect) = (.zero, .zero)
+
+    /// One state of -demoSteps: the command that led to it ("start" before the first), and the frames of
+    /// the photo and of the black area around it on screen (x, y, width, height in points).
+    struct ShownFrame: Codable {
+        let step: String
+        let photo: [Double]
+        let canvas: [Double]
+    }
+
+    /// Launch argument used by the cloud build (-demoSteps "crop left 30;done;crop left 0;done"): the
+    /// commands run 5 seconds apart from 7 seconds after launch; the photo's frame is written to
+    /// Documents/frames.json 4 seconds after launch and 2.5 seconds after each command, between the
+    /// screenshots the build takes.
+    private func runDemoSteps(_ steps: [String]) {
+        let file = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("frames.json")
+        try? FileManager.default.removeItem(at: file)
+        Task { @MainActor in
+            var states: [ShownFrame] = []
+            try? await Task.sleep(for: .seconds(4))
+            states.append(self.shownFrame("start"))
+            try? JSONEncoder().encode(["states": states]).write(to: file)
+            try? await Task.sleep(for: .seconds(3))
+            for step in steps where !step.isEmpty {
+                self.run(step)
+                try? await Task.sleep(for: .seconds(2.5))
+                states.append(self.shownFrame(step))
+                try? JSONEncoder().encode(["states": states]).write(to: file)
+                try? await Task.sleep(for: .seconds(2.5))
+            }
+        }
+    }
+
+    /// The photo's and the black area's frames now, rounded to a tenth of a point.
+    private func shownFrame(_ step: String) -> ShownFrame {
+        func numbers(_ r: CGRect) -> [Double] {
+            [r.minX, r.minY, r.width, r.height].map { (Double($0) * 10).rounded() / 10 }
+        }
+        return ShownFrame(step: step, photo: numbers(shownFrames.photo), canvas: numbers(shownFrames.canvas))
     }
 
     /// The value a slider shows: while a mask is selected, its own value for local sliders.

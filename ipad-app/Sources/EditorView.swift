@@ -157,6 +157,7 @@ struct EditorView: View {
                     .resizable()
                     .allowedDynamicRange(model.isHDR ? Image.DynamicRange.high : Image.DynamicRange.standard)
                     .scaledToFit()
+                    .background(FrameProbe { model.shownFrames.photo = $0 })
                     .overlay {
                         // Zoomed in past the preview's own pixels: the part shown, rendered from the full-size photo.
                         GeometryReader { geo in
@@ -211,6 +212,7 @@ struct EditorView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
         }
+        .background(FrameProbe { model.shownFrames.canvas = $0 })
     }
 
     /// The photo with the command bar floating under it (never over the panel) and what a command did
@@ -915,6 +917,19 @@ struct ZoomPan: ViewModifier {
     private func measured(_ new: CGSize) {
         size = new
         model.setFit(pixels: Double(max(new.width, new.height) * displayScale))
+    }
+}
+
+/// Tells where a view is on screen (points from the window's top-left) whenever it moves or changes size.
+struct FrameProbe: View {
+    let report: (CGRect) -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            Color.clear
+                .onAppear { report(geo.frame(in: .global)) }
+                .onChange(of: geo.frame(in: .global)) { _, frame in report(frame) }
+        }
     }
 }
 
