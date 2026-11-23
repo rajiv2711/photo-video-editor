@@ -19,7 +19,7 @@ come from the [lensfun](https://github.com/lensfun/lensfun) database and keep it
 | [`test-data/raw/`](test-data/raw) | A small synthetic camera raw (`test.dng`, made by `dev-tools/make_dng.py` with PiDNG) for the raw checks. |
 | [`test-data/gallery/`](test-data/gallery) | Render test cases (`gallery.json`): a command per operation and the change it must cause. |
 | [`docs/FEATURES.md`](docs/FEATURES.md) | Feature checklist: every planned photo operation, ticked when built. |
-| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report), `ci_results.py` (cloud render checks), `make_luts.py` (the sample LUTs), `make_dng.py` (the test raw). |
+| [`dev-tools/`](dev-tools) | Laptop scripts: `make_report.py` (parser report), `voice_test.py` (speech → server → parser report), `ci_results.py` (cloud render checks), `make_luts.py` (the sample LUTs), `make_dng.py` (the test raw), `make_icon.py` (the app icon, cut from the test photo). |
 | [`.github/workflows/`](.github/workflows) | Cloud build: Linux tests → unsigned `.ipa` + iPad simulator render gallery and screenshots (feature branches publish them to `ci-renders`). |
 | `reports/`, `research_notes/` | Local only, git-ignored. |
 
