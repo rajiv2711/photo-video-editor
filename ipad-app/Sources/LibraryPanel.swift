@@ -16,14 +16,12 @@ struct LibraryPanel: View {
     var body: some View {
         PanelGroup {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Button { model.apply([.run("importPhotos")]) } label: { Label("Photos", systemImage: "photo.on.rectangle") }
-                    Button { model.apply([.run("importFiles")]) } label: { Label("Files", systemImage: "folder") }
-                    Button { model.apply([.run("importCamera")]) } label: { Label("Card", systemImage: "sdcard") }
-                    Button { model.apply([.run("showMap")]) } label: { Label("Map", systemImage: "map") }
+                ActionTiles {
+                    Button { model.apply([.run("importPhotos")]) } label: { ActionTile("Photos", "photo.on.rectangle") }
+                    Button { model.apply([.run("importFiles")]) } label: { ActionTile("Files", "folder") }
+                    Button { model.apply([.run("importCamera")]) } label: { ActionTile("Card", "sdcard") }
+                    Button { model.apply([.run("showMap")]) } label: { ActionTile("Map", "map") }
                 }
-                .buttonStyle(.bordered)
-                .font(.footnote)
                 .padding(.horizontal, 10)
                 Text(status)
                     .font(.footnote)
@@ -163,25 +161,27 @@ struct LibraryPanel: View {
     /// or the burst of the photo being edited), Unstack, and stacks open or closed.
     private var stacksSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Button("Auto Stack") { model.apply([.run("autoStack")]) }
-                Button("Stack These") { model.apply([.run("stackThese")]) }
-                Button("Unstack") { model.apply([.run("unstack")]) }
-            }
-            HStack {
-                Button(library.stacksExpanded ? "Collapse Stacks" : "Expand Stacks") {
+            ActionTiles {
+                Button { model.apply([.run("autoStack")]) } label: { ActionTile("Auto Stack", "square.stack.3d.up") }
+                Button { model.apply([.run("stackThese")]) } label: { ActionTile("Stack These", "square.stack") }
+                Button { model.apply([.run("unstack")]) } label: { ActionTile("Unstack", "square.split.2x1") }
+                Button {
                     model.apply([.run(library.stacksExpanded ? "collapseStacks" : "expandStacks")])
+                } label: {
+                    ActionTile(library.stacksExpanded ? "Collapse" : "Expand",
+                               library.stacksExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                 }
                 if !library.selected.isEmpty {
-                    Button("Clear Selection (\(library.selected.count))") { model.apply([.run("clearSelection")]) }
+                    Button { model.apply([.run("clearSelection")]) } label: {
+                        ActionTile("Clear \(library.selected.count)", "xmark.circle")
+                    }
+                    .accessibilityLabel("Clear Selection (\(library.selected.count))")
                 }
             }
             Text("\(library.stacks.count) stack\(library.stacks.count == 1 ? "" : "s") · bursts are photos taken within \(Workflow.number(library.stackGap)) s")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
-        .buttonStyle(.bordered)
-        .font(.footnote)
         .padding(.horizontal, 10)
     }
 
@@ -228,22 +228,24 @@ struct LibraryPanel: View {
         keyword = ""
     }
 
-    /// The filter: at least N stars, a flag, a colour label; Clear shows every photo.
+    /// The filter: at least N stars, a flag, a colour label (a tile in use is filled); Clear shows every photo.
     private var filterRow: some View {
-        HStack(spacing: 6) {
+        ActionTiles {
             Menu {
                 ForEach(0...5, id: \.self) { n in
                     Button(n == 0 ? "Any rating" : "\(n)+ stars") { model.apply([.run("showRating", value: Double(n))]) }
                 }
             } label: {
-                Label(library.filter.minRating == 0 ? "Stars" : "\(library.filter.minRating)+", systemImage: "star")
+                ActionTile(library.filter.minRating == 0 ? "Stars" : "\(library.filter.minRating)+ stars", "star",
+                           prominent: library.filter.minRating > 0)
             }
             Menu {
                 Button("Picks") { model.apply([.run("showPicks")]) }
                 Button("Rejected") { model.apply([.run("showRejects")]) }
                 Button("Unflagged") { model.apply([.run("showUnflagged")]) }
             } label: {
-                Label(library.filter.flag == "all" ? "Flag" : library.filter.flag.capitalized, systemImage: "flag")
+                ActionTile(library.filter.flag == "all" ? "Flag" : library.filter.flag.capitalized, "flag",
+                           prominent: library.filter.flag != "all")
             }
             Menu {
                 ForEach(Array(Library.labels.enumerated()), id: \.offset) { item in
@@ -251,14 +253,13 @@ struct LibraryPanel: View {
                 }
                 Button("Any label") { model.apply([.run("showLabel", value: Double(Library.labels.count))]) }
             } label: {
-                Label(library.filter.label.isEmpty ? "Label" : library.filter.label.capitalized, systemImage: "circle.fill")
+                ActionTile(library.filter.label.isEmpty ? "Label" : library.filter.label.capitalized, "circle.fill",
+                           prominent: !library.filter.label.isEmpty)
             }
             if !library.filter.isEmpty {
-                Button("Clear") { model.apply([.run("showAllPhotos")]) }
+                Button { model.apply([.run("showAllPhotos")]) } label: { ActionTile("Clear", "xmark.circle") }
             }
         }
-        .font(.footnote)
-        .buttonStyle(.bordered)
     }
 
     private var status: String {

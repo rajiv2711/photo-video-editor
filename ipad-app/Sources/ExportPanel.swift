@@ -15,15 +15,12 @@ struct ExportPanel: View {
     var body: some View {
         PanelGroup {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Button { model.apply([.run("export")]) } label: { Label("Photos", systemImage: "photo.on.rectangle") }
-                        .buttonStyle(.borderedProminent)
-                    Button { model.apply([.run("saveToFiles")]) } label: { Label("Files", systemImage: "folder") }
-                    Button { model.apply([.run("share")]) } label: { Label("Share", systemImage: "square.and.arrow.up") }
-                    Button { model.apply([.run("print")]) } label: { Label("Print", systemImage: "printer") }
+                ActionTiles {
+                    Button { model.apply([.run("export")]) } label: { ActionTile("Photos", "photo.on.rectangle", prominent: true) }
+                    Button { model.apply([.run("saveToFiles")]) } label: { ActionTile("Files", "folder") }
+                    Button { model.apply([.run("share")]) } label: { ActionTile("Share", "square.and.arrow.up") }
+                    Button { model.apply([.run("print")]) } label: { ActionTile("Print", "printer") }
                 }
-                .buttonStyle(.bordered)
-                .font(.footnote)
                 .padding(.horizontal, 10)
                 Text(summary)
                     .font(.footnote)

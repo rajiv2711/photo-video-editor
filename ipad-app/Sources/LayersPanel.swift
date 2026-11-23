@@ -26,16 +26,15 @@ struct LayersPanel: View {
     var body: some View {
         PanelGroup {
             VStack(alignment: .leading, spacing: 10) {
-                HStack {
+                ActionTiles {
                     Menu {
                         ForEach(makers) { maker in makerButton(maker) }
                     } label: {
-                        Label("New layer", systemImage: "plus.square.on.square")
+                        ActionTile("New Layer", "plus.square.on.square")
                     }
-                    Spacer()
                     // The photos picked go into photo layers (and merges): the same picker as the Merge panel's.
                     PhotosPicker(selection: $items, selectionBehavior: .ordered, matching: .images, preferredItemEncoding: .current) {
-                        Label("Pick Photos", systemImage: "photo.on.rectangle")
+                        ActionTile("Pick Photos", "photo.on.rectangle")
                     }
                 }
                 .padding(.horizontal, 10)
@@ -183,14 +182,12 @@ struct LayersPanel: View {
         } label: {
             Text(layer.mask == nil ? "Mask" : "Mask (on)").font(.subheadline.weight(.semibold))
         }
-        HStack {
-            Button("Up") { model.apply([.run("moveLayerUp")]) }
-            Button("Down") { model.apply([.run("moveLayerDown")]) }
-            Button("Duplicate") { model.apply([.run("duplicateLayer")]) }
-            Button("Done") { model.apply([.run("maskDone")]) }
+        ActionTiles {
+            Button { model.apply([.run("moveLayerUp")]) } label: { ActionTile("Up", "arrow.up") }
+            Button { model.apply([.run("moveLayerDown")]) } label: { ActionTile("Down", "arrow.down") }
+            Button { model.apply([.run("duplicateLayer")]) } label: { ActionTile("Duplicate", "plus.square.on.square") }
+            Button { model.apply([.run("maskDone")]) } label: { ActionTile("Done", "checkmark") }
         }
-        .buttonStyle(.bordered)
-        .font(.footnote)
         .padding(.horizontal, 10)
     }
 
