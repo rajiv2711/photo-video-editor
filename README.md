@@ -92,7 +92,7 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `sharpening 60` · `sharpening masking 70` · `noise reduction 40` · `chroma noise 50` · `moire 60` · `high pass 50` | Detail panel (`noise` alone asks which) |
 | `lens profile correction on` · `remove chromatic aberration` · `defringe 60` · `distortion 30` · `vignetting up` · `fisheye correction 50` | Optics panel (`vignette` is the Effects one, `vignetting` the lens one) |
 | `brush mask` · `linear gradient from top` · `radial gradient center` · `color range blue` · `luminance range shadows` | Makes a mask and selects it (then draw, drag or tap on the photo) |
-| `exposure -1` · `mask 2 contrast 30` · `mask exposure more` · `done` | While a mask is selected, the sliders masks allow (light, colour, effects, detail, colour grading) change it; `done` or `mask 0` goes back to the global sliders |
+| `exposure -1` · `mask 2 contrast 30` · `mask exposure more` · `done` | While a mask is selected, the sliders masks allow (light, colour, effects, detail, colour grading) change it; `done`, `mask 0` or Done (on the bar above the panel) goes back to the global sliders |
 | `subtract luminance range` · `intersect linear gradient from left` · `invert mask` · `outside` · `duplicate mask` · `component 2` · `delete component` | Mask math: parts add, subtract or intersect; invert a mask or one part |
 | `mask feather 50` · `expand mask 20` · `refine edge 60` · `mask amount 150` · `show mask overlay` | Refine the selected mask, scale its sliders, show it in red |
 | `lasso` · `polygon lasso` · `marquee left` · `magic wand` · `quick select` · `brush size 20` · `eraser` | Selection tools and brush settings |
@@ -102,7 +102,7 @@ On the iPad: Settings (gear) → paste the ngrok address and the token → Test 
 | `liquify pucker` · `liquify mode bloat` · `tool strength 80` | Liquify: push, twirl, pucker, bloat, reconstruct |
 | `dodge midtones` · `burn shadows` · `sponge desaturate` · `blur brush` · `sharpen brush` · `smudge` | Toning and touch-up brushes (Apple Pencil pressure counts) |
 | `show spots` · `visualize threshold 70` | Visualize Spots: dust and specks white on black (preview only) |
-| `crop 16 by 9` · `crop square` · `crop left 10` · `reset crop` · `crop tool` | Crop: aspect presets, the edges, or the box to drag on the photo (`done` when finished) |
+| `crop 16 by 9` · `crop square` · `crop left 10` · `reset crop` · `crop tool` | Crop: aspect presets, the edges, or the box to drag on the photo; naming or moving a crop slider shows the whole frame with the box over it (crop mode), `done` (or Done above the panel) shows the cropped photo |
 | `straighten 3` · `auto straighten` · `straighten tool` | Straighten by angle, from the photo's lines, or along a line drawn on the photo |
 | `rotate left` · `rotate 180` · `flip horizontal` · `flip vertical` | Quarter turns and flips (the crop turns with the photo) |
 | `upright auto` · `auto upright` · `upright vertical` · `guided upright` · `clear guides` | Upright from the photo's lines (no AI), or from up to four guides drawn on the photo |
