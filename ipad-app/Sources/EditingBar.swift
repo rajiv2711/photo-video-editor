@@ -19,11 +19,14 @@ struct EditingBar: View {
                             .font(.subheadline.weight(.semibold))
                             .lineLimit(2)
                             .minimumScaleFactor(0.85)
-                        Text("Changes are saved as you go")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+                        // The shorter words in the narrow landscape panel.
+                        ViewThatFits(in: .horizontal) {
+                            Text("Changes are saved as you go")
+                            Text("Saved as you go")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                     }
                     Spacer(minLength: 4)
                     Button { model.endEditing() } label: {
