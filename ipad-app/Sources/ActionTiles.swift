@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Buttons (and menus) as equal tiles, an icon above a short name, in a grid that wraps onto more rows
-/// when the panel is narrow (296 points in landscape), so a name never breaks letter by letter. Tiles are
-/// at least 58 points wide and 50 tall: easy to tap.
+/// when the panel is narrow (296 points in landscape: four tiles a row), so a name never breaks letter by
+/// letter. Tiles are at least 54 points wide and 50 tall: easy to tap.
 ///
 ///     ActionTiles {
 ///         Button { model.apply([.run("export")]) } label: { ActionTile("Photos", "photo.on.rectangle", prominent: true) }
@@ -16,7 +16,7 @@ struct ActionTiles<Content: View>: View {
     }
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 58), spacing: 6)], spacing: 6) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 54), spacing: 6)], spacing: 6) {
             content
         }
         .buttonStyle(.plain)
