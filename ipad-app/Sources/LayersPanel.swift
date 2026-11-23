@@ -186,7 +186,6 @@ struct LayersPanel: View {
             Button { model.apply([.run("moveLayerUp")]) } label: { ActionTile("Up", "arrow.up") }
             Button { model.apply([.run("moveLayerDown")]) } label: { ActionTile("Down", "arrow.down") }
             Button { model.apply([.run("duplicateLayer")]) } label: { ActionTile("Duplicate", "plus.square.on.square") }
-            Button { model.apply([.run("maskDone")]) } label: { ActionTile("Done", "checkmark") }
         }
         .padding(.horizontal, 10)
     }

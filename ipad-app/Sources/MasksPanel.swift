@@ -3,7 +3,8 @@ import SwiftUI
 
 /// The Masks panel: a menu to make a mask, the list of masks, and for the selected mask its parts,
 /// their settings, the mask's settings and its local sliders. While a mask is selected the other
-/// panels are hidden (as in Lightroom): sliders change the mask. "Done" goes back to them.
+/// panels are hidden (as in Lightroom): sliders change the mask. Done (on the editing bar above the
+/// panel) goes back to them.
 struct MasksPanel: View {
     @ObservedObject var model: EditorModel
     @Binding var expanded: Set<String>
@@ -133,9 +134,6 @@ struct MasksPanel: View {
         Text("Local adjustments").font(.subheadline.weight(.semibold))
         ForEach(local.filter { $0.section != "Color grading" }) { ControlRow(model: model, control: $0) }
         section("Color grading", rows: local.filter { $0.section == "Color grading" })
-        Button("Done") { model.apply([.run("maskDone")]) }
-            .buttonStyle(.borderedProminent)
-            .padding(.horizontal, 10)
     }
 
     /// The icons of Add, Subtract and Intersect.

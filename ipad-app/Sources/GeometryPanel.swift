@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The Geometry panel: crop, straighten, rotate and flip, upright, transform, … as fold-out sections
 /// of plain controls (sliders, switches, menus, buttons). While a touch tool is in use (the crop
-/// tool, …) it says what to do on the photo and offers Done.
+/// tool, …) it says what to do on the photo (Done is on the editing bar above the panel).
 struct GeometryPanel: View {
     @ObservedObject var model: EditorModel
     @Binding var expanded: Set<String>
@@ -13,15 +13,10 @@ struct GeometryPanel: View {
     var body: some View {
         PanelGroup {
             VStack(alignment: .leading, spacing: 6) {
-                if let tool = model.geometryTool {
-                    if let hint = EditorModel.geometryHints[tool] {
-                        Text(hint.prefix(1).uppercased() + String(hint.dropFirst()) + ".")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 10)
-                    }
-                    Button("Done") { model.apply([.run("maskDone")]) }
-                        .buttonStyle(.borderedProminent)
+                if let tool = model.geometryTool, let hint = EditorModel.geometryHints[tool] {
+                    Text(hint.prefix(1).uppercased() + String(hint.dropFirst()) + ".")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                         .padding(.horizontal, 10)
                 }
                 // The size the saved photo will have (crop, resize, …).

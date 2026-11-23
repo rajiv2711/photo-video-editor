@@ -1088,6 +1088,48 @@ final class EditorModel: ObservableObject {
         render()
     }
 
+    // MARK: - Editing bar (above the panel)
+
+    /// What takes the touches on the photo now, for the bar above the panel: an icon and a name ("Editing
+    /// Mask 1 · Radial Gradient"); nil when nothing does. In the order the photo's overlays take touches.
+    var editing: (symbol: String, title: String)? {
+        if let picker = armedPicker {
+            return ("eyedropper", "Picking · " + (registry.control(id: picker)?.label ?? "a point"))
+        }
+        if targetedMode != nil, let control = registry.control(id: "targetedAdjustment") {
+            let i = Int(state.value(of: control))
+            return ("hand.draw", "Targeted Adjustment · " + (control.options.indices.contains(i) ? control.options[i].label : ""))
+        }
+        if let tool = geometryTool {
+            let name = registry.controls.first { GeometryTools.actions[$0.id] == tool }?.label ?? tool.capitalized
+            return (tool == "crop" ? "crop" : "crop.rotate", "Editing · " + name)
+        }
+        if let tool = state.retouchTool {
+            return ("bandage", "Retouching · " + label(ofTool: tool))
+        }
+        if let m = state.selectedMask, state.masks.indices.contains(m) {
+            let part = state.masks[m].component.map { " · " + label(ofPart: $0.kind) } ?? ""
+            return ("circle.dashed", "Editing Mask \(m + 1)" + part)
+        }
+        if let l = state.selectedLayer, state.layers.indices.contains(l) {
+            return ("square.3.stack.3d", "Editing Layer \(l + 1) · " + layerName(l))
+        }
+        return nil
+    }
+
+    /// Done on the editing bar: a picker stops waiting, Targeted Adjustment goes off, or (as saying “done”)
+    /// the mask, layer, retouch tool or geometry tool is put away.
+    func endEditing() {
+        if armedPicker != nil {
+            armedPicker = nil
+            feedback = Feedback(text: "Picker put away")
+        } else if targetedMode != nil {
+            apply([.set("targetedAdjustment", 0)])
+        } else {
+            apply([.run("maskDone")])
+        }
+    }
+
     // MARK: - Panels
 
     /// A panel the rail offers: its group, title and icon (an SF Symbol).

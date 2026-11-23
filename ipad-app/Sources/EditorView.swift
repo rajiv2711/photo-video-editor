@@ -291,8 +291,16 @@ struct EditorView: View {
         }
     }
 
-    /// The controls of the panel shown; a new panel starts at its top.
+    /// The controls of the panel shown, under the editing bar (shown while a mask, layer, tool or picker
+    /// takes the touches on the photo; it doesn't scroll away); a new panel starts at its top.
     private var panelContent: some View {
+        VStack(spacing: 0) {
+            EditingBar(model: model)
+            panelScroll
+        }
+    }
+
+    private var panelScroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 if model.panelAvailable(model.shownPanel) {
@@ -328,16 +336,12 @@ struct EditorView: View {
         let mask = model.state.selectedMask
         return VStack(alignment: .leading, spacing: 12) {
             PanelTitle(model: model, title: EditorModel.panelTitle(model.shownPanel), group: model.shownPanel)
-            Text(mask.map { "Mask \($0 + 1) is selected: sliders change it, in the Masks panel. Done goes back to the whole photo." }
-                 ?? "An adjustment layer is selected: sliders change it, in the Layers panel. Done goes back to the whole photo.")
+            Text(mask.map { "Mask \($0 + 1) is selected: sliders change it, in the Masks panel. Done (above) goes back to the whole photo." }
+                 ?? "An adjustment layer is selected: sliders change it, in the Layers panel. Done (above) goes back to the whole photo.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            HStack {
-                Button(mask != nil ? "Masks panel" : "Layers panel") { model.shownPanel = mask != nil ? "masks" : "layers" }
-                    .buttonStyle(.bordered)
-                Button("Done") { model.apply([.run("maskDone")]) }
-                    .buttonStyle(.borderedProminent)
-            }
+            Button(mask != nil ? "Masks panel" : "Layers panel") { model.shownPanel = mask != nil ? "masks" : "layers" }
+                .buttonStyle(.bordered)
         }
     }
 
