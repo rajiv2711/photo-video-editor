@@ -149,61 +149,20 @@ struct EditorView: View {
         }
     }
 
+    /// The black area with the photo in it. The photo is fitted to the area (16 points in from its edges)
+    /// whenever either changes, so after a crop, a turn, a merge or another photo it has the whole room again.
     private var canvas: some View {
         ZStack {
             Color.black
             if let image = model.preview {
-                Image(uiImage: image)
-                    .resizable()
-                    .allowedDynamicRange(model.isHDR ? Image.DynamicRange.high : Image.DynamicRange.standard)
-                    .scaledToFit()
-                    .background(FrameProbe { model.shownFrames.photo = $0 })
-                    .overlay {
-                        // Zoomed in past the preview's own pixels: the part shown, rendered from the full-size photo.
-                        GeometryReader { geo in
-                            if let loupe = model.loupe {
-                                Image(uiImage: loupe.image)
-                                    .resizable()
-                                    .frame(width: CGFloat(loupe.rect.width) * geo.size.width, height: CGFloat(loupe.rect.height) * geo.size.height)
-                                    .position(x: CGFloat(loupe.rect.x + loupe.rect.width / 2) * geo.size.width,
-                                              y: CGFloat(loupe.rect.y + loupe.rect.height / 2) * geo.size.height)
-                            }
-                        }
-                        .allowsHitTesting(false)
-                    }
-                    .overlay {
-                        if model.isComparing {
-                            // Before / after: nothing to touch.
-                            EmptyView()
-                        } else if model.armedPicker != nil {
-                            // A picker tool (e.g. white balance) waits for a tap on the photo.
-                            GeometryReader { geo in
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { location in
-                                        model.tap(atX: location.x / geo.size.width, y: location.y / geo.size.height)
-                                    }
-                            }
-                            .border(Color.accentColor, width: 2)
-                        } else if model.targetedMode != nil {
-                            // Targeted adjustment: drag up or down on a tone or colour.
-                            TargetedCanvas(model: model)
-                        } else if let tool = model.geometryTool {
-                            // The Geometry panel's tool (the crop box, …) takes the touches.
-                            GeometryCanvas(model: model, tool: tool)
-                        } else if let tool = model.retouchTool {
-                            // The retouch tool in use paints or taps on the photo.
-                            RetouchCanvasView(model: model, tool: tool)
-                        } else if let tool = model.canvasTool {
-                            // The selected mask part is drawn on the photo (brush strokes, shapes, taps).
-                            MaskCanvas(model: model, tool: tool)
-                        } else if let tool = model.layerCanvasTool {
-                            // The selected layer is moved (or drawn on) on the picture.
-                            LayerCanvas(model: model, tool: tool)
-                        }
-                    }
-                    .modifier(ZoomPan(model: model))
-                    .padding(16)
+                GeometryReader { area in
+                    let fitted = Self.fitted(image.size, in: area.size)
+                    photo(image)
+                        .frame(width: fitted.width, height: fitted.height)
+                        .modifier(ZoomPan(model: model, size: fitted))
+                        .position(x: area.size.width / 2, y: area.size.height / 2)
+                }
+                .padding(16)
             }
             // The View panel's scopes, over the top-right corner.
             if let scopes = model.scopes {
@@ -213,6 +172,66 @@ struct EditorView: View {
             }
         }
         .background(FrameProbe { model.shownFrames.canvas = $0 })
+    }
+
+    /// The largest size of a picture's shape that fits in `room`.
+    static func fitted(_ picture: CGSize, in room: CGSize) -> CGSize {
+        guard picture.width > 0, picture.height > 0, room.width > 0, room.height > 0 else { return .zero }
+        let scale = min(room.width / picture.width, room.height / picture.height)
+        return CGSize(width: picture.width * scale, height: picture.height * scale)
+    }
+
+    /// The photo, as big as the canvas makes it, with the loupe and the tool in use over it (their
+    /// touches are read as shares of this size).
+    private func photo(_ image: UIImage) -> some View {
+        Image(uiImage: image)
+            .resizable()
+            .allowedDynamicRange(model.isHDR ? Image.DynamicRange.high : Image.DynamicRange.standard)
+            .background(FrameProbe { model.shownFrames.photo = $0 })
+            .overlay {
+                // Zoomed in past the preview's own pixels: the part shown, rendered from the full-size photo.
+                GeometryReader { geo in
+                    if let loupe = model.loupe {
+                        Image(uiImage: loupe.image)
+                            .resizable()
+                            .frame(width: CGFloat(loupe.rect.width) * geo.size.width, height: CGFloat(loupe.rect.height) * geo.size.height)
+                            .position(x: CGFloat(loupe.rect.x + loupe.rect.width / 2) * geo.size.width,
+                                      y: CGFloat(loupe.rect.y + loupe.rect.height / 2) * geo.size.height)
+                    }
+                }
+                .allowsHitTesting(false)
+            }
+            .overlay {
+                if model.isComparing {
+                    // Before / after: nothing to touch.
+                    EmptyView()
+                } else if model.armedPicker != nil {
+                    // A picker tool (e.g. white balance) waits for a tap on the photo.
+                    GeometryReader { geo in
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture { location in
+                                model.tap(atX: location.x / geo.size.width, y: location.y / geo.size.height)
+                            }
+                    }
+                    .border(Color.accentColor, width: 2)
+                } else if model.targetedMode != nil {
+                    // Targeted adjustment: drag up or down on a tone or colour.
+                    TargetedCanvas(model: model)
+                } else if let tool = model.geometryTool {
+                    // The Geometry panel's tool (the crop box, …) takes the touches.
+                    GeometryCanvas(model: model, tool: tool)
+                } else if let tool = model.retouchTool {
+                    // The retouch tool in use paints or taps on the photo.
+                    RetouchCanvasView(model: model, tool: tool)
+                } else if let tool = model.canvasTool {
+                    // The selected mask part is drawn on the photo (brush strokes, shapes, taps).
+                    MaskCanvas(model: model, tool: tool)
+                } else if let tool = model.layerCanvasTool {
+                    // The selected layer is moved (or drawn on) on the picture.
+                    LayerCanvas(model: model, tool: tool)
+                }
+            }
     }
 
     /// The photo with the command bar floating under it (never over the panel) and what a command did
@@ -883,21 +902,17 @@ struct PanelRail: View {
 /// zoom; when no tool takes the touches, drag to pan and double-tap to go between fit and 100 %.
 struct ZoomPan: ViewModifier {
     @ObservedObject var model: EditorModel
-    @State private var size: CGSize = .zero
+    /// The picture's size on screen when it fits (the canvas works it out from its own size).
+    let size: CGSize
     @Environment(\.displayScale) private var displayScale
 
     func body(content: Content) -> some View {
         let m = CGFloat(model.magnification)
         let shown = model.visibleRect
         return content
-            .background(GeometryReader { geo in
-                Color.clear
-                    .onAppear { measured(geo.size) }
-                    .onChange(of: geo.size) { _, new in measured(new) }
-            })
             .scaleEffect(m, anchor: .topLeading)
             .offset(x: -CGFloat(shown.x) * size.width * m, y: -CGFloat(shown.y) * size.height * m)
-            .frame(width: size.width > 0 ? size.width : nil, height: size.height > 0 ? size.height : nil, alignment: .topLeading)
+            .frame(width: size.width, height: size.height, alignment: .topLeading)
             .clipped()
             .contentShape(Rectangle())
             .simultaneousGesture(MagnifyGesture()
@@ -911,12 +926,14 @@ struct ZoomPan: ViewModifier {
                     guard size.width > 0, size.height > 0 else { return }
                     model.toggleLoupe(at: MaskPoint(Double(tap.location.x / size.width), Double(tap.location.y / size.height)))
                 }, including: model.touchesFree ? .all : .none)
+            .onAppear { fit(size) }
+            .onChange(of: size) { _, new in fit(new) }
     }
 
-    /// The picture's frame when it fits: the model needs its size in pixels.
-    private func measured(_ new: CGSize) {
-        size = new
-        model.setFit(pixels: Double(max(new.width, new.height) * displayScale))
+    /// The model needs the fitted picture's size in pixels (zoom levels are % of the photo's own pixels).
+    private func fit(_ size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        model.setFit(pixels: Double(max(size.width, size.height) * displayScale))
     }
 }
 

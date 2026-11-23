@@ -18,6 +18,9 @@ flat: the share (%) of pixels whose 3 x 3 neighbourhood spans at most 3 luma lev
 field: a value the app wrote in the manifest ("fields", or a control's value in "values"), e.g. the library's
 photo count or an exported file's format, read back with ImageIO; "dir": "is" and "value" what it must be
 (numbers within 0.5 %, text exactly; an empty value: the field must not be there).
+Crop frames (ui-crop-frames): the screenshots step crops and uncrops the photo in one launch and the app notes
+the photo's frame on screen after each step (screenshots/crop-frames.json); the photo must fill its room in
+the black area on one side in every state, and come back to its first frame within 1 pt.
 
 Exit code: 0 all passed · 1 a build step or a case failed · 3 no results for this commit yet.
 """
@@ -213,6 +216,29 @@ def check_field(case: dict, expect: dict) -> tuple[bool, str]:
     return ok, f"{name} is {want}: {got}"
 
 
+# Points between the black area's edges and the photo's room (EditorView.canvas pads it by 16).
+FRAME_ROOM = 16
+
+
+def frame_checks(path: Path) -> list:
+    """The crop sequence's photo frames on screen (x, y, width, height in points): in every state the photo
+    fits its room (the black area 16 pt in from its edges) and fills it on one side; the last state (uncropped
+    again, after Done) has the frame of the first within 1 pt."""
+    states = json.loads(path.read_text()).get("states", [])
+    checks = []
+    for s in states:
+        w, h = s["photo"][2], s["photo"][3]
+        rw, rh = s["canvas"][2] - 2 * FRAME_ROOM, s["canvas"][3] - 2 * FRAME_ROOM
+        fits = w <= rw + 1 and h <= rh + 1 and (abs(w - rw) <= 1 or abs(h - rh) <= 1)
+        checks.append((f"{s['step']}: photo {w:.1f} × {h:.1f} pt in a {rw:.1f} × {rh:.1f} pt room", fits and w > 0))
+    if len(states) >= 2:
+        off = max(abs(a - b) for a, b in zip(states[0]["photo"], states[-1]["photo"]))
+        checks.append((f"back to the first frame: {off:.1f} pt off", off <= 1))
+    else:
+        checks.append((f"{len(states)} state(s) noted, need 2 or more", False))
+    return checks
+
+
 def thumb(src: Path, name: str) -> str:
     (OUT / "thumbs").mkdir(exist_ok=True)
     im = Image.open(src).convert("RGB")
@@ -318,6 +344,18 @@ def main() -> int:
             for text, ok in checks:
                 print(f"{'':<28}{'ok  ' if ok else 'FAIL'} {text}")
             print(f"{'':<28}app said: {c.get('feedback', '')}")
+        rows.append((c, checks, ok_all))
+
+    # The photo's frame on screen through a crop and back (the screenshots step).
+    frames = OUT / "screenshots" / "crop-frames.json"
+    if frames.exists() or status.get("screenshots") == "success":
+        c = {"id": "ui-crop-frames", "command": "crop left 30; done; crop left 0; done", "expect": [], "file": ""}
+        checks = frame_checks(frames) if frames.exists() else [("no screenshots/crop-frames.json", False)]
+        ok_all = all(ok for _, ok in checks)
+        failed += 0 if ok_all else 1
+        print(f"{c['id']:<26}{c['command'][:33]:<34}{'PASS' if ok_all else 'FAIL'}")
+        for text, ok in checks:
+            print(f"{'':<28}{'ok  ' if ok else 'FAIL'} {text}")
         rows.append((c, checks, ok_all))
 
     gallery_ok = bool(manifest["cases"]) and not manifest.get("error")
