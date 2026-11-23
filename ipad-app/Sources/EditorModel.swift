@@ -40,6 +40,13 @@ final class EditorModel: ObservableObject {
     /// also holds the Camera panel's controls). The rail, a panel's name ("light panel") and what a command
     /// selects or names choose it.
     @Published var shownPanel = "light"
+    /// The panel shown before a mask, layer, retouch tool or geometry tool took over (each shows its own
+    /// panel). Done, or leaving that mode any other way, shows it again.
+    private var panelBeforeEditing: String?
+    /// A mask, layer, retouch tool or geometry tool is in use (it has its own panel and the Done bar).
+    var inEditingMode: Bool {
+        state.selectedMask != nil || state.selectedLayer != nil || state.retouchTool != nil || geometryTool != nil
+    }
     /// The scopes of the preview as shown (View panel), while one is on.
     @Published private(set) var scopes: ScopeReadings?
     /// Colour samplers: points on the shown picture (0…1 from the top-left), oldest first.
@@ -424,11 +431,24 @@ final class EditorModel: ObservableObject {
     /// Runs commands that came from a button (a mask action, "done", …), with feedback.
     func apply(_ commands: [Command]) {
         historyLabel = nil
+        let wasEditing = inEditingMode, panelBefore = shownPanel
         let outcomes = interpreter.apply(commands, state: &state)
         focusedControlID = interpreter.lastControlID
         feedback = describe(outcomes)
         armPickers(outcomes)
+        followEditingMode(wasEditing: wasEditing, panelBefore: panelBefore)
         render()
+    }
+
+    /// After commands ran: when a mask, layer, retouch tool or geometry tool came into use, remember the
+    /// panel that was showing; when it was put away (Done, "done", "mask 0", …), show that panel again.
+    private func followEditingMode(wasEditing: Bool, panelBefore: String) {
+        if !wasEditing, inEditingMode {
+            panelBeforeEditing = panelBefore
+        } else if wasEditing, !inEditingMode, let previous = panelBeforeEditing {
+            panelBeforeEditing = nil
+            shownPanel = previous
+        }
     }
 
     /// The selected mask's selected part.
@@ -709,6 +729,7 @@ final class EditorModel: ObservableObject {
     private func showCropTool() {
         guard cropSlidersShowCropTool, geometryTool != "crop", state.selectedMask == nil, state.retouchTool == nil,
               state.selectedLayer == nil else { return }
+        if !inEditingMode { panelBeforeEditing = shownPanel }
         geometryTool = "crop"
         armedPicker = nil
     }
@@ -1072,6 +1093,7 @@ final class EditorModel: ObservableObject {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         historyLabel = nil
+        let wasEditing = inEditingMode, panelBefore = shownPanel
         let outcomes = interpreter.interpret(trimmed, state: &state)
         focusedControlID = interpreter.lastControlID
         var result = describe(outcomes)
@@ -1079,12 +1101,13 @@ final class EditorModel: ObservableObject {
         feedback = result
         armPickers(outcomes)
         // A control said by name: its panel shows ("contrast more" shows Light). Not for words that act on
-        // the workspace ("undo", "next photo") or name no control ("more").
+        // the workspace ("undo", "next photo"), name no control ("more"), or put a mode away ("done").
         if revealedPanel == nil,
-           let named = interpreter.lastCommands.last(where: { $0.control.map { !Workspace.actions.contains($0) } ?? false })?.control,
+           let named = interpreter.lastCommands.last(where: { $0.control.map { !Workspace.actions.contains($0) && $0 != "maskDone" } ?? false })?.control,
            let control = registry.control(id: named) {
             shownPanel = panel(for: control)
         }
+        followEditingMode(wasEditing: wasEditing, panelBefore: panelBefore)
         render()
     }
 
